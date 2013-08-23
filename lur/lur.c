@@ -9,11 +9,22 @@ struct lur {
     lua_State* L;
 };
 
+/*
+static void
+_dump(lua_State* L) {
+    int i;
+    for (i=1; i<=lua_gettop(L); ++i) {
+        printf("%d: %s\n", i, lua_typename(L, lua_type(L, i)));
+    }
+}
+*/
+
 static int
 _getvalue(lua_State* L, const char* key) {
     char* first = strchr(key, '.');
     if (first == NULL) {
-        lua_getglobal(L, key);
+        lua_pushstring(L, key);
+        lua_gettable(L, -2);
         return 0;
     }
    
@@ -24,7 +35,8 @@ _getvalue(lua_State* L, const char* key) {
     first = tmp + (ptrdiff_t)(first - key);
     *first = '\0';
 
-    lua_getglobal(L, tmp);
+    lua_pushstring(L, tmp);
+    lua_gettable(L, -2);
     if (!lua_istable(L, -1)) {
         return 1;
     }
@@ -56,11 +68,15 @@ _getvalue(lua_State* L, const char* key) {
 
 int 
 lur_getint(struct lur* self, const char* key, int def) {
+    return lur_getfloat(self, key, def);
+}
+
+float
+lur_getfloat(struct lur* self, const char* key, float def) {
     struct lua_State* L = self->L;
-    
     int top = lua_gettop(L);
 
-    int r;
+    float r;
     if (_getvalue(L, key) || !lua_isnumber(L, -1)) {
         r = def;
     } else {
@@ -73,9 +89,8 @@ lur_getint(struct lur* self, const char* key, int def) {
 const char*
 lur_getstr(struct lur* self, const char* key, const char* def) {
     struct lua_State* L = self->L;
-    
     int top = lua_gettop(L);
-
+ 
     const char* r;
     if (_getvalue(L, key) || !lua_isstring(L, -1)) {
         r = def;
@@ -86,6 +101,41 @@ lur_getstr(struct lur* self, const char* key, const char* def) {
     return r;
 }
 
+int
+lur_getnode(struct lur* self, const char* key) {
+    struct lua_State* L = self->L;
+    int top = lua_gettop(L);
+
+    if (_getvalue(L, key) || !lua_istable(L, -1)) {
+        lua_settop(L, top);
+        return 0;
+    }
+    if (lua_gettop(L) - top > 1) {
+        lua_replace(L, top+1);
+        lua_settop(L, top+1);
+    }
+    lua_pushnil(L);
+    if (lua_next(L, -2) == 0) {
+        lua_settop(L, top);
+        return 0;
+    }
+    return 1;
+}
+
+int
+lur_nextnode(struct lur* self) {
+    struct lua_State* L = self->L;
+    if (!lua_istable(L, -3)) {
+        return 0;
+    }
+    lua_pop(L, 1);
+    if (lua_next(L, -2) == 0) {
+        lua_pop(L, 1);
+        return 0;
+    }
+    return 1;
+}
+
 const char*
 lur_dofile(struct lur* self, const char* file) {
     lua_State* L = self->L;
@@ -93,10 +143,16 @@ lur_dofile(struct lur* self, const char* file) {
     if (r != LUA_OK) {
         const char* r = lua_tostring(L, -1);
         lua_pop(L, 1);
-        return r;
-    } else {
-        return "";
+        if (r[0] == '\0')
+            return "unknown error";
+        else
+            return r;
     }
+    lua_getglobal(L, "root");
+    if (!lua_istable(L, -1)) {
+        return "not root node";
+    }
+    return "";
 }
 
 struct lur*
@@ -114,4 +170,3 @@ lur_free(struct lur* self) {
     }
     free(self);
 }
-

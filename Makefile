@@ -2,17 +2,25 @@
 
 CFLAGS=-g -Werror
 SHARED=-fPIC -shared
+LDFLAGS=-Wl,-rpath,. \
+		-L. \
+		-llua -lm -ldl lur.so
 
-all: lur.so shaco
+service_src=$(wildcard service/*.c)
+service_so=$(patsubst %.c,%.so,$(notdir $(service_src)))
 
-LIBS=lur.so -llua -lm -ldl
-INC_PATH=-Ilur -Ihost
+all: $(service_so) lur.so shaco
+
+$(service_so): $(service_src)
+	gcc $(CFLAGS) $(SHARED) -o $@ $<
 
 lur.so: lur/lur.c lur/lur.h
 	gcc $(CFLAGS) $(SHARED) -o $@ $^
 
+INC_PATH=-Ihost -Ilur
+
 shaco: host/host_main.c
-	gcc $(CFLAGS) -o $@ $^ $(LIBS) $(INC_PATH)
+	gcc $(CFLAGS) -o $@ $^ $(INC_PATH) $(LDFLAGS)
 
 clean:
 	rm -f shaco *.so
