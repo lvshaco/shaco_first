@@ -125,7 +125,8 @@ _regok(struct service* s, int id, struct user_message* um) {
         host_net_close_socket(id);
         return;
     }
-    if (!self->iscenter) {
+    if (!self->iscenter &&
+        HNODE_TID(ok->nodeid) == NODE_CENTER) {
         struct service_message sm;
         sm.sessionid = id; // reuse for connid
         sm.source = s->serviceid;
@@ -135,6 +136,19 @@ _regok(struct service* s, int id, struct user_message* um) {
     }
 }
 
+static void
+_onnotify(struct service* s, int id, struct user_message* um) {
+    UM_CAST(UM_node_notify, notify, um);
+    struct in_addr in;
+    in.s_addr = notify->addr;
+    char* saddr = inet_ntoa(in);
+    struct host_node* node = host_node_get(notify->tnodeid);
+    if (node == NULL) {
+        host_net_connect(saddr, notify->port, false, s->serviceid);
+    } else {
+        // todo address update
+    }
+}
 void
 node_usermsg(struct service* s, int id, void* msg, int sz) {
     struct user_message* um = msg;
@@ -145,16 +159,28 @@ node_usermsg(struct service* s, int id, void* msg, int sz) {
     case UMID_NODE_REGOK:
         _regok(s, id, um);
         break;
+    case UMID_NODE_NOTIFY:
+        _onnotify(s, id, um);
+        break;
     }
 }
 
 void
 node_net(struct service* s, struct net_message* nm) {
     switch (nm->type) {
+    case NETE_ACCEPT:
+        host_net_subscribe(nm->connid, true, false);
+        break;
     case NETE_CONNECT:
+        host_info("connect to node ok");
+        host_net_subscribe(nm->connid, true, true);
         _reg_request(nm->connid);
         break;
+    case NETE_CONNERR:
+        host_error("connect to node fail: %s", host_net_error());
+        break;
     case NETE_SOCKERR:
+        host_error("node disconnect: %s", host_net_error());
         host_node_disconnect(nm->connid);
         break;
     }

@@ -12,8 +12,7 @@ static int
 _connect_center(struct service* s) {
     const char* addr = host_getstr("center_ip", "");
     int port = host_getint("center_port", 0);
-    if (host_net_connect(addr, port, true, s->serviceid) < 0) {
-        host_error("connect to center fail");
+    if (host_net_connect(addr, port, true, s->serviceid) < 0) { 
         return 1;
     }
     return 0;
@@ -70,18 +69,28 @@ _sub_request(int id) {
 
 void
 centercli_service(struct service* s, struct service_message* sm) {
-    int connid = sm->sessionid;
-    _sub_request(connid);
+    int center_connid = sm->sessionid;
+    _sub_request(center_connid);
 }
 
 void
 centercli_net(struct service* s, struct net_message* nm) {
     switch (nm->type) {
     case NETE_CONNECT:
+        host_info("connect to center ok");
+        host_net_subscribe(nm->connid, true, true);
         _reg_request(nm->connid);
         break;
+    case NETE_CONNERR:
+        host_error("connect to center fail: %s", host_net_error());
+        break;
     case NETE_SOCKERR:
+        host_error("center disconnect: %s", host_net_error());
         host_node_disconnect(nm->connid);
         break;
     }
+}
+
+void
+centercli_time(struct service* s) {
 }

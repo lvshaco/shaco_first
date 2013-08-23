@@ -52,11 +52,10 @@ gate_init(struct service* s) {
     memset(self->clients, 0, sizeof(struct _client) * max);
 
     if (host_net_listen(ip, port, s->serviceid)) {
-        host_error("listen fail: %s", host_net_error());
         return 1;
     }
     host_dispatcher_subscribe(s->serviceid, 100);
-    host_info("listen on %s:%d max_client=%d", ip, port, max);
+    host_info("max_client = %d", max);
     return 0;
 }
 

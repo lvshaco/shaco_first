@@ -40,7 +40,7 @@ a_init(struct service* s) {
     }
     return 0;
 }
-
+/*
 void
 _handle_message(struct _a* self, struct user_message* um) {
     UM_SEND(self->connid, um, um->msgsz);
@@ -76,7 +76,7 @@ a_net(struct service* s, struct net_message* nm) {
         self->connid = nm->connid;
         host_net_subscribe(self->connid, false, true);
         break;
-    //case NETE_WRITEDONE:
+    //case NETE_WRIDONE:
         //host_net_subscribe(nm->connid, true, false);
         //break;
     }
@@ -92,7 +92,6 @@ a_time(struct service* s) {
     }
 }
 
-/*
 void
 a_service(struct service* s, struct service_message* sm) {
 

@@ -18,15 +18,24 @@ dispatcher_create() {
 }
 
 static inline int
-_locate_service(struct _subs* self, int msgid)  {
+_locate_service(struct _subs* self, struct user_message* um)  {
+    int msgid = um->msgid;
+    int serviceid;
     if (msgid >= 0 && msgid < UMID_MAX) {
-        int serviceid = self->services[msgid];
+        serviceid = self->services[msgid];
         if (serviceid != SERVICE_INVALID) {
-            host_debug("Receive msg:%d", msgid);
+            host_debug("Receive msg:%d, from node:%s%04d, to service:%s", 
+                    msgid, 
+                    host_node_typename(HNODE_TID(um->nodeid)),
+                    HNODE_SID(um->nodeid),
+                    service_query_name(serviceid));
             return serviceid;
         }
     }
-    host_debug("Receive invalid msg:%d", msgid);
+    host_debug("Receive invalid msg:%d, from node:%s%04d", 
+            msgid, 
+            host_node_typename(HNODE_TID(um->nodeid)), 
+            HNODE_SID(um->nodeid));
     return SERVICE_INVALID;
 }
 
@@ -68,7 +77,7 @@ dispatcher_net(struct service* s, struct net_message* nm) {
     const char* error;
     struct user_message* um = UM_READ(id, &error);
     while (um) {
-        serviceid = _locate_service(self, um->msgid);
+        serviceid = _locate_service(self, um);
         if (serviceid != SERVICE_INVALID) {
             service_notify_user_message(serviceid, id, um, um->msgsz);
         }

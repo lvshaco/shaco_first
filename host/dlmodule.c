@@ -37,7 +37,14 @@ _open(struct dlmodule* dl) {
     dl->net = dlsym(handle, tmp);
     strcpy(tmp+len, "_usermsg");
     dl->usermsg = dlsym(handle, tmp);
-
+    
+    if (dl->service == NULL &&
+        dl->time == NULL &&
+        dl->net == NULL &&
+        dl->usermsg == NULL) {
+        host_error("dlmodule %s no symbol", dl->name);
+        return 1;
+    }
     dl->handle = handle;
     if (dl->create &&
         dl->content == NULL) {

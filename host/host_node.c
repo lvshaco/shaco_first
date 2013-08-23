@@ -31,7 +31,7 @@ int
 host_node_init() {
     N = malloc(sizeof(*N));
     memset(N, 0, sizeof(*N));
-    N->me = -1;
+    //N->me = -1;
     return 0;
 }
 
@@ -52,11 +52,6 @@ host_node_free() {
     free(N);
     N= NULL;
 }
-
-//bool
-//host_node_istype(int tid) {
-    //return tid >=0 && tid < N->size;
-//}
 
 int
 host_node_typeid(const char* name) {
@@ -105,13 +100,23 @@ _isme(struct host_node* node) {
     return node->id == N->me;
 }
 
-static void
+static inline bool
+_equal_node(struct host_node* a, struct host_node* b) {
+    return memcmp(a, b, sizeof(*a)) == 0;
+}
+
+static inline void
+_init_node(struct host_node* node) {
+    node->id = -1;
+    node->addr = 0;
+    node->port = 0;
+    node->connid = -1;
+}
+
+static inline void
 _free_node(struct host_node* node) {
     if (!_isme(node)) {
-        node->id = 0;
-        node->addr = 0;
-        node->port = 0;
-        node->connid = -1;
+        _init_node(node);
     }
 }
 
@@ -122,24 +127,29 @@ _isfree_node(struct host_node* node) {
 
 static int
 _add_node(struct _array* arr, struct host_node* node) {
-    int i = HNODE_SID(node->id);
+    int idx = HNODE_SID(node->id);
     int cap = arr->cap;
-    if (i >= cap) {
+    if (idx >= cap) {
         if (cap <= 0)
             cap = 1;
-        while (cap <= i) {
+        while (cap <= idx) {
             cap *= 2;
         }
         arr->cap = cap;
-        arr->p = realloc(arr->p, sizeof(struct host_node) * cap);
-        memset(arr->p + i, 0, sizeof(struct host_node) * (cap - i));
+        arr->p = realloc(arr->p, sizeof(struct host_node) * cap); 
+        int i;
+        for (i=idx; i<cap; ++i) {
+            _init_node(&arr->p[i]);
+        }
     }
-    struct host_node* c = &arr->p[i];
+    struct host_node* c = &arr->p[idx];
     if (_isfree_node(c)) {
         *c = *node;
-        arr->size = i + 1;
+        arr->size = idx + 1;
         return 0;
     }
+    if (_equal_node(node, c))
+        return 0;
     return 1;
 }
 
@@ -225,11 +235,11 @@ host_node_register(struct host_node* node) {
         sid >= 0 && sid < HNODE_SID_MAX) {
         arr = &N->nodes[tid];
         if (_add_node(arr, node) == 0) {
-            host_info("host node register, %s", _strnode(node, strnode));
+            host_info("node register, %s", _strnode(node, strnode));
             return 0;
         }
     } 
-    host_error("host node register error, %s", _strnode(node, strnode));
+    host_error("node register error, %s", _strnode(node, strnode));
     return 1;
 }
 
@@ -239,7 +249,7 @@ host_node_unregister(uint16_t id) {
     if (node) {
         if (!_isfree_node(node)) {
             char strnode[NODESTR_MAX];
-            host_info("host node unregister, %s", _strnode(node, strnode));
+            host_info("node unregister, %s", _strnode(node, strnode));
             _free_node(node);
             return 0;
         }
@@ -259,7 +269,7 @@ host_node_disconnect(int connid) {
             node = &arr->p[i];
             if (node->connid == connid) {
                 char strnode[NODESTR_MAX];
-                host_info("host node disconnect, %s", _strnode(node, strnode));
+                host_info("node disconnect, %s", _strnode(node, strnode));
                 _free_node(node);
                 return 0;
             }
@@ -271,7 +281,7 @@ host_node_disconnect(int connid) {
 void 
 host_node_foreach(uint16_t tid, int (*cb)(struct host_node*, void* ud), void* ud) {
     struct _array* arr;
-    struct hsot_node* node;
+    struct host_node* node;
     int i;
     if (tid >= 0 && tid < N->size) {
         arr = &N->nodes[tid];

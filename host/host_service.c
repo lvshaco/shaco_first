@@ -53,6 +53,20 @@ _create(const char* name) {
         return 1;
     }
     _insert(s);
+    host_info("load service %s", name);
+    return 0;
+}
+
+static int
+_reload(struct service* s) {
+    assert(s->dl.handle);
+    if (dlmodule_reload(&s->dl)) {
+        return 1;
+    }
+    if (s->dl.reload) {
+        s->dl.reload(s);
+    }
+    host_info("reload service %s", s->dl.name);
     return 0;
 }
 
@@ -93,17 +107,17 @@ service_load(const char* name) {
     strcpy(tmp, name);
 
     char* p = tmp;
-    char* next = strchr(p, ',');
-    while (next) {
-        *next = '\0';
+    char* next;
+    while (p) {
+        next = strchr(p, ',');
+        if (next)
+            *next = '\0';
         if (_create(p)) {
             return 1;
         } 
+        if (next == NULL)
+            break;
         p = next+1; 
-        next = strchr(p, ',');
-    }
-    if (_create(p)) {
-        return 1;
     }
 
     struct service* s = NULL;
@@ -125,14 +139,7 @@ service_reload(const char* name) {
     if (s == NULL) {
         return _create(name);
     } else {
-        assert(s->dl.handle);
-        if (dlmodule_reload(&s->dl)) {
-            return 1;
-        }
-        if (s->dl.reload) {
-            s->dl.reload(s);
-        }
-        return 0;
+        return _reload(s);
     }
 }
 

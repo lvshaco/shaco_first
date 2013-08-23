@@ -191,7 +191,7 @@ client_net(struct service* s, struct net_message* nm) {
     case NETE_READ:
         //_read(self, nm->connid);
         break;
-    case NETE_WRITEDONE:
+    case NETE_WRIDONE:
         _write_done(self, nm->connid);
         break;
     case NETE_CONNECT:

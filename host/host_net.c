@@ -21,7 +21,7 @@ _dispatch_events() {
         if (e->type == NETE_INVALID)
             continue;
         int serviceid = e->udata;
-        if (e->type == NETE_CONNECT_THEN_READ) {
+        if (e->type == NETE_CONN_THEN_READ) {
             e->type = NETE_CONNECT;
             service_notify_net_message(serviceid, e);
             e->type = NETE_READ;
@@ -56,19 +56,18 @@ host_net_listen(const char* addr, uint16_t port, int serviceid) {
     if (r) {
         host_error("listen %s:%u fail: %s", addr, port, host_net_error());        
     } else {
-        host_info("listen %s:%d succeed", addr, port);
+        host_info("listen on %s:%d", addr, port);
     }
     return r;
 }
 
 int 
 host_net_connect(const char* addr, uint16_t port, bool block, int serviceid) {
+    host_info("connect to %s:%u ...", addr, port);
     uint32_t ip = inet_addr(addr);
     int r = net_connect(N, ip, port, block, serviceid);
-    if (r == 0) {
+    if (r <= 0) {
         _dispatch_events();
-    } else if (r < 0) {
-        host_error("connect to %s:%u fail: %s", addr, port, host_net_error());
     }
     return r;
 }

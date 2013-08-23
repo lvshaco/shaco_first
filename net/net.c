@@ -189,7 +189,9 @@ _close_socket(struct net* self, struct socket* s) {
 static inline struct socket*
 _get_socket(struct net* self, int id) {
     if (id >= 0 && id < self->max)
-        return &self->sockets[id];
+        // make sure the socket is opened
+        if (self->sockets[id].status != STATUS_INVALID)
+            return &self->sockets[id];
     return NULL;
 }
 
@@ -349,7 +351,6 @@ net_dropread(struct net* self, int id) {
     struct socket* s = _get_socket(self, id);
     if (s == NULL)
         return;
-    
     struct netbuf_block* rb = s->rb;
     assert(rb->rptr >= 0);
     if (rb->rptr == 0)
@@ -423,7 +424,7 @@ net_send(struct net* self, int id, void* data, int sz) {
         if (s->head == NULL) {
             e->fd = s->fd;
             e->connid = s - self->sockets;
-            e->type = NETE_WRITEDONE;
+            e->type = NETE_WRIDONE;
             e->udata = s->udata;
             self->nevent = 1;
             return 1;
@@ -561,17 +562,18 @@ _onconnect(struct net* self, struct socket* s) {
 int
 net_connect(struct net* self, uint32_t addr, uint16_t port, bool block, int udata) {
     self->error = OK;
+    struct net_message* e = &self->ne[0];
 
     int fd = socket(AF_INET, SOCK_STREAM, 0);
     if (fd == -1) {
         self->error = strerror(errno);
-        return -1;
+        goto err;
     }
  
     if (!block)
         if (_set_nonblocking(fd) == -1) {
             self->error = strerror(errno);
-            return -1;
+            goto err;
         }
 
     int status;
@@ -585,7 +587,7 @@ net_connect(struct net* self, uint32_t addr, uint16_t port, bool block, int udat
         if (block || errno != EINPROGRESS) {
             self->error = strerror(errno); 
             close(fd);
-            return -1;
+            goto err;
         }
         status = STATUS_CONNECTING;
     } else {
@@ -595,33 +597,41 @@ net_connect(struct net* self, uint32_t addr, uint16_t port, bool block, int udat
     if (block)
         if (_set_nonblocking(fd) == -1) { // 仅connect阻塞
             self->error = strerror(errno);
-            return -1;
+            goto err;
         }
 
     struct socket* s = _create_socket(self, fd, addr, port, udata);
     if (s == NULL) {
         self->error = NET_ERR_CREATESOCK;
         close(fd);
-        return -1;
+        goto err;
     }
    
     s->status = status;
-    if (s->status == STATUS_CONNECTED) {
-        struct net_message* e = &self->ne[0];
-        e->fd = fd;
-        e->connid = s - self->sockets;
-        e->type = NETE_CONNECT;
-        e->udata = udata;
-        self->nevent = 1;
-        return 0; // connected
+    if (s->status == STATUS_CONNECTED) { 
+        goto ok;
     } else {
         if (_add_event(self->epoll_fd, s, EPOLLIN|EPOLLOUT)) {
             self->error = strerror(errno);
             _close_socket(self, s);
-            return -1;
+            goto err;
         } 
         return 1; // connecting
     }
+err:
+    e->fd = -1;
+    e->connid = -1;
+    e->type = NETE_CONNERR;
+    e->udata = udata;
+    self->nevent = 1;
+    return -1;
+ok:
+    e->fd = fd;
+    e->connid = s - self->sockets;
+    e->type = NETE_CONNECT;
+    e->udata = udata;
+    self->nevent = 1;
+    return 0; // connected
 }
 
 int
@@ -651,12 +661,12 @@ net_poll(struct net* self, int timeout) {
                 oe->connid = s - self->sockets;
                 oe->udata = s->udata;
                 if (_onconnect(self, s)) {
-                    oe->type = NETE_SOCKERR;
+                    oe->type = NETE_CONNERR;
                     break;
                 }
                 oe->type = NETE_CONNECT;
                 if (e->events & EPOLLIN) {
-                    oe->type = NETE_CONNECT_THEN_READ;
+                    oe->type = NETE_CONN_THEN_READ;
                 }
             }
             break;
@@ -674,7 +684,7 @@ net_poll(struct net* self, int timeout) {
                     oe->fd = s->fd;
                     oe->connid = s - self->sockets;
                     oe->udata = s->udata;
-                    oe->type = NETE_WRITEDONE;
+                    oe->type = NETE_WRIDONE;
                     net_subscribe(self, s - self->sockets, s->events & EPOLLIN, false);
                 }
             }

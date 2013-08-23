@@ -34,9 +34,11 @@ _add_subscribe(struct _array* arr, uint16_t tid) {
         if (cap <= 0)
             cap = 1;
         arr->p = realloc(arr->p, sizeof(arr->p[0]) * cap);
+        arr->cap = cap;
         memset(arr->p + idx, 0, sizeof(arr->p[0] * (cap-idx)));
     }
     arr->p[idx] = tid;
+    arr->size = idx+1;
 }
 
 struct _center*
@@ -68,7 +70,7 @@ center_init(struct service* s) {
 
 static inline bool
 _isvalid_tid(uint16_t tid) {
-    return tid < NODE_TYPE_MAX;
+    return tid < NODE_TYPE_MAX && tid != NODE_CENTER;
 }
 
 static void
@@ -97,7 +99,8 @@ _subscribe(struct _center* self, int id, struct user_message* um) {
     for (i=0; i<req->n; ++i) {
         tid = req->subs[i];
         if (!_isvalid_tid(tid)) {
-            host_error("subscribe fail: invalid tid:%d", tid);
+            host_error("subscribe fail: invalid tid:%d,%s", 
+                    tid, host_node_typename(tid));
             continue;
         }
         arr = &self->subs[tid];

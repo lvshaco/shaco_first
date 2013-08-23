@@ -2,6 +2,7 @@
 #define __user_message_h__
 
 #include "host_net.h"
+#include "host_node.h"
 #include <stdint.h>
 #include <stdlib.h>
 
@@ -77,7 +78,7 @@ struct UM_node_notify {
 
 #pragma pack()
 
-struct user_message*
+static inline struct user_message*
 UM_READ(int id, const char** error) {
     void* data;
     int size;

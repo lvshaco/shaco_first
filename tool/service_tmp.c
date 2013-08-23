@@ -41,7 +41,7 @@ tmp_net(struct service* s, struct net_message* nm) {
         break;
     case NETE_SOCKERR:
         break;
-    case NETE_WRITEDONE:
+    case NETE_WRIDONE:
         break;
     }*/
 }

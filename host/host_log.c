@@ -6,7 +6,7 @@
 #include <string.h>
 #include <time.h>
 
-static int _LEVEL = LOG_ERROR;
+static int _LEVEL = LOG_INFO;
 static int _LOG_SERVICE = -1;
 
 static const char* STR_LEVELS[LOG_MAX] = {
@@ -70,7 +70,7 @@ _default_log(int level, const char* log) {
     uint32_t msec = now % 1000;
     int off = strftime(buf, sizeof(buf), "%y%m%d-%H:%M:%S.", localtime(&sec));
     snprintf(buf+off, sizeof(buf)-off, "%03d", msec);
-    printf("%s %s: %s\n", buf, _strlevel(level), log);
+    printf("[%s] %s: %s\n", buf, _strlevel(level), log);
 }
 
 #define _gen_message(log, n, fmt) \

@@ -1,6 +1,6 @@
 .PHONY: all t clean cleanall
 
-CFLAGS=-g -O2 -Wall -Werror
+CFLAGS=-g -Wall -Werror
 SHARED=-fPIC -shared
 
 service_dir=service
@@ -40,9 +40,12 @@ host_src=\
 #LDFLAGS=-Wl,-rpath,. \
 		#-L. net.so lur.so\
 	    #-llua -lm -ldl -lrt
-LDFLAGS=net.so lur.so -llua -lm -ldl -lrt -rdynamic -Wl,-E
+LDFLAGS=-Wl,-rpath,. \
+		net.so lur.so -llua -lm -ldl -lrt -rdynamic# -Wl,-E
 
 all: lur.so net.so shaco $(service_so)
+release: CFLAGS += -O2
+release: all
 
 $(service_so): %.so: $(service_dir)/%.c
 	@rm -f $@

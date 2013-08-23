@@ -24,7 +24,6 @@ uint16_t host_id();
 struct host_node* host_me();
 int host_register_me(struct host_node* me);
 
-//bool host_node_istype(int tid);
 int  host_node_typeid(const char* name);
 const char* host_node_typename(uint16_t tid);
 struct host_node* host_node_get(uint16_t id);
