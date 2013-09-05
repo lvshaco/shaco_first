@@ -1,4 +1,4 @@
-root = {
+shaco = {
 f=1.123,
 s="abc",
 t1 = { i=10, s="abcdef",
@@ -8,7 +8,12 @@ t2 = {
     {a=1, b=2, c="c"},
     {a=10,b=20,c="cc"},
 },
-ip="127.0.0.1",
-port=8000,
-service="log",
+
+connection_max=10000,
+--service="gate",
+
+gate_ip="127.0.0.1",
+gate_port=8000,
+gate_client_max=10000,
+
 }

@@ -1,6 +1,6 @@
 #include "lur.h"
 #include "lua.h"
-//#include "lualib.h"
+#include "lualib.h"
 #include "lauxlib.h"
 #include <string.h>
 #include <stdlib.h>
@@ -136,6 +136,24 @@ lur_nextnode(struct lur* self) {
     return 1;
 }
 
+int
+lur_root(struct lur* self, const char* root) {
+    struct lua_State* L = self->L;
+    lua_getglobal(L, root);
+    if (!lua_istable(L, -1)) {
+        lua_pop(L, 1);
+        return 1;
+    }
+    return 0;
+}
+
+void
+lur_unroot(struct lur* self) {
+    struct lua_State* L = self->L;
+    if (lua_istable(L, -1))
+        lua_pop(L, 1);
+}
+
 const char*
 lur_dofile(struct lur* self, const char* file) {
     lua_State* L = self->L;
@@ -147,10 +165,6 @@ lur_dofile(struct lur* self, const char* file) {
             return "unknown error";
         else
             return r;
-    }
-    lua_getglobal(L, "root");
-    if (!lua_istable(L, -1)) {
-        return "not root node";
     }
     return "";
 }
