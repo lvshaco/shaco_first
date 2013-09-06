@@ -1,4 +1,4 @@
-shaco=/home/lvxiaojun/shaco CD=. filter="Makefile README.md *.lua *.h *.c" {
+shaco=~/shaco CD=. filter="Makefile README.md *.lua *.h *.c" {
  Makefile
  README.md
  config.lua
