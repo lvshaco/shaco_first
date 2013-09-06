@@ -18,10 +18,14 @@
 #define STATUS_CONNECTING  2
 #define STATUS_CONNECTED   3
 #define STATUS_SUSPEND     4 
-
 #define STATUS_OPENED      STATUS_LISTENING
 
 #define LISTEN_BACKLOG 500
+
+#define OK ""
+#define NET_ERR_MSG         "net error msg"
+#define NET_ERR_NOSOCK      "net error no socket"
+#define NET_ERR_CREATESOCK  "net error create socket"
 
 struct sbuffer {
     struct sbuffer* next;
@@ -42,8 +46,7 @@ struct socket {
 
 struct net {
     int epoll_fd;
-    int error;
-
+    
     int max;
     int nevent;
     struct epoll_event* ee;
@@ -52,6 +55,7 @@ struct net {
     struct socket* free_socket;
 
     struct netbuf* rpool; 
+    const char* error;
 };
 
 static inline int
@@ -190,9 +194,14 @@ net_close_socket(struct net* self, int id) {
     }
 }
 
-int 
+const char* 
 net_error(struct net* self) {
     return self->error;
+}
+
+int 
+net_max_socket(struct net* self) {
+    return self->max;
 }
 
 int
@@ -230,7 +239,7 @@ net_create(int max, int block_size) {
     }
     struct net* self = malloc(sizeof(struct net));
     self->epoll_fd = epoll_fd;
-    self->error = NET_OK;
+    self->error = OK;
     self->max = max;
     self->nevent = 0;
     self->ee = malloc(max * sizeof(struct epoll_event));
@@ -264,10 +273,11 @@ net_free(struct net* self) {
 
 void*
 net_read(struct net* self, int id, int sz) {
-    self->error = NET_OK;
+    self->error = OK;
         
     struct socket* s = _get_socket(self, id);
     if (s == NULL) {
+        self->error = NET_ERR_NOSOCK;
         return NULL;
     }
 
@@ -324,7 +334,7 @@ net_read(struct net* self, int id, int sz) {
     return NULL;
 err:
     _close_socket(self, s);
-    self->error = NET_ERR_SOCKET;
+    self->error = strerror(errno); // this is valid for nbyte == 0 ?
     return NULL;
 }
 
@@ -372,22 +382,25 @@ _send_buffer(struct net* self, struct socket* s) {
                 p->ptr += nbyte;
                 p->sz -= nbyte;
                 return nbyte;
-            }
+            } else
+                break;
         }
         s->head = p->next;
         free(p);
     }
     return 0;
 err:
-    self->error = NET_ERR_SOCKET;
+    //self->error = strerror(errno);
     _close_socket(self, s);
     return -1;
 }
 
 int 
 net_send(struct net* self, int id, void* data, int sz) {
+    self->error = OK;
     struct socket* s = _get_socket(self, id);
     if (s == NULL) {
+        self->error = NET_ERR_NOSOCK;
         return -1;
     }
     struct sbuffer* p = malloc(sizeof(*p) + sz);
@@ -429,13 +442,17 @@ _accept(struct net* self, struct socket* listens) {
 
 int
 net_listen(struct net* self, uint32_t addr, uint16_t port, int udata) {
+    self->error = OK;
     int fd = socket(AF_INET, SOCK_STREAM, 0);
-    if (fd == -1)
+    if (fd == -1) {
+        self->error = strerror(errno);
         return -1;
+    }
 
     if (_set_nonblocking(fd) == -1 ||
         _set_closeonexec(fd) == -1 ||
         _set_reuseaddr(fd)   == -1) {
+        self->error = strerror(errno);
         close(fd);
         return -1;
     }
@@ -446,22 +463,26 @@ net_listen(struct net* self, uint32_t addr, uint16_t port, int udata) {
     my_addr.sin_port = htons(port);
     my_addr.sin_addr.s_addr = addr;
     if (bind(fd, (struct sockaddr*)&my_addr, sizeof(struct sockaddr)) == -1) {
+        self->error = strerror(errno);
         close(fd);
         return -1;
     }   
 
     if (listen(fd, LISTEN_BACKLOG) == -1) {
+        self->error = strerror(errno);
         close(fd);
         return -1;
     }
 
     struct socket* s = _create_socket(self, fd, udata);
     if (s == NULL) {
+        self->error = NET_ERR_CREATESOCK;
         close(fd);
         return -1;
     }
 
     if (_add_event(self->epoll_fd, s, EPOLLIN)) {
+        self->error = strerror(errno);
         _close_socket(self, s);
         return -1;
     }
@@ -490,13 +511,19 @@ _onconnect(struct net* self, struct socket* s) {
 
 int
 net_connect(struct net* self, uint32_t addr, uint16_t port, bool block, int udata) {
+    self->error = OK;
+
     int fd = socket(AF_INET, SOCK_STREAM, 0);
-    if (fd == -1)
+    if (fd == -1) {
+        self->error = strerror(errno);
         return -1;
+    }
  
     if (!block)
-        if (_set_nonblocking(fd) == -1)
+        if (_set_nonblocking(fd) == -1) {
+            self->error = strerror(errno);
             return -1;
+        }
 
     int status;
     struct sockaddr_in my_addr;
@@ -507,6 +534,7 @@ net_connect(struct net* self, uint32_t addr, uint16_t port, bool block, int udat
     int r = connect(fd, (struct sockaddr*)&my_addr, sizeof(struct sockaddr));
     if (r == -1) {
         if (block || errno != EINPROGRESS) {
+            self->error = strerror(errno); 
             close(fd);
             return -1;
         }
@@ -516,11 +544,14 @@ net_connect(struct net* self, uint32_t addr, uint16_t port, bool block, int udat
     }
 
     if (block)
-        if (_set_nonblocking(fd) == -1) // 仅connect阻塞
+        if (_set_nonblocking(fd) == -1) { // 仅connect阻塞
+            self->error = strerror(errno);
             return -1;
+        }
 
     struct socket* s = _create_socket(self, fd, udata);
     if (s == NULL) {
+        self->error = NET_ERR_CREATESOCK;
         close(fd);
         return -1;
     }
@@ -536,6 +567,7 @@ net_connect(struct net* self, uint32_t addr, uint16_t port, bool block, int udat
         return 0; // connected
     } else {
         if (_add_event(self->epoll_fd, s, EPOLLIN|EPOLLOUT)) {
+            self->error = strerror(errno);
             _close_socket(self, s);
             return -1;
         } 

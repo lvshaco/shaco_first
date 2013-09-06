@@ -16,21 +16,6 @@ struct host {
 
 static struct host* H = NULL;
 
-static int
-_load_config() {
-    struct lur* L = H->cfg;
-    const char* err = lur_dofile(L,  H->file);
-    if (!LUR_OK(err)) {
-        host_error("%s", err);
-        return 1;
-    }
-    if (lur_root(L, "shaco")) {
-        host_error("not shaco node");
-        return 1;
-    }
-    return 0;
-}
-
 int
 host_getint(const char* key, int def) {
     return lur_getint(H->cfg, key, def);
@@ -43,20 +28,23 @@ host_getstr(const char* key, const char* def) {
 
 int 
 host_create(const char* file) {
-    if (service_init()) {
+    struct lur* L = lur_create(); 
+    const char* err = lur_dofile(L, file, "shaco");
+    if (!LUR_OK(err)) {
+        printf("%s\n", err);
+        lur_free(L);
         return 1;
-    }
-    if (service_load("log")) {
-        printf("load log service fail\n");
-        goto err;
     }
     H = malloc(sizeof(*H));
     H->loop = true;
     H->file = file;
-    H->cfg = lur_create();
-
-    struct lur* L = H->cfg;
-    if (_load_config()) {
+    H->cfg = L; 
+    
+    if (service_init()) {
+        goto err;
+    }
+    if (service_load("log")) {
+        printf("load log service fail\n");
         goto err;
     }
     if (host_timer_init()) {

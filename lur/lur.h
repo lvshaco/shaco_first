@@ -14,7 +14,7 @@ int lur_nextnode(struct lur* self);
 int lur_root(struct lur* self, const char* root);
 void lur_unroot(struct lur* self);
 
-const char* lur_dofile(struct lur* self, const char* file);
+const char* lur_dofile(struct lur* self, const char* file, const char* root);
 struct lur* lur_create();
 void lur_free(struct lur* self);
 

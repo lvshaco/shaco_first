@@ -3,12 +3,12 @@
 
 int 
 main(int argc, char* argv[]) {
+    const char* file;
     if (argc < 2) {
-        printf("usage: %s config (lua file)\n", argv[0]);
-        return 1;
+        file = "config.lua";
+    } else {
+        file = argv[1];
     }
-    const char* file = argv[1];
-
     if (host_create(file) == 0) {
         host_start();
         host_free();

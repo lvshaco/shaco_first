@@ -20,7 +20,7 @@ struct hashid {
 
 int
 hashid_init(struct hashid* hi, int cap, int hash) {
-    assert(cap <= 0);
+    assert(cap > 0);
 
     int tmp = 1;
     while (tmp < hash)
@@ -46,12 +46,13 @@ void
 hashid_fini(struct hashid* hi) {
     if (hi == NULL)
         return;
-    hi->cap = 0;
-    hi->hash = 0;
-    free(hi->freelist);
+    free(hi->p);
+    hi->p = NULL;
     hi->freelist = NULL;
     free(hi->slots);
     hi->slots = NULL;
+    hi->cap = 0;
+    hi->hash = 0;
 }
 
 int

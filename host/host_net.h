@@ -16,6 +16,8 @@ void* host_net_read(int id, int sz);
 void host_net_dropread(int id);
 int host_net_send(int id, void* data, int sz);
 void host_net_close_socket(int id);
-int host_net_error();
+int host_net_max_socket();
+const char* host_net_error();
+int host_net_subscribe(int id, bool read, bool write);
 
 #endif

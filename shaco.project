@@ -2,6 +2,7 @@ shaco=/home/lvxiaojun/shaco CD=. filter="Makefile README.md *.lua *.h *.c" {
  Makefile
  README.md
  config.lua
+ config_client.lua
  host=host{
   dlmodule.h
   host.h
@@ -40,6 +41,7 @@ shaco=/home/lvxiaojun/shaco CD=. filter="Makefile README.md *.lua *.h *.c" {
   server.c
  }
  service=service{
+  service_client.c
   service_gate.c
   service_log.c
  }

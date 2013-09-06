@@ -155,7 +155,10 @@ lur_unroot(struct lur* self) {
 }
 
 const char*
-lur_dofile(struct lur* self, const char* file) {
+lur_dofile(struct lur* self, const char* file, const char* root) {
+    if (file[0] == '\0') {
+        return "no file";
+    }
     lua_State* L = self->L;
     int r = luaL_dofile(L, file);
     if (r != LUA_OK) {
@@ -165,6 +168,10 @@ lur_dofile(struct lur* self, const char* file) {
             return "unknown error";
         else
             return r;
+    }
+    if (root[0]) {
+        if (lur_root(self, root))
+            return "no root node";
     }
     return "";
 }

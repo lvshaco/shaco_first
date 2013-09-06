@@ -4,11 +4,7 @@
 #include <stdint.h>
 #include "net_event.h"
 
-#define NET_OK            0 //正常
-#define NET_ERR_CONNECT   1 //连接失败
-#define NET_ERR_SOCKET    2
-#define NET_ERR_MSG       3
-#define NET_ERR_INTERNAL  4
+#define NET_OK(r) (r[0] == '\0')
 
 struct net;
 struct net* net_create(int max, int block_size);
@@ -24,9 +20,7 @@ void* net_read(struct net* self, int id, int size);
 void net_dropread(struct net* self, int id);
 int net_send(struct net* self, int id, void* data, int sz);
 void net_close_socket(struct net* self, int id);
-int net_error(struct net* self);
-
-
-
+const char* net_error(struct net* self);
+int net_max_socket(struct net* self);
 
 #endif

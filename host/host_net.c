@@ -2,8 +2,6 @@
 #include "net.h"
 #include "host_service.h"
 #include <stdlib.h>
-//#include <sys/socket.h>
-//#include <netinet/in.h>
 #include <arpa/inet.h>
 
 #define RDBUFFER_SIZE 64*1024
@@ -18,6 +16,8 @@ _dispatch_events() {
     int n = net_getevents(N, &all);
     for (i=0; i<n; ++i) {
         e = &all[i];
+        if (e->type == NETE_INVALID)
+            continue;
         int serviceid = e->udata;
         if (e->type == NETE_CONNECT_THEN_READ) {
             e->type = NETE_CONNECT;
@@ -50,7 +50,7 @@ int
 host_net_connect(const char* addr, uint16_t port, bool block, int serviceid) {
     uint32_t ip = inet_addr(addr);
     int r = net_connect(N, ip, port, block, serviceid);
-    if (r > 0) {
+    if (r == 0) {
         _dispatch_events();
     }
     return r;
@@ -68,5 +68,6 @@ void* host_net_read(int id, int sz) { return net_read(N, id, sz); }
 void host_net_dropread(int id) { net_dropread(N, id); }
 int host_net_send(int id, void* data, int sz) { return net_send(N, id, data, sz); }
 void host_net_close_socket(int id) { net_close_socket(N, id); }
-int host_net_error() { return net_error(N); }
-
+const char* host_net_error() { return net_error(N); }
+int host_net_max_socket() { return net_max_socket(N); }
+int host_net_subscribe(int id, bool read, bool write) { return net_subscribe(N, id, read, write); }

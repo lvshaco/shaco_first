@@ -19,7 +19,7 @@ _find(const char* name) {
     int i;
     for (i=0; i<array_size(S->sers); ++i) {
         struct service* s = array_get(S->sers, i);
-        if (s) {
+        if (s && strcmp(s->dl.name, name) == 0) {
             return s;
         }
     }
@@ -28,7 +28,7 @@ _find(const char* name) {
 
 static inline void
 _insert(struct service* s) {
-    s->serviceid = array_push(S->sers, s) + 1;
+    s->serviceid = array_push(S->sers, s);
 }
 /*
 static struct service*
@@ -37,8 +37,8 @@ _remove(const char* name) {
     for (i=0; i<array_size(S->sers); ++i) {
         struct service* s = array_get(S->sers, i);
         if (s && strcmp(s->dl.name, name) == 0) {
-            assert(s->serviceid > 0);
-            array_set(S->sers, s->serviceid-1, NULL);
+            assert(s->serviceid >= 0);
+            array_set(S->sers, s->serviceid, NULL);
             return s;
         }
     }

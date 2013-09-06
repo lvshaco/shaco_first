@@ -45,7 +45,7 @@ struct host_timer {
     uint64_t start_time;
     uint64_t elapsed_time;
     bool dirty;
-    int trigger_time;
+    uint64_t trigger_time;
     struct _event_holder eh;
 };
 
