@@ -106,7 +106,7 @@ service_load(const char* name) {
         return 1;
     }
 
-    struct service* s;
+    struct service* s = NULL;
     int i;
     for (i=sz; i<array_size(S->sers); ++i) {
         s = array_get(S->sers, i);

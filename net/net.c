@@ -20,7 +20,7 @@
 #define STATUS_SUSPEND     4 
 #define STATUS_OPENED      STATUS_LISTENING
 
-#define LISTEN_BACKLOG 500
+#define LISTEN_BACKLOG 511
 
 #define OK ""
 #define NET_ERR_MSG         "net error msg"
@@ -307,8 +307,7 @@ net_read(struct net* self, int id, int sz) {
     for (;;) {
         int nbyte = read(s->fd, wptr, space);
         if (nbyte < 0) {
-            if (errno == EAGAIN || 
-                errno == EWOULDBLOCK) {
+            if (errno == EAGAIN) {
                 rb->rptr = 0;
                 return NULL;
             } else if (errno == EINTR) {
@@ -363,13 +362,14 @@ net_dropread(struct net* self, int id) {
 
 int
 _send_buffer(struct net* self, struct socket* s) {
+    self->error = OK;
+    int total = 0;
     while (s->head) {
         struct sbuffer* p = s->head;
         for (;;) {
             int nbyte = write(s->fd, p->ptr, p->sz);
             if (nbyte < 0) {
-                if (errno == EAGAIN ||
-                    errno == EWOULDBLOCK)
+                if (errno == EAGAIN)
                     return 0;
                 else if (errno == EINTR)
                     continue;
@@ -382,27 +382,66 @@ _send_buffer(struct net* self, struct socket* s) {
                 p->ptr += nbyte;
                 p->sz -= nbyte;
                 return nbyte;
-            } else
+            } else {
+                total += nbyte;
                 break;
+            }
         }
         s->head = p->next;
         free(p);
     }
-    return 0;
+    return total;
 err:
-    //self->error = strerror(errno);
+    self->error = strerror(errno);
     _close_socket(self, s);
     return -1;
 }
 
 int 
 net_send(struct net* self, int id, void* data, int sz) {
+    if (sz <= 0) {
+        return -1;
+    }
     self->error = OK;
     struct socket* s = _get_socket(self, id);
     if (s == NULL) {
         self->error = NET_ERR_NOSOCK;
         return -1;
     }
+
+    struct net_event* e = &self->ne[0];
+
+    int n = write(s->fd, data, sz);
+    if (n >= sz) {
+        if (s->head == NULL) {
+            e->fd = s->fd;
+            e->connid = s - self->sockets;
+            e->type = NETE_WRITEDONE;
+            e->udata = s->udata;
+            self->nevent = 1;
+            return 1;
+        }
+        return 0;
+    } else if (n >= 0) {
+        data = (char*)data + n;
+        sz -= n;
+    } else {
+        switch (errno) {
+        case EAGAIN:
+        case EINTR:
+            break;
+        default: {
+            e->fd = s->fd;
+            e->connid = s - self->sockets;
+            e->type = NETE_SOCKERR;
+            e->udata = s->udata;
+            self->nevent = 1;
+            self->error = strerror(errno);
+            _close_socket(self, s);
+            return 1;
+            }
+        }
+    } 
     struct sbuffer* p = malloc(sizeof(*p) + sz);
     memcpy(p->data, data, sz);
     p->next = NULL;
@@ -411,6 +450,7 @@ net_send(struct net* self, int id, void* data, int sz) {
 
     if (s->head == NULL) {
         s->head = p;
+        net_subscribe(self, s - self->sockets, s->events & EPOLLIN, true);
     } else {
         s->tail->next = p;
     }
@@ -592,7 +632,7 @@ net_poll(struct net* self, int timeout) {
             if (s) {
                 oe->fd = s->fd;
                 oe->connid = s - self->sockets;
-                oe->type = NETE_CONNECT;
+                oe->type = NETE_ACCEPT;
                 oe->udata = s->udata;
             }
             break;
@@ -602,26 +642,38 @@ net_poll(struct net* self, int timeout) {
                 oe->connid = s - self->sockets;
                 oe->udata = s->udata;
                 if (_onconnect(self, s)) {
-                    oe->type = NETE_CONNECTERR;
+                    oe->type = NETE_SOCKERR;
                     break;
                 }
                 oe->type = NETE_CONNECT;
                 if (e->events & EPOLLIN) {
-                    oe->type |= NETE_READ;
+                    oe->type = NETE_CONNECT_THEN_READ;
                 }
             }
             break;
         case STATUS_CONNECTED:
             if (e->events & EPOLLOUT) {
-                if (_send_buffer(self, s) < 0) {
+                int n = _send_buffer(self, s);
+                if (n < 0) {
+                    oe->fd = s->fd;
+                    oe->connid = s - self->sockets;
+                    oe->udata = s->udata;
+                    oe->type = NETE_SOCKERR;
                     break;
+                } else if (n > 0 &&
+                        s->head == NULL) {
+                    oe->fd = s->fd;
+                    oe->connid = s - self->sockets;
+                    oe->udata = s->udata;
+                    oe->type = NETE_WRITEDONE;
+                    net_subscribe(self, s - self->sockets, s->events & EPOLLIN, false);
                 }
             }
             if (e->events & EPOLLIN) {
                 oe->fd = s->fd;
                 oe->connid = s - self->sockets;
-                oe->type = NETE_READ;
                 oe->udata = s->udata;
+                oe->type = NETE_READ;
             }
             break;
         }

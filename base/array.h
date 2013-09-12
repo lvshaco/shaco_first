@@ -10,28 +10,45 @@ struct array {
     void** elems;
 };
 
-static struct array* 
-array_new(size_t max) {
-    struct array* a = malloc(sizeof(struct array));
+static void
+array_init(struct array* self, size_t max) {
     size_t cap = 1;
     while (cap < max) {
         cap *= 2;
     }
-    a->cap = cap;
-    a->size = 0;
-    a->elems = malloc(sizeof(void*) * cap);
-    memset(a->elems, 0, sizeof(void*) * cap);
-    return a;
+    self->cap = cap;
+    self->size = 0;
+    self->elems = malloc(sizeof(void*) * cap);
+    memset(self->elems, 0, sizeof(void*) * cap);
 }
 
-static void 
+static void
+array_fini(struct array* self) {
+    free(self->elems);
+    self->elems = NULL;
+}
+
+
+struct array* 
+array_new(size_t max) {
+    struct array* self = malloc(sizeof(*self));
+    array_init(self, max);
+    return self;
+}
+
+void 
 array_free(struct array* self) {
     if (self) {
-        free(self->elems);
+        array_fini(self);
         free(self);
     }
 }
-
+/*
+static void
+array_reset(struct array* self) {
+    self->size = 0;
+}
+*/
 static inline void
 _grow(struct array* self, size_t cap) {
     size_t old_cap = self->cap;

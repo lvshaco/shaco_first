@@ -6,6 +6,7 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.h *.c" {
  host=host{
   dlmodule.h
   host.h
+  host_group.h
   host_log.h
   host_message.h
   host_net.h
@@ -14,6 +15,7 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.h *.c" {
   host_timer.h
   dlmodule.c
   host.c
+  host_group.c
   host_log.c
   host_main.c
   host_net.c
@@ -28,6 +30,10 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.h *.c" {
  base=base{
   array.h
   hashid.h
+  freelist.h
+  stringtable.h
+  stringsplice.h
+  util.h
  }
  net=net{
   Makefile
@@ -41,12 +47,17 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.h *.c" {
   server.c
  }
  service=service{
+  service_a.c
+  service_center.c
+  service_centercli.c
   service_client.c
   service_gate.c
   service_log.c
+  service_remote.c
  }
  message=message{
   user_message.h
+  str_message.h
  }
  tool=tool{
  }

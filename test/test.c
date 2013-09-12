@@ -24,16 +24,20 @@ host_log(int level, const char* fmt, ...) {
 }
 */
 
+struct Test {
+    struct {
+        int i;
+    }v [3];
+};
+
 void
 test_lur() {
+    struct Test t;
+    t.v[1].i = 1;
     struct lur* L = lur_create();
-    const char* r = lur_dofile(L, "config.lua");
+    const char* r = lur_dofile(L, "config.lua", "shaco");
     if (!LUR_OK(r)) {
         printf("%s", r);
-        return;
-    }
-    if (lur_root(L, "shaco")) {
-        printf("not shaco node\n");
         return;
     }
     printf("%f\n", lur_getfloat(L, "f", 0));

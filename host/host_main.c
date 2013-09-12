@@ -9,6 +9,7 @@ main(int argc, char* argv[]) {
     } else {
         file = argv[1];
     }
+ 
     if (host_create(file) == 0) {
         host_start();
         host_free();

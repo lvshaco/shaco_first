@@ -7,6 +7,11 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <stdio.h>
+#include <sys/time.h>
+#include <sys/resource.h>
+#include <errno.h>
+#include <string.h>
+#include <signal.h>
 
 struct host {
     const char* file;
@@ -26,12 +31,65 @@ host_getstr(const char* key, const char* def) {
     return lur_getstr(H->cfg, key, def);
 }
 
+static void 
+_sigtermhandler(int sig) {
+    host_warning("Received SIGTERM, schedule stop ...");
+    host_stop();
+} 
+
+
+static void
+_install_sighandler() {
+    struct sigaction act;
+    sigemptyset(&act.sa_mask);
+    act.sa_flags = 0;
+    act.sa_handler = _sigtermhandler;
+    sigaction(SIGINT, &act, NULL);
+    sigaction(SIGTERM, &act, NULL);
+}
+
+static int
+_checksys() {
+    struct rlimit l;
+    if (getrlimit(RLIMIT_CORE, &l) == -1) {
+        host_error("get rlimit core fail: %s", strerror(errno));
+        return 1;
+    }
+    if (l.rlim_cur != RLIM_INFINITY) {
+        l.rlim_cur = l.rlim_max = RLIM_INFINITY;
+        if (setrlimit(RLIMIT_CORE, &l) == -1) {
+            host_error("set rlimit fail: %s", strerror(errno));
+            return 1;
+        }
+    }
+
+    int max = host_getint("host_connmax", 0);
+    if (getrlimit(RLIMIT_NOFILE, &l) == -1) {
+        host_error("get rlimit nofile fail: %s", strerror(errno));
+        return 1;
+    }
+    if (l.rlim_cur < max) {
+        l.rlim_cur = max;
+        if (l.rlim_max < l.rlim_cur) {
+            l.rlim_max = l.rlim_cur;
+        }
+        if (setrlimit(RLIMIT_NOFILE, &l) == -1) {
+            host_error("set rlimit nofile fail: %s", strerror(errno));
+            return 1;
+        }
+    }
+    return 0;
+}
+
 int 
 host_create(const char* file) {
+    host_timer_init();
+    _install_sighandler();
+
     struct lur* L = lur_create(); 
     const char* err = lur_dofile(L, file, "shaco");
     if (!LUR_OK(err)) {
-        printf("%s\n", err);
+        host_error("%s\n", err);
         lur_free(L);
         return 1;
     }
@@ -39,24 +97,29 @@ host_create(const char* file) {
     H->loop = true;
     H->file = file;
     H->cfg = L; 
+    const char* level = host_getstr("host_loglevel", "");
+    host_log_setlevelstr(level);
     
-    if (service_init()) {
-        goto err;
-    }
-    if (service_load("log")) {
-        printf("load log service fail\n");
-        goto err;
-    }
-    if (host_timer_init()) {
-        goto err;
-    }
-    int max = lur_getint(L, "connection_max", 0);
+    int max = lur_getint(L, "host_connmax", 0);
     if (host_net_init(max)) {
         goto err;
     }
-    const char* service = lur_getstr(L, "service", "");
+    if (service_init()) {
+        goto err;
+    }
+
+    // log is no necessary
+    /*if (service_load("log")) {
+        host_error("load log service fail\n");
+        goto err;
+    }*/
+    
+    const char* service = lur_getstr(L, "host_service", "");
     if (service[0] &&
         service_load(service)) {
+        goto err;
+    }
+    if (_checksys()) {
         goto err;
     }
     return 0;
@@ -69,6 +132,7 @@ void
 host_free() {
     if (H == NULL)
         return;
+ 
     host_net_fini();
     host_timer_fini();
     service_fini();
@@ -79,11 +143,13 @@ host_free() {
 
 void 
 host_start() {
+    host_info("Shaco start.");
     while (H->loop) {
         int timeout = host_timer_max_timeout();
         host_net_poll(timeout);
         host_timer_dispatch_timeout();
     }
+    host_info("Shaco stop.");
 }
 
 void 

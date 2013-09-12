@@ -5,6 +5,7 @@
 #include "hashid.h"
 #include "user_message.h"
 #include <stdlib.h>
+#include <stdio.h>
 
 struct _client {
     int id;
@@ -37,9 +38,9 @@ int
 gate_init(struct service* s) {
     struct _gate* self = SERVICE_SELF;
     
-    int max = host_getint("gate_client_max", 0);
-    int port = host_getint("gate_port", 0);
-    const char* ip = host_getstr("gate_ip", "");
+    int max = host_getint("gate_client_max", 0) + 1;
+    int port = host_getint("host_port", 0);
+    const char* ip = host_getstr("host_ip", "");
     
     int hashcap = 1;
     while (hashcap < max)
@@ -57,8 +58,9 @@ gate_init(struct service* s) {
     return 0;
 }
 
-static struct _client*
+struct _client*
 _create_client(struct _gate* self, struct net_message* nm) {
+    /*
     if (hashid_full(&self->hash)) {
         host_net_close_socket(nm->connid);
         host_debug("client is full"); 
@@ -68,24 +70,27 @@ _create_client(struct _gate* self, struct net_message* nm) {
     if (hash < 0) {
         return NULL; // error
     }
-
-    struct _client* c = &self->clients[hash];
+*/
+    //struct _client* c = &self->clients[hash];
+    //host_error("%d ",nm->connid);
+    struct _client* c = &self->clients[nm->connid];
     c->id = nm->connid;
     c->connid = nm->connid;
-    host_net_subscribe(nm->connid, true, true);
-    host_info("new client: %d", nm->connid);
+    host_net_subscribe(nm->connid, true, false);
     return c;
 }
 
 static void
 _free_client(struct _gate* self, struct _client* c) {
-    hashid_remove(&self->hash, c->connid);
+    //hashid_remove(&self->hash, c->connid);
+    c->connid = -1;
 }
 
 static inline struct _client*
 _find_client(struct _gate* self, int id) {
-    int hash = hashid_find(&self->hash, id);
-    return &self->clients[hash];
+    //int hash = hashid_find(&self->hash, id);
+    //return &self->clients[hash];
+    return &self->clients[id];
 }
 
 void
@@ -120,14 +125,9 @@ gate_net(struct service* s, struct net_message* nm) {
     case NETE_ACCEPT:
         _create_client(self, nm);
         break;
-    case NETE_CONNECT:
-        _create_client(self, nm);
+    case NETE_SOCKERR:
+        host_error("error: %s", host_net_error());
         break;
-    case NETE_CONNECTERR: {
-        const char* error = host_net_error();
-        host_debug("connect failed: %s", error);
-        break;
-        }
     }
 }
 

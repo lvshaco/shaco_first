@@ -19,9 +19,17 @@ struct test_message {
     user_message_header;
     uint8_t data[64];
 };
+
+#define UM_DEF(um, n) \
+    char um##data[n]; \
+    struct user_message* um = (void*)um##data; \
+    (um)->sz = sizeof(um##data) - sizeof(*(um));
+
+#define UM_SIZE(um) sizeof(*(um)) + (um)->sz
+
 #pragma pack()
 
-static struct user_message*
+struct user_message*
 user_message_read(int id, const char** error) {
     struct user_message* h = host_net_read(id, sizeof(*h));
     if (h == NULL) {

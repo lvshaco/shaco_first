@@ -1,6 +1,6 @@
 .PHONY: all t clean cleanall
 
-CFLAGS=-g -Wall -Werror
+CFLAGS=-g -O2 -Wall -Werror
 SHARED=-fPIC -shared
 
 service_dir=service
@@ -41,18 +41,23 @@ LDFLAGS=net.so lur.so -llua -lm -ldl -lrt -rdynamic -Wl,-E
 all: lur.so net.so shaco $(service_so)
 
 $(service_so): %.so: $(service_dir)/%.c
+	@rm -f $@
 	gcc $(CFLAGS) $(SHARED) -o $@ $< -Ihost -Inet -Ibase -Imessage
 
 lur.so: $(lur_src)
+	@rm -f $@
 	gcc $(CFLAGS) $(SHARED) -o $@ $^ -llua
 
 net.so: $(net_src)
+	@rm -f $@
 	gcc $(CFLAGS) $(SHARED) -o $@ $^
 
 shaco: $(host_src)
+	@rm -f $@
 	gcc $(CFLAGS) $(LDFLAGS) -o $@ $^ -Ihost -Ilur -Inet -Ibase 
 
 t: test/test.c net.so lur.so
+	@rm -f $@
 	gcc $(CFLAGS) $(LDFLAGS) -o $@ $^ -Ihost -Ilur -Inet -Ibase 
 
 clean:

@@ -1,9 +1,11 @@
 shaco = {
-log_level="DEBUG",
-connection_max=11000,
-service="gate",
+host_loglevel="DEBUG",
+host_connmax=11000,
+host_service="gate",
+host_name = "gate",
+host_ip="127.0.0.1",
+host_port=8000,
+host_connect="",
 
-gate_ip="127.0.0.1",
-gate_port=8000,
 gate_client_max=10000,
 }

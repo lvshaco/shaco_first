@@ -46,17 +46,18 @@ _open(struct dlmodule* dl) {
 
 static void
 _dlclose(struct dlmodule* dl) {
-    if (dl->handle) {
-        dlclose(dl->handle);
-        dl->handle = NULL;
-        dl->create = NULL;
-        dl->free = NULL;
-        dl->init = NULL;
-        dl->reload = NULL;
-        dl->service = NULL;
-        dl->time = NULL;
-        dl->net = NULL;
-    }
+    if (dl->handle == NULL)
+        return;
+
+    dlclose(dl->handle);
+    dl->handle = NULL;
+    dl->create = NULL;
+    dl->free = NULL;
+    dl->init = NULL;
+    dl->reload = NULL;
+    dl->service = NULL;
+    dl->time = NULL;
+    dl->net = NULL;
 }
 
 int
