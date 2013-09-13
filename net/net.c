@@ -39,6 +39,8 @@ struct socket {
     int status;
     int events;
     int udata;
+    uint32_t addr;
+    uint16_t port;
     struct netbuf_block* rb;
     struct sbuffer* head;
     struct sbuffer* tail; 
@@ -50,7 +52,7 @@ struct net {
     int max;
     int nevent;
     struct epoll_event* ee;
-    struct net_event* ne;  
+    struct net_message* ne;  
     struct socket* sockets;
     struct socket* free_socket;
 
@@ -126,6 +128,8 @@ _alloc_sockets(int max) {
         s[i].status = STATUS_INVALID;
         s[i].events = 0;
         s[i].udata = -1;
+        s[i].addr = 0;
+        s[i].port = 0;
         s[i].rb = NULL;
         s[i].head = NULL;
         s[i].tail = NULL;
@@ -135,7 +139,7 @@ _alloc_sockets(int max) {
 }
 
 static struct socket*
-_create_socket(struct net* self, int fd, int udata) {
+_create_socket(struct net* self, int fd, uint32_t addr, uint16_t port, int udata) {
     if (self->free_socket == NULL)
         return NULL;
 
@@ -148,6 +152,8 @@ _create_socket(struct net* self, int fd, int udata) {
     s->fd = fd;
     s->status = STATUS_SUSPEND;
     s->udata = udata;
+    s->addr = addr;
+    s->port = port;
     s->rb = netbuf_alloc_block(self->rpool, s-self->sockets);
     return s;
 }
@@ -163,7 +169,8 @@ _close_socket(struct net* self, struct socket* s) {
     s->status = STATUS_INVALID;
     s->events = 0;
     s->udata = -1;
-
+    s->addr = 0;
+    s->port = 0;
     netbuf_free_block(self->rpool, s->rb);
     s->rb = NULL;
    
@@ -243,7 +250,7 @@ net_create(int max, int block_size) {
     self->max = max;
     self->nevent = 0;
     self->ee = malloc(max * sizeof(struct epoll_event));
-    self->ne = malloc(max * sizeof(struct net_event));
+    self->ne = malloc(max * sizeof(struct net_message));
     self->sockets = _alloc_sockets(max);
     self->free_socket = &self->sockets[0];
     self->rpool = netbuf_create(max, block_size);
@@ -409,7 +416,7 @@ net_send(struct net* self, int id, void* data, int sz) {
         return -1;
     }
 
-    struct net_event* e = &self->ne[0];
+    struct net_message* e = &self->ne[0];
 
     int n = write(s->fd, data, sz);
     if (n >= sz) {
@@ -466,7 +473,9 @@ _accept(struct net* self, struct socket* listens) {
     if (fd == -1) {
         return NULL;
     }
-    struct socket* s = _create_socket(self, fd, listens->udata);
+    uint32_t addr = remote_addr.sin_addr.s_addr;
+    uint16_t port = ntohs(remote_addr.sin_port);
+    struct socket* s = _create_socket(self, fd, addr, port, listens->udata);
     if (s == NULL) {
         close(fd);
         return NULL;
@@ -514,7 +523,7 @@ net_listen(struct net* self, uint32_t addr, uint16_t port, int udata) {
         return -1;
     }
 
-    struct socket* s = _create_socket(self, fd, udata);
+    struct socket* s = _create_socket(self, fd, addr, port, udata);
     if (s == NULL) {
         self->error = NET_ERR_CREATESOCK;
         close(fd);
@@ -589,7 +598,7 @@ net_connect(struct net* self, uint32_t addr, uint16_t port, bool block, int udat
             return -1;
         }
 
-    struct socket* s = _create_socket(self, fd, udata);
+    struct socket* s = _create_socket(self, fd, addr, port, udata);
     if (s == NULL) {
         self->error = NET_ERR_CREATESOCK;
         close(fd);
@@ -598,7 +607,7 @@ net_connect(struct net* self, uint32_t addr, uint16_t port, bool block, int udat
    
     s->status = status;
     if (s->status == STATUS_CONNECTED) {
-        struct net_event* e = &self->ne[0];
+        struct net_message* e = &self->ne[0];
         e->fd = fd;
         e->connid = s - self->sockets;
         e->type = NETE_CONNECT;
@@ -623,7 +632,7 @@ net_poll(struct net* self, int timeout) {
         struct epoll_event* e = &self->ee[i];
         struct socket* s = e->data.ptr;
        
-        struct net_event* oe = &self->ne[i];
+        struct net_message* oe = &self->ne[i];
         oe->type = NETE_INVALID;
 
         switch (s->status) {
@@ -683,7 +692,18 @@ net_poll(struct net* self, int timeout) {
 }
 
 int
-net_getevents(struct net* self, struct net_event** e) {
+net_getevents(struct net* self, struct net_message** e) {
     *e = self->ne;
     return self->nevent;
+}
+
+int 
+net_socket_address(struct net* self, int id, uint32_t* addr, uint16_t* port) {
+    struct socket* s = _get_socket(self, id);
+    if (s) {
+        *addr = s->addr;
+        *port = s->port;
+        return 0;
+    }
+    return 1;
 }

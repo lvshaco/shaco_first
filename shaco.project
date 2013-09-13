@@ -6,19 +6,23 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.h *.c" {
  host=host{
   dlmodule.h
   host.h
+  host_dispatcher.h
   host_group.h
   host_log.h
   host_message.h
   host_net.h
+  host_node.h
   host_remote.h
   host_service.h
   host_timer.h
   dlmodule.c
   host.c
+  host_dispatcher.c
   host_group.c
   host_log.c
   host_main.c
   host_net.c
+  host_node.c
   host_remote.c
   host_service.c
   host_timer.c
@@ -37,9 +41,8 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.h *.c" {
  }
  net=net{
   Makefile
-  README.md
   net.h
-  net_event.h
+  net_message.h
   netbuf.h
   client.c
   net.c
@@ -47,19 +50,20 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.h *.c" {
   server.c
  }
  service=service{
+  node_type.h
   service_a.c
   service_center.c
-  service_centercli.c
   service_client.c
+  service_dispatcher.c
   service_gate.c
   service_log.c
-  service_remote.c
+  serviec_node.c
  }
  message=message{
   user_message.h
-  str_message.h
  }
  tool=tool{
+  service_tmp.c
  }
  test=test{
   test.c

@@ -33,7 +33,7 @@ stringsplice_create(struct stringsplice* splice, const char* str, char c) {
 }
 
 static const char*
-_newstring(const char* str, size_t l) {
+string_new(const char* str, size_t l) {
     char* news = malloc(l+1);
     memcpy(news, str, l);
     news[l] = '\0';
@@ -50,7 +50,7 @@ string2array(const char* str, char c, struct array* arr) {
     const char* news = NULL;
     int i;
     for (i=0; i<splice->n; ++i) {
-        news = _newstring(splice.p[i].p, splice.p[i].len);
+        news = string_new(splice.p[i].p, splice.p[i].len);
         array_push(arr, news);
     }
     return splice->n; 

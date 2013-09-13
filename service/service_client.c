@@ -2,6 +2,7 @@
 #include "host_net.h"
 #include "host_log.h"
 #include "host_timer.h"
+#include "host_dispatcher.h"
 #include "host.h"
 #include "hashid.h"
 #include "user_message.h"
@@ -85,6 +86,7 @@ client_init(struct service* s) {
     if (count == 0) {
         return 1;
     }
+    host_dispatcher_subscribe(s->serviceid, 100);
     return 0;
 }
 
@@ -128,18 +130,29 @@ _find_client(struct _clients* self, int id) {
 
 static void
 _send_one(struct _clients* self, int id) {
-    UM_DEF(um, 10);
-    //struct test_message tm;
-    //tm.sz = sizeof(tm) - sizeof(struct user_message);
+    const int sz = 10;
+    UM_DEF(um, sz);
+    um->msgid = 100;
     //memcpy(tm.data, "ping pong!", sizeof(tm.data));
     host_net_subscribe(id, false, true);
-    host_net_send(id, um, UM_SIZE(um));
+    UM_SEND(id, um, sz);
     
     self->query_send++;
 }
 
 void
-_handle_message(struct _client* c, struct user_message* um) {
+_handle_message(struct _clients* self, struct _client* c, struct user_message* um) {
+    self->query_done++;
+    //assert(self->query_done == self->query_send);
+    //host_info("query done one: %d", self->query_done);
+    if (self->query_done == self->query) {
+        self->end = host_timer_now();
+        uint64_t elapsed = self->end - self->start;
+        float qps = self->query_done/(elapsed*0.001f);
+        host_info("query done : %d, use time: %d, qps: %f", 
+        self->query_done, elapsed, qps);
+    }
+    _send_one(self, c->connid);
 }
 
 void
@@ -147,24 +160,11 @@ _read(struct _clients* self, int id) {
     struct _client* c = _find_client(self, id);
 
     const char* error;
-    struct user_message* um = user_message_read(id, &error);
+    struct user_message* um = UM_READ(id, &error);
     while (um) { 
-        _handle_message(c, um);
+        _handle_message(self, c, um);
         host_net_dropread(id);
-
-        self->query_done++;
-        //assert(self->query_done == self->query_send);
-        //host_info("query done one: %d", self->query_done);
-        if (self->query_done == self->query) {
-            self->end = host_timer_now();
-            uint64_t elapsed = self->end - self->start;
-            float qps = self->query_done/(elapsed*0.001f);
-            host_info("query done : %d, use time: %d, qps: %f", 
-            self->query_done, elapsed, qps);
-        }
-
-        _send_one(self, id);
-        um = user_message_read(id, &error);
+        um = UM_READ(id, &error);
     }
     if (!NET_OK(error)) {
         _free_client(self, c);
@@ -178,11 +178,18 @@ _write_done(struct _clients* self, int id) {
 }
 
 void
+client_usermsg(struct service* s, int id, void* msg, int sz) {
+    struct _clients* self = SERVICE_SELF;
+    struct _client* c = _find_client(self, id);
+    _handle_message(self, c, msg);
+}
+
+void
 client_net(struct service* s, struct net_message* nm) {
     struct _clients* self = SERVICE_SELF;
     switch (nm->type) {
     case NETE_READ:
-        _read(self, nm->connid);
+        //_read(self, nm->connid);
         break;
     case NETE_WRITEDONE:
         _write_done(self, nm->connid);

@@ -1,6 +1,7 @@
 #include "host_net.h"
 #include "host_log.h"
 #include "host_service.h"
+#include "host_dispatcher.h"
 #include "net.h"
 #include <stdlib.h>
 #include <arpa/inet.h>
@@ -11,8 +12,8 @@ static struct net* N = NULL;
 
 static void
 _dispatch_events() {
-    struct net_event* all = NULL;
-    struct net_event* e = NULL;
+    struct net_message* all = NULL;
+    struct net_message* e = NULL;
     int i;
     int n = net_getevents(N, &all);
     for (i=0; i<n; ++i) {
@@ -25,7 +26,14 @@ _dispatch_events() {
             service_notify_net_message(serviceid, e);
             e->type = NETE_READ;
         }
-        service_notify_net_message(serviceid, e);
+        if (e->type == NETE_READ) {
+            if (host_dispatcher_publish(e)) {
+                host_error("no dispatcher");
+                service_notify_net_message(serviceid, e);
+            }
+        } else {
+            service_notify_net_message(serviceid, e);
+        }
     }
 }
 
@@ -81,9 +89,24 @@ host_net_send(int id, void* data, int sz) {
     }
     return r;
 }
-void* host_net_read(int id, int sz) { return net_read(N, id, sz); }
-void host_net_dropread(int id) { net_dropread(N, id); }
-void host_net_close_socket(int id) { net_close_socket(N, id); }
-const char* host_net_error() { return net_error(N); }
-int host_net_max_socket() { return net_max_socket(N); }
-int host_net_subscribe(int id, bool read, bool write) { return net_subscribe(N, id, read, write); }
+void* host_net_read(int id, int sz) { 
+    return net_read(N, id, sz); 
+}
+void host_net_dropread(int id) { 
+    net_dropread(N, id); 
+}
+void host_net_close_socket(int id) { 
+    net_close_socket(N, id); 
+}
+const char* host_net_error() { 
+    return net_error(N); 
+}
+int host_net_max_socket() { 
+    return net_max_socket(N); 
+}
+int host_net_subscribe(int id, bool read, bool write) { 
+    return net_subscribe(N, id, read, write); 
+}
+int host_net_socket_address(int id, uint32_t* addr, uint16_t* port) { 
+    return net_socket_address(N, id, addr, port); 
+}

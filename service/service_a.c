@@ -43,18 +43,18 @@ a_init(struct service* s) {
 
 void
 _handle_message(struct _a* self, struct user_message* um) {
-    host_net_send(self->connid, um, sizeof(*um) + um->sz);
+    UM_SEND(self->connid, um, um->msgsz);
 }
 
 void
 _read(struct _a* self, int id) {
     const char* error;
-    struct user_message* um = user_message_read(id, &error);
+    struct user_message* um = UM_READ(id, &error);
     while (um) {
         _handle_message(self, um);
         host_net_dropread(id);
         //host_info("read one");
-        um = user_message_read(id, &error);
+        um = UM_READ(id, &error);
     }
     if (!NET_OK(error)) {
         host_error("remote disconnect");

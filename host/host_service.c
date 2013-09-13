@@ -57,7 +57,7 @@ _create(const char* name) {
 }
 
 int
-service_init(const char* config) {
+service_init() {
     S = malloc(sizeof(*S));
     S->sers = array_new(INIT_COUNT);
     return 0;
@@ -142,9 +142,20 @@ service_query_id(const char* name) {
     return s ? s->serviceid : -1;
 }
 
+const char* 
+service_query_name(int serviceid) {
+    if (serviceid >=0 && serviceid < array_size(S->sers)) {
+        struct service* s = array_get(S->sers, serviceid);
+        if (s) {
+            return s->dl.name;
+        }
+    }
+    return "";
+}
+
 int 
-service_notify_service_message(int destination, struct service_message* sm) {
-    struct service* s = array_get(S->sers, destination);
+service_notify_service_message(int serviceid, struct service_message* sm) {
+    struct service* s = array_get(S->sers, serviceid);
     if (s && s->dl.service) {
         s->dl.service(s, sm);
         return 0;
@@ -153,8 +164,8 @@ service_notify_service_message(int destination, struct service_message* sm) {
 }
 
 int 
-service_notify_net_message(int destination, struct net_message* nm) {
-    struct service* s = array_get(S->sers, destination);
+service_notify_net_message(int serviceid, struct net_message* nm) {
+    struct service* s = array_get(S->sers, serviceid);
     if (s && s->dl.net) {
         s->dl.net(s, nm);
         return 0;
@@ -163,10 +174,20 @@ service_notify_net_message(int destination, struct net_message* nm) {
 }
 
 int 
-service_notify_time_message(int destination) {
-    struct service* s = array_get(S->sers, destination);
+service_notify_time_message(int serviceid) {
+    struct service* s = array_get(S->sers, serviceid);
     if (s && s->dl.time) {
         s->dl.time(s);
+        return 0;
+    }
+    return 1;
+}
+
+int 
+service_notify_user_message(int serviceid, int id, void* msg, int sz) {
+    struct service* s = array_get(S->sers, serviceid);
+    if (s && s->dl.usermsg) {
+        s->dl.usermsg(s, id, msg, sz);
         return 0;
     }
     return 1;

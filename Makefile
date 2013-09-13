@@ -14,7 +14,7 @@ lur_src=\
 net_src=\
 	net/net.c \
 	net/net.h \
-	net/net_event.h \
+	net/net_message.h \
 	net/netbuf.c \
 	net/netbuf.h
 
@@ -30,6 +30,10 @@ host_src=\
  	host/host_timer.h \
  	host/host_log.c \
  	host/host_log.h \
+	host/host_dispatcher.c \
+	host/host_dispatcher.h \
+	host/host_node.c \
+	host/host_node.h \
  	host/dlmodule.c \
  	host/dlmodule.h
 		

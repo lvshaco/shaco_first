@@ -1,6 +1,7 @@
 #include "host_service.h"
 #include "host_net.h"
 #include "host_log.h"
+#include "host_dispatcher.h"
 #include "host.h"
 #include "hashid.h"
 #include "user_message.h"
@@ -54,6 +55,7 @@ gate_init(struct service* s) {
         host_error("listen fail: %s", host_net_error());
         return 1;
     }
+    host_dispatcher_subscribe(s->serviceid, 100);
     host_info("listen on %s:%d max_client=%d", ip, port, max);
     return 0;
 }
@@ -95,24 +97,31 @@ _find_client(struct _gate* self, int id) {
 
 void
 _handle_message(struct _client* c, struct user_message* um) {
-    host_net_send(c->connid, um, sizeof(*um) + um->sz);
+    UM_SEND(c->connid, um, um->msgsz);
 }
-
+/*
 void
 _read(struct _gate* self, int id) {
     struct _client* c = _find_client(self, id);
 
     const char* error;
-    struct user_message* um = user_message_read(id, &error);
+    struct user_message* um = UM_READ(id, &error);
     while (um) {
         _handle_message(c, um);
         host_net_dropread(id);
         //host_info("read one");
-        um = user_message_read(id, &error);
+        um = UM_READ(id, &error);
     }
     if (!NET_OK(error)) {
         _free_client(self, c);
     }
+}
+*/
+void
+gate_usermsg(struct service* s, int id, void* msg, int sz) {
+    struct _gate* self = SERVICE_SELF;
+    struct _client* c = _find_client(self, id);
+    _handle_message(c, msg);
 }
 
 void
@@ -120,14 +129,17 @@ gate_net(struct service* s, struct net_message* nm) {
     struct _gate* self = SERVICE_SELF;
     switch (nm->type) {
     case NETE_READ:
-        _read(self, nm->connid);
+        //_read(self, nm->connid);
         break;
     case NETE_ACCEPT:
         _create_client(self, nm);
         break;
-    case NETE_SOCKERR:
+    case NETE_SOCKERR: {
         host_error("error: %s", host_net_error());
+        struct _client* c = _find_client(self, nm->connid);
+        _free_client(self, c);
         break;
+        }
     }
 }
 

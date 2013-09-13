@@ -27,8 +27,11 @@ void service_fini();
 int service_load(const char* name);
 int service_reload(const char* name);
 int service_query_id(const char* name);
-int service_notify_service_message(int destination, struct service_message* sm);
-int service_notify_net_message(int destination, struct net_message* nm);
-int service_notify_time_message(int destination);
+const char* service_query_name(int serviceid);
+
+int service_notify_service_message(int serviceid, struct service_message* sm);
+int service_notify_net_message(int serviceid, struct net_message* nm);
+int service_notify_time_message(int serviceid);
+int service_notify_user_message(int serviceid, int id, void* msg, int sz);
 
 #endif

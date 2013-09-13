@@ -16,6 +16,7 @@ struct dlmodule {
     void  (*service)(struct service* s, struct service_message* sm);
     void  (*time)(struct service* s);
     void  (*net)(struct service* s, struct net_message* nm);
+    void  (*usermsg)(struct service* s, int id, void* msg, int sz);
 };
 
 int dlmodule_load(struct dlmodule* dl, const char* name);

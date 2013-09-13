@@ -4,9 +4,9 @@
 #include "host.h"
 #include "stringtable.h"
 #include "array.h"
-/*
-#define NODE_MAX 256
 
+#define NODE_MAX 1024
+/*
 struct _node {
     bool used;
     int connection;
@@ -149,10 +149,10 @@ _find_node_byname(struct _center* self, const char* name) {
 static void
 _notify_connect(struct _node* me, struct _node* tar) {
     UM_DEF(um, 128);
-    um->sz = snprintf(um->data, sizeof(um->data), "CON name=%s ip=%u port=%u",
+    int n = snprintf(um->data, sizeof(um->data), "CON name=%s ip=%u port=%u",
             tar->name, tar->ip, tar->port);
-    um->sz += 1;
-    host_net_send(me->connection, um, UM_SIZE(um));
+    n++;
+    UM_SEND(me->connection, um, UM_HSIZE + n);
 }
 
 static bool
@@ -219,11 +219,11 @@ _read(struct _center* self, int id) {
         return;
     }
     const char* error;
-    struct user_message* um = user_message_read(id, &error);
+    struct user_message* um = UM_READ(id, &error);
     while (um) {
         _handle_message(self, n, um);
         host_net_dropread(id);
-        um = user_message_read(id, &error);
+        um = UM_READ(id, &error);
     }
     if (!NET_OK(error)) {
         _free_node(self, n);

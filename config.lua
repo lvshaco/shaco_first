@@ -1,5 +1,5 @@
 shaco = {
-host_loglevel="DEBUG",
+host_loglevel="INFO",
 host_connmax=11000,
 host_service="gate",
 host_name = "gate",

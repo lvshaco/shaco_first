@@ -5,8 +5,6 @@
 #include <stdbool.h>
 #include "net.h"
 
-#define net_message net_event
-
 int host_net_init(int max);
 void host_net_fini();
 int host_net_listen(const char* addr, uint16_t port, int serviceid);
@@ -19,5 +17,6 @@ void host_net_close_socket(int id);
 int host_net_max_socket();
 const char* host_net_error();
 int host_net_subscribe(int id, bool read, bool write);
+int host_net_socket_address(int id, uint32_t* addr, uint16_t* port);
 
 #endif

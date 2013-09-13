@@ -7,6 +7,9 @@
 #define LOG_ERROR   3
 #define LOG_MAX     4
 
+int host_log_init();
+void host_log_fini();
+
 const char* host_log_levelstr(int level);
 int  host_log_levelid(const char* level);
 void host_log_setlevel(int level);

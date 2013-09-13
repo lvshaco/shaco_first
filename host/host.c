@@ -4,6 +4,8 @@
 #include "host_timer.h"
 #include "host_net.h"
 #include "host_service.h"
+#include "host_dispatcher.h"
+#include "host_node.h"
 #include <stdlib.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -83,9 +85,10 @@ _checksys() {
 
 int 
 host_create(const char* file) {
-    host_timer_init();
     _install_sighandler();
-
+    host_timer_init();
+    service_init(); 
+    
     struct lur* L = lur_create(); 
     const char* err = lur_dofile(L, file, "shaco");
     if (!LUR_OK(err)) {
@@ -98,23 +101,20 @@ host_create(const char* file) {
     H->file = file;
     H->cfg = L; 
     const char* level = host_getstr("host_loglevel", "");
-    host_log_setlevelstr(level);
-    
+    if (host_log_init(level)) {
+        goto err;
+    }
+    if (host_dispatcher_init()) {
+        goto err;
+    }
+    if (host_node_init()) {
+        goto err;
+    } 
     int max = lur_getint(L, "host_connmax", 0);
     if (host_net_init(max)) {
         goto err;
-    }
-    if (service_init()) {
-        goto err;
-    }
-
-    // log is no necessary
-    /*if (service_load("log")) {
-        host_error("load log service fail\n");
-        goto err;
-    }*/
-    
-    const char* service = lur_getstr(L, "host_service", "");
+    } 
+    const char* service = host_getstr("host_service", "");
     if (service[0] &&
         service_load(service)) {
         goto err;
@@ -132,9 +132,12 @@ void
 host_free() {
     if (H == NULL)
         return;
- 
+
+    host_dispatcher_fini();
+    host_node_free();
     host_net_fini();
     host_timer_fini();
+    host_log_fini();
     service_fini();
     lur_free(H->cfg);
     free(H);

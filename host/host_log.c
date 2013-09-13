@@ -7,6 +7,7 @@
 #include <time.h>
 
 static int _LEVEL = LOG_ERROR;
+static int _LOG_SERVICE = -1;
 
 static const char* STR_LEVELS[LOG_MAX] = {
     "DEBUG", "INFO", "WARNING", "ERROR",
@@ -44,6 +45,23 @@ host_log_setlevelstr(const char* level) {
     _LEVEL = host_log_levelid(level);
 }
 
+int 
+host_log_init(const char* level) {
+    if (service_load("log")) {
+        _LOG_SERVICE = -1;
+        host_warning("load log service fail");
+    } else {
+        _LOG_SERVICE = service_query_id("log");
+    }
+    host_log_setlevelstr(level);
+    return 0;
+}
+
+void 
+host_log_fini() {
+    _LOG_SERVICE = -1;
+}
+
 static inline void
 _default_log(int level, const char* log) {
     char buf[64];
@@ -70,23 +88,19 @@ _default_log(int level, const char* log) {
 
 static void
 _send_to_service(int level, char* log, int sz) {
-    static int logger_service = -1;
     if (log[0] == '\0') {
         return;
     }
-    if (logger_service < 0) {
-        logger_service = service_query_id("log");
-        if (logger_service < 0) {
-            _default_log(level, log);
-            return;
-        }
+    if (_LOG_SERVICE < 0) {
+        _default_log(level, log);
+        return;
     }
     struct service_message sm;
     sm.sessionid = level; // reuse for level
     sm.source = SERVICE_HOST;
     sm.sz = sz;
     sm.msg = log;
-    service_notify_service_message(logger_service, &sm);
+    service_notify_service_message(_LOG_SERVICE, &sm);
 }
 
 void 

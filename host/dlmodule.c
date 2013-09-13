@@ -35,6 +35,8 @@ _open(struct dlmodule* dl) {
     dl->time = dlsym(handle, tmp);
     strcpy(tmp+len, "_net");
     dl->net = dlsym(handle, tmp);
+    strcpy(tmp+len, "_usermsg");
+    dl->usermsg = dlsym(handle, tmp);
 
     dl->handle = handle;
     if (dl->create &&
@@ -58,6 +60,7 @@ _dlclose(struct dlmodule* dl) {
     dl->service = NULL;
     dl->time = NULL;
     dl->net = NULL;
+    dl->usermsg = NULL;
 }
 
 int
