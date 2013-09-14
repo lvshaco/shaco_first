@@ -1,7 +1,6 @@
 #ifndef __util_h__
 #define __util_h__
 
-struct 
 static size_t 
 string_split(struct stringtable* st, const char* str, struct array* a, char c) {
     const char* p = str;

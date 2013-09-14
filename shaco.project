@@ -58,6 +58,7 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.h *.c" {
   service_gate.c
   service_log.c
   serviec_node.c
+  service_centercli.c
  }
  message=message{
   user_message.h

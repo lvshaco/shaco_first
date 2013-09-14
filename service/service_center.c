@@ -1,245 +1,147 @@
 #include "host_service.h"
-#include "host_net.h"
+#include "host_node.h"
 #include "host_log.h"
-#include "host.h"
-#include "stringtable.h"
-#include "array.h"
+#include "host_dispatcher.h"
+#include "node_type.h"
+#include "user_message.h"
+#include <stdlib.h>
+#include <assert.h>
+#include <string.h>
 
-#define NODE_MAX 1024
-/*
-struct _node {
-    bool used;
-    int connection;
-    const char* name;
-    uint32_t ip;
-    uint16_t port;
-    struct array subscribes;
+struct _array {
+    int cap;
+    int size;
+    uint16_t* p;
 };
 
 struct _center {
-    struct stringtable* names;
-    struct _node* nodes;
-    int nnode;
+    struct _array subs[NODE_TYPE_MAX];
 };
 
 static void
-_node_fini(struct _node* n) {
-    if (!n->used)
-        return;
-    array_fini(n->subscribes);
-    n->used = false;
+_add_subscribe(struct _array* arr, uint16_t tid) {
+    int tmp;
+    int i;
+    for (i=0; i<arr->size; ++i) {
+        tmp = arr->p[i];
+        if (tid == tmp)
+            return; // already sub
+    }
+    int idx = arr->size;
+    int cap = arr->cap;
+    if (idx >= cap) {
+        cap *= 2;
+        if (cap <= 0)
+            cap = 1;
+        arr->p = realloc(arr->p, sizeof(arr->p[0]) * cap);
+        memset(arr->p + idx, 0, sizeof(arr->p[0] * (cap-idx)));
+    }
+    arr->p[idx] = tid;
 }
 
 struct _center*
-center_create() {
+_center_create() {
     struct _center* self = malloc(sizeof(*self));
     memset(self, 0, sizeof(*self));
     return self;
 }
 
 void
-center_free(struct _center* self) {
+_center_free(struct _center* self) {
     if (self == NULL)
         return;
-
-    if (self->names) {
-        stringtable_free(self->names);
-        self->names = NULL;
-    }
-    if (self->nodes) {
-        struct _node* n;
-        int i;
-        for (i=0; i<self->nnode; ++i) {
-            n = &self->nodes[i];
-            _node_fini(n); 
-        }
-        free(self->nodes);
-        self->nodes = NULL;
-        self->nnode = 0;
+    
+    struct _array* arr;
+    int i;
+    for (i=0; i<NODE_TYPE_MAX; ++i) {
+        arr = &self->subs[i];
+        free(arr->p);
     }
     free(self);
 }
 
 int
 center_init(struct service* s) {
-    struct _center* self = SERVICE_SELF;
-        
-    int hashcap = 1;
-    while (hashcap < max)
-        hashcap *= 2;
+    SUBSCRIBE_MSG(s->serviceid, UMID_NODE_SUB);
+    return 0;
+}
 
-    if (self->names == NULL) {
-        self->names = stringtable_create(128);
-    }
-    if (self->nodes == NULL) {
-        self->nodes == malloc(sizeof(struct _node) * NODE_MAX);
-        self->nnode = NODE_MAX;
-    }
+static inline bool
+_isvalid_tid(uint16_t tid) {
+    return tid < NODE_TYPE_MAX;
+}
 
-    if (host_net_listen(host_getstr("center_ip", ""),
-                        host_getint("center_port", 0),
-                        s->serviceid)) {
-        return 1;
-    }
+static void
+_notify(int id, struct host_node* node) {
+    UM_DEFFIX(UM_node_notify, notify, UMID_NODE_NOTIFY);
+    notify.tnodeid = node->id;
+    notify.addr = node->addr;
+    notify.port = node->port;
+    UM_SEND(id, &notify, sizeof(notify));
+}
+
+static int
+_subscribecb(struct host_node* node, void* ud) {
+    int id = (int)(intptr_t)ud;
+    _notify(id, node);
     return 0;
 }
 
 static void
-_create_node(struct _center* self, int connection) {
-    struct _node* newn = NULL;
-    struct _node* n;
+_subscribe(struct _center* self, int id, struct user_message* um) {
+    UM_CAST(UM_node_subs, req, um);
+    uint16_t src_tid = HNODE_TID(req->nodeid);
+    uint16_t tid;
+    struct _array* arr;
     int i;
-    for (i=0; i<self->nnode; ++i) {
-        n = &self->nodes[i];
-        if (!n->used) {
-            n->used = true;
-            newn = n;
-            break;
-        }
-    }
-    if (newn == NULL) {
-        host_error("node has reach max");
-        return;
-    }
-    newn->connection = nm->connid;
-}
-
-static void
-_free_node(struct _center* self, int connection) {
-    struct _node* n;
-    int i;
-    for (i=0; i<self->nnode; ++i) {
-        n = &self->nodes[i];
-        if (n->used && 
-            n->connection == connection) {
-            _node_fini(n);
-            return;
-        }
-    }
-}
-
-static struct _node*
-_find_node(struct _center* self, int connection) {
-    struct _node* n;
-    int i;
-    for (i=0; i<self->nnode; ++i) {
-        n = &self->nodes[i];
-        if (n->used &&
-            n->connection == connection) {
-            return n;
-        }
-    }
-    return NULL;
-}
-
-static struct _node*
-_find_node_byname(struct _center* self, const char* name) {
-    struct _node* n = NULL;
-    int i;
-    for (i=0; i<self->nnode; ++i) {
-        n = &self->nodes[i];
-        if (n->used &&
-            n->name == name) {
-            return n;
-        }
-    }
-    return NULL;
-}
-
-static void
-_notify_connect(struct _node* me, struct _node* tar) {
-    UM_DEF(um, 128);
-    int n = snprintf(um->data, sizeof(um->data), "CON name=%s ip=%u port=%u",
-            tar->name, tar->ip, tar->port);
-    n++;
-    UM_SEND(me->connection, um, UM_HSIZE + n);
-}
-
-static bool
-_is_subscribe(struct _node* n, const char* name) {
-    const char* tmp = NULL;
-    int i;
-    for (i=0; i<array_size(&n->subscribes); ++i) {
-        tmp = array_get(&n->subscribes, i);
-        if (tmp == name) {
-            return true;
-        }
-    }
-    return false;
-}
-
-static void
-_notify(struct _center* self, struct _node* me) {
-    struct _node* n = NULL;
-    int i;
-    for (i=0; i<array_size(&n->subscribes); ++i) {
-        const char* name = array_get(&n->subscribes, i);
-        if (name == n->name)
+    for (i=0; i<req->n; ++i) {
+        tid = req->subs[i];
+        if (!_isvalid_tid(tid)) {
+            host_error("subscribe fail: invalid tid:%d", tid);
             continue;
-        
-        n = _find_node_byname(self, name);
-        if (n) 
-            _notify_connect(me, n);
-    }
-    
-    int i;
-    for (i=0; i<self->nnode; ++i) {
-        n = &self->nodes[i];
-        if (n->used &&
-            n->connection != me->connection &&
-            _is_subscribe(n, me->name)) {
-            _notify_connect(n, me);
         }
+        arr = &self->subs[tid];
+        _add_subscribe(arr, src_tid);
+        host_node_foreach(tid, _subscribecb, (void*)(intptr_t)id);
     }
 }
 
-static void
-_handle_message(struct _center* self, struct _node* n, struct user_message* um) {
-    um->data[um->sz] = '\0';
-    if (memcmp("REG", um->data, 3) == 0) {
-        char name[16];
-        uint32_t ip;
-        int port; 
-        char subscribe[16*10+10];
-        sscanf(um->data+4, "name=%s ip=%u port=%u connect=%s", 
-                name, ip, &port, subscribe);
-        n->name = stringtable_str(self->names, name);
-        n->ip = ip;
-        n->port = port;
-        array_reset(&self->subscribes);
-        string2array_st(subscribe, ',', &self->subscribes, self->names);
-    }
+static int
+_onregcb(struct host_node* node, void* ud) {
+    struct host_node* tnode = ud;
+    _notify(node->connid, tnode);
+    return 0;
 }
 
 static void
-_read(struct _center* self, int id) {
-    struct _node* n = _find_node(self, id);
-    if (n == NULL) {
-        host_error("no found node %d", id);
-        return;
-    }
-    const char* error;
-    struct user_message* um = UM_READ(id, &error);
-    while (um) {
-        _handle_message(self, n, um);
-        host_net_dropread(id);
-        um = UM_READ(id, &error);
-    }
-    if (!NET_OK(error)) {
-        _free_node(self, n);
+_onreg(struct _center* self, struct host_node* node) {
+    struct host_node* tnode = node;
+    uint16_t tid = HNODE_TID(node->id);
+    assert(_isvalid_tid(tid));
+
+    struct _array* arr = &self->subs[tid];
+    uint16_t sub;
+    int i;
+    for (i=0; i<arr->size; ++i) {
+        sub = arr->p[i];
+        host_node_foreach(sub, _onregcb, tnode); 
     }
 }
 
 void
-center_net(struct service* s, struct net_message* nm) {
+center_service(struct service* s, struct service_message* sm) {
     struct _center* self = SERVICE_SELF;
-    switch (nm->type) {
-    case NETE_READ:
-        _read(self, nm->connid);
-        break;
-    case NETE_ACCEPT:
-        _create_node(self, nm->connid);
+    struct host_node* regn = sm->msg;
+    _onreg(self, regn);
+}
+
+void
+center_usermsg(struct service* s, int id, void* msg, int sz) {
+    struct _center* self = SERVICE_SELF;
+    struct user_message* um = msg;
+    switch (um->msgid) {
+    case UMID_NODE_SUB:
+        _subscribe(self, id, um);
         break;
     }
 }
-*/

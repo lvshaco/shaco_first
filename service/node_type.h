@@ -5,9 +5,9 @@
 #define NODE_GATE   1
 #define NODE_WORLD  2
 #define NODE_GAME   3
-#define NODE_MAX    4
+#define NODE_TYPE_MAX    4
 
-static const char* NODE_NAMES[NODE_MAX] = {
+const char* NODE_NAMES[NODE_TYPE_MAX] = {
     "center", "gate", "world", "game",
 };
 
