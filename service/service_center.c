@@ -40,14 +40,14 @@ _add_subscribe(struct _array* arr, uint16_t tid) {
 }
 
 struct _center*
-_center_create() {
+center_create() {
     struct _center* self = malloc(sizeof(*self));
     memset(self, 0, sizeof(*self));
     return self;
 }
 
 void
-_center_free(struct _center* self) {
+center_free(struct _center* self) {
     if (self == NULL)
         return;
     
