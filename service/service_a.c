@@ -74,11 +74,8 @@ a_net(struct service* s, struct net_message* nm) {
     case NETE_CONNECT:
         self->connected = true;
         self->connid = nm->connid;
-        host_net_subscribe(self->connid, false, true);
+        host_net_subscribe(self->connid, false, false);
         break;
-    //case NETE_WRIDONE:
-        //host_net_subscribe(nm->connid, true, false);
-        //break;
     }
 }
 

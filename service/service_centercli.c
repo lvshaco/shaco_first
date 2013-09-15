@@ -78,7 +78,7 @@ centercli_net(struct service* s, struct net_message* nm) {
     switch (nm->type) {
     case NETE_CONNECT:
         host_info("connect to center ok");
-        host_net_subscribe(nm->connid, true, true);
+        host_net_subscribe(nm->connid, true, false);
         _reg_request(nm->connid);
         break;
     case NETE_CONNERR:

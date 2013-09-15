@@ -109,7 +109,7 @@ _create_client(struct _clients* self, struct net_message* nm) {
     c->id = nm->connid;
     c->connid = nm->connid;
     c->connected = true;
-    host_net_subscribe(nm->connid, false, true);
+    host_net_subscribe(nm->connid, true, false);
     return c;
 }
 
@@ -134,7 +134,7 @@ _send_one(struct _clients* self, int id) {
     UM_DEF(um, sz);
     um->msgid = 100;
     //memcpy(tm.data, "ping pong!", sizeof(tm.data));
-    host_net_subscribe(id, false, true);
+    host_net_subscribe(id, true, false);
     UM_SEND(id, um, sz);
     
     self->query_send++;
@@ -171,12 +171,6 @@ _read(struct _clients* self, int id) {
     }
 }
 
-static void
-_write_done(struct _clients* self, int id) {
-    //host_info("write done %d", id);
-    host_net_subscribe(id, true, false);
-}
-
 void
 client_usermsg(struct service* s, int id, void* msg, int sz) {
     struct _clients* self = SERVICE_SELF;
@@ -190,9 +184,6 @@ client_net(struct service* s, struct net_message* nm) {
     switch (nm->type) {
     case NETE_READ:
         //_read(self, nm->connid);
-        break;
-    case NETE_WRIDONE:
-        _write_done(self, nm->connid);
         break;
     case NETE_CONNECT:
         _create_client(self, nm);

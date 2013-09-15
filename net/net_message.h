@@ -7,7 +7,7 @@
 #define NETE_CONNECT 2 
 #define NETE_CONNERR 3 
 #define NETE_SOCKERR 4
-#define NETE_WRIDONE 5
+//#define NETE_WRIDONE 5
 #define NETE_CONN_THEN_READ 6
 
 struct net_message {

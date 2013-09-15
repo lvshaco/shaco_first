@@ -13,15 +13,13 @@
 
 struct _node {
     bool iscenter;
-    int center_service;
-    int centercli_service;
+    int center_or_cli_service;
 };
 
 struct _node*
 node_create() {
     struct _node* self = malloc(sizeof(*self));
-    self->center_service = SERVICE_INVALID;
-    self->centercli_service = SERVICE_INVALID;
+    self->center_or_cli_service = SERVICE_INVALID;
     return self;
 }
 
@@ -69,8 +67,8 @@ node_init(struct service* s) {
         return 1;
 
     self->iscenter = HNODE_TID(me.id) == NODE_CENTER;
-    self->center_service = service_query_id("center");
-    self->centercli_service = service_query_id("centercli");
+    const char* tmp = self->iscenter ? "center" : "centercli";
+    self->center_or_cli_service = service_query_id(tmp);
     return 0;
 }
 
@@ -108,7 +106,8 @@ _reg(struct service* s, int id, struct user_message* um) {
         sm.source = s->serviceid;
         sm.sz = sizeof(node);
         sm.msg = &node;
-        service_notify_service_message(self->center_service, &sm);
+        service_notify_service_message(
+        self->center_or_cli_service, &sm);
     }
 }
 
@@ -132,7 +131,8 @@ _regok(struct service* s, int id, struct user_message* um) {
         sm.source = s->serviceid;
         sm.sz = 0;
         sm.msg = NULL;
-        service_notify_service_message(self->centercli_service, &sm);
+        service_notify_service_message(
+        self->center_or_cli_service, &sm);
     }
 }
 
@@ -173,7 +173,7 @@ node_net(struct service* s, struct net_message* nm) {
         break;
     case NETE_CONNECT:
         host_info("connect to node ok");
-        host_net_subscribe(nm->connid, true, true);
+        host_net_subscribe(nm->connid, true, false);
         _reg_request(nm->connid);
         break;
     case NETE_CONNERR:
