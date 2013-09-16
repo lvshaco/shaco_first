@@ -25,9 +25,9 @@ struct benchmark {
     int query;
     int query_send;
     int query_done;
-    uint64_t start;
-    uint64_t end;
     int packetsz;
+    uint64_t start;
+    uint64_t end; 
 };
 
 struct benchmark*
@@ -139,7 +139,7 @@ benchmark_usermsg(struct service* s, int id, void* msg, int sz) {
         uint64_t elapsed = self->end - self->start;
         float qps = self->query_done/(elapsed*0.001f);
         host_info("clients: %d, packetsz: %d, query done: %d, use time: %d, qps: %f", 
-        self->connected, self->packetsz, self->query_done, elapsed, qps);
+        self->connected, self->packetsz, self->query_done, (int)elapsed, qps);
         self->start = self->end;
         self->query_done = 0;
     }

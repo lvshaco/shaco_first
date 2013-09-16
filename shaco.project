@@ -49,14 +49,14 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.h *.c" {
   args.c
  }
  net=net{
-  Makefile
   net.h
   net_message.h
   netbuf.h
-  client.c
   net.c
   netbuf.c
-  server.c
+  select.c
+  epoll.c
+  socket.h
  }
  service=service{
   client_type.h

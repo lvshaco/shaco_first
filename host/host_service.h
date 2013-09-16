@@ -7,7 +7,7 @@
 #define SERVICE_INVALID -1
 #define SERVICE_HOST 0xff
 
-#define SERVICE_SELF (s->dl.content)
+#define SERVICE_SELF ((s)->dl.content)
 
 struct service_message {
     uint32_t sessionid;

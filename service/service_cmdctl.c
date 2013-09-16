@@ -36,7 +36,7 @@ _strerror(int error) {
 ///////////////////
 static int
 _getloglevel(struct args* A, struct memrw* rw) {
-    int n = snprintf(rw->begin, RW_SPACE(rw), host_log_levelstr(host_log_level()));
+    int n = snprintf(rw->begin, RW_SPACE(rw), "%s", host_log_levelstr(host_log_level()));
     memrw_pos(rw, n);
     return R_OK;
 }
