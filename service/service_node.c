@@ -43,7 +43,7 @@ _listen(struct service* s) {
     const char* addr = host_getstr("node_ip", "");
     int port = host_getint("node_port", 0);
     if (addr[0] != '\0' &&
-        host_net_listen(addr, port, s->serviceid)) {
+        host_net_listen(addr, port, s->serviceid, 0)) {
         host_error("listen node fail");
         return 1;
     }
@@ -67,8 +67,12 @@ node_init(struct service* s) {
         return 1;
 
     self->iscenter = HNODE_TID(me.id) == NODE_CENTER;
-    const char* tmp = self->iscenter ? "center" : "centercli";
+    const char* tmp = self->iscenter ? "centers" : "centercli";
     self->center_or_cli_service = service_query_id(tmp);
+    if (self->center_or_cli_service == -1) {
+        host_error("lost %s service", tmp);
+        return 1;
+    }
     return 0;
 }
 
@@ -82,7 +86,7 @@ _reg_request(int id) {
 }
 
 static void
-_reg(struct service* s, int id, struct user_message* um) {
+_reg(struct service* s, int id, struct UM_base* um) {
     struct _node* self = SERVICE_SELF;
     UM_CAST(UM_node_reg, reg, um);
     struct host_node node;
@@ -106,13 +110,13 @@ _reg(struct service* s, int id, struct user_message* um) {
         sm.source = s->serviceid;
         sm.sz = sizeof(node);
         sm.msg = &node;
-        service_notify_service_message(
+        service_notify_service(
         self->center_or_cli_service, &sm);
     }
 }
 
 static void
-_regok(struct service* s, int id, struct user_message* um) {
+_regok(struct service* s, int id, struct UM_base* um) {
     struct _node* self = SERVICE_SELF;
     UM_CAST(UM_node_regok, ok, um);
     struct host_node node;
@@ -131,27 +135,27 @@ _regok(struct service* s, int id, struct user_message* um) {
         sm.source = s->serviceid;
         sm.sz = 0;
         sm.msg = NULL;
-        service_notify_service_message(
+        service_notify_service(
         self->center_or_cli_service, &sm);
     }
 }
 
 static void
-_onnotify(struct service* s, int id, struct user_message* um) {
+_onnotify(struct service* s, int id, struct UM_base* um) {
     UM_CAST(UM_node_notify, notify, um);
     struct in_addr in;
     in.s_addr = notify->addr;
     char* saddr = inet_ntoa(in);
     struct host_node* node = host_node_get(notify->tnodeid);
     if (node == NULL) {
-        host_net_connect(saddr, notify->port, false, s->serviceid);
+        host_net_connect(saddr, notify->port, false, s->serviceid, 0);
     } else {
         // todo address update
     }
 }
 void
-node_usermsg(struct service* s, int id, void* msg, int sz) {
-    struct user_message* um = msg;
+node_nodemsg(struct service* s, int id, void* msg, int sz) {
+    struct UM_base* um = msg;
     switch (um->msgid) {
     case UMID_NODE_REG:
         _reg(s, id, um);

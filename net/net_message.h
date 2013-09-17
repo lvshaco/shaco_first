@@ -1,6 +1,8 @@
 #ifndef __net_message_h__
 #define __net_message_h__
 
+#include <stdint.h>
+
 #define NETE_INVALID -1
 #define NETE_READ    0
 #define NETE_ACCEPT  1 
@@ -13,8 +15,9 @@
 struct net_message {
     int fd;
     int connid;
-    int type;
-    int udata;
+    int type;     // see NETE
+    int ud;
+    int ut;
 };
 
 #endif

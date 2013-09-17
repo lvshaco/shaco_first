@@ -7,11 +7,11 @@
 
 int host_net_init(int max);
 void host_net_fini();
-int host_net_listen(const char* addr, uint16_t port, int serviceid);
-int host_net_connect(const char* addr, uint16_t port, bool block, int serviceid);
+int host_net_listen(const char* addr, uint16_t port, int serviceid, int ut);
+int host_net_connect(const char* addr, uint16_t port, bool block, int serviceid, int ut);
 void host_net_poll(int timeout);
-void* host_net_read(int id, int sz);
-void host_net_dropread(int id);
+void* host_net_read(int id, int sz, int skip);
+void host_net_dropread(int id, int skip);
 int host_net_send(int id, void* data, int sz);
 void host_net_close_socket(int id);
 int host_net_max_socket();

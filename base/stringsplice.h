@@ -18,17 +18,38 @@ struct stringsplice {
     struct _str_splice p[_STRSPLICE_MAX];
 };
 
-static size_t
-stringsplice_create(struct stringsplice* splice, const char* str, char c) {
-    size_t n = 0;
-    const char* p = str;
-    while (*p) {
-        char* next = strchrnul(p, c);
-        splice->p[n].p = p;
-        splice->p[n].len = next - p;
-        p = next;
+// strchrnul can not found, why?
+static char*
+_strchrnul(const char* s, int c) {
+    while (*s && *s != c) {
+        s++;
     }
-    splice->n = n;
+    return (char*)s;
+}
+
+static size_t
+stringsplice_create(struct stringsplice* sp, size_t max, const char* str, char c) {
+    if (max > _STRSPLICE_MAX)
+        max = _STRSPLICE_MAX;
+   
+    size_t n = 0; 
+    const char* p = str;
+    char* next;
+    while (*p && n < max) {
+        while (*p == c) {
+            if (*++p == '\0')
+                goto end;
+        }
+        next = _strchrnul(p, c);
+        sp->p[n].p = p;
+        sp->p[n].len = next - p;
+        n++; 
+        if (*next == '\0')
+            break;
+        p = next+1;
+    }
+end:
+    sp->n = n;
     return n;
 }
 
@@ -40,36 +61,36 @@ string_new(const char* str, size_t l) {
     return news;
 }
 
-static size_t
+static inline size_t
 string2array(const char* str, char c, struct array* arr) {
-    stringsplice splice;
-    stringsplice_create(&splice, str, c);
-    if (splice->n == 0) {
+    struct stringsplice sp;
+    stringsplice_create(&sp, _STRSPLICE_MAX, str, c);
+    if (sp.n == 0) {
         return 0;
     }
     const char* news = NULL;
     int i;
-    for (i=0; i<splice->n; ++i) {
-        news = string_new(splice.p[i].p, splice.p[i].len);
-        array_push(arr, news);
+    for (i=0; i<sp.n; ++i) {
+        news = string_new(sp.p[i].p, sp.p[i].len);
+        array_push(arr, (void*)news);
     }
-    return splice->n; 
+    return sp.n; 
 }
 
-static size_t
+static inline size_t
 string2array_st(const char* str, char c, struct array* arr, struct stringtable* st) {
-    stringsplice splice;
-    stringsplice_create(&splice, str, c);
-    if (splice->n == 0) {
+    struct stringsplice sp;
+    stringsplice_create(&sp, _STRSPLICE_MAX, str, c);
+    if (sp.n == 0) {
         return 0;
     }
     const char* news = NULL;
     int i;
-    for (i=0; i<splice->n; ++i) {
-        news = stringtable_strl(st, splice.p[i].p, splice.p[i].len);
-        array_push(arr, news);
+    for (i=0; i<sp.n; ++i) {
+        news = stringtable_strl(st, sp.p[i].p, sp.p[i].len);
+        array_push(arr, (void*)news);
     }
-    return splice->n; 
+    return sp.n; 
 }
 
 #endif

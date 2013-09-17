@@ -74,6 +74,10 @@ host_node_typename(uint16_t tid) {
     return "";
 }
 
+int  
+host_node_types() {
+    return N->size;
+}
 int 
 host_node_register_types(const char* types[], int n) {
     if (N->size > 0)

@@ -20,19 +20,19 @@ _dispatch_events() {
         e = &all[i];
         if (e->type == NETE_INVALID)
             continue;
-        int serviceid = e->udata;
+        int serviceid = e->ud;
         if (e->type == NETE_CONN_THEN_READ) {
             e->type = NETE_CONNECT;
-            service_notify_net_message(serviceid, e);
+            service_notify_net(serviceid, e);
             e->type = NETE_READ;
         }
         if (e->type == NETE_READ) {
             if (host_dispatcher_publish(e)) {
                 host_error("no dispatcher");
-                service_notify_net_message(serviceid, e);
+                service_notify_net(serviceid, e);
             }
         } else {
-            service_notify_net_message(serviceid, e);
+            service_notify_net(serviceid, e);
         }
     }
 }
@@ -50,9 +50,9 @@ host_net_fini() {
 }
 
 int
-host_net_listen(const char* addr, uint16_t port, int serviceid) {
+host_net_listen(const char* addr, uint16_t port, int serviceid, int ut) {
     uint32_t ip = inet_addr(addr);
-    int r = net_listen(N, ip, port, serviceid);
+    int r = net_listen(N, ip, port, serviceid, ut);
     if (r) {
         host_error("listen %s:%u fail: %s", addr, port, host_net_error());        
     } else {
@@ -62,10 +62,10 @@ host_net_listen(const char* addr, uint16_t port, int serviceid) {
 }
 
 int 
-host_net_connect(const char* addr, uint16_t port, bool block, int serviceid) {
+host_net_connect(const char* addr, uint16_t port, bool block, int serviceid, int ut) {
     host_info("connect to %s:%u ...", addr, port);
     uint32_t ip = inet_addr(addr);
-    int r = net_connect(N, ip, port, block, serviceid);
+    int r = net_connect(N, ip, port, block, serviceid, ut);
     if (r <= 0) {
         _dispatch_events();
     }
@@ -88,11 +88,11 @@ host_net_send(int id, void* data, int sz) {
     }
     return r;
 }
-void* host_net_read(int id, int sz) { 
-    return net_read(N, id, sz); 
+void* host_net_read(int id, int sz, int skip) { 
+    return net_read(N, id, sz, skip); 
 }
-void host_net_dropread(int id) { 
-    net_dropread(N, id); 
+void host_net_dropread(int id, int skip) { 
+    net_dropread(N, id, skip); 
 }
 void host_net_close_socket(int id) { 
     net_close_socket(N, id); 

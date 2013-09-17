@@ -161,7 +161,7 @@ service_query_name(int serviceid) {
 }
 
 int 
-service_notify_service_message(int serviceid, struct service_message* sm) {
+service_notify_service(int serviceid, struct service_message* sm) {
     struct service* s = array_get(S->sers, serviceid);
     if (s && s->dl.service) {
         s->dl.service(s, sm);
@@ -171,7 +171,7 @@ service_notify_service_message(int serviceid, struct service_message* sm) {
 }
 
 int 
-service_notify_net_message(int serviceid, struct net_message* nm) {
+service_notify_net(int serviceid, struct net_message* nm) {
     struct service* s = array_get(S->sers, serviceid);
     if (s && s->dl.net) {
         s->dl.net(s, nm);
@@ -181,7 +181,7 @@ service_notify_net_message(int serviceid, struct net_message* nm) {
 }
 
 int 
-service_notify_time_message(int serviceid) {
+service_notify_time(int serviceid) {
     struct service* s = array_get(S->sers, serviceid);
     if (s && s->dl.time) {
         s->dl.time(s);
@@ -191,7 +191,17 @@ service_notify_time_message(int serviceid) {
 }
 
 int 
-service_notify_user_message(int serviceid, int id, void* msg, int sz) {
+service_notify_nodemsg(int serviceid, int id, void* msg, int sz) {
+    struct service* s = array_get(S->sers, serviceid);
+    if (s && s->dl.nodemsg) {
+        s->dl.nodemsg(s, id, msg, sz);
+        return 0;
+    }
+    return 1;
+}
+
+int 
+service_notify_usermsg(int serviceid, int id, void* msg, int sz) {
     struct service* s = array_get(S->sers, serviceid);
     if (s && s->dl.usermsg) {
         s->dl.usermsg(s, id, msg, sz);

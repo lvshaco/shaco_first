@@ -38,7 +38,8 @@ struct socket {
     int fd;
     int status;
     int events;
-    int udata;
+    int ud;
+    int ut;
     uint32_t addr;
     uint16_t port;
     struct netbuf_block* rb;
@@ -127,7 +128,8 @@ _alloc_sockets(int max) {
         s[i].fd = i+1;
         s[i].status = STATUS_INVALID;
         s[i].events = 0;
-        s[i].udata = -1;
+        s[i].ud = -1;
+        s[i].ut = -1;
         s[i].addr = 0;
         s[i].port = 0;
         s[i].rb = NULL;
@@ -139,7 +141,7 @@ _alloc_sockets(int max) {
 }
 
 static struct socket*
-_create_socket(struct net* self, int fd, uint32_t addr, uint16_t port, int udata) {
+_create_socket(struct net* self, int fd, uint32_t addr, uint16_t port, int ud, int ut) {
     if (self->free_socket == NULL)
         return NULL;
 
@@ -151,7 +153,8 @@ _create_socket(struct net* self, int fd, uint32_t addr, uint16_t port, int udata
     
     s->fd = fd;
     s->status = STATUS_SUSPEND;
-    s->udata = udata;
+    s->ud = ud;
+    s->ut = ut;
     s->addr = addr;
     s->port = port;
     s->rb = netbuf_alloc_block(self->rpool, s-self->sockets);
@@ -168,7 +171,8 @@ _close_socket(struct net* self, struct socket* s) {
     
     s->status = STATUS_INVALID;
     s->events = 0;
-    s->udata = -1;
+    s->ud = -1;
+    s->ut = -1;
     s->addr = 0;
     s->port = 0;
     netbuf_free_block(self->rpool, s->rb);
@@ -281,7 +285,7 @@ net_free(struct net* self) {
 }
 
 void*
-net_read(struct net* self, int id, int sz) {
+net_read(struct net* self, int id, int sz, int skip) {
     self->error = OK;
         
     struct socket* s = _get_socket(self, id);
@@ -305,6 +309,11 @@ net_read(struct net* self, int id, int sz) {
         return rptr; 
     }
 
+    if (rb->wptr == 0) {
+        rb->wptr += skip;
+        printf("wptr:%d\n", rb->wptr);
+        assert(rb->wptr <= rb->sz);
+    }
     char* wptr = begin + rb->wptr;
     int space = rb->sz - rb->wptr;
     if (space < sz) {
@@ -347,7 +356,7 @@ err:
 }
 
 void
-net_dropread(struct net* self, int id) {
+net_dropread(struct net* self, int id, int skip) {
     struct socket* s = _get_socket(self, id);
     if (s == NULL)
         return;
@@ -358,14 +367,17 @@ net_dropread(struct net* self, int id) {
     
     int sz = rb->wptr - rb->rptr;
     if (sz == 0) {
-        rb->wptr = 0;
-        rb->rptr = 0;
+        rb->wptr = skip;
+        assert(rb->wptr <= rb->sz);
+        rb->rptr = 0; 
     } else if (sz > 0) {
-        void* begin = rb + 1;
-        memmove(begin, begin + rb->rptr, sz);
-        rb->wptr = sz;
+        assert(skip < rb->rptr);
+        void* begin = rb + 1; 
+        memmove(begin+skip, begin + rb->rptr, sz);
+        rb->wptr = sz+skip;
         rb->rptr = 0;
     }
+    printf("drop wptr:%d\n", rb->wptr);
 }
 
 int
@@ -439,7 +451,8 @@ net_send(struct net* self, int id, void* data, int sz) {
                 e->fd = s->fd;
                 e->connid = s - self->sockets;
                 e->type = NETE_SOCKERR;
-                e->udata = s->udata;
+                e->ud = s->ud;
+                e->ut = s->ut;
                 self->nevent = 1;
                 self->error = strerror(errno);
                 _close_socket(self, s);
@@ -480,7 +493,7 @@ _accept(struct net* self, struct socket* listens) {
     }
     uint32_t addr = remote_addr.sin_addr.s_addr;
     uint16_t port = ntohs(remote_addr.sin_port);
-    struct socket* s = _create_socket(self, fd, addr, port, listens->udata);
+    struct socket* s = _create_socket(self, fd, addr, port, listens->ud, listens->ut);
     if (s == NULL) {
         close(fd);
         return NULL;
@@ -495,7 +508,7 @@ _accept(struct net* self, struct socket* listens) {
 }
 
 int
-net_listen(struct net* self, uint32_t addr, uint16_t port, int udata) {
+net_listen(struct net* self, uint32_t addr, uint16_t port, int ud, int ut) {
     self->error = OK;
     int fd = socket(AF_INET, SOCK_STREAM, 0);
     if (fd == -1) {
@@ -528,7 +541,7 @@ net_listen(struct net* self, uint32_t addr, uint16_t port, int udata) {
         return -1;
     }
 
-    struct socket* s = _create_socket(self, fd, addr, port, udata);
+    struct socket* s = _create_socket(self, fd, addr, port, ud, ut);
     if (s == NULL) {
         self->error = NET_ERR_CREATESOCK;
         close(fd);
@@ -564,7 +577,7 @@ _onconnect(struct net* self, struct socket* s) {
 }
 
 int
-net_connect(struct net* self, uint32_t addr, uint16_t port, bool block, int udata) {
+net_connect(struct net* self, uint32_t addr, uint16_t port, bool block, int ud, int ut) {
     self->error = OK;
     struct net_message* e = &self->ne[0];
 
@@ -604,7 +617,7 @@ net_connect(struct net* self, uint32_t addr, uint16_t port, bool block, int udat
             goto err;
         }
 
-    struct socket* s = _create_socket(self, fd, addr, port, udata);
+    struct socket* s = _create_socket(self, fd, addr, port, ud, ut);
     if (s == NULL) {
         self->error = NET_ERR_CREATESOCK;
         close(fd);
@@ -626,14 +639,16 @@ err:
     e->fd = -1;
     e->connid = -1;
     e->type = NETE_CONNERR;
-    e->udata = udata;
+    e->ud = ud;
+    e->ut = ut;
     self->nevent = 1;
     return -1;
 ok:
     e->fd = fd;
     e->connid = s - self->sockets;
     e->type = NETE_CONNECT;
-    e->udata = udata;
+    e->ud = ud;
+    e->ut = ut;
     self->nevent = 1;
     return 0; // connected
 }
@@ -656,14 +671,16 @@ net_poll(struct net* self, int timeout) {
                 oe->fd = s->fd;
                 oe->connid = s - self->sockets;
                 oe->type = NETE_ACCEPT;
-                oe->udata = s->udata;
+                oe->ud = s->ud;
+                oe->ut = s->ut;
             }
             break;
         case STATUS_CONNECTING:
             if (e->events & EPOLLOUT) {
                 oe->fd = s->fd;
                 oe->connid = s - self->sockets;
-                oe->udata = s->udata;
+                oe->ud = s->ud;
+                oe->ut = s->ut;
                 if (_onconnect(self, s)) {
                     oe->type = NETE_CONNERR;
                     break;
@@ -679,7 +696,8 @@ net_poll(struct net* self, int timeout) {
                 if (_send_buffer(self, s) < 0) {
                     oe->fd = s->fd;
                     oe->connid = s - self->sockets;
-                    oe->udata = s->udata;
+                    oe->ud = s->ud;
+                    oe->ut = s->ut;
                     oe->type = NETE_SOCKERR;
                     break;
                 }
@@ -687,7 +705,8 @@ net_poll(struct net* self, int timeout) {
             if (e->events & EPOLLIN) {
                 oe->fd = s->fd;
                 oe->connid = s - self->sockets;
-                oe->udata = s->udata;
+                oe->ud = s->ud;
+                oe->ut = s->ut;
                 oe->type = NETE_READ;
             }
             break;

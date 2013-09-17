@@ -3,8 +3,9 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.h *.c" {
  README.md
  config.lua
  config_center.lua
- config_centercli.lua
  config_client.lua
+ config_game.lua
+ config_gate.lua
  host=host{
   dlmodule.h
   host.h
@@ -35,7 +36,7 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.h *.c" {
  }
  base=base{
   array.h
-  freelist.h
+  freeid.h
   hashid.h
   stringsplice.h
   stringtable.h
@@ -53,20 +54,24 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.h *.c" {
  }
  service=service{
   node_type.h
+  client_type.h
   service_a.c
-  service_center.c
-  service_centercli.c
+  service_centerc.c
+  service_centers.c
   service_client.c
   service_dispatcher.c
   service_gate.c
   service_log.c
   service_node.c
+  service_cmds.c
+  service_cmdctl.c
  }
  message=message{
   user_message.h
  }
  tool=tool{
   service_tmp.c
+  shaco-cli.c
  }
  test=test{
   test.c

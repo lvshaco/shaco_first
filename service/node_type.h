@@ -1,6 +1,7 @@
 #ifndef __node_type_h__
 #define __node_type_h__
 
+#define NODE_TYPE_MIN 0
 #define NODE_CENTER 0
 #define NODE_GATE   1
 #define NODE_WORLD  2

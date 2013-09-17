@@ -25,10 +25,10 @@ host_dispatcher_subscribe(int serviceid, int msgid) {
     sm.source = SERVICE_HOST;
     sm.sz = 0;
     sm.msg = (void*)(intptr_t)msgid; // reuse for msgid
-    return service_notify_service_message(_DISPATCHER, &sm);
+    return service_notify_service(_DISPATCHER, &sm);
 }
 
 int
 host_dispatcher_publish(struct net_message* nm) {
-    return service_notify_net_message(_DISPATCHER, nm);
+    return service_notify_net(_DISPATCHER, nm);
 }

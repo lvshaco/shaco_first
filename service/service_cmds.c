@@ -1,0 +1,297 @@
+#include "host_service.h"
+#include "host.h"
+#include "host_log.h"
+#include "host_timer.h"
+#include "host_net.h"
+#include "host_dispatcher.h"
+#include "node_type.h"
+#include "client_type.h"
+#include "user_message.h"
+#include "freeid.h"
+#include "stringsplice.h"
+#include <stdlib.h>
+#include <string.h>
+
+struct client {
+    int connid;
+    uint64_t active_time;
+    bool connected;
+};
+
+struct server {
+    int ctl_service;
+    int max;
+    int livetime;
+    struct freeid fi;
+    struct client* clients;
+};
+
+struct server*
+cmds_create() {
+    struct server* self = malloc(sizeof(*self));
+    memset(self, 0, sizeof(*self));
+    return self;
+}
+
+void
+cmds_free(struct server* self) {
+    freeid_fini(&self->fi);
+    free(self->clients);
+    free(self);
+}
+
+static int
+_listen(struct service* s) {
+    const char* addr = host_getstr("cmds_ip", "");
+    int port = host_getint("cmds_port", 0);
+    if (addr[0] != '\0' &&
+        host_net_listen(addr, port, s->serviceid, CLI_CMD)) {
+        host_error("listen cmds fail");
+        return 1;
+    }
+    return 0;
+}
+
+int
+cmds_init(struct service* s) {
+    struct server* self = SERVICE_SELF;
+    if (_listen(s))
+        return 1;
+
+    self->ctl_service = service_query_id("cmdctl");
+    if (self->ctl_service == -1) {
+        host_error("lost cmdctl service");
+        return 1;
+    }
+
+    int cmax = host_getint("cmdc_max", 10);
+    int live = host_getint("cmdc_livetime", 6000);
+    int hmax = host_getint("host_connmax", cmax); 
+    self->livetime = live * 1000; 
+    self->max = cmax;
+    self->clients = malloc(sizeof(struct client) * cmax);
+    memset(self->clients, 0, sizeof(struct client) * cmax);
+    freeid_init(&self->fi, cmax, hmax);
+    
+    host_timer_register(s->serviceid, live);
+
+    SUBSCRIBE_MSG(s->serviceid, UMID_CMD_RES);
+    return 0;
+}
+
+static struct client*
+_getclient(struct server* self, int id) {
+    if (id >= 0 && self->max) {
+        struct client* c = &self->clients[id];
+        if (c->connected)
+            return c;
+    }
+    return NULL;
+}
+
+struct _command {
+    uint16_t tid;
+    uint16_t sid;
+    const char* cmd;
+    size_t cmdl;
+};
+
+static int
+_get_command(char* cmd, size_t sz, struct _command* c) {
+    cmd[sz-1] = '\0';
+    host_info("receive command: %s", cmd); 
+    struct stringsplice sp;
+    stringsplice_create(&sp, 3, cmd, ' ');
+    if (sp.n < 3)
+        return 1;
+    // fix the last len
+    int i;
+    sp.p[2].len = sz-1 - (sp.p[2].p - cmd);
+    for (i=0; i<3; ++i) {
+        cmd[sp.p[i].p-cmd+sp.p[i].len] = '\0';
+    }
+    if (strcasecmp(sp.p[0].p, "all") == 0) {
+        c->tid = HNODE_TID_MAX;
+        c->sid = HNODE_SID_MAX;
+    } else {
+        c->tid = host_node_typeid(sp.p[0].p);
+        if (c->tid == -1) {
+            return 1;
+        }
+        if (strcasecmp(sp.p[1].p, "all") == 0) {
+            c->sid = HNODE_SID_MAX;
+        } else {
+            c->sid = atoi(sp.p[1].p);
+        }
+    } 
+    c->cmd = sp.p[2].p;
+    c->cmdl = sp.p[2].len+1;
+    return 0;
+}
+
+static void
+_response_error(int id, const char* error) {
+    UM_DEF(um, 64);
+    strncpy((char*)(um+1), error, 63);
+    UM_SENDTOCLI(id, um, sizeof(um));
+}
+
+static inline int
+_sendto_remote(struct host_node* node, void* ud) {
+    struct UM_base* um = ud;
+    UM_SEND(node->connid, um, um->msgsz);
+    return 0;
+}
+
+static void
+_routeto_node(struct server* self, uint16_t nodeid, struct UM_base* um) {
+    if (nodeid == host_id()) {
+        service_notify_nodemsg(self->ctl_service, -1, um, um->msgsz);
+    } else {
+        struct host_node* node = host_node_get(nodeid);
+        if (node) {
+            _sendto_remote(node, um);
+        }
+    }
+}
+
+static void
+_broadcast_type(struct server* self, int tid, struct UM_base* um) {
+    if (tid == NODE_CENTER) {
+        _routeto_node(self, host_id(), um); 
+    } else {
+        host_node_foreach(tid, _sendto_remote, um);
+    }
+}
+
+static void
+_broadcast_all(struct server* self, struct UM_base* um) {
+    int i;
+    for (i=0; i<host_node_types(); ++i) {
+        _broadcast_type(self, i, um);
+    } 
+}
+
+void
+cmds_usermsg(struct service* s, int id, void* msg, int sz) {
+    struct server* self = SERVICE_SELF;
+    int hash = freeid_find(&self->fi, id);
+    struct client* c = _getclient(self, hash);
+    assert(c);
+    UM_CAST(UM_base, um, msg);
+    
+    struct _command cmd;
+    if (_get_command((char*)(um+1), sz-UM_HSIZE, &cmd)) {
+        _response_error(id, "invalid command");
+        return;
+    }
+
+    UM_DEFVAR(UM_cmd_req, req, UMID_CMD_REQ);
+    req->cid = hash;
+    strcpy(req->cmd, cmd.cmd);
+    req->msgsz = sizeof(*req) + cmd.cmdl;
+
+    um = (struct UM_base*)req;
+    if (cmd.tid == HNODE_TID_MAX) {
+        _broadcast_all(self, um);
+    } else if (cmd.sid == HNODE_SID_MAX) {
+        _broadcast_type(self, cmd.tid, um);
+    } else {
+        _routeto_node(self, HNODE_ID(cmd.tid, cmd.sid), um);
+    }
+}
+
+static void
+_res(struct server* self, int id, struct UM_base* um) {
+    UM_CAST(UM_cmd_res, res, um);
+    struct client* c = _getclient(self, res->cid);
+    if (c == NULL)
+        return;
+
+    UM_DEF(notify, UM_MAXSIZE); 
+    char* info = (char*)(notify+1);
+    size_t sz = res->msgsz - sizeof(*res);
+    memcpy(info, res+1, sz);
+    info[sz-1] = '\0';
+    UM_SENDTOCLI(c->connid, notify, UM_HSIZE+sz);
+}
+
+void
+cmds_nodemsg(struct service* s, int id, void* msg, int sz) {
+    struct server* self = SERVICE_SELF;
+    UM_CAST(UM_base, um, msg);
+    switch (um->msgid) {
+    case UMID_CMD_RES:
+        _res(self, id, um);
+        break;
+    }
+}
+
+static void
+_accept(struct server* self, int connid) {
+    int id = freeid_alloc(&self->fi, connid);
+    if (id == -1) {
+        return;
+    }
+    assert(id >= 0 && id < self->max);
+    struct client* c = &self->clients[id];
+    assert(!c->connected);
+    c->connected = true;
+    c->connid = connid;
+    c->active_time = host_timer_now();
+    
+    host_net_subscribe(connid, true, false);
+}
+
+static void
+_ondisconnect(struct server* self, int connid) {
+    int id = freeid_free(&self->fi, connid);
+    if (id == -1) {
+        return;
+    }
+    assert(id >= 0 && id < self->max);
+    struct client* c = &self->clients[id];
+    c->connected = false;
+}
+
+static void
+_disconnect(struct server* self, int id) {
+    assert(id >= 0 && id < self->max);
+    struct client* c = &self->clients[id]; 
+    assert(c->connected);
+    assert(c->connid >= 0);
+    int tmp = freeid_free(&self->fi, c->connid);
+    assert(tmp == id);
+    host_net_close_socket(c->connid);
+    c->connected = false;
+}
+
+void
+cmds_net(struct service* s, struct net_message* nm) {
+    struct server* self = SERVICE_SELF;
+    switch (nm->type) {
+    case NETE_ACCEPT:
+        _accept(self, nm->connid);
+        break;
+    case NETE_SOCKERR:
+        _ondisconnect(self, nm->connid);
+        break;
+    }
+}
+
+void
+cmds_time(struct service* s) {
+    struct server* self= SERVICE_SELF;
+    struct client* clients = self->clients;
+    struct client* c;
+    uint64_t now = host_timer_now();
+    int i;
+    for (i=0; i<self->max; ++i) {
+        c = &clients[i];
+        if (c->connected) {
+            if (now - c->active_time > self->livetime) {
+                _disconnect(self, i);
+            }
+        }
+    }
+}

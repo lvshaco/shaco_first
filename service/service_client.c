@@ -73,7 +73,7 @@ client_init(struct service* s) {
     int n = 0;
     int i;
     for (i=0; i<max; ++i) { 
-        if (host_net_connect(ip, port, 1, s->serviceid) < 0) {
+        if (host_net_connect(ip, port, 1, s->serviceid, 0) < 0) {
             host_error(host_net_error());
             count--;
         }
@@ -141,7 +141,7 @@ _send_one(struct _clients* self, int id) {
 }
 
 void
-_handle_message(struct _clients* self, struct _client* c, struct user_message* um) {
+_handle_message(struct _clients* self, struct _client* c, struct UM_base* um) {
     self->query_done++;
     //assert(self->query_done == self->query_send);
     //host_info("query done one: %d", self->query_done);
@@ -156,23 +156,7 @@ _handle_message(struct _clients* self, struct _client* c, struct user_message* u
 }
 
 void
-_read(struct _clients* self, int id) {
-    struct _client* c = _find_client(self, id);
-
-    const char* error;
-    struct user_message* um = UM_READ(id, &error);
-    while (um) { 
-        _handle_message(self, c, um);
-        host_net_dropread(id);
-        um = UM_READ(id, &error);
-    }
-    if (!NET_OK(error)) {
-        _free_client(self, c);
-    }
-}
-
-void
-client_usermsg(struct service* s, int id, void* msg, int sz) {
+client_nodemsg(struct service* s, int id, void* msg, int sz) {
     struct _clients* self = SERVICE_SELF;
     struct _client* c = _find_client(self, id);
     _handle_message(self, c, msg);
@@ -182,15 +166,15 @@ void
 client_net(struct service* s, struct net_message* nm) {
     struct _clients* self = SERVICE_SELF;
     switch (nm->type) {
-    case NETE_READ:
-        //_read(self, nm->connid);
-        break;
     case NETE_CONNECT:
         _create_client(self, nm);
         break;
-    case NETE_SOCKERR:
+    case NETE_SOCKERR: {
         host_error("error: %s", host_net_error());
+        struct _client* c = _find_client(self, nm->connid);
+        _free_client(self, c);
         break;
+        }
     }
 }
 

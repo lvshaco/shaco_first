@@ -1,7 +1,7 @@
 shaco = {
 host_loglevel="DEBUG",
 host_connmax=11000,
-host_service="node,centercli",
+host_service="node,centerc",
 
 node_type="game",
 node_sid=0,

@@ -134,7 +134,7 @@ host_timer_dispatch_timeout() {
     for (i=0; i<eh->sz; ++i) {
         e = &eh->p[i];
         if (e->next_time == T->trigger_time) {
-            service_notify_time_message(e->serviceid);
+            service_notify_time(e->serviceid);
             e->next_time += e->interval;
         }
     }

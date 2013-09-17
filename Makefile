@@ -36,14 +36,22 @@ host_src=\
 	host/host_node.h \
  	host/dlmodule.c \
  	host/dlmodule.h
-		
+
+cli_src=\
+	tool/shaco-cli.c
+
+test_src=\
+	test/test.c \
+	net.so \
+	lur.so
+
 #LDFLAGS=-Wl,-rpath,. \
 		#-L. net.so lur.so\
 	    #-llua -lm -ldl -lrt
 LDFLAGS=-Wl,-rpath,. \
 		net.so lur.so -llua -lm -ldl -lrt -rdynamic# -Wl,-E
 
-all: lur.so net.so shaco $(service_so)
+all: lur.so net.so shaco shaco-cli $(service_so)
 release: CFLAGS += -O2
 release: all
 
@@ -63,12 +71,16 @@ shaco: $(host_src)
 	@rm -f $@
 	gcc $(CFLAGS) $(LDFLAGS) -o $@ $^ -Ihost -Ilur -Inet -Ibase 
 
-t: test/test.c net.so lur.so
+shaco-cli: $(cli_src)
+	@rm -f $@
+	gcc $(CFLAGS) -o $@ $^ -lpthread
+
+t: $(test_src)
 	@rm -f $@
 	gcc $(CFLAGS) $(LDFLAGS) -o $@ $^ -Ihost -Ilur -Inet -Ibase 
 
 clean:
-	rm -f shaco t *.so
+	rm -f shaco shaco-cli t *.so
 
 cleanall: clean
 	rm -f cscope.* tags

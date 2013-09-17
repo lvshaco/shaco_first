@@ -26,6 +26,10 @@ tmp_service(struct service* s, struct service_message* sm) {
 
 void
 tmp_usermsg(struct service* s, int id, void* msg, int sz) {
+}
+
+void
+tmp_nodemsg(struct service* s, int id, void* msg, int sz) {
     //struct _tmp* self = SERVICE_SELF;
 }
 
@@ -38,6 +42,8 @@ tmp_net(struct service* s, struct net_message* nm) {
     case NETE_ACCEPT:
         break;
     case NETE_CONNECT:
+        break;
+    case NETE_CONNERR:
         break;
     case NETE_SOCKERR:
         break;

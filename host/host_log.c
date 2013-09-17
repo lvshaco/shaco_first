@@ -100,7 +100,7 @@ _send_to_service(int level, char* log, int sz) {
     sm.source = SERVICE_HOST;
     sm.sz = sz;
     sm.msg = log;
-    service_notify_service_message(_LOG_SERVICE, &sm);
+    service_notify_service(_LOG_SERVICE, &sm);
 }
 
 void 

@@ -18,6 +18,7 @@ struct host_node {
 #define HNODE_ID(tid, sid) ((((uint16_t)(tid)&0x3f) << 10) | ((uint16_t)(sid)&0x3ff))
 #define HNODE_TID(id) (((uint16_t)(id) >> 10) & 0x3f)
 #define HNODE_SID(id) ((uint16_t)(id)&0x3ff)
+#define HNODE_MAX HNODE_ID(HNODE_TID_MAX, HNODE_SID_MAX)
 
 // me node
 uint16_t host_id();
@@ -30,6 +31,7 @@ struct host_node* host_node_get(uint16_t id);
 
 int  host_node_init();
 void host_node_free();
+int  host_node_types();
 int  host_node_register_types(const char* types[], int n);
 bool host_node_is_register(uint16_t id);
 int  host_node_register(struct host_node* node);

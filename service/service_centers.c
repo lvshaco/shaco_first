@@ -14,7 +14,7 @@ struct _array {
     uint16_t* p;
 };
 
-struct _center {
+struct _centers {
     struct _array subs[NODE_TYPE_MAX];
 };
 
@@ -41,15 +41,15 @@ _add_subscribe(struct _array* arr, uint16_t tid) {
     arr->size = idx+1;
 }
 
-struct _center*
-center_create() {
-    struct _center* self = malloc(sizeof(*self));
+struct _centers*
+centers_create() {
+    struct _centers* self = malloc(sizeof(*self));
     memset(self, 0, sizeof(*self));
     return self;
 }
 
 void
-center_free(struct _center* self) {
+centers_free(struct _centers* self) {
     if (self == NULL)
         return;
     
@@ -63,7 +63,7 @@ center_free(struct _center* self) {
 }
 
 int
-center_init(struct service* s) {
+centers_init(struct service* s) {
     SUBSCRIBE_MSG(s->serviceid, UMID_NODE_SUB);
     return 0;
 }
@@ -90,7 +90,7 @@ _subscribecb(struct host_node* node, void* ud) {
 }
 
 static void
-_subscribe(struct _center* self, int id, struct user_message* um) {
+_subscribe(struct _centers* self, int id, struct UM_base* um) {
     UM_CAST(UM_node_subs, req, um);
     uint16_t src_tid = HNODE_TID(req->nodeid);
     uint16_t tid;
@@ -117,7 +117,7 @@ _onregcb(struct host_node* node, void* ud) {
 }
 
 static void
-_onreg(struct _center* self, struct host_node* node) {
+_onreg(struct _centers* self, struct host_node* node) {
     struct host_node* tnode = node;
     uint16_t tid = HNODE_TID(node->id);
     assert(_isvalid_tid(tid));
@@ -132,16 +132,16 @@ _onreg(struct _center* self, struct host_node* node) {
 }
 
 void
-center_service(struct service* s, struct service_message* sm) {
-    struct _center* self = SERVICE_SELF;
+centers_service(struct service* s, struct service_message* sm) {
+    struct _centers* self = SERVICE_SELF;
     struct host_node* regn = sm->msg;
     _onreg(self, regn);
 }
 
 void
-center_usermsg(struct service* s, int id, void* msg, int sz) {
-    struct _center* self = SERVICE_SELF;
-    struct user_message* um = msg;
+centers_nodemsg(struct service* s, int id, void* msg, int sz) {
+    struct _centers* self = SERVICE_SELF;
+    struct UM_base* um = msg;
     switch (um->msgid) {
     case UMID_NODE_SUB:
         _subscribe(self, id, um);

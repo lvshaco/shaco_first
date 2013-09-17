@@ -146,13 +146,13 @@ host_free() {
 
 void 
 host_start() {
-    host_info("Shaco start.");
+    host_info("Shaco start");
     while (H->loop) {
         int timeout = host_timer_max_timeout();
         host_net_poll(timeout);
         host_timer_dispatch_timeout();
     }
-    host_info("Shaco stop.");
+    host_info("Shaco stop");
 }
 
 void 

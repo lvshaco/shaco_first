@@ -51,7 +51,7 @@ gate_init(struct service* s) {
     self->clients = malloc(sizeof(struct _client) * max);
     memset(self->clients, 0, sizeof(struct _client) * max);
 
-    if (host_net_listen(ip, port, s->serviceid)) {
+    if (host_net_listen(ip, port, s->serviceid, 0)) {
         return 1;
     }
     host_dispatcher_subscribe(s->serviceid, 100);
@@ -95,7 +95,7 @@ _find_client(struct _gate* self, int id) {
 }
 
 void
-_handle_message(struct _client* c, struct user_message* um) {
+_handle_message(struct _client* c, struct UM_base* um) {
     UM_SEND(c->connid, um, um->msgsz);
 }
 /*
@@ -104,7 +104,7 @@ _read(struct _gate* self, int id) {
     struct _client* c = _find_client(self, id);
 
     const char* error;
-    struct user_message* um = UM_READ(id, &error);
+    struct UM_base* um = UM_READ(id, &error);
     while (um) {
         _handle_message(c, um);
         host_net_dropread(id);
@@ -117,7 +117,7 @@ _read(struct _gate* self, int id) {
 }
 */
 void
-gate_usermsg(struct service* s, int id, void* msg, int sz) {
+gate_nodemsg(struct service* s, int id, void* msg, int sz) {
     struct _gate* self = SERVICE_SELF;
     struct _client* c = _find_client(self, id);
     _handle_message(c, msg);

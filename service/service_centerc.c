@@ -12,14 +12,14 @@ static int
 _connect_center(struct service* s) {
     const char* addr = host_getstr("center_ip", "");
     int port = host_getint("center_port", 0);
-    if (host_net_connect(addr, port, true, s->serviceid) < 0) { 
+    if (host_net_connect(addr, port, true, s->serviceid, 0) < 0) { 
         return 1;
     }
     return 0;
 }
 
 int
-centercli_init(struct service* s) {
+centerc_init(struct service* s) {
     if (_connect_center(s))
         return 1;
     return 0;
@@ -68,13 +68,13 @@ _sub_request(int id) {
 }
 
 void
-centercli_service(struct service* s, struct service_message* sm) {
+centerc_service(struct service* s, struct service_message* sm) {
     int center_connid = sm->sessionid;
     _sub_request(center_connid);
 }
 
 void
-centercli_net(struct service* s, struct net_message* nm) {
+centerc_net(struct service* s, struct net_message* nm) {
     switch (nm->type) {
     case NETE_CONNECT:
         host_info("connect to center ok");
@@ -92,5 +92,5 @@ centercli_net(struct service* s, struct net_message* nm) {
 }
 
 void
-centercli_time(struct service* s) {
+centerc_time(struct service* s) {
 }

@@ -1,6 +1,7 @@
 #include "host_service.h"
 #include "host_log.h"
 #include "user_message.h"
+#include "client_type.h"
 #include <assert.h>
 
 struct _subs {
@@ -18,7 +19,7 @@ dispatcher_create() {
 }
 
 static inline int
-_locate_service(struct _subs* self, struct user_message* um)  {
+_locate_service(struct _subs* self, struct UM_base* um)  {
     int msgid = um->msgid;
     int serviceid;
     if (msgid >= 0 && msgid < UMID_MAX) {
@@ -67,6 +68,36 @@ dispatcher_service(struct service* s, struct service_message* sm) {
     }
 }
 
+static inline struct UM_base*
+_read_one(struct net_message* nm, int skip) {
+    int id = nm->connid; 
+    struct UM_base* base;
+    void* data;
+    if (skip > 0)
+        host_error("read begin");
+    base = host_net_read(id, sizeof(*base), skip);
+    if (base == NULL) {
+        goto null;
+    }
+    if (skip > 0)
+        host_error("sz: %d", base->msgsz);
+    base->msgsz += skip;
+    data = host_net_read(id, base->msgsz - sizeof(*base), 0);
+    if (data == NULL) {
+        goto null;
+    }
+    if (skip > 0)
+        host_error("read one ok");
+    return base;
+null:
+    if (!NET_OK(host_net_error())) {
+        // error occur, route to net service
+        nm->type = NETE_SOCKERR;
+        service_notify_net(nm->ud, nm);
+    }
+    return NULL;
+}
+
 void
 dispatcher_net(struct service* s, struct net_message* nm) {
     assert(nm->type == NETE_READ);
@@ -74,20 +105,23 @@ dispatcher_net(struct service* s, struct net_message* nm) {
     struct _subs* self = SERVICE_SELF; 
     int id = nm->connid;
     int serviceid;
-    const char* error;
-    struct user_message* um = UM_READ(id, &error);
-    while (um) {
-        serviceid = _locate_service(self, um);
-        if (serviceid != SERVICE_INVALID) {
-            service_notify_user_message(serviceid, id, um, um->msgsz);
+    struct UM_base* um;
+
+    if (nm->ut >= CLI_UNTRUST) {
+        // untrust client route to the service of the socket binded
+        // and then the service to filter this msg type
+        while ((um = _read_one(nm, UM_SKIP)) != NULL) {
+            service_notify_usermsg(nm->ud, id, um, um->msgsz);
+            host_net_dropread(id, UM_SKIP);
         }
-        host_net_dropread(id);
-        um = UM_READ(id, &error);
-    }
-    if (!NET_OK(error)) {
-        // error occur, route to net service
-        nm->type = NETE_SOCKERR;
-        serviceid = nm->udata; 
-        service_notify_net_message(serviceid, nm);
+    } else {
+        // trust client route to the subscribe service directly
+        while ((um = _read_one(nm, 0)) != NULL) { 
+            serviceid = _locate_service(self, um);
+            if (serviceid != SERVICE_INVALID) {
+                service_notify_nodemsg(serviceid, id, um, um->msgsz);
+            }
+            host_net_dropread(id, 0);
+        }
     }
 }
