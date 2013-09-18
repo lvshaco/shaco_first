@@ -41,6 +41,9 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.h *.c" {
   stringsplice.h
   stringtable.h
   util.h
+  args.h
+  args.c
+  memrw.h
  }
  net=net{
   Makefile

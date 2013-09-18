@@ -14,6 +14,13 @@ struct client {
     int fd;
 };
 
+static void
+_onerror(int fd) {
+    printf("!!!%s.\n", strerror(errno));
+    close(fd);
+    exit(1);
+}
+
 static int
 _write(int fd, const void* buf, size_t sz) {
     int n;
@@ -24,16 +31,13 @@ _write(int fd, const void* buf, size_t sz) {
                 goto err;
             }
         } else {
-            printf("write:%d ", n);
             buf += n;
             sz -= n;
         }
     }
     return 0;
 err:
-    printf("%s", strerror(errno));
-    close(fd);
-    exit(1);
+    _onerror(fd);
     return 1;
 }
 
@@ -49,16 +53,13 @@ _read(int fd, void* buf, size_t sz) {
         } else if (n == 0) {
             goto err;
         } else {
-            printf("read:%d ", n);
             buf += n;
             sz -= n;
         }
     }
     return 0;
 err:
-    printf("%s", strerror(errno));
-    close(fd);
-    exit(1);
+    _onerror(fd);
     return 1;
 }
 
@@ -66,19 +67,23 @@ static void*
 _input(void* ud) {
     struct client* c = ud;
     int fd = c->fd;
-    char buf[32];
+    char buf[1024];
     int l;
-    char head[4];
+    uint8_t head[4];
+    head[2] = 0;
+    head[3] = 0;
     while (fgets(buf, sizeof(buf), stdin)) {
         l = strlen(buf);
-        buf[l-1] = '\0';
+        if (l==1) {
+            continue;
+        }
+        //buf[l-1] = '\0';
+        l--;
         l += 4;
         head[0] = l & 0xff;
         head[1] = (l >> 8) & 0xff;
         _write(fd, head, 4);
         _write(fd, buf, l-4);
-
-        printf("write: %s\n", buf); 
     }
     return NULL;
 }
@@ -89,27 +94,16 @@ _receive(void* ud) {
     struct client* c = ud;
     int fd = c->fd;
     int l;
-    char head[4];
-    fflush(stdout);
-    for (;;) {
-        fflush(stdout);
+    uint8_t head[4];
+    for (;;) { 
         _read(fd, &head, 4);
-        l = head[0] | ((int)head[1] << 8);
-        char buf[l];
+        l = head[0] | (head[1] << 8);
+        char buf[l-3];
         _read(fd, buf, l-4); 
-        buf[l-1] = '\0';
+        buf[l-4] = '\0';
         printf("%s\n", buf); 
     }
     return NULL;
-}
-
-static inline int
-_blocking(int fd) {
-    int flag = fcntl(fd, F_GETFL, 0);
-    if (flag == -1) {
-        return -1;
-    }
-    return fcntl(fd, F_SETFL, flag | O_NONBLOCK);
 }
 
 static int

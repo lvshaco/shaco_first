@@ -18,6 +18,16 @@ net_src=\
 	net/netbuf.c \
 	net/netbuf.h
 
+base_src=\
+	base/array.h \
+	base/freeid.h \
+	base/hashid.h \
+	base/stringsplice.h \
+	base/stringtable.h \
+	base/util.h \
+	base/args.c \
+	base/args.h
+
 host_src=\
 	host/host_main.c \
  	host/host.c \
@@ -43,15 +53,16 @@ cli_src=\
 test_src=\
 	test/test.c \
 	net.so \
-	lur.so
+	lur.so \
+	base.so
 
 #LDFLAGS=-Wl,-rpath,. \
 		#-L. net.so lur.so\
 	    #-llua -lm -ldl -lrt
 LDFLAGS=-Wl,-rpath,. \
-		net.so lur.so -llua -lm -ldl -lrt -rdynamic# -Wl,-E
+		net.so lur.so base.so -llua -lm -ldl -lrt -rdynamic# -Wl,-E
 
-all: lur.so net.so shaco shaco-cli $(service_so)
+all: lur.so net.so base.so shaco shaco-cli $(service_so)
 release: CFLAGS += -O2
 release: all
 
@@ -64,6 +75,10 @@ lur.so: $(lur_src)
 	gcc $(CFLAGS) $(SHARED) -o $@ $^ -llua
 
 net.so: $(net_src)
+	@rm -f $@
+	gcc $(CFLAGS) $(SHARED) -o $@ $^
+
+base.so: $(base_src)
 	@rm -f $@
 	gcc $(CFLAGS) $(SHARED) -o $@ $^
 

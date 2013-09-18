@@ -67,7 +67,7 @@ node_init(struct service* s) {
         return 1;
 
     self->iscenter = HNODE_TID(me.id) == NODE_CENTER;
-    const char* tmp = self->iscenter ? "centers" : "centercli";
+    const char* tmp = self->iscenter ? "centers" : "centerc";
     self->center_or_cli_service = service_query_id(tmp);
     if (self->center_or_cli_service == -1) {
         host_error("lost %s service", tmp);

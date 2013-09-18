@@ -8,9 +8,11 @@
 #include "client_type.h"
 #include "user_message.h"
 #include "freeid.h"
-#include "stringsplice.h"
+#include "args.h"
+#include "memrw.h"
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 
 struct client {
     int connid;
@@ -81,7 +83,7 @@ cmds_init(struct service* s) {
 
 static struct client*
 _getclient(struct server* self, int id) {
-    if (id >= 0 && self->max) {
+    if (id >= 0 && id < self->max) {
         struct client* c = &self->clients[id];
         if (c->connected)
             return c;
@@ -89,51 +91,11 @@ _getclient(struct server* self, int id) {
     return NULL;
 }
 
-struct _command {
-    uint16_t tid;
-    uint16_t sid;
-    const char* cmd;
-    size_t cmdl;
-};
-
-static int
-_get_command(char* cmd, size_t sz, struct _command* c) {
-    cmd[sz-1] = '\0';
-    host_info("receive command: %s", cmd); 
-    struct stringsplice sp;
-    stringsplice_create(&sp, 3, cmd, ' ');
-    if (sp.n < 3)
-        return 1;
-    // fix the last len
-    int i;
-    sp.p[2].len = sz-1 - (sp.p[2].p - cmd);
-    for (i=0; i<3; ++i) {
-        cmd[sp.p[i].p-cmd+sp.p[i].len] = '\0';
-    }
-    if (strcasecmp(sp.p[0].p, "all") == 0) {
-        c->tid = HNODE_TID_MAX;
-        c->sid = HNODE_SID_MAX;
-    } else {
-        c->tid = host_node_typeid(sp.p[0].p);
-        if (c->tid == -1) {
-            return 1;
-        }
-        if (strcasecmp(sp.p[1].p, "all") == 0) {
-            c->sid = HNODE_SID_MAX;
-        } else {
-            c->sid = atoi(sp.p[1].p);
-        }
-    } 
-    c->cmd = sp.p[2].p;
-    c->cmdl = sp.p[2].len+1;
-    return 0;
-}
-
 static void
 _response_error(int id, const char* error) {
-    UM_DEF(um, 64);
-    strncpy((char*)(um+1), error, 63);
-    UM_SENDTOCLI(id, um, sizeof(um));
+    UM_DEF(um, 1024);
+    int n = snprintf((char*)(um+1), 1024-UM_HSIZE, "%s", error);
+    UM_SENDTOCLI(id, um, UM_HSIZE+n);
 }
 
 static inline int
@@ -172,6 +134,22 @@ _broadcast_all(struct server* self, struct UM_base* um) {
     } 
 }
 
+static int
+_getnodeid(const char* tidstr, const char* sidstr) {
+    if (strcasecmp(tidstr, "all") == 0) {
+        return HNODE_ID(HNODE_TID_MAX, HNODE_SID_MAX);
+    }
+    int tid = host_node_typeid(tidstr);
+    if (tid == -1) {
+        return -1;
+    }
+    if (strcasecmp(sidstr, "all") == 0) {
+        return HNODE_ID(tid, HNODE_SID_MAX);
+    } else {
+        return HNODE_ID(tid, atoi(sidstr));
+    }
+}
+
 void
 cmds_usermsg(struct service* s, int id, void* msg, int sz) {
     struct server* self = SERVICE_SELF;
@@ -179,41 +157,57 @@ cmds_usermsg(struct service* s, int id, void* msg, int sz) {
     struct client* c = _getclient(self, hash);
     assert(c);
     UM_CAST(UM_base, um, msg);
-    
-    struct _command cmd;
-    if (_get_command((char*)(um+1), sz-UM_HSIZE, &cmd)) {
-        _response_error(id, "invalid command");
+   
+    struct args A;
+    args_parsestrl(&A, 3, (char*)(um+1), sz-UM_HSIZE);
+    if (A.argc < 3) {
+        _response_error(id, "usage: node sid command [arg1 arg2 .. ]");
         return;
     }
+    int nodeid = _getnodeid(A.argv[0], A.argv[1]);
+    if (nodeid == -1) {
+        _response_error(id, "invalid node");
+        return;
+    }
+    int tid = HNODE_TID(nodeid);
+    int sid = HNODE_SID(nodeid);
 
     UM_DEFVAR(UM_cmd_req, req, UMID_CMD_REQ);
     req->cid = hash;
-    strcpy(req->cmd, cmd.cmd);
-    req->msgsz = sizeof(*req) + cmd.cmdl;
+    size_t l = strlen(A.argv[2]);
+    memcpy(req->cmd, A.argv[2], l);
+    req->msgsz = sizeof(*req) + l;
 
     um = (struct UM_base*)req;
-    if (cmd.tid == HNODE_TID_MAX) {
-        _broadcast_all(self, um);
-    } else if (cmd.sid == HNODE_SID_MAX) {
-        _broadcast_type(self, cmd.tid, um);
+    if (tid == HNODE_TID_MAX) {
+        _broadcast_all(self, um); 
+    } else if (sid == HNODE_SID_MAX) {
+        _broadcast_type(self, tid, um);
     } else {
-        _routeto_node(self, HNODE_ID(cmd.tid, cmd.sid), um);
+        _routeto_node(self, HNODE_ID(tid, sid), um);
     }
 }
 
 static void
 _res(struct server* self, int id, struct UM_base* um) {
+    struct host_node* node = host_node_get(um->nodeid);
+    if (node == NULL)
+        return;
     UM_CAST(UM_cmd_res, res, um);
     struct client* c = _getclient(self, res->cid);
     if (c == NULL)
         return;
-
-    UM_DEF(notify, UM_MAXSIZE); 
-    char* info = (char*)(notify+1);
-    size_t sz = res->msgsz - sizeof(*res);
-    memcpy(info, res+1, sz);
-    info[sz-1] = '\0';
-    UM_SENDTOCLI(c->connid, notify, UM_HSIZE+sz);
+    UM_DEF(notify, UM_MAXSIZE);
+    struct memrw rw;
+    memrw_init(&rw, notify+1, UM_MAXSIZE-sizeof(*notify));
+    char tmp[HNODESTR_MAX]; 
+    int n = snprintf(rw.ptr, RW_SPACE(&rw), "%s:\n", 
+            host_strnode(node, tmp));
+    memrw_pos(&rw, n);
+    size_t sz = res->msgsz - sizeof(*res); 
+    memrw_write(&rw, res+1, sz);
+    notify->msgsz = sizeof(*notify) + RW_CUR(&rw);
+    UM_SENDTOCLI(c->connid, notify, notify->msgsz);
 }
 
 void

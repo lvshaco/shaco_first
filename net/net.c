@@ -287,7 +287,7 @@ net_free(struct net* self) {
 void*
 net_read(struct net* self, int id, int sz, int skip) {
     self->error = OK;
-        
+ 
     struct socket* s = _get_socket(self, id);
     if (s == NULL) {
         self->error = NET_ERR_NOSOCK;
@@ -311,7 +311,6 @@ net_read(struct net* self, int id, int sz, int skip) {
 
     if (rb->wptr == 0) {
         rb->wptr += skip;
-        printf("wptr:%d\n", rb->wptr);
         assert(rb->wptr <= rb->sz);
     }
     char* wptr = begin + rb->wptr;
@@ -377,7 +376,6 @@ net_dropread(struct net* self, int id, int skip) {
         rb->wptr = sz+skip;
         rb->rptr = 0;
     }
-    printf("drop wptr:%d\n", rb->wptr);
 }
 
 int

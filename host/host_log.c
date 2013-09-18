@@ -14,35 +14,38 @@ static const char* STR_LEVELS[LOG_MAX] = {
 };
 
 static inline const char*
-_strlevel(int level) {
+_levelstr(int level) {
     if (level >= 0 && level < LOG_MAX)
         return STR_LEVELS[level];
     return "";
 }
 
+int host_log_level() {
+    return _LEVEL;
+}
+
 const char* 
 host_log_levelstr(int level) {
-    return _strlevel(level);
+    return _levelstr(level);
 }
 
-int 
-host_log_levelid(const char* level) {
+static int 
+_levelid(const char* level) {
     int i;
     for (i=LOG_DEBUG; i<LOG_MAX; ++i) {
-        if (strcmp(STR_LEVELS[i], level) == 0)
+        if (strcasecmp(STR_LEVELS[i], level) == 0)
             return i;
     }
-    return LOG_DEBUG;
+    return -1;
 }
 
-void
-host_log_setlevel(int level) {
-    _LEVEL = level;
-}
-
-void 
+int
 host_log_setlevelstr(const char* level) {
-    _LEVEL = host_log_levelid(level);
+    int id = _levelid(level);
+    if (id == -1)
+        return -1;
+    _LEVEL = id;
+    return id;
 }
 
 int 
@@ -70,7 +73,7 @@ _default_log(int level, const char* log) {
     uint32_t msec = now % 1000;
     int off = strftime(buf, sizeof(buf), "%y%m%d-%H:%M:%S.", localtime(&sec));
     snprintf(buf+off, sizeof(buf)-off, "%03d", msec);
-    printf("[%s] %s: %s\n", buf, _strlevel(level), log);
+    printf("[%s] %s: %s\n", buf, _levelstr(level), log);
 }
 
 #define _gen_message(log, n, fmt) \

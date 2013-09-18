@@ -1,5 +1,6 @@
 #include "host_node.h"
 #include "host_log.h"
+#include "host_net.h"
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
@@ -171,10 +172,8 @@ _get_node(uint16_t id) {
     return NULL;
 }
 
-#define NODESTR_MAX 128
-
-static const char*
-_strnode(struct host_node* node, char str[NODESTR_MAX]) {
+const char*
+host_strnode(struct host_node* node, char str[HNODESTR_MAX]) {
     uint16_t tid = HNODE_TID(node->id);
     uint16_t sid = HNODE_SID(node->id);
     const char* type;
@@ -183,13 +182,21 @@ _strnode(struct host_node* node, char str[NODESTR_MAX]) {
     } else {
         type = "";
     }
-    struct in_addr in;
-    in.s_addr = node->addr;
-    snprintf(str, NODESTR_MAX, "[type:%s tid:%d sid:%d %s:%d]",
+    struct in_addr ra;
+    ra.s_addr = node->addr;
+    uint32_t laddr = 0;
+    uint16_t lport = 0; 
+    struct in_addr la;
+    la.s_addr = laddr;
+    host_net_socket_address(node->connid, &laddr, &lport);
+    snprintf(str, HNODESTR_MAX, "NODE[%s%04u,T%02u,C%04d,L%s:%u,R%s:%u]",
         type, 
-        tid, 
-        sid, 
-        inet_ntoa(in), 
+        sid,
+        tid,
+        node->connid,
+        inet_ntoa(la),
+        lport,
+        inet_ntoa(ra), 
         node->port);
     return str;
 }
@@ -231,7 +238,7 @@ host_node_is_register(uint16_t id) {
 
 int 
 host_node_register(struct host_node* node) {
-    char strnode[NODESTR_MAX];
+    char strnode[HNODESTR_MAX];
     struct _array* arr;
     uint16_t tid = HNODE_TID(node->id);
     uint16_t sid = HNODE_SID(node->id);
@@ -239,11 +246,11 @@ host_node_register(struct host_node* node) {
         sid >= 0 && sid < HNODE_SID_MAX) {
         arr = &N->nodes[tid];
         if (_add_node(arr, node) == 0) {
-            host_info("node register, %s", _strnode(node, strnode));
+            host_info("node register, %s", host_strnode(node, strnode));
             return 0;
         }
     } 
-    host_error("node register error, %s", _strnode(node, strnode));
+    host_error("node register error, %s", host_strnode(node, strnode));
     return 1;
 }
 
@@ -252,8 +259,8 @@ host_node_unregister(uint16_t id) {
     struct host_node* node = _get_node(id);
     if (node) {
         if (!_isfree_node(node)) {
-            char strnode[NODESTR_MAX];
-            host_info("node unregister, %s", _strnode(node, strnode));
+            char strnode[HNODESTR_MAX];
+            host_info("node unregister, %s", host_strnode(node, strnode));
             _free_node(node);
             return 0;
         }
@@ -272,8 +279,8 @@ host_node_disconnect(int connid) {
         for (i=0; i<arr->size; ++i) {
             node = &arr->p[i];
             if (node->connid == connid) {
-                char strnode[NODESTR_MAX];
-                host_info("node disconnect, %s", _strnode(node, strnode));
+                char strnode[HNODESTR_MAX];
+                host_info("node disconnect, %s", host_strnode(node, strnode));
                 _free_node(node);
                 return 0;
             }

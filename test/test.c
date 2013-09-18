@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "lur.h"
-
+#include "args.h"
 /*
 void 
 host_log(int level, const char* fmt, ...) {
@@ -59,8 +59,50 @@ test_lur() {
     lur_free(L);
 }
 
+void
+test_args() {
+    const char* strv[] = {
+    "abc",
+    "abc def",
+    "abc def 123 456 789 012 345 678 901 234",
+    "abc def 123 456 789 012 345 678 901 234 567 890",
+    "  abc    123  ",
+    "  abc  ",
+    "  abc",
+    "abc  ",
+    };
+
+    struct args p;
+    int i;
+    int n;
+    printf("=====test_args input data=====\n");
+    for (i=0; i<sizeof(strv)/sizeof(strv[0]); ++i) {
+        printf("%s\n", strv[i]);
+    }
+    printf("=====test args_parsestrl=====\n");
+    for (i=0; i<sizeof(strv)/sizeof(strv[0]); ++i) {
+        args_parsestrl(&p, 3, strv[i], strlen(strv[i]));
+        printf(">> %d: argc=%d\n", i, p.argc);
+        for (n=0; n< p.argc; ++n) {
+            printf("%s,", p.argv[n]);
+        }
+        printf("\n");
+    }
+    printf("=====test args_parsestr=====\n");
+    for (i=0; i<sizeof(strv)/sizeof(strv[0]); ++i) {
+        args_parsestr(&p, 0, strv[i]);
+        printf(">> %d: argc=%d\n", i, p.argc);
+        for (n=0; n< p.argc; ++n) {
+            printf("%s,", p.argv[n]);
+        }
+        printf("\n");
+    }
+
+}
+
 int 
 main(int argc, char* argv[]) {
     test_lur();
+    test_args();
     return 0;
 }

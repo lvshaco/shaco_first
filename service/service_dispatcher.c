@@ -73,21 +73,14 @@ _read_one(struct net_message* nm, int skip) {
     int id = nm->connid; 
     struct UM_base* base;
     void* data;
-    if (skip > 0)
-        host_error("read begin");
     base = host_net_read(id, sizeof(*base), skip);
     if (base == NULL) {
         goto null;
     }
-    if (skip > 0)
-        host_error("sz: %d", base->msgsz);
-    base->msgsz += skip;
-    data = host_net_read(id, base->msgsz - sizeof(*base), 0);
+    data = host_net_read(id, base->msgsz + skip - sizeof(*base), 0);
     if (data == NULL) {
         goto null;
     }
-    if (skip > 0)
-        host_error("read one ok");
     return base;
 null:
     if (!NET_OK(host_net_error())) {
@@ -111,6 +104,7 @@ dispatcher_net(struct service* s, struct net_message* nm) {
         // untrust client route to the service of the socket binded
         // and then the service to filter this msg type
         while ((um = _read_one(nm, UM_SKIP)) != NULL) {
+            um->msgsz += UM_SKIP;
             service_notify_usermsg(nm->ud, id, um, um->msgsz);
             host_net_dropread(id, UM_SKIP);
         }

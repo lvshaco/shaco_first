@@ -4,9 +4,96 @@
 #include "host_node.h"
 #include "node_type.h"
 #include "user_message.h"
+#include "args.h"
+#include "memrw.h"
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 
+///////////////////
+#define R_OK 0
+#define R_NOCOMMAND 1
+#define R_FAIL 2
+#define R_ARGLESS 3
+#define R_ARGINVALID 4
+
+static const char* STRERROR[] = {
+    "execute ok",
+    "no command",
+    "execute fail",
+    "execute less arg",
+    "execute invalid arg",
+};
+
+static inline const char*
+_strerror(int error) {
+    if (error >= 0 && error < sizeof(STRERROR)/sizeof(STRERROR[0]))
+        return STRERROR[error];
+    return "execute unknown error";
+}
+
+///////////////////
+static int
+_getloglevel(struct args* A, struct memrw* rw) {
+    int n = snprintf(rw->begin, RW_SPACE(rw), host_log_levelstr(host_log_level()));
+    memrw_pos(rw, n);
+    return R_OK;
+}
+
+static int
+_setloglevel(struct args* A, struct memrw* rw) {
+    if (A->argc == 1)
+        return R_ARGLESS;
+    if (host_log_setlevelstr(A->argv[1]) == -1)
+        return R_ARGINVALID;
+    return R_OK;
+}
+
+static int
+_reload(struct args* A, struct memrw* rw) {
+    if (A->argc == 1)
+        return R_ARGLESS;
+    host_error("reload %s begin", A->argv[1]);
+    if (service_reload(A->argv[1]))
+        return R_FAIL;
+    host_error("reload %s end", A->argv[1]);
+    return R_OK;
+}
+
+static int
+_shownodecb(struct host_node* node, void* ud) {
+    struct memrw* rw = ud;
+    char tmp[HNODESTR_MAX];
+    host_strnode(node, tmp);
+    
+    int n = snprintf(rw->ptr, RW_SPACE(rw), "%s\n", tmp);
+    memrw_pos(rw, n);
+    return R_OK;
+}
+static int
+_shownode(struct args* A, struct memrw* rw) {
+    int i;
+    for (i=0; i<host_node_types(); ++i) {
+        host_node_foreach(i, _shownodecb, rw);
+    }
+    return R_OK;
+}
+
+///////////////////
+struct command {
+    const char* name;
+    int (*fun)(struct args* A, struct memrw* rw);
+};
+
+static struct command COMMAND_MAP[] = {
+    { "getloglevel", _getloglevel },
+    { "setloglevel", _setloglevel },
+    { "reload",      _reload },
+    { "shownode",    _shownode },
+    { NULL, NULL },
+};
+
+///////////////////
 struct cmdctl {
     int cmds_service;
 };
@@ -40,23 +127,55 @@ cmdctl_init(struct service* s) {
     return 0;
 }
 
+static struct command*
+_lookupcmd(const char* name) {
+    struct command* c = &COMMAND_MAP[0];
+    while (c->name) {
+        if (strcmp(c->name, name) == 0 &&
+            c->fun)
+            return c;
+        c++;
+    }
+    return NULL;
+}
+
+static int 
+_execute(struct args* A, struct memrw* rw) {
+    struct command* c = _lookupcmd(A->argv[0]);
+    if (c)
+        return c->fun(A, rw);
+    return R_NOCOMMAND;
+}
+
 static void
 _cmdreq(struct cmdctl* self, int id, struct UM_base* um) {
     UM_CAST(UM_cmd_req, req, um);
-    if (req->msgsz <= sizeof(*req)) {
+
+    char* cmd = (char*)(req+1);
+    size_t cl = req->msgsz - sizeof(*req);
+    struct args A;
+    args_parsestrl(&A, 0, cmd, cl);
+    if (A.argc == 0) {
         return; // null
     }
-    char* cmd = (char*)(req+1);
-    cmd[um->msgsz-sizeof(*req)-1] = '\0';
 
     UM_DEFVAR(UM_cmd_res, res, UMID_CMD_RES);
-    res->nodeid = host_id();
-    char* str = (char*)(res+1);
-    memcpy(str, "ok", 3);
-    res->msgsz = sizeof(*res)+3;
+    res->cid = req->cid; 
+    struct memrw rw;
+    memrw_init(&rw, res+1, res->msgsz-sizeof(*res));
+
+    int error = _execute(&A, &rw);
+    if (RW_EMPTY(&rw)) {
+        int n = snprintf(rw.begin, rw.sz, "[%s] %s", A.argv[0], _strerror(error));
+        res->msgsz = sizeof(*res) + n;
+    } else {
+        res->msgsz = sizeof(*res) + RW_CUR(&rw);
+    }
+    
     if (self->cmds_service == -1) {
         UM_SEND(id, res, res->msgsz);
     } else {
+        res->nodeid = host_id();
         service_notify_nodemsg(self->cmds_service, -1, res, res->msgsz);
     }
 }

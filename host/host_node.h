@@ -14,6 +14,7 @@ struct host_node {
 #define HNODE_SID_MAX 0x3ff
 #define HNODE_TID_MAX 0x3f
 #define HNODE_NAME_MAX 16
+#define HNODESTR_MAX 128
 
 #define HNODE_ID(tid, sid) ((((uint16_t)(tid)&0x3f) << 10) | ((uint16_t)(sid)&0x3ff))
 #define HNODE_TID(id) (((uint16_t)(id) >> 10) & 0x3f)
@@ -38,5 +39,6 @@ int  host_node_register(struct host_node* node);
 int  host_node_unregister(uint16_t id);
 int  host_node_disconnect(int connid);
 void host_node_foreach(uint16_t tid, int (*cb)(struct host_node*, void* ud), void* ud);
+const char* host_strnode(struct host_node* node, char str[HNODESTR_MAX]);
 
 #endif
