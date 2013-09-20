@@ -72,7 +72,7 @@ array_set(struct array* self, size_t index, void* pointer) {
 
 static inline void*
 array_get(struct array* self, size_t index) {
-    if (index >= self->cap) {
+    if (index >= self->size) {
         return NULL;
     }
     return self->elems[index];

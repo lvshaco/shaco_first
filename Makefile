@@ -1,6 +1,6 @@
 .PHONY: all t clean cleanall
-
-CFLAGS=-g -Wall -Werror
+ #-Wpointer-arith -Winline
+CFLAGS=-g -Wall -Werror 
 SHARED=-fPIC -shared
 
 service_dir=service
@@ -44,6 +44,8 @@ host_src=\
 	host/host_dispatcher.h \
 	host/host_node.c \
 	host/host_node.h \
+	host/host_reload.c \
+	host/host_reload.h \
  	host/dlmodule.c \
  	host/dlmodule.h
 

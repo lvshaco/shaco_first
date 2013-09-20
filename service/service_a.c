@@ -6,7 +6,7 @@
 #include "user_message.h"
 #include <stdlib.h>
 #include <stdio.h>
-
+/*
 struct _a {
     int connid;
     bool connected;
@@ -39,7 +39,7 @@ a_init(struct service* s) {
         return 1;
     }
     return 0;
-}
+}*/
 /*
 void
 _handle_message(struct _a* self, struct UM_base* um) {

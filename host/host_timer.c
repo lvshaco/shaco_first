@@ -91,6 +91,7 @@ host_timer_fini() {
 
 uint64_t 
 host_timer_now() {
+    T->elapsed_time = _elapsed();
     return T->start_time + T->elapsed_time;
 }
 

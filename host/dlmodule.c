@@ -109,10 +109,10 @@ dlmodule_close(struct dlmodule* dl) {
 int
 dlmodule_reload(struct dlmodule* dl) {
     if (dl->name == NULL) {
-        return -1;
+        return 1;
     }
     if (dl->handle) {
-        _dlclose(dl->handle);
+        _dlclose(dl);
     }
     return _open(dl);
 }

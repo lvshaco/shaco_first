@@ -2,6 +2,7 @@
 #include "host_dispatcher.h"
 #include "host_log.h"
 #include "host_node.h"
+#include "host_reload.h"
 #include "node_type.h"
 #include "user_message.h"
 #include "args.h"
@@ -53,10 +54,7 @@ static int
 _reload(struct args* A, struct memrw* rw) {
     if (A->argc == 1)
         return R_ARGLESS;
-    host_error("reload %s begin", A->argv[1]);
-    if (service_reload(A->argv[1]))
-        return R_FAIL;
-    host_error("reload %s end", A->argv[1]);
+    host_reload_prepare(A->argv[1]);
     return R_OK;
 }
 
@@ -154,7 +152,7 @@ _cmdreq(struct cmdctl* self, int id, struct UM_base* um) {
     char* cmd = (char*)(req+1);
     size_t cl = req->msgsz - sizeof(*req);
     struct args A;
-    args_parsestrl(&A, 0, cmd, cl);
+    args_parsestrl(&A, 2, cmd, cl);
     if (A.argc == 0) {
         return; // null
     }

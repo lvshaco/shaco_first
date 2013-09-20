@@ -26,6 +26,7 @@ void service_fini();
 
 int service_load(const char* name);
 int service_reload(const char* name);
+int service_reload_byid(int serviceid);
 int service_query_id(const char* name);
 const char* service_query_name(int serviceid);
 

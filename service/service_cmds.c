@@ -67,15 +67,15 @@ cmds_init(struct service* s) {
     }
 
     int cmax = host_getint("cmdc_max", 10);
-    int live = host_getint("cmdc_livetime", 6000);
+    int live = host_getint("cmdc_livetime", 60);
     int hmax = host_getint("host_connmax", cmax); 
-    self->livetime = live * 1000; 
+    self->livetime = live * 1000;
     self->max = cmax;
     self->clients = malloc(sizeof(struct client) * cmax);
     memset(self->clients, 0, sizeof(struct client) * cmax);
     freeid_init(&self->fi, cmax, hmax);
     
-    host_timer_register(s->serviceid, live);
+    host_timer_register(s->serviceid, self->livetime);
 
     SUBSCRIBE_MSG(s->serviceid, UMID_CMD_RES);
     return 0;
@@ -249,11 +249,12 @@ _ondisconnect(struct server* self, int connid) {
 }
 
 static void
-_disconnect(struct server* self, int id) {
+_disconnect(struct server* self, int id, const char* error) {
     assert(id >= 0 && id < self->max);
     struct client* c = &self->clients[id]; 
     assert(c->connected);
     assert(c->connid >= 0);
+    _response_error(c->connid, error);
     int tmp = freeid_free(&self->fi, c->connid);
     assert(tmp == id);
     host_net_close_socket(c->connid);
@@ -275,6 +276,7 @@ cmds_net(struct service* s, struct net_message* nm) {
 
 void
 cmds_time(struct service* s) {
+    
     struct server* self= SERVICE_SELF;
     struct client* clients = self->clients;
     struct client* c;
@@ -283,8 +285,9 @@ cmds_time(struct service* s) {
     for (i=0; i<self->max; ++i) {
         c = &clients[i];
         if (c->connected) {
-            if (now - c->active_time > self->livetime) {
-                _disconnect(self, i);
+            if (now > c->active_time &&
+                now - c->active_time > self->livetime) { 
+                _disconnect(self, i, "livetimeout.");
             }
         }
     }

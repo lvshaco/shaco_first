@@ -52,8 +52,8 @@ _create(const char* name) {
         free(s);
         return 1;
     }
-    _insert(s);
-    host_info("load service %s", name);
+    _insert(s); 
+    host_info("load service %s ok", name);
     return 0;
 }
 
@@ -66,7 +66,7 @@ _reload(struct service* s) {
     if (s->dl.reload) {
         s->dl.reload(s);
     }
-    host_info("reload service %s", s->dl.name);
+    host_info("reload service %s ok", s->dl.name);
     return 0;
 }
 
@@ -114,7 +114,7 @@ service_load(const char* name) {
             *next = '\0';
         if (_create(p)) {
             return 1;
-        } 
+        }  
         if (next == NULL)
             break;
         p = next+1; 
@@ -123,7 +123,7 @@ service_load(const char* name) {
     struct service* s = NULL;
     int i;
     for (i=sz; i<array_size(S->sers); ++i) {
-        s = array_get(S->sers, i);
+        s = array_get(S->sers, i); 
         if (s && s->dl.init) {
             if (s->dl.init(s)) {
                 return 1;
@@ -136,26 +136,34 @@ service_load(const char* name) {
 int
 service_reload(const char* name) {
     struct service* s = _find(name);
-    if (s == NULL) {
-        return _create(name);
+    if (s) {
+        return _reload(s);
     } else {
+        return 1;
+        //return _create(name);
+    }
+}
+
+int 
+service_reload_byid(int serviceid) {
+    struct service* s = array_get(S->sers, serviceid);
+    if (s) {
         return _reload(s);
     }
+    return 1;
 }
 
 int
 service_query_id(const char* name) {
     struct service* s = _find(name);
-    return s ? s->serviceid : -1;
+    return s ? s->serviceid : SERVICE_INVALID;
 }
 
 const char* 
 service_query_name(int serviceid) {
-    if (serviceid >=0 && serviceid < array_size(S->sers)) {
-        struct service* s = array_get(S->sers, serviceid);
-        if (s) {
-            return s->dl.name;
-        }
+    struct service* s = array_get(S->sers, serviceid);
+    if (s) {
+        return s->dl.name;
     }
     return "";
 }

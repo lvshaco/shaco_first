@@ -6,6 +6,7 @@
 #include "host_service.h"
 #include "host_dispatcher.h"
 #include "host_node.h"
+#include "host_reload.h"
 #include <stdlib.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -39,6 +40,12 @@ _sigtermhandler(int sig) {
     host_stop();
 } 
 
+// todo test
+static void
+_reload(int sig) {
+    host_error("Received SIGUSR1");
+    service_reload("cmdctl");
+}
 
 static void
 _install_sighandler() {
@@ -48,6 +55,9 @@ _install_sighandler() {
     act.sa_handler = _sigtermhandler;
     sigaction(SIGINT, &act, NULL);
     sigaction(SIGTERM, &act, NULL);
+
+    act.sa_handler = _reload;
+    sigaction(SIGUSR1, &act, NULL);
 }
 
 static int
@@ -87,6 +97,7 @@ int
 host_create(const char* file) {
     _install_sighandler();
     host_timer_init();
+    host_reload_init();
     service_init(); 
     
     struct lur* L = lur_create(); 
@@ -132,13 +143,14 @@ void
 host_free() {
     if (H == NULL)
         return;
-
-    host_dispatcher_fini();
+    
+    host_net_fini();  
     host_node_free();
-    host_net_fini();
-    host_timer_fini();
+    host_dispatcher_fini();
     host_log_fini();
     service_fini();
+    host_reload_fini();
+    host_timer_fini();
     lur_free(H->cfg);
     free(H);
     H = NULL;
@@ -151,6 +163,7 @@ host_start() {
         int timeout = host_timer_max_timeout();
         host_net_poll(timeout);
         host_timer_dispatch_timeout();
+        host_reload_execute();
     }
     host_info("Shaco stop");
 }
