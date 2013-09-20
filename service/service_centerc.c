@@ -12,6 +12,7 @@ static int
 _connect_center(struct service* s) {
     const char* addr = host_getstr("center_ip", "");
     int port = host_getint("center_port", 0);
+    host_info("connect to %s:%u ...", addr, port);
     if (host_net_connect(addr, port, true, s->serviceid, 0) < 0) { 
         return 1;
     }

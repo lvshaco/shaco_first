@@ -2,8 +2,9 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.h *.c" {
  Makefile
  README.md
  config.lua
+ config_benchmark.lua
  config_center.lua
- config_client.lua
+ config_echo.lua
  config_game.lua
  config_gate.lua
  host=host{
@@ -15,6 +16,7 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.h *.c" {
   host_message.h
   host_net.h
   host_node.h
+  host_reload.h
   host_remote.h
   host_service.h
   host_timer.h
@@ -26,25 +28,25 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.h *.c" {
   host_main.c
   host_net.c
   host_node.c
+  host_reload.c
   host_remote.c
   host_service.c
   host_timer.c
-  host_reload.c
  }
  lur=lur{
   lur.h
   lur.c
  }
  base=base{
+  args.h
   array.h
   freeid.h
   hashid.h
+  memrw.h
   stringsplice.h
   stringtable.h
   util.h
-  args.h
   args.c
-  memrw.h
  }
  net=net{
   Makefile
@@ -57,18 +59,18 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.h *.c" {
   server.c
  }
  service=service{
-  node_type.h
   client_type.h
+  node_type.h
   service_a.c
+  service_benchmark.c
   service_centerc.c
   service_centers.c
-  service_client.c
+  service_cmdctl.c
+  service_cmds.c
   service_dispatcher.c
-  service_gate.c
+  service_echo.c
   service_log.c
   service_node.c
-  service_cmds.c
-  service_cmdctl.c
  }
  message=message{
   user_message.h

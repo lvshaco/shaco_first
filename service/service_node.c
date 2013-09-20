@@ -11,20 +11,20 @@
 #include <stdlib.h>
 #include <arpa/inet.h>
 
-struct _node {
+struct node {
     bool iscenter;
     int center_or_cli_service;
 };
 
-struct _node*
+struct node*
 node_create() {
-    struct _node* self = malloc(sizeof(*self));
+    struct node* self = malloc(sizeof(*self));
     self->center_or_cli_service = SERVICE_INVALID;
     return self;
 }
 
 void
-node_free(struct _node* self) {
+node_free(struct node* self) {
     free(self);
 }
 
@@ -52,7 +52,7 @@ _listen(struct service* s) {
 
 int
 node_init(struct service* s) {
-    struct _node* self = SERVICE_SELF;
+    struct node* self = SERVICE_SELF;
     SUBSCRIBE_MSG(s->serviceid, UMID_NODE_REG);
     SUBSCRIBE_MSG(s->serviceid, UMID_NODE_REGOK);
     SUBSCRIBE_MSG(s->serviceid, UMID_NODE_NOTIFY);
@@ -87,7 +87,7 @@ _reg_request(int id) {
 
 static void
 _reg(struct service* s, int id, struct UM_base* um) {
-    struct _node* self = SERVICE_SELF;
+    struct node* self = SERVICE_SELF;
     UM_CAST(UM_node_reg, reg, um);
     struct host_node node;
     node.id = reg->nodeid;
@@ -117,7 +117,7 @@ _reg(struct service* s, int id, struct UM_base* um) {
 
 static void
 _regok(struct service* s, int id, struct UM_base* um) {
-    struct _node* self = SERVICE_SELF;
+    struct node* self = SERVICE_SELF;
     UM_CAST(UM_node_regok, ok, um);
     struct host_node node;
     node.id = ok->nodeid;
@@ -148,6 +148,7 @@ _onnotify(struct service* s, int id, struct UM_base* um) {
     char* saddr = inet_ntoa(in);
     struct host_node* node = host_node_get(notify->tnodeid);
     if (node == NULL) {
+        host_info("connect to %s:%u ...", saddr, notify->port);
         host_net_connect(saddr, notify->port, false, s->serviceid, 0);
     } else {
         // todo address update

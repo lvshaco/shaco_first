@@ -112,4 +112,6 @@ struct UM_cmd_res {
     (um)->msgsz = sz - UM_SKIP; \
     host_net_send(id, (char*)um + UM_SKIP, (um)->msgsz);
 
+#define UM_SENDTOSVR UM_SENDTOCLI
+
 #endif

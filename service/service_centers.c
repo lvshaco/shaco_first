@@ -14,7 +14,7 @@ struct _array {
     uint16_t* p;
 };
 
-struct _centers {
+struct centers {
     struct _array subs[NODE_TYPE_MAX];
 };
 
@@ -41,15 +41,15 @@ _add_subscribe(struct _array* arr, uint16_t tid) {
     arr->size = idx+1;
 }
 
-struct _centers*
+struct centers*
 centers_create() {
-    struct _centers* self = malloc(sizeof(*self));
+    struct centers* self = malloc(sizeof(*self));
     memset(self, 0, sizeof(*self));
     return self;
 }
 
 void
-centers_free(struct _centers* self) {
+centers_free(struct centers* self) {
     if (self == NULL)
         return;
     
@@ -90,7 +90,7 @@ _subscribecb(struct host_node* node, void* ud) {
 }
 
 static void
-_subscribe(struct _centers* self, int id, struct UM_base* um) {
+_subscribe(struct centers* self, int id, struct UM_base* um) {
     UM_CAST(UM_node_subs, req, um);
     uint16_t src_tid = HNODE_TID(req->nodeid);
     uint16_t tid;
@@ -117,7 +117,7 @@ _onregcb(struct host_node* node, void* ud) {
 }
 
 static void
-_onreg(struct _centers* self, struct host_node* node) {
+_onreg(struct centers* self, struct host_node* node) {
     struct host_node* tnode = node;
     uint16_t tid = HNODE_TID(node->id);
     assert(_isvalid_tid(tid));
@@ -133,14 +133,14 @@ _onreg(struct _centers* self, struct host_node* node) {
 
 void
 centers_service(struct service* s, struct service_message* sm) {
-    struct _centers* self = SERVICE_SELF;
+    struct centers* self = SERVICE_SELF;
     struct host_node* regn = sm->msg;
     _onreg(self, regn);
 }
 
 void
 centers_nodemsg(struct service* s, int id, void* msg, int sz) {
-    struct _centers* self = SERVICE_SELF;
+    struct centers* self = SERVICE_SELF;
     struct UM_base* um = msg;
     switch (um->msgid) {
     case UMID_NODE_SUB:

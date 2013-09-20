@@ -7,20 +7,20 @@
 #include <stdlib.h>
 #include <stdio.h>
 /*
-struct _a {
+struct a {
     int connid;
     bool connected;
 };
 
-struct _a*
+struct a*
 a_create() {
-    struct _a* self = malloc(sizeof(*self));
+    struct a* self = malloc(sizeof(*self));
     memset(self, 0, sizeof(*self));
     return self;
 }
 
 void
-a_free(struct _a* self) {
+a_free(struct a* self) {
     if (self == NULL)
         return;
     free(self);
@@ -28,7 +28,7 @@ a_free(struct _a* self) {
 
 int
 a_init(struct service* s) {
-    struct _a* self = SERVICE_SELF;
+    struct a* self = SERVICE_SELF;
     self->connid = -1;
     self->connected = false; 
 
@@ -42,12 +42,12 @@ a_init(struct service* s) {
 }*/
 /*
 void
-_handle_message(struct _a* self, struct UM_base* um) {
+_handle_message(struct a* self, struct UM_base* um) {
     UM_SEND(self->connid, um, um->msgsz);
 }
 
 void
-_read(struct _a* self, int id) {
+_read(struct a* self, int id) {
     const char* error;
     struct UM_base* um = UM_READ(id, &error);
     while (um) {
@@ -63,7 +63,7 @@ _read(struct _a* self, int id) {
 
 void
 a_net(struct service* s, struct net_message* nm) {
-    struct _a* self = SERVICE_SELF;
+    struct a* self = SERVICE_SELF;
     switch (nm->type) {
     case NETE_READ:
         _read(self, nm->connid);
@@ -81,7 +81,7 @@ a_net(struct service* s, struct net_message* nm) {
 
 void
 a_time(struct service* s) {
-    struct _a* self= SERVICE_SELF;
+    struct a* self= SERVICE_SELF;
     if (!self->connected) {
         const char* ip = host_getstr("remote_ip", "");
         int port = host_getint("host_port", 0);

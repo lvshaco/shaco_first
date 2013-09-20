@@ -4,13 +4,13 @@
 #include "client_type.h"
 #include <assert.h>
 
-struct _subs {
+struct dispatcher {
     int services[UMID_MAX]; // hold for all subscriber(service id) of msg
 };
 
-struct _subs*
+struct dispatcher*
 dispatcher_create() {
-    struct _subs* self = malloc(sizeof(*self));
+    struct dispatcher* self = malloc(sizeof(*self));
     int i;
     for (i=0; i<UMID_MAX; ++i) {
         self->services[i] = SERVICE_INVALID;
@@ -19,7 +19,7 @@ dispatcher_create() {
 }
 
 static inline int
-_locate_service(struct _subs* self, struct UM_base* um)  {
+_locate_service(struct dispatcher* self, struct UM_base* um)  {
     int msgid = um->msgid;
     int serviceid;
     if (msgid >= 0 && msgid < UMID_MAX) {
@@ -41,7 +41,7 @@ _locate_service(struct _subs* self, struct UM_base* um)  {
 }
 
 void
-dispatcher_free(struct _subs* self) {
+dispatcher_free(struct dispatcher* self) {
     if (self == NULL)
         return;
     free(self);
@@ -49,7 +49,7 @@ dispatcher_free(struct _subs* self) {
 
 void
 dispatcher_service(struct service* s, struct service_message* sm) {
-    struct _subs* self = SERVICE_SELF;
+    struct dispatcher* self = SERVICE_SELF;
     int serviceid = sm->sessionid;
     int msgid = (int)(intptr_t)sm->msg;
 
@@ -95,7 +95,7 @@ void
 dispatcher_net(struct service* s, struct net_message* nm) {
     assert(nm->type == NETE_READ);
     
-    struct _subs* self = SERVICE_SELF; 
+    struct dispatcher* self = SERVICE_SELF; 
     int id = nm->connid;
     int serviceid;
     struct UM_base* um;

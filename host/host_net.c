@@ -62,8 +62,7 @@ host_net_listen(const char* addr, uint16_t port, int serviceid, int ut) {
 }
 
 int 
-host_net_connect(const char* addr, uint16_t port, bool block, int serviceid, int ut) {
-    host_info("connect to %s:%u ...", addr, port);
+host_net_connect(const char* addr, uint16_t port, bool block, int serviceid, int ut) { 
     uint32_t ip = inet_addr(addr);
     int r = net_connect(N, ip, port, block, serviceid, ut);
     if (r <= 0) {

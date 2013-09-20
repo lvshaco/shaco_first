@@ -40,13 +40,6 @@ _sigtermhandler(int sig) {
     host_stop();
 } 
 
-// todo test
-static void
-_reload(int sig) {
-    host_error("Received SIGUSR1");
-    service_reload("cmdctl");
-}
-
 static void
 _install_sighandler() {
     struct sigaction act;
@@ -55,9 +48,6 @@ _install_sighandler() {
     act.sa_handler = _sigtermhandler;
     sigaction(SIGINT, &act, NULL);
     sigaction(SIGTERM, &act, NULL);
-
-    act.sa_handler = _reload;
-    sigaction(SIGUSR1, &act, NULL);
 }
 
 static int

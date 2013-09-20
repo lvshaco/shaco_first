@@ -81,7 +81,7 @@ cmds_init(struct service* s) {
     return 0;
 }
 
-static struct client*
+static inline struct client*
 _getclient(struct server* self, int id) {
     if (id >= 0 && id < self->max) {
         struct client* c = &self->clients[id];
