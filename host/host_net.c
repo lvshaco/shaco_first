@@ -5,6 +5,7 @@
 #include "net.h"
 #include <stdlib.h>
 #include <arpa/inet.h>
+#include <signal.h>
 
 #define RDBUFFER_SIZE 64*1024
 
@@ -39,6 +40,8 @@ _dispatch_events() {
 
 int
 host_net_init(int max) {
+    signal(SIGHUP, SIG_IGN);
+    signal(SIGPIPE, SIG_IGN);
     N = net_create(max, RDBUFFER_SIZE);
     return N != NULL ? 0 : 1;
 }
@@ -107,4 +110,7 @@ int host_net_subscribe(int id, bool read, bool write) {
 }
 int host_net_socket_address(int id, uint32_t* addr, uint16_t* port) { 
     return net_socket_address(N, id, addr, port); 
+}
+int host_net_socket_isclosed(int id) {
+    return net_socket_isclosed(N, id);
 }

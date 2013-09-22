@@ -52,11 +52,12 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.h *.c" {
   net.h
   net_message.h
   netbuf.h
+  netpoll.h
+  socket.h
+  socket_epoll.h
+  socket_select.h
   net.c
   netbuf.c
-  select.c
-  epoll.c
-  socket.h
  }
  service=service{
   client_type.h

@@ -4,8 +4,6 @@
 #include <stdint.h>
 #include "net_message.h"
 
-#define NET_OK(r) (r[0] == '\0')
-
 struct net;
 struct net* net_create(int max, int block_size);
 void net_free(struct net* self);
@@ -21,7 +19,9 @@ void net_dropread(struct net* self, int id, int skip);
 int net_send(struct net* self, int id, void* data, int sz);
 void net_close_socket(struct net* self, int id);
 const char* net_error(struct net* self);
+int net_errorid(struct net* self);
 int net_max_socket(struct net* self);
 int net_socket_address(struct net* self, int id, uint32_t* addr, uint16_t* port);
+int net_socket_isclosed(struct net* self, int id);
 
 #endif

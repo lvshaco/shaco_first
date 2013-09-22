@@ -137,6 +137,7 @@ benchmark_usermsg(struct service* s, int id, void* msg, int sz) {
     if (self->query_done == self->query) {
         self->end = host_timer_now();
         uint64_t elapsed = self->end - self->start;
+        if (elapsed == 0) elapsed = 1;
         float qps = self->query_done/(elapsed*0.001f);
         host_info("clients: %d, packetsz: %d, query done: %d, use time: %d, qps: %f", 
         self->connected, self->packetsz, self->query_done, (int)elapsed, qps);

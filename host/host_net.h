@@ -18,5 +18,6 @@ int host_net_max_socket();
 const char* host_net_error();
 int host_net_subscribe(int id, bool read, bool write);
 int host_net_socket_address(int id, uint32_t* addr, uint16_t* port);
+int host_net_socket_isclosed(int id);
 
 #endif

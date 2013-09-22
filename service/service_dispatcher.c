@@ -83,7 +83,7 @@ _read_one(struct net_message* nm, int skip) {
     }
     return base;
 null:
-    if (!NET_OK(host_net_error())) {
+    if (host_net_socket_isclosed(id)) {
         // error occur, route to net service
         nm->type = NETE_SOCKERR;
         service_notify_net(nm->ud, nm);

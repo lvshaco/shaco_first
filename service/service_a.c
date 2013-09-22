@@ -47,21 +47,6 @@ _handle_message(struct a* self, struct UM_base* um) {
 }
 
 void
-_read(struct a* self, int id) {
-    const char* error;
-    struct UM_base* um = UM_READ(id, &error);
-    while (um) {
-        _handle_message(self, um);
-        host_net_dropread(id);
-        //host_info("read one");
-        um = UM_READ(id, &error);
-    }
-    if (!NET_OK(error)) {
-        host_error("remote disconnect");
-    }
-}
-
-void
 a_net(struct service* s, struct net_message* nm) {
     struct a* self = SERVICE_SELF;
     switch (nm->type) {
