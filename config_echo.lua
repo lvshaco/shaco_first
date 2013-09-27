@@ -3,7 +3,7 @@ host_loglevel="INFO",
 host_connmax=11000,
 host_service="echo",
 
-echo_ip="127.0.0.1",
+echo_ip="0.0.0.0",
 echo_port=9999,
 echoc_max=10000,
 --node_type="gate",

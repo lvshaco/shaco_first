@@ -49,6 +49,7 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.h *.c" {
   args.c
  }
  net=net{
+  Makefile
   net.h
   net_message.h
   netbuf.h
@@ -58,6 +59,7 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.h *.c" {
   socket_select.h
   net.c
   netbuf.c
+  test.c
  }
  service=service{
   client_type.h
@@ -72,8 +74,11 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.h *.c" {
   service_echo.c
   service_log.c
   service_node.c
+  service_gate.c
  }
  message=message{
+  cli_message.h
+  message.h
   user_message.h
  }
  tool=tool{

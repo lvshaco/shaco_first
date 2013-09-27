@@ -21,12 +21,12 @@ static int np_del(struct np_state* np, int fd);
 static int np_poll(struct np_state* np, struct np_event* e, int max, int timeout);
     
 #ifdef __linux__
-#include "socket_epoll.h"
+//#include "socket_epoll.h"
 #endif
 
-#ifdef WIN32
+//#ifdef WIN32
 #include "socket_select.h"
-#endif
+//#endif
 
 
 #endif

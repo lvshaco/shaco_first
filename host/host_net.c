@@ -29,7 +29,6 @@ _dispatch_events() {
         }
         if (e->type == NETE_READ) {
             if (host_dispatcher_publish(e)) {
-                host_error("no dispatcher");
                 service_notify_net(serviceid, e);
             }
         } else {

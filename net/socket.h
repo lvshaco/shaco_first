@@ -17,10 +17,10 @@
 
 // socket type
 #ifndef WIN32
-#define fd_t int
+#define socket_t int
 #define SOCKET_INVALID -1
 #else
-#define fd_t SOCKET // intptr_t
+#define socket_t SOCKET // intptr_t
 #define socklen_t int
 #define SOCKET_INVALID INVALID_SOCKET
 #endif
@@ -46,7 +46,7 @@
 #else
 #define _socket_error WSAGetLastError()
 #define _socket_strerror(e) "socket error"
-int _socket_geterror(fd_t fd);
+static inline int _socket_geterror(socket_t fd);
 #define _socket_write(fd, buf, sz) send(fd, buf, sz, 0)
 #define _socket_read(fd, buf, sz)  recv(fd, buf, sz, 0)
 #endif
@@ -54,12 +54,12 @@ int _socket_geterror(fd_t fd);
 // util function
 #ifndef WIN32
 static inline int
-_socket_close(fd_t fd) {
+_socket_close(socket_t fd) {
     return close(fd);
 }
 
 static inline int
-_socket_nonblocking(int fd) {
+_socket_nonblocking(socket_t fd) {
     int flag = fcntl(fd, F_GETFL, 0);
     if (flag == -1)
         return -1;
@@ -67,7 +67,7 @@ _socket_nonblocking(int fd) {
 }
 
 static inline int
-_socket_closeonexec(int fd) {
+_socket_closeonexec(socket_t fd) {
     int flag = fcntl(fd, F_GETFL, 0);
     if (flag == -1)
         return -1;
@@ -75,19 +75,19 @@ _socket_closeonexec(int fd) {
 }
 
 static inline int
-_socket_reuseaddr(int fd) {
+_socket_reuseaddr(socket_t fd) {
     int reuse = 1;
-    return setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse));
+    return setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, (void*)&reuse, sizeof(reuse));
 }
 
 #else
 static inline int
-_socket_close(fd_t fd) {
+_socket_close(socket_t fd) {
     return closesocket(fd);
 }
 
 static inline int
-_socket_nonblocking(int fd) {
+_socket_nonblocking(socket_t fd) {
     u_long nonblocking = 1;                                        
     if (ioctlsocket(fd, FIONBIO, &nonblocking) == SOCKET_ERROR)
         return -1;
@@ -95,17 +95,17 @@ _socket_nonblocking(int fd) {
 }
 
 static inline int
-_socket_closeonexec(int fd) {
+_socket_closeonexec(socket_t fd) {
     return 0;
 }
 
 static inline int
-_socket_reuseaddr(int fd) {
+_socket_reuseaddr(socket_t fd) {
     return 0;
 }
 
 static inline int
-_socket_geterror(fd_t fd) {
+_socket_geterror(socket_t fd) {
     int optval;
     socklen_t optvallen = sizeof(optval); 
     int err = WSAGetLastError();                          

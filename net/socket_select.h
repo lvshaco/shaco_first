@@ -42,11 +42,13 @@ np_fini(struct np_state* np) {
 }
 
 static void
-_grow(struct np_state* np) {
+_grow(struct np_state* np, int maxfd) {
     int cap = np->cap;
-    np->cap *= 1;
-    np->ud = realloc(np->ud, sizeof(void*) * np->cap);
-    memset(np->ud + cap, 0, sizeof(void*) * (np->cap - cap));
+    while (cap <= maxfd)
+        cap *= 2;
+    np->ud = realloc(np->ud, sizeof(void*) * cap);
+    memset(np->ud + np->cap, 0, sizeof(void*) * (cap - np->cap));
+    np->cap = cap;
 }
 
 static int
@@ -63,7 +65,7 @@ np_add(struct np_state* np, int fd, int mask, void* ud) {
     }
     if (set) {
         if (fd >= np->cap) {
-            _grow(np);
+            _grow(np, fd);
         }
         np->ud[fd] = ud;
         if (np->maxfd < fd)
@@ -122,7 +124,8 @@ np_poll(struct np_state* np, struct np_event* e, int max, int timeout) {
     }
     int maxfd = np->maxfd;
     int i, n = 0;
-    if (select(maxfd+1, &np->rtmp, &np->wtmp, NULL, ptv) > 0) {
+    int count = select(maxfd+1, &np->rtmp, &np->wtmp, NULL, ptv);
+    if (count > 0) {
         for (i=0; i<=maxfd; i++) {
             bool read  = FD_ISSET(i, &np->rtmp);
             bool write = FD_ISSET(i, &np->wtmp);

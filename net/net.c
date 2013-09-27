@@ -37,7 +37,7 @@ struct sbuffer {
 };
 
 struct socket {
-    fd_t fd;
+    socket_t fd;
     int status;
     int mask;
     int ud;
@@ -108,7 +108,7 @@ _alloc_sockets(int max) {
 }
 
 static struct socket*
-_create_socket(struct net* self, fd_t fd, uint32_t addr, uint16_t port, int ud, int ut) {
+_create_socket(struct net* self, socket_t fd, uint32_t addr, uint16_t port, int ud, int ut) {
     if (self->free_socket == NULL)
         return NULL;
     struct socket* s = self->free_socket;
@@ -116,7 +116,6 @@ _create_socket(struct net* self, fd_t fd, uint32_t addr, uint16_t port, int ud, 
         self->free_socket = &self->sockets[s->fd];
     else
         self->free_socket = NULL;
-    
     s->fd = fd;
     s->status = STATUS_SUSPEND;
     s->ud = ud;
@@ -455,7 +454,7 @@ static inline struct socket*
 _accept(struct net* self, struct socket* listens) {
     struct sockaddr_in remote_addr;
     socklen_t len = sizeof(remote_addr);
-    fd_t fd = accept(listens->fd, (struct sockaddr*)&remote_addr, &len);
+    socket_t fd = accept(listens->fd, (struct sockaddr*)&remote_addr, &len);
     if (fd < 0) {
         return NULL;
     }
@@ -477,7 +476,7 @@ _accept(struct net* self, struct socket* listens) {
 
 int
 net_listen(struct net* self, uint32_t addr, uint16_t port, int ud, int ut) {
-    fd_t fd = socket(AF_INET, SOCK_STREAM, 0);
+    socket_t fd = socket(AF_INET, SOCK_STREAM, 0);
     if (fd < 0) {
         self->error = _socket_error;
         return -1;
@@ -528,7 +527,7 @@ static inline int
 _onconnect(struct net* self, struct socket* s) {
     int err;
     socklen_t errlen = sizeof(err);
-    if (getsockopt(s->fd, SOL_SOCKET, SO_ERROR, &err, &errlen) == -1) {
+    if (getsockopt(s->fd, SOL_SOCKET, SO_ERROR, (void*)&err, &errlen) == -1) {
         if (err == 0)
             err = _socket_error != 0 ? _socket_error : -1;
     }
@@ -548,12 +547,11 @@ net_connect(struct net* self, uint32_t addr, uint16_t port, bool block, int ud, 
     struct net_message* e = &self->ne[0];
 
     int error;
-    fd_t fd = socket(AF_INET, SOCK_STREAM, 0);
+    socket_t fd = socket(AF_INET, SOCK_STREAM, 0);
     if (fd < 0) {
         error = _socket_error;
         goto err;
     }
- 
     if (!block)
         if (_socket_nonblocking(fd) == -1) {
             error = _socket_error;
