@@ -58,9 +58,6 @@ test_src=\
 	lur.so \
 	base.so
 
-#LDFLAGS=-Wl,-rpath,. \
-		#-L. net.so lur.so\
-	    #-llua -lm -ldl -lrt
 LDFLAGS=-Wl,-rpath,. \
 		net.so lur.so base.so -llua -lm -ldl -lrt -rdynamic# -Wl,-E
 

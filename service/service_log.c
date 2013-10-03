@@ -3,6 +3,7 @@
 #include "host_log.h"
 #include "host.h"
 #include <stdio.h>
+#include <unistd.h>
 #include <time.h>
 
 static inline void
@@ -13,7 +14,7 @@ _log_one(int level, const char* log) {
     uint32_t msec = now % 1000;
     int off = strftime(buf, sizeof(buf), "%y%m%d-%H:%M:%S.", localtime(&sec));
     snprintf(buf+off, sizeof(buf)-off, "%03d", msec);
-    printf("[%s] %s: %s\n", buf, host_log_levelstr(level), log);
+    printf("[%d %s] %s: %s\n", (int)getpid(), buf, host_log_levelstr(level), log);
 }
 
 int

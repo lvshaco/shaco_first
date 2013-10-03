@@ -58,7 +58,7 @@ struct net {
     struct net_message* ne; 
     struct socket* sockets;
     struct socket* free_socket;
-
+    struct socket* tail_socket;
     struct netbuf* rpool; 
 };
 
@@ -150,8 +150,15 @@ _close_socket(struct net* self, struct socket* s) {
     }
     s->tail = NULL;
 
-    s->fd = self->free_socket ? self->free_socket - self->sockets : -1;
-    self->free_socket = s;
+    if (self->free_socket == NULL) {
+        self->free_socket = s;
+    } else {
+        assert(self->tail_socket);
+        assert(self->tail_socket->fd == -1);
+        self->tail_socket->fd = s - self->sockets;
+    }
+    s->fd = -1;
+    self->tail_socket = s;
 }
 
 static inline struct socket*
@@ -225,6 +232,7 @@ net_create(int max, int block_size) {
     self->ne = malloc(max * sizeof(struct net_message));
     self->sockets = _alloc_sockets(max);
     self->free_socket = &self->sockets[0];
+    self->tail_socket = &self->sockets[max-1];
     self->rpool = netbuf_create(max, block_size);
     return self;
 }
@@ -242,6 +250,8 @@ net_free(struct net* self) {
         }
     }
     free(self->sockets);
+    self->free_socket = NULL;
+    self->tail_socket = NULL;
     free(self->ev);
     free(self->ne);
     netbuf_free(self->rpool);

@@ -51,9 +51,26 @@ _grow(struct np_state* np, int maxfd) {
     np->cap = cap;
 }
 
+static inline bool _isvalid_fd(int fd) {
+    // in windows: FD_SETSIZE is the max count of fd
+    // in linux:   FD_SETSIZE is the max value of fd, so
+    // Executing FD_CLR() or FD_SET() with a value of fd 
+    // that is negative or is equal to or larger than 
+    // FD_SETSIZE will result in undefined behavior
+    if (fd < 0)
+        return false;
+#ifndef WIN32
+    if (fd >= FD_SETSIZE)
+        return false;
+#endif
+    return true;
+}
+
 static int
 np_add(struct np_state* np, int fd, int mask, void* ud) {
-    assert(fd >= 0);
+    if (!_isvalid_fd(fd)) {
+        return -1;
+    }
     bool set = false;
     if (mask & NET_RABLE) {
         FD_SET(fd, &np->rfds);
@@ -76,7 +93,9 @@ np_add(struct np_state* np, int fd, int mask, void* ud) {
 
 static int
 np_mod(struct np_state* np, int fd, int mask, void* ud) {
-    assert(fd >= 0);
+    if (!_isvalid_fd(fd)) {
+        return -1;
+    }
     if (mask & NET_RABLE) {
         FD_SET(fd, &np->rfds);
     } else {
@@ -93,7 +112,9 @@ np_mod(struct np_state* np, int fd, int mask, void* ud) {
 
 static int
 np_del(struct np_state* np, int fd) {
-    assert(fd >= 0);
+    if (!_isvalid_fd(fd)) {
+        return -1;
+    }
     assert(fd < np->cap);
     int i;
     FD_CLR(fd, &np->rfds);
@@ -101,17 +122,19 @@ np_del(struct np_state* np, int fd) {
     np->ud[fd] = NULL;
     if (fd == np->maxfd) {
         for (i = np->maxfd-1; i>=0; --i) {
-            if (np->ud[fd]) {
-                np->maxfd = i;
+            if (np->ud[i]) {
                 break;
             }
         }
+        np->maxfd = i;
     }
     return 0;
 }
 
 static int
-np_poll(struct np_state* np, struct np_event* e, int max, int timeout) {  
+np_poll(struct np_state* np, struct np_event* e, int max, int timeout) {
+    if (np->maxfd == -1)
+        return 0;
     memcpy(&np->rtmp, &np->rfds, sizeof(fd_set));
     memcpy(&np->wtmp, &np->wfds, sizeof(fd_set));
 
@@ -130,10 +153,12 @@ np_poll(struct np_state* np, struct np_event* e, int max, int timeout) {
             bool read  = FD_ISSET(i, &np->rtmp);
             bool write = FD_ISSET(i, &np->wtmp);
             if (read || write) {
-                e[n].ud = np->ud[i];
-                e[n].read = read;
-                e[n].write = write;
-                n++;
+                if (np->ud[i]) {
+                    e[n].ud = np->ud[i];
+                    e[n].read = read;
+                    e[n].write = write;
+                    n++;
+                }
             }
         }
     }
