@@ -32,6 +32,8 @@ _reg_request(int id) {
     UM_DEFFIX(UM_node_reg, reg, UMID_NODE_REG);
     reg.addr = me->addr;
     reg.port = me->port;
+    reg.gaddr = me->gaddr;
+    reg.gport = me->gport;
     UM_SEND(id, &reg, sizeof(reg));
 }
 

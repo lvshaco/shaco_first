@@ -8,7 +8,10 @@ struct host_node {
     uint16_t id; // see HNODE_ID
     uint32_t addr;
     uint16_t port;
+    uint32_t gaddr;
+    uint16_t gport;
     int connid;
+    int load;
 };
 
 #define HNODE_SID_MAX 0x3ff
@@ -28,7 +31,7 @@ int host_register_me(struct host_node* me);
 
 int  host_node_typeid(const char* name);
 const char* host_node_typename(uint16_t tid);
-struct host_node* host_node_get(uint16_t id);
+const struct host_node* host_node_get(uint16_t id);
 
 int  host_node_init();
 void host_node_free();
@@ -38,7 +41,11 @@ bool host_node_is_register(uint16_t id);
 int  host_node_register(struct host_node* node);
 int  host_node_unregister(uint16_t id);
 int  host_node_disconnect(int connid);
-void host_node_foreach(uint16_t tid, int (*cb)(struct host_node*, void* ud), void* ud);
-const char* host_strnode(struct host_node* node, char str[HNODESTR_MAX]);
+void host_node_foreach(uint16_t tid, int (*cb)(const struct host_node*, void* ud), void* ud);
+const char* host_strnode(const struct host_node* node, char str[HNODESTR_MAX]);
+
+// load
+int  host_node_minload(uint16_t tid);
+void host_node_updateload(uint16_t id, int value);
 
 #endif

@@ -1,6 +1,7 @@
 #include "host_node.h"
 #include "host_log.h"
 #include "host_net.h"
+#include <limits.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
@@ -16,6 +17,7 @@ struct _type {
 struct _array {
     int cap;
     int size;
+    int loaditer;
     struct host_node* p;
 };
 
@@ -115,7 +117,10 @@ _init_node(struct host_node* node) {
     node->id = -1;
     node->addr = 0;
     node->port = 0;
+    node->gaddr = 0;
+    node->gport = 0;
     node->connid = -1;
+    node->load = 0;
 }
 
 static inline void
@@ -173,7 +178,7 @@ _get_node(uint16_t id) {
 }
 
 const char*
-host_strnode(struct host_node* node, char str[HNODESTR_MAX]) {
+host_strnode(const struct host_node* node, char str[HNODESTR_MAX]) {
     uint16_t tid = HNODE_TID(node->id);
     uint16_t sid = HNODE_SID(node->id);
     const char* type;
@@ -182,22 +187,34 @@ host_strnode(struct host_node* node, char str[HNODESTR_MAX]) {
     } else {
         type = "";
     }
-    struct in_addr ra;
-    ra.s_addr = node->addr;
+    struct in_addr in;
     uint32_t laddr = 0;
-    uint16_t lport = 0; 
-    struct in_addr la;
-    la.s_addr = laddr;
+    uint16_t lport = 0;
     host_net_socket_address(node->connid, &laddr, &lport);
-    snprintf(str, HNODESTR_MAX, "NODE[%s%04u,T%02u,C%04d,L%s:%u,R%s:%u]",
+    
+    in.s_addr = laddr;
+    char laddrs[24];
+    strncpy(laddrs, inet_ntoa(in), sizeof(laddrs)-1);
+
+    in.s_addr = node->addr;
+    char naddrs[24];
+    strncpy(naddrs, inet_ntoa(in), sizeof(naddrs)-1);
+
+    in.s_addr = node->gaddr;
+    char gaddrs[24];
+    strncpy(gaddrs, inet_ntoa(in), sizeof(gaddrs)-1);
+
+    snprintf(str, HNODESTR_MAX, "NODE[%s%04u,T%02u,C%04d,L%s:%u,N%s:%u,G%s:%u]",
         type, 
         sid,
         tid,
         node->connid,
-        inet_ntoa(la),
+        laddrs,
         lport,
-        inet_ntoa(ra), 
-        node->port);
+        naddrs, 
+        node->port,
+        gaddrs, 
+        node->gport);
     return str;
 }
 
@@ -222,7 +239,7 @@ host_register_me(struct host_node* me) {
     return 0;
 }
 
-struct host_node* 
+const struct host_node* 
 host_node_get(uint16_t id) {
     struct host_node* node = _get_node(id);
     if (node && node->id == id)
@@ -290,11 +307,8 @@ host_node_disconnect(int connid) {
 }
 
 void 
-host_node_foreach(uint16_t tid, int (*cb)(struct host_node*, void* ud), void* ud) {
-    struct _array* arr;
-    struct host_node* node;
-    int i;
-    if (tid >= 0 && tid < N->size) {
+host_node_foreach(uint16_t tid, int (*cb)(const struct host_node*, void* ud), void* ud) {
+    struct _array* arr; struct host_node* node; int i; if (tid >= 0 && tid < N->size) {
         arr = &N->nodes[tid];
         for (i=0; i<arr->size; ++i) {
             node = &arr->p[i];
@@ -304,5 +318,43 @@ host_node_foreach(uint16_t tid, int (*cb)(struct host_node*, void* ud), void* ud
                 }
             }
         }
+    }
+}
+
+int  
+host_node_minload(uint16_t tid) {
+    struct _array* arr;
+    struct host_node* node;
+    
+    int minload = INT_MAX;
+    int sid = -1;
+    int idx;
+    int i;
+    if (tid >= 0 && tid < N->size) {
+        arr = &N->nodes[tid];
+        for (i=0; i<N->size; ++i) {
+            idx = (arr->loaditer+i)%N->size;
+            node = &arr->p[idx];
+            if (node->connid != -1) {
+                if (node->load < minload) {
+                    minload = node->load;
+                    sid = idx;
+                }
+            }
+        }
+    }
+    if (sid != -1) {
+        arr->loaditer = sid+1;
+        return HNODE_ID(tid, sid);
+    } else {
+        return -1;
+    }
+}
+
+void 
+host_node_updateload(uint16_t id, int value) {
+    struct host_node* node = _get_node(id);
+    if (node) {
+        node->load += value;
     }
 }

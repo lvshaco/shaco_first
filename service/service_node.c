@@ -33,8 +33,10 @@ _mynode(struct host_node* node) {
     int tid = host_node_typeid(host_getstr("node_type", ""));
     int sid = host_getint("node_sid", 0);
     node->id   = HNODE_ID(tid, sid);
-    node->addr = inet_addr(host_getstr("node_ip", ""));
+    node->addr = inet_addr(host_getstr("node_ip", "0"));
     node->port = host_getint("node_port", 0);
+    node->gaddr = inet_addr(host_getstr("gate_ip", "0"));
+    node->gport = host_getint("gate_port", 0);
     node->connid = -1;
 }
 
@@ -82,6 +84,8 @@ _reg_request(int id) {
     UM_DEFFIX(UM_node_reg, reg, UMID_NODE_REG);
     reg.addr = me->addr;
     reg.port = me->port;
+    reg.gaddr = me->gaddr;
+    reg.gport = me->gport;
     UM_SEND(id, &reg, sizeof(reg));
 }
 
@@ -93,6 +97,8 @@ _reg(struct service* s, int id, struct UM_base* um) {
     node.id = reg->nodeid;
     node.addr = reg->addr;
     node.port = reg->port;
+    node.gaddr = reg->gaddr;
+    node.gport = reg->gport;
     node.connid = id;
     if (host_node_register(&node)) {
         host_net_close_socket(id);
@@ -102,6 +108,8 @@ _reg(struct service* s, int id, struct UM_base* um) {
     UM_DEFFIX(UM_node_regok, ok, UMID_NODE_REGOK);
     ok.addr = me->addr;
     ok.port = me->port;
+    ok.gaddr = me->gaddr;
+    ok.gport = me->gport;
     UM_SEND(id, &ok, sizeof(ok));
 
     if (self->iscenter) {
@@ -123,6 +131,8 @@ _regok(struct service* s, int id, struct UM_base* um) {
     node.id = ok->nodeid;
     node.addr = ok->addr;
     node.port = ok->port;
+    node.gaddr = ok->gaddr;
+    node.gport = ok->gport;
     node.connid = id;
     if (host_node_register(&node)) {
         host_net_close_socket(id);
@@ -146,7 +156,7 @@ _onnotify(struct service* s, int id, struct UM_base* um) {
     struct in_addr in;
     in.s_addr = notify->addr;
     char* saddr = inet_ntoa(in);
-    struct host_node* node = host_node_get(notify->tnodeid);
+    const struct host_node* node = host_node_get(notify->tnodeid);
     if (node == NULL) {
         host_info("connect to %s:%u ...", saddr, notify->port);
         host_net_connect(saddr, notify->port, false, s->serviceid, 0);

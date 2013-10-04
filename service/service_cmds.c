@@ -99,7 +99,7 @@ _response_error(int id, const char* error) {
 }
 
 static inline int
-_sendto_remote(struct host_node* node, void* ud) {
+_sendto_remote(const struct host_node* node, void* ud) {
     struct UM_base* um = ud;
     UM_SEND(node->connid, um, um->msgsz);
     return 0;
@@ -110,7 +110,7 @@ _routeto_node(struct server* self, uint16_t nodeid, struct UM_base* um) {
     if (nodeid == host_id()) {
         service_notify_nodemsg(self->ctl_service, -1, um, um->msgsz);
     } else {
-        struct host_node* node = host_node_get(nodeid);
+        const struct host_node* node = host_node_get(nodeid);
         if (node) {
             _sendto_remote(node, um);
         }
@@ -190,7 +190,7 @@ cmds_usermsg(struct service* s, int id, void* msg, int sz) {
 
 static void
 _res(struct server* self, int id, struct UM_base* um) {
-    struct host_node* node = host_node_get(um->nodeid);
+    const struct host_node* node = host_node_get(um->nodeid);
     if (node == NULL)
         return;
     UM_CAST(UM_cmd_res, res, um);

@@ -18,12 +18,16 @@ struct UM_node_reg {
     _UM_header;
     uint32_t addr;
     uint16_t port;
+    uint32_t gaddr;
+    uint16_t gport;
 };
 
 struct UM_node_regok {
     _UM_header;
     uint32_t addr;
     uint16_t port;
+    uint32_t gaddr;
+    uint16_t gport;
 };
 
 struct UM_node_subs {

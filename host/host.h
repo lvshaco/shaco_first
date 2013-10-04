@@ -8,5 +8,4 @@ void host_stop();
 
 int host_getint(const char* key, int def);
 const char* host_getstr(const char* key, const char* def);
-
 #endif

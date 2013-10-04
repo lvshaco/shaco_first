@@ -59,7 +59,7 @@ _reload(struct args* A, struct memrw* rw) {
 }
 
 static int
-_shownodecb(struct host_node* node, void* ud) {
+_shownodecb(const struct host_node* node, void* ud) {
     struct memrw* rw = ud;
     char tmp[HNODESTR_MAX];
     host_strnode(node, tmp);

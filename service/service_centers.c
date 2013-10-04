@@ -74,7 +74,7 @@ _isvalid_tid(uint16_t tid) {
 }
 
 static void
-_notify(int id, struct host_node* node) {
+_notify(int id, const struct host_node* node) {
     UM_DEFFIX(UM_node_notify, notify, UMID_NODE_NOTIFY);
     notify.tnodeid = node->id;
     notify.addr = node->addr;
@@ -83,7 +83,7 @@ _notify(int id, struct host_node* node) {
 }
 
 static int
-_subscribecb(struct host_node* node, void* ud) {
+_subscribecb(const struct host_node* node, void* ud) {
     int id = (int)(intptr_t)ud;
     _notify(id, node);
     return 0;
@@ -110,7 +110,7 @@ _subscribe(struct centers* self, int id, struct UM_base* um) {
 }
 
 static int
-_onregcb(struct host_node* node, void* ud) {
+_onregcb(const struct host_node* node, void* ud) {
     struct host_node* tnode = ud;
     _notify(node->connid, tnode);
     return 0;
