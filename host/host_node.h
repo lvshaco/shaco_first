@@ -5,7 +5,13 @@
 #include <stdbool.h>
 
 struct host_node {
-    uint16_t id; // see HNODE_ID
+    union {
+        struct {
+            uint16_t sid:10;
+            uint16_t tid:6;
+        };
+        uint16_t id; // see HNODE_ID
+    };
     uint32_t addr;
     uint16_t port;
     uint32_t gaddr;

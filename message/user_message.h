@@ -72,6 +72,13 @@ UM_forward_size(struct UM_forward* um) {
     return sizeof(*um) + um->wrap.msgsz - UM_HSIZE;
 }
 #define UM_CLIMAX (UM_MAXSIZE-sizeof(struct UM_forward)+UM_HSIZE)
+#define UM_FORWARD(fw, cid, type, name, id) \
+    UM_DEFVAR(UM_forward, fw, UMID_FORWARD); \
+    fw->cid = cid; \
+    UM_CAST(type, name, &fw->wrap); \
+    name->msgid = id; \
+    name->msgsz = sizeof(*name);
+
 
 #pragma pack()
 
@@ -86,4 +93,8 @@ UM_forward_size(struct UM_forward* um) {
 
 #define UM_SENDTOSVR UM_SENDTOCLI
 
+static inline void
+UM_SENDFORWARD(int id, struct UM_forward* fw) {
+    UM_SEND(id, fw, UM_forward_size(fw));
+}
 #endif

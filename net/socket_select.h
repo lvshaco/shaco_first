@@ -51,7 +51,8 @@ _grow(struct np_state* np, int maxfd) {
     np->cap = cap;
 }
 
-static inline bool _isvalid_fd(int fd) {
+static inline bool 
+_isvalid_fd(int fd) {
     // in windows: FD_SETSIZE is the max count of fd
     // in linux:   FD_SETSIZE is the max value of fd, so
     // Executing FD_CLR() or FD_SET() with a value of fd 

@@ -6,6 +6,8 @@
 #include "host.h"
 #include "host_gate.h"
 #include "client_type.h"
+#include "message.h"
+#include "cli_message.h"
 #include <stdlib.h>
 #include <assert.h>
 
@@ -68,10 +70,13 @@ gate_usermsg(struct service* s, int id, void* msg, int sz) {
     assert(c);
     c->active_time = host_timer_now();
 
-    struct gate_message gm;
-    gm.c = c;
-    gm.msg = msg;
-    service_notify_usermsg(self->handler, id, &gm, sz);
+    UM_CAST(UM_base, um, msg);
+    if (um->msgid != UMID_HEARTBEAT) {
+        struct gate_message gm;
+        gm.c = c;
+        gm.msg = msg;
+        service_notify_usermsg(self->handler, id, &gm, sz);
+    }
 }
 
 void

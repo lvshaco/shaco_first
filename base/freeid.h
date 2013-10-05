@@ -71,17 +71,14 @@ static inline int
 freeid_alloc(struct freeid* fi, int hash) {
     if (freeid_full(fi, hash))
         return -1;
-
     int id = fi->free - fi->ids;
     assert(id >= 0);
-
     int next = *fi->free;
     if (next == -1) {
         fi->free = NULL;
     } else {
         fi->free = &fi->ids[next];
     }
-
     fi->slots[hash] = id;
     return id;
 }

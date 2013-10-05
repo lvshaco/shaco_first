@@ -100,9 +100,27 @@ test_args() {
 
 }
 
+struct ID {
+    union {
+        struct {
+            uint16_t tid:6;
+            uint16_t sid:10;
+        };
+        uint16_t id;
+    };
+};
+void test_union() {
+    struct ID id;
+    int i,i2;
+    scanf("%u %u", &i, &i2);
+    id.tid = i;
+    id.sid = i2;
+    printf("size:%d, %u,%u,%u\n", sizeof(id), id.tid, id.sid, id.id);
+}
 int 
 main(int argc, char* argv[]) {
-    test_lur();
-    test_args();
+    //test_lur();
+    //test_args();
+    test_union();
     return 0;
 }
