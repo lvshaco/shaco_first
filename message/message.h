@@ -30,8 +30,7 @@ struct UM_base {
 
 #define UM_SKIP sizeof(struct NODE_header)
 #define UM_HSIZE sizeof(struct UM_base)
-#define UM_MAXDATA UM_MAXSIZE - UM_HSIZE
-
+//#define UM_MAXDATA UM_MAXSIZE - UM_HSIZE
 #define UM_DEF(um, n) \
     char um##data[n]; \
     struct UM_base* um = (void*)um##data;
@@ -45,7 +44,7 @@ struct UM_base {
     char name##data[UM_MAXSIZE]; \
     struct type* name = (void*)name##data; \
     name->msgid = id; \
-    name->msgsz = UM_MAXSIZE - sizeof(*name);
+    name->msgsz = UM_MAXSIZE;
 
 #define UM_CAST(type, name, um) \
     struct type* name = (struct type*)um;

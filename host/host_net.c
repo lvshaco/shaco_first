@@ -56,7 +56,7 @@ host_net_listen(const char* addr, uint16_t port, int serviceid, int ut) {
     uint32_t ip = inet_addr(addr);
     int r = net_listen(N, ip, port, serviceid, ut);
     if (r) {
-        host_error("listen %s:%u fail: %s", addr, port, host_net_error());        
+        host_error("listen %s:%u fail: %s", addr, port, host_net_error(host_net_errorid())); 
     } else {
         host_info("listen on %s:%d", addr, port);
     }
@@ -98,8 +98,11 @@ void host_net_dropread(int id, int skip) {
 void host_net_close_socket(int id) { 
     net_close_socket(N, id); 
 }
-const char* host_net_error() { 
-    return net_error(N); 
+const char* host_net_error(int err) { 
+    return net_error(N, err); 
+}
+int host_net_errorid() {
+    return net_errorid(N);
 }
 int host_net_max_socket() { 
     return net_max_socket(N); 

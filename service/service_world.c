@@ -25,10 +25,6 @@ world_service(struct service* s, struct service_message* sm) {
 }
 
 void
-world_usermsg(struct service* s, int id, void* msg, int sz) {
-}
-
-void
 world_nodemsg(struct service* s, int id, void* msg, int sz) {
     //struct world* self = SERVICE_SELF;
 }

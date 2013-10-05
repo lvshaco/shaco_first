@@ -1,94 +1,41 @@
 #include "host_service.h"
 #include "host.h"
 #include "host_log.h"
-#include "host_timer.h"
-#include "host_net.h"
 #include "host_dispatcher.h"
+#include "host_gate.h"
 #include "node_type.h"
-#include "client_type.h"
 #include "user_message.h"
-#include "freeid.h"
-#include "args.h"
 #include "memrw.h"
-#include <stdlib.h>
-#include <string.h>
+#include "args.h"
 #include <stdio.h>
-
-struct client {
-    int connid;
-    uint64_t active_time;
-    bool connected;
-};
+#include <assert.h>
 
 struct server {
     int ctl_service;
-    int max;
-    int livetime;
-    struct freeid fi;
-    struct client* clients;
 };
 
 struct server*
 cmds_create() {
     struct server* self = malloc(sizeof(*self));
-    memset(self, 0, sizeof(*self));
+    self->ctl_service = SERVICE_INVALID;
     return self;
 }
 
 void
 cmds_free(struct server* self) {
-    freeid_fini(&self->fi);
-    free(self->clients);
     free(self);
-}
-
-static int
-_listen(struct service* s) {
-    const char* addr = host_getstr("cmds_ip", "");
-    int port = host_getint("cmds_port", 0);
-    if (addr[0] != '\0' &&
-        host_net_listen(addr, port, s->serviceid, CLI_CMD)) {
-        host_error("listen cmds fail");
-        return 1;
-    }
-    return 0;
 }
 
 int
 cmds_init(struct service* s) {
     struct server* self = SERVICE_SELF;
-    if (_listen(s))
-        return 1;
-
     self->ctl_service = service_query_id("cmdctl");
-    if (self->ctl_service == -1) {
+    if (self->ctl_service == SERVICE_INVALID) {
         host_error("lost cmdctl service");
         return 1;
     }
-
-    int cmax = host_getint("cmdc_max", 10);
-    int live = host_getint("cmdc_livetime", 60);
-    int hmax = host_getint("host_connmax", cmax); 
-    self->livetime = live * 1000;
-    self->max = cmax;
-    self->clients = malloc(sizeof(struct client) * cmax);
-    memset(self->clients, 0, sizeof(struct client) * cmax);
-    freeid_init(&self->fi, cmax, hmax);
-    
-    host_timer_register(s->serviceid, self->livetime);
-
     SUBSCRIBE_MSG(s->serviceid, UMID_CMD_RES);
     return 0;
-}
-
-static inline struct client*
-_getclient(struct server* self, int id) {
-    if (id >= 0 && id < self->max) {
-        struct client* c = &self->clients[id];
-        if (c->connected)
-            return c;
-    }
-    return NULL;
 }
 
 static void
@@ -151,12 +98,12 @@ _getnodeid(const char* tidstr, const char* sidstr) {
 }
 
 void
-cmds_usermsg(struct service* s, int id, void* msg, int sz) {
+cmds_usermsg(struct service* s, int id, void* msg, int sz) { 
     struct server* self = SERVICE_SELF;
-    int hash = freeid_find(&self->fi, id);
-    struct client* c = _getclient(self, hash);
+    struct gate_message* gm = msg;
+    struct gate_client* c = host_gate_getclient(id);
     assert(c);
-    UM_CAST(UM_base, um, msg);
+    UM_CAST(UM_base, um, gm->msg);
    
     struct args A;
     args_parsestrl(&A, 3, (char*)(um+1), sz-UM_HSIZE);
@@ -173,7 +120,7 @@ cmds_usermsg(struct service* s, int id, void* msg, int sz) {
     int sid = HNODE_SID(nodeid);
 
     UM_DEFVAR(UM_cmd_req, req, UMID_CMD_REQ);
-    req->cid = hash;
+    req->cid = id;
     size_t l = strlen(A.argv[2]);
     memcpy(req->cmd, A.argv[2], l);
     req->msgsz = sizeof(*req) + l;
@@ -194,7 +141,7 @@ _res(struct server* self, int id, struct UM_base* um) {
     if (node == NULL)
         return;
     UM_CAST(UM_cmd_res, res, um);
-    struct client* c = _getclient(self, res->cid);
+    struct gate_client* c = host_gate_getclient(res->cid);
     if (c == NULL)
         return;
     UM_DEF(notify, UM_MAXSIZE);
@@ -221,74 +168,13 @@ cmds_nodemsg(struct service* s, int id, void* msg, int sz) {
     }
 }
 
-static void
-_accept(struct server* self, int connid) {
-    int id = freeid_alloc(&self->fi, connid);
-    if (id == -1) {
-        return;
-    }
-    assert(id >= 0 && id < self->max);
-    struct client* c = &self->clients[id];
-    assert(!c->connected);
-    c->connected = true;
-    c->connid = connid;
-    c->active_time = host_timer_now();
-    
-    host_net_subscribe(connid, true, false);
-}
-
-static void
-_ondisconnect(struct server* self, int connid) {
-    int id = freeid_free(&self->fi, connid);
-    if (id == -1) {
-        return;
-    }
-    assert(id >= 0 && id < self->max);
-    struct client* c = &self->clients[id];
-    c->connected = false;
-}
-
-static void
-_disconnect(struct server* self, int id, const char* error) {
-    assert(id >= 0 && id < self->max);
-    struct client* c = &self->clients[id]; 
-    assert(c->connected);
-    assert(c->connid >= 0);
-    _response_error(c->connid, error);
-    int tmp = freeid_free(&self->fi, c->connid);
-    assert(tmp == id);
-    host_net_close_socket(c->connid);
-    c->connected = false;
-}
-
 void
-cmds_net(struct service* s, struct net_message* nm) {
-    struct server* self = SERVICE_SELF;
+cmds_net(struct service* s, struct gate_message* gm) {
+    struct gate_client* c = gm->c;
+    struct net_message* nm = gm->msg;
     switch (nm->type) {
-    case NETE_ACCEPT:
-        _accept(self, nm->connid);
+    case NETE_TIMEOUT:
+        _response_error(c->connid, "livetimeout.");
         break;
-    case NETE_SOCKERR:
-        _ondisconnect(self, nm->connid);
-        break;
-    }
-}
-
-void
-cmds_time(struct service* s) {
-    
-    struct server* self= SERVICE_SELF;
-    struct client* clients = self->clients;
-    struct client* c;
-    uint64_t now = host_timer_now();
-    int i;
-    for (i=0; i<self->max; ++i) {
-        c = &clients[i];
-        if (c->connected) {
-            if (now > c->active_time &&
-                now - c->active_time > self->livetime) { 
-                _disconnect(self, i, "livetimeout.");
-            }
-        }
     }
 }

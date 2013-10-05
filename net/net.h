@@ -18,7 +18,7 @@ void* net_read(struct net* self, int id, int size, int skip);
 void net_dropread(struct net* self, int id, int skip);
 int net_send(struct net* self, int id, void* data, int sz);
 void net_close_socket(struct net* self, int id);
-const char* net_error(struct net* self);
+const char* net_error(struct net* self, int err);
 int net_errorid(struct net* self);
 int net_max_socket(struct net* self);
 int net_socket_address(struct net* self, int id, uint32_t* addr, uint16_t* port);

@@ -34,7 +34,7 @@ const char* host_node_typename(uint16_t tid);
 const struct host_node* host_node_get(uint16_t id);
 
 int  host_node_init();
-void host_node_free();
+void host_node_fini();
 int  host_node_types();
 int  host_node_register_types(const char* types[], int n);
 bool host_node_is_register(uint16_t id);

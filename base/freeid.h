@@ -17,9 +17,7 @@ static void
 freeid_init(struct freeid* fi, int cap, int hash) {
     int* p;
     int i;
-    
-    if (cap <= 0)
-        cap = 1;
+    assert(cap > 0);    
     if (hash < cap)
         hash = cap;
     

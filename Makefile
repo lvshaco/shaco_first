@@ -40,12 +40,14 @@ host_src=\
  	host/host_timer.h \
  	host/host_log.c \
  	host/host_log.h \
+	host/host_reload.c \
+	host/host_reload.h \
 	host/host_dispatcher.c \
 	host/host_dispatcher.h \
 	host/host_node.c \
 	host/host_node.h \
-	host/host_reload.c \
-	host/host_reload.h \
+	host/host_gate.c \
+	host/host_gate.h \
  	host/dlmodule.c \
  	host/dlmodule.h
 

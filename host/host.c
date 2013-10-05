@@ -6,6 +6,7 @@
 #include "host_service.h"
 #include "host_dispatcher.h"
 #include "host_node.h"
+#include "host_gate.h"
 #include "host_reload.h"
 #include <stdlib.h>
 #include <stdbool.h>
@@ -110,7 +111,10 @@ host_create(const char* file) {
     }
     if (host_node_init()) {
         goto err;
-    } 
+    }
+    if (host_gate_init()) {
+        goto err;
+    }
     int max = lur_getint(L, "host_connmax", 0);
     if (host_net_init(max)) {
         goto err;
@@ -134,8 +138,9 @@ host_free() {
     if (H == NULL)
         return;
     
-    host_net_fini();  
-    host_node_free();
+    host_net_fini();
+    host_gate_fini();
+    host_node_fini();
     host_dispatcher_fini();
     host_log_fini();
     service_fini();

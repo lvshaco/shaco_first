@@ -33,17 +33,17 @@ struct UM_loginfail {
     int error;
 };
 
+#define LOGOUT_NORMAL 0
+#define LOGOUT_TIMEOUT 1
+#define LOGOUT_SOCKERR 2
 struct UM_logout {
+    int8_t type;
 };
 
 struct UM_charinfo {
     char name[NAME_MAX];
 };
 
-//////////////////////////////////////////////////////////////
-// 
-
-struct UM_notify
 //////////////////////////////////////////////////////////////
 // play
 struct UM_play {
@@ -68,11 +68,11 @@ struct UM_playloading {
     int leasttime;  // least time of loading
     int self;
     int other;
-    struct tmember_brief[0];
+    struct tmember_brief members[0];
 };
 static inline uint16_t
 UM_playloading_size(struct UM_playloading* um) {
-    return sizeof(*um) + sizeof(um->tmember_brief[0]) * (um->self + um->other); 
+    return sizeof(*um) + sizeof(um->members[0]) * (um->self + um->other); 
 }
 
 // team member detail info
@@ -82,15 +82,15 @@ struct tmember_detail {
 
 struct UM_playbegin {
     int count;
-    struct tmember_detail[0];
+    struct tmember_detail members[0];
 };
 static inline uint16_t
 UM_playbegin_size(struct UM_playbegin* um) {
-    return sizeof(*um) + sizeof(um->tmember_detail[0]) * um->count; 
+    return sizeof(*um) + sizeof(um->members[0]) * um->count; 
 }
 
 struct UM_playjoin {
-    struct tmember_detail;
+    struct tmember_detail member;
 };
 
 enum PLAY_UNJOIN_T {

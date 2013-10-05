@@ -11,6 +11,7 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.h *.c" {
   dlmodule.h
   host.h
   host_dispatcher.h
+  host_gate.h
   host_group.h
   host_log.h
   host_message.h
@@ -23,6 +24,7 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.h *.c" {
   dlmodule.c
   host.c
   host_dispatcher.c
+  host_gate.c
   host_group.c
   host_log.c
   host_main.c
@@ -64,7 +66,6 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.h *.c" {
  service=service{
   client_type.h
   node_type.h
-  service_a.c
   service_benchmark.c
   service_centerc.c
   service_centers.c
@@ -72,9 +73,10 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.h *.c" {
   service_cmds.c
   service_dispatcher.c
   service_echo.c
+  service_forward.c
+  service_gate.c
   service_log.c
   service_node.c
-  service_gate.c
   service_world.c
  }
  message=message{

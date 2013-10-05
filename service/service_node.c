@@ -192,10 +192,10 @@ node_net(struct service* s, struct net_message* nm) {
         _reg_request(nm->connid);
         break;
     case NETE_CONNERR:
-        host_error("connect to node fail: %s", host_net_error());
+        host_error("connect to node fail: %s", host_net_error(nm->error));
         break;
     case NETE_SOCKERR:
-        host_error("node disconnect: %s", host_net_error());
+        host_error("node disconnect: %s", host_net_error(nm->error));
         host_node_disconnect(nm->connid);
         break;
     }

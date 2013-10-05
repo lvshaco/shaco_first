@@ -39,7 +39,7 @@ host_node_init() {
 }
 
 void
-host_node_free() {
+host_node_fini() {
     if (N== NULL)
         return;
 

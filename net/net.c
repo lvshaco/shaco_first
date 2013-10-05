@@ -179,15 +179,15 @@ net_close_socket(struct net* self, int id) {
 }
 
 const char* 
-net_error(struct net* self) {
-    if (self->error <= 0) {
-        int i = -self->error;
+net_error(struct net* self, int err) {
+    if (err <= 0) {
+        int i = -err;
         if (i>=0 && i<sizeof(STRERROR)/sizeof(STRERROR[0]))
             return STRERROR[i];
         else
             return "";
     } else {
-        return _socket_strerror(self->error);
+        return _socket_strerror(err);
     }
 }
 
@@ -390,11 +390,11 @@ _send_buffer(struct net* self, struct socket* s) {
         s->head == NULL) {
         _subscribe(self, s, s->mask & (~NET_WABLE));
     }
-    return total;
+    return OK;
 err:
     self->error = error;
     _close_socket(self, s);
-    return -1;
+    return error;
 }
 
 int 
@@ -645,7 +645,7 @@ net_poll(struct net* self, int timeout) {
        
         struct net_message* oe = &self->ne[i];
         oe->type = NETE_INVALID;
-
+        oe->error = OK;
         switch (s->status) {
         case STATUS_LISTENING:
             s = _accept(self, s);
@@ -663,7 +663,8 @@ net_poll(struct net* self, int timeout) {
                 oe->connid = s - self->sockets;
                 oe->ud = s->ud;
                 oe->ut = s->ut;
-                if (_onconnect(self, s)) {
+                oe->error = _onconnect(self, s);
+                if (oe->error != OK) {
                     oe->type = NETE_CONNERR;
                     break;
                 }
@@ -675,7 +676,8 @@ net_poll(struct net* self, int timeout) {
             break;
         case STATUS_CONNECTED:
             if (e->write) {
-                if (_send_buffer(self, s) < 0) {
+                oe->error = _send_buffer(self, s);
+                if (oe->error != OK) {
                     oe->fd = s->fd;
                     oe->connid = s - self->sockets;
                     oe->ud = s->ud;

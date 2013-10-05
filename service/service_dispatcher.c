@@ -105,6 +105,11 @@ dispatcher_net(struct service* s, struct net_message* nm) {
         // and then the service to filter this msg type
         while ((um = _read_one(nm, UM_SKIP)) != NULL) {
             um->msgsz += UM_SKIP;
+            if (um->msgsz > UM_CLIMAX) {
+                host_net_close_socket(id);
+                nm->type = NETE_SOCKERR;
+                service_notify_net(nm->ud, nm);
+            }
             service_notify_usermsg(nm->ud, id, um, um->msgsz);
             host_net_dropread(id, UM_SKIP);
         }
