@@ -54,6 +54,10 @@ host_src=\
 cli_src=\
 	tool/shaco-cli.c
 
+world_src=\
+	world/player.c \
+	world/player.h
+
 test_src=\
 	test/test.c \
 	net.so \
@@ -63,13 +67,17 @@ test_src=\
 LDFLAGS=-Wl,-rpath,. \
 		net.so lur.so base.so -llua -lm -ldl -lrt -rdynamic# -Wl,-E
 
-all: lur.so net.so base.so shaco shaco-cli $(service_so)
+all: lur.so net.so base.so shaco shaco-cli $(service_so) world.so
 release: CFLAGS += -O2
 release: all
 
 $(service_so): %.so: $(service_dir)/%.c
 	@rm -f $@
-	gcc $(CFLAGS) $(SHARED) -o $@ $< -Ihost -Inet -Ibase -Imessage
+	gcc $(CFLAGS) $(SHARED) -o $@ $< -Ihost -Inet -Ibase -Imessage -Iworld
+
+world.so: $(world_src)
+	@rm -f $@
+	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Iworld -Ibase -Imessage
 
 lur.so: $(lur_src)
 	@rm -f $@

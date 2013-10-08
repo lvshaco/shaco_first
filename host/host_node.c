@@ -321,7 +321,7 @@ host_node_foreach(uint16_t tid, int (*cb)(const struct host_node*, void* ud), vo
     }
 }
 
-int  
+const struct host_node*  
 host_node_minload(uint16_t tid) {
     struct _array* arr;
     struct host_node* node;
@@ -345,9 +345,9 @@ host_node_minload(uint16_t tid) {
     }
     if (sid != -1) {
         arr->loaditer = sid+1;
-        return HNODE_ID(tid, sid);
+        return _get_node(HNODE_ID(tid, sid));
     } else {
-        return -1;
+        return NULL;
     }
 }
 

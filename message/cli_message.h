@@ -2,6 +2,7 @@
 #define __cil_message_h__
 
 #include "message.h"
+#include "sharetype.h"
 
 // UMID
 #define UMID_CBEGIN 1000
@@ -22,8 +23,6 @@
 #define UMID_PLAYUNJOIN     UMID_CBEGIN+106
 #define UMID_PLAYDONE       UMID_CBEGIN+107
 
-// const value
-#define NAME_MAX 32
 ////////////////////////////////////////////////////////////
 // heartbeat
 struct UM_heartbeat {
@@ -53,11 +52,6 @@ struct UM_logout {
     int8_t type;
 };
 
-struct chardata {
-    uint32_t charid;
-    char name[NAME_MAX];
-};
-
 struct UM_charinfo {
     _UM_header;
     struct chardata data;
@@ -67,7 +61,7 @@ struct UM_charinfo {
 // play
 struct UM_play {
     _UM_header;
-    int8_t type;
+    int8_t type; // see ROOM_TYPE*
 };
 
 struct UM_playfail {
@@ -80,38 +74,17 @@ struct UM_playwait {
     int timeout;
 };
 
-// team member brief info
-struct tmember_brief {
-    uint32_t charid;
-    char name[NAME_MAX];
-};
 #define PLAY_LOADING_TIMEOUT 10
 struct UM_playloading {
     _UM_header;
     int8_t leasttime;  // least time of loading
-    int8_t self;
-    int8_t other;
-    struct tmember_brief members[0];
-};
-static inline uint16_t
-UM_playloading_size(struct UM_playloading* um) {
-    return sizeof(*um) + sizeof(um->members[0]) * (um->self + um->other); 
-}
-
-// team member detail info
-struct tmember_detail {
-    uint32_t charid;
+    struct tmember_brief member;
 };
 
 struct UM_playbegin {
     _UM_header;
-    int8_t count;
-    struct tmember_detail members[0];
+    struct tmember_detail member;
 };
-static inline uint16_t
-UM_playbegin_size(struct UM_playbegin* um) {
-    return sizeof(*um) + sizeof(um->members[0]) * um->count; 
-}
 
 struct UM_playjoin {
     _UM_header;

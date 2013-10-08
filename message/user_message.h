@@ -2,6 +2,7 @@
 #define __user_message_h__
 
 #include "message.h"
+#include "sharetype.h"
 #include "host_net.h"
 #include "host_node.h"
 
@@ -16,6 +17,8 @@
 #define UMID_CMD_RES 11
 #define UMID_FORWARD 100
 
+#define UMID_CREATEROOM 200
+#define UMID_DESTORYROOM 201
 #pragma pack(1)
 
 // node
@@ -72,13 +75,24 @@ UM_forward_size(struct UM_forward* um) {
     return sizeof(*um) + um->wrap.msgsz - UM_HSIZE;
 }
 #define UM_CLIMAX (UM_MAXSIZE-sizeof(struct UM_forward)+UM_HSIZE)
-#define UM_FORWARD(fw, cid, type, name, id) \
+#define UM_FORWARD(fw, fid, type, name, id) \
     UM_DEFVAR(UM_forward, fw, UMID_FORWARD); \
-    fw->cid = cid; \
+    fw->cid = fid; \
     UM_CAST(type, name, &fw->wrap); \
     name->msgid = id; \
     name->msgsz = sizeof(*name);
 
+// room
+struct UM_createroom {
+    _UM_header; 
+    int8_t type;  // see ROOM_TYPE*
+    uint32_t key; // key of room
+};
+
+struct UM_destroyroom {
+    _UM_header;
+    int8_t type;  // sess ROOM_TYPE*
+};
 
 #pragma pack()
 
@@ -93,6 +107,21 @@ UM_forward_size(struct UM_forward* um) {
 
 #define UM_SENDTOSVR UM_SENDTOCLI
 
+static inline void
+UM_SENDTONODE(const struct host_node* hn, void* msg, int sz) {
+    UM_CAST(UM_base, um, msg);
+    um->nodeid = host_id();
+    um->msgsz = sz;
+    host_net_send(hn->connid, um, sz);
+}
+static inline void
+UM_SENDTONID(uint16_t tid, uint16_t sid, void* msg, int sz) {
+    uint16_t id = HNODE_ID(tid, sid);
+    const struct host_node* hn = host_node_get(id);
+    if (hn) {
+        UM_SENDTONODE(hn, msg, sz);
+    }
+}
 static inline void
 UM_SENDFORWARD(int id, struct UM_forward* fw) {
     UM_SEND(id, fw, UM_forward_size(fw));

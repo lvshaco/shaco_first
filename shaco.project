@@ -40,6 +40,7 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.h *.c" {
   lur.c
  }
  base=base{
+  gfreeid.h
   args.h
   array.h
   freeid.h
@@ -74,15 +75,22 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.h *.c" {
   service_dispatcher.c
   service_echo.c
   service_forward.c
+  service_gamematch.c
   service_gate.c
   service_log.c
   service_node.c
   service_world.c
+  worldhelper.h
+ }
+ world=world{
+  player.h
+  player.c
  }
  message=message{
   cli_message.h
   message.h
   user_message.h
+  sharetype.h
  }
  tool=tool{
   service_tmp.c
