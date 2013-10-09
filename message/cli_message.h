@@ -1,5 +1,5 @@
 #ifndef __cli_message_h__
-#define __cil_message_h__
+#define __cli_message_h__
 
 #include "message.h"
 #include "sharetype.h"
@@ -23,10 +23,26 @@
 #define UMID_PLAYUNJOIN     UMID_CBEGIN+106
 #define UMID_PLAYDONE       UMID_CBEGIN+107
 
+#define UMID_NOTIFYGAME     UMID_CBEGIN+200
+#define UMID_GAMELOGIN      UMID_CBEGIN+201
+#define UMID_GAMELOGINFAIL  UMID_CBEGIN+202
+#define UMID_GAMELOGOUT     UMID_CBEGIN+203
+#define UMID_GAMEINFO       UMID_CBEGIN+204
+#define UMID_GAMEENTER      UMID_CBEGIN+205
+#define UMID_GAMESTART      UMID_CBEGIN+206
+
+#pragma pack(1)
 ////////////////////////////////////////////////////////////
 // heartbeat
 struct UM_heartbeat {
     _UM_header;
+};
+
+struct UM_notifygame {
+    _UM_header;
+    uint32_t addr;
+    uint16_t port;
+    uint32_t key;
 };
 
 ////////////////////////////////////////////////////////////
@@ -78,17 +94,7 @@ struct UM_playwait {
 struct UM_playloading {
     _UM_header;
     int8_t leasttime;  // least time of loading
-    struct tmember_brief member;
-};
-
-struct UM_playbegin {
-    _UM_header;
-    struct tmember_detail member;
-};
-
-struct UM_playjoin {
-    _UM_header;
-    struct tmember_detail member;
+    struct tmemberbrief member;
 };
 
 enum PLAY_UNJOIN_T {
@@ -105,5 +111,43 @@ struct UM_playunjoin {
 struct UM_playdone {
     _UM_header;
 };
+
+/////////////////////////////////////////////////////////////
+// game login
+struct UM_gamelogin {
+    _UM_header;
+    uint32_t charid;
+    int roomid;
+    uint32_t roomkey;
+};
+
+struct UM_gameloginfail {
+    _UM_header;
+    int8_t error;
+};
+
+struct UM_gamelogout {
+    _UM_header;
+};
+
+struct UM_gameinfo {
+    _UM_header;
+    int8_t nmember;
+    struct tmemberdetail members[0];
+};
+static inline uint16_t
+UM_gameinfo_size(struct UM_gameinfo* um) {
+    return sizeof(*um) + sizeof(um->members[0])*um->nmember;
+}
+
+struct UM_gameenter {
+    _UM_header;
+};
+
+struct UM_gamestart {
+    _UM_header;
+};
+
+#pragma pack()
 
 #endif

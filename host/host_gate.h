@@ -8,7 +8,6 @@ struct gate_client {
     bool connected;
     int connid;
     uint64_t active_time;
-    void* ud;
 };
 
 // bind gate_client to msg
@@ -25,5 +24,6 @@ int host_gate_disconnclient(struct gate_client* c, bool closesocket);
 struct gate_client* host_gate_getclient(int connid);
 struct gate_client* host_gate_firstclient();
 int host_gate_maxclient();
+int host_gate_clientid(struct gate_client* c);
 
 #endif

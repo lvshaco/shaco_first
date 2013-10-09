@@ -18,7 +18,9 @@
 #define UMID_FORWARD 100
 
 #define UMID_CREATEROOM 200
-#define UMID_DESTORYROOM 201
+#define UMID_CREATEROOMRES 201
+#define UMID_OVERROOM 202
+
 #pragma pack(1)
 
 // node
@@ -86,12 +88,27 @@ UM_forward_size(struct UM_forward* um) {
 struct UM_createroom {
     _UM_header; 
     int8_t type;  // see ROOM_TYPE*
+    int id;
     uint32_t key; // key of room
+    int8_t nmember;
+    struct tmemberdetail members[0];
+};
+static inline uint16_t 
+UM_createroom_size(struct UM_createroom* cr) {
+    return sizeof(*cr) + sizeof(cr->members[0]) * cr->nmember;
+}
+
+struct UM_createroomres {
+    _UM_header;
+    int8_t ok;
+    int id;
+    uint32_t key;
+    int roomid;
 };
 
-struct UM_destroyroom {
+struct UM_overroom {
     _UM_header;
-    int8_t type;  // sess ROOM_TYPE*
+    int8_t type;
 };
 
 #pragma pack()

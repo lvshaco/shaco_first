@@ -6,7 +6,11 @@
 
 #define PS_FREE  0
 #define PS_LOGIN 1
-#define PS_GAME  2 
+#define PS_GAME  2
+#define PS_WAITING  3
+#define PS_CREATING 4
+#define PS_ROOM 5
+
 struct player {
     uint16_t gid;
     uint16_t cid;

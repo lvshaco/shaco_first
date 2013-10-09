@@ -60,6 +60,7 @@ _login_req(struct world* self, const struct host_node* node, int cid, struct UM_
     p->status = PS_LOGIN;
 
     uint32_t charid = ++self->chariditer;
+    p->status = PS_GAME;
     // todo: this just for test
     struct chardata* data = &p->data;
     data->charid = charid;
