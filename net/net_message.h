@@ -12,6 +12,7 @@
 //#define NETE_WRIDONE 5
 #define NETE_CONN_THEN_READ 6
 #define NETE_TIMEOUT 7
+#define NETE_LOGOUT 8
 
 struct net_message {
     int fd;

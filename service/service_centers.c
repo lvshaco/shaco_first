@@ -64,7 +64,7 @@ centers_free(struct centers* self) {
 
 int
 centers_init(struct service* s) {
-    SUBSCRIBE_MSG(s->serviceid, UMID_NODE_SUB);
+    SUBSCRIBE_MSG(s->serviceid, IDUM_NODESUBS);
     return 0;
 }
 
@@ -75,11 +75,11 @@ _isvalid_tid(uint16_t tid) {
 
 static void
 _notify(int id, const struct host_node* node) {
-    UM_DEFFIX(UM_node_notify, notify, UMID_NODE_NOTIFY);
-    notify.tnodeid = node->id;
-    notify.addr = node->addr;
-    notify.port = node->port;
-    UM_SEND(id, &notify, sizeof(notify));
+    UM_DEFFIX(UM_NODENOTIFY, notify);
+    notify->tnodeid = node->id;
+    notify->addr = node->addr;
+    notify->port = node->port;
+    UM_SEND(id, notify, sizeof(*notify));
 }
 
 static int
@@ -91,7 +91,7 @@ _subscribecb(const struct host_node* node, void* ud) {
 
 static void
 _subscribe(struct centers* self, int id, struct UM_base* um) {
-    UM_CAST(UM_node_subs, req, um);
+    UM_CAST(UM_NODESUBS, req, um);
     uint16_t src_tid = HNODE_TID(req->nodeid);
     uint16_t tid;
     struct _array* arr;
@@ -143,7 +143,7 @@ centers_nodemsg(struct service* s, int id, void* msg, int sz) {
     struct centers* self = SERVICE_SELF;
     struct UM_base* um = msg;
     switch (um->msgid) {
-    case UMID_NODE_SUB:
+    case IDUM_NODESUBS:
         _subscribe(self, id, um);
         break;
     }

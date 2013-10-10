@@ -23,7 +23,7 @@
 #define NET_ERR_CREATESOCK  -3
 
 static const char* STRERROR[] = {
-    "",
+    "close",
     "net error msg",
     "net error no socket",
     "net error create socket",

@@ -5,8 +5,8 @@
 #include <stdlib.h>
 
 #define UM_MAXSIZE 60000
-#define UMID_MAX 65536
-#define UMID_INVALID -1
+#define IDUM_MAX 65536
+#define IDUM_INVALID -1
 
 #pragma pack(1)
 
@@ -14,7 +14,7 @@
 #define _NODE_header \
     uint16_t nodeid;
 
-#define _UM_header \
+#define _UM_HEADER \
     _NODE_header; \
     uint16_t msgsz; \
     uint16_t msgid;
@@ -24,7 +24,7 @@ struct NODE_header {
 };
 
 struct UM_base {
-    _UM_header;
+    _UM_HEADER;
     uint8_t data[0];
 };
 
@@ -35,15 +35,16 @@ struct UM_base {
     char um##data[n]; \
     struct UM_base* um = (void*)um##data;
 
-#define UM_DEFFIX(type, name, id) \
-    struct type name; \
-    name.msgid = id; \
-    name.msgsz = sizeof(name);
+#define UM_DEFFIX(type, name) \
+    struct type name##data; \
+    struct type* name = &name##data; \
+    name->msgid = ID##type; \
+    name->msgsz = sizeof(name);
 
-#define UM_DEFVAR(type, name, id) \
+#define UM_DEFVAR(type, name) \
     char name##data[UM_MAXSIZE]; \
     struct type* name = (void*)name##data; \
-    name->msgid = id; \
+    name->msgid = ID##type; \
     name->msgsz = UM_MAXSIZE;
 
 #define UM_CAST(type, name, um) \

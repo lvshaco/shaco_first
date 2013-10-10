@@ -32,3 +32,8 @@ int
 host_dispatcher_publish(struct net_message* nm) {
     return service_notify_net(_DISPATCHER, nm);
 }
+
+int 
+host_dispatcher_usermsg(void* msg, int sz) {
+    return service_notify_usermsg(_DISPATCHER, 0, msg, sz);
+}

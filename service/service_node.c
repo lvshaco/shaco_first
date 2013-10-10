@@ -55,9 +55,9 @@ _listen(struct service* s) {
 int
 node_init(struct service* s) {
     struct node* self = SERVICE_SELF;
-    SUBSCRIBE_MSG(s->serviceid, UMID_NODE_REG);
-    SUBSCRIBE_MSG(s->serviceid, UMID_NODE_REGOK);
-    SUBSCRIBE_MSG(s->serviceid, UMID_NODE_NOTIFY);
+    SUBSCRIBE_MSG(s->serviceid, IDUM_NODEREG);
+    SUBSCRIBE_MSG(s->serviceid, IDUM_NODEREGOK);
+    SUBSCRIBE_MSG(s->serviceid, IDUM_NODENOTIFY);
 
     if (host_node_register_types(NODE_NAMES, NODE_TYPE_MAX))
         return 1;
@@ -81,18 +81,18 @@ node_init(struct service* s) {
 static void
 _reg_request(int id) {
     struct host_node* me = host_me();
-    UM_DEFFIX(UM_node_reg, reg, UMID_NODE_REG);
-    reg.addr = me->addr;
-    reg.port = me->port;
-    reg.gaddr = me->gaddr;
-    reg.gport = me->gport;
-    UM_SEND(id, &reg, sizeof(reg));
+    UM_DEFFIX(UM_NODEREG, reg);
+    reg->addr = me->addr;
+    reg->port = me->port;
+    reg->gaddr = me->gaddr;
+    reg->gport = me->gport;
+    UM_SEND(id, reg, sizeof(*reg));
 }
 
 static void
 _reg(struct service* s, int id, struct UM_base* um) {
     struct node* self = SERVICE_SELF;
-    UM_CAST(UM_node_reg, reg, um);
+    UM_CAST(UM_NODEREG, reg, um);
     struct host_node node;
     node.id = reg->nodeid;
     node.addr = reg->addr;
@@ -105,12 +105,12 @@ _reg(struct service* s, int id, struct UM_base* um) {
         return; // no need response for fail
     }
     struct host_node* me = host_me();
-    UM_DEFFIX(UM_node_regok, ok, UMID_NODE_REGOK);
-    ok.addr = me->addr;
-    ok.port = me->port;
-    ok.gaddr = me->gaddr;
-    ok.gport = me->gport;
-    UM_SEND(id, &ok, sizeof(ok));
+    UM_DEFFIX(UM_NODEREGOK, ok);
+    ok->addr = me->addr;
+    ok->port = me->port;
+    ok->gaddr = me->gaddr;
+    ok->gport = me->gport;
+    UM_SEND(id, ok, sizeof(*ok));
 
     if (self->iscenter) {
         struct service_message sm;
@@ -126,7 +126,7 @@ _reg(struct service* s, int id, struct UM_base* um) {
 static void
 _regok(struct service* s, int id, struct UM_base* um) {
     struct node* self = SERVICE_SELF;
-    UM_CAST(UM_node_regok, ok, um);
+    UM_CAST(UM_NODEREGOK, ok, um);
     struct host_node node;
     node.id = ok->nodeid;
     node.addr = ok->addr;
@@ -152,7 +152,7 @@ _regok(struct service* s, int id, struct UM_base* um) {
 
 static void
 _onnotify(struct service* s, int id, struct UM_base* um) {
-    UM_CAST(UM_node_notify, notify, um);
+    UM_CAST(UM_NODENOTIFY, notify, um);
     struct in_addr in;
     in.s_addr = notify->addr;
     char* saddr = inet_ntoa(in);
@@ -168,13 +168,13 @@ void
 node_nodemsg(struct service* s, int id, void* msg, int sz) {
     struct UM_base* um = msg;
     switch (um->msgid) {
-    case UMID_NODE_REG:
+    case IDUM_NODEREG:
         _reg(s, id, um);
         break;
-    case UMID_NODE_REGOK:
+    case IDUM_NODEREGOK:
         _regok(s, id, um);
         break;
-    case UMID_NODE_NOTIFY:
+    case IDUM_NODENOTIFY:
         _onnotify(s, id, um);
         break;
     }

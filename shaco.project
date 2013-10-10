@@ -7,6 +7,7 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.h *.c" {
  config_echo.lua
  config_game.lua
  config_gate.lua
+ config_world.lua
  host=host{
   dlmodule.h
   host.h
@@ -65,9 +66,6 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.h *.c" {
   test.c
  }
  service=service{
-  client_type.h
-  node_type.h
-  worldhelper.h
   service_benchmark.c
   service_centerc.c
   service_centers.c
@@ -76,12 +74,13 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.h *.c" {
   service_dispatcher.c
   service_echo.c
   service_forward.c
+  service_game.c
   service_gamematch.c
   service_gate.c
   service_log.c
   service_node.c
-  service_room.c
   service_world.c
+  worldhelper.h
  }
  world=world{
   player.h
@@ -89,7 +88,9 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.h *.c" {
  }
  message=message{
   cli_message.h
+  client_type.h
   message.h
+  node_type.h
   sharetype.h
   user_message.h
  }

@@ -6,87 +6,88 @@
 #include "host_net.h"
 #include "host_node.h"
 
-#define UMID_NBEGIN 1
-#define UMID_NEND   999 
+#define IDUM_NBEGIN 0
+#define IDUM_NEND   999 
 
-#define UMID_NODE_REG UMID_NBEGIN
-#define UMID_NODE_REGOK 2
-#define UMID_NODE_SUB 3
-#define UMID_NODE_NOTIFY 4
-#define UMID_CMD_REQ 10
-#define UMID_CMD_RES 11
-#define UMID_FORWARD 100
+#define IDUM_NODEREG    IDUM_NBEGIN+1
+#define IDUM_NODEREGOK  IDUM_NBEGIN+2
+#define IDUM_NODESUBS   IDUM_NBEGIN+3
+#define IDUM_NODENOTIFY IDUM_NBEGIN+4
 
-#define UMID_CREATEROOM 200
-#define UMID_CREATEROOMRES 201
-#define UMID_OVERROOM 202
+#define IDUM_CMDREQ     IDUM_NBEGIN+10
+#define IDUM_CMDRES     IDUM_NBEGIN+11
+#define IDUM_FORWARD    IDUM_NBEGIN+12
+
+#define IDUM_CREATEROOM     IDUM_NBEGIN+200
+#define IDUM_CREATEROOMRES  IDUM_NBEGIN+201
+#define IDUM_OVERROOM       IDUM_NBEGIN+202
 
 #pragma pack(1)
 
 // node
-struct UM_node_reg {
-    _UM_header;
+struct UM_NODEREG {
+    _UM_HEADER;
     uint32_t addr;
     uint16_t port;
     uint32_t gaddr;
     uint16_t gport;
 };
-struct UM_node_regok {
-    _UM_header;
+struct UM_NODEREGOK {
+    _UM_HEADER;
     uint32_t addr;
     uint16_t port;
     uint32_t gaddr;
     uint16_t gport;
 };
-struct UM_node_subs {
-    _UM_header;
+struct UM_NODESUBS {
+    _UM_HEADER;
     uint16_t n;
     uint16_t subs[0];
 };
 static inline uint16_t 
-UM_node_subs_size(struct UM_node_subs* um) {
+UM_NODESUBS_size(struct UM_NODESUBS* um) {
     return sizeof(*um) + sizeof(um->subs[0]) * um->n;
 }
-struct UM_node_notify {
-    _UM_header;
+struct UM_NODENOTIFY {
+    _UM_HEADER;
     uint16_t tnodeid;
     uint32_t addr;
     uint16_t port;
 };
 
 // cmd
-struct UM_cmd_req {
-    _UM_header;
+struct UM_CMDREQ {
+    _UM_HEADER;
     int32_t cid;
     char cmd[0];
 };
-struct UM_cmd_res {
-    _UM_header;
+struct UM_CMDRES {
+    _UM_HEADER;
     int32_t cid;
     char str[0];
 };
 
 // forward
-struct UM_forward {
-    _UM_header;
+struct UM_FORWARD {
+    _UM_HEADER;
     int32_t cid;
     struct UM_base wrap;
 };
 static inline uint16_t
-UM_forward_size(struct UM_forward* um) {
+UM_FORWARD_size(struct UM_FORWARD* um) {
     return sizeof(*um) + um->wrap.msgsz - UM_HSIZE;
 }
-#define UM_CLIMAX (UM_MAXSIZE-sizeof(struct UM_forward)+UM_HSIZE)
-#define UM_FORWARD(fw, fid, type, name, id) \
-    UM_DEFVAR(UM_forward, fw, UMID_FORWARD); \
+#define UM_CLIMAX (UM_MAXSIZE-sizeof(struct UM_FORWARD)+UM_HSIZE)
+#define UM_FORWARD(fw, fid, type, name) \
+    UM_DEFVAR(UM_FORWARD, fw); \
     fw->cid = fid; \
     UM_CAST(type, name, &fw->wrap); \
-    name->msgid = id; \
+    name->msgid = ID##type; \
     name->msgsz = sizeof(*name);
 
 // room
-struct UM_createroom {
-    _UM_header; 
+struct UM_CREATEROOM {
+    _UM_HEADER; 
     int8_t type;  // see ROOM_TYPE*
     int id;
     uint32_t key; // key of room
@@ -94,20 +95,20 @@ struct UM_createroom {
     struct tmemberdetail members[0];
 };
 static inline uint16_t 
-UM_createroom_size(struct UM_createroom* cr) {
+UM_CREATEROOM_size(struct UM_CREATEROOM* cr) {
     return sizeof(*cr) + sizeof(cr->members[0]) * cr->nmember;
 }
 
-struct UM_createroomres {
-    _UM_header;
+struct UM_CREATEROOMRES {
+    _UM_HEADER;
     int8_t ok;
     int id;
     uint32_t key;
     int roomid;
 };
 
-struct UM_overroom {
-    _UM_header;
+struct UM_OVERROOM {
+    _UM_HEADER;
     int8_t type;
 };
 
@@ -140,7 +141,7 @@ UM_SENDTONID(uint16_t tid, uint16_t sid, void* msg, int sz) {
     }
 }
 static inline void
-UM_SENDFORWARD(int id, struct UM_forward* fw) {
-    UM_SEND(id, fw, UM_forward_size(fw));
+UM_SENDFORWARD(int id, struct UM_FORWARD* fw) {
+    UM_SEND(id, fw, UM_FORWARD_size(fw));
 }
 #endif

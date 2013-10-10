@@ -2,17 +2,18 @@
 #include "host_log.h"
 #include "user_message.h"
 #include "client_type.h"
+#include "node_type.h"
 #include <assert.h>
 
 struct dispatcher {
-    int services[UMID_MAX]; // hold for all subscriber(service id) of msg
+    int services[IDUM_MAX]; // hold for all subscriber(service id) of msg
 };
 
 struct dispatcher*
 dispatcher_create() {
     struct dispatcher* self = malloc(sizeof(*self));
     int i;
-    for (i=0; i<UMID_MAX; ++i) {
+    for (i=0; i<IDUM_MAX; ++i) {
         self->services[i] = SERVICE_INVALID;
     }
     return self;
@@ -20,23 +21,35 @@ dispatcher_create() {
 
 static inline int
 _locate_service(struct dispatcher* self, struct UM_base* um)  {
+    const struct host_node* node;
     int msgid = um->msgid;
+    int level = host_log_level();
+    if (level == LOG_DEBUG) {
+        node = host_node_get(um->nodeid);
+        if (node == NULL) {
+            host_error("Receive msg:%d, from unknown node", msgid);
+            return SERVICE_INVALID;
+        }
+    }
+    
     int serviceid;
-    if (msgid >= 0 && msgid < UMID_MAX) {
+    if (msgid >= 0 && msgid < IDUM_MAX) {
         serviceid = self->services[msgid];
         if (serviceid != SERVICE_INVALID) {
-            host_debug("Receive msg:%d, from node:%s%04d, to service:%s", 
-                    msgid, 
-                    host_node_typename(HNODE_TID(um->nodeid)),
-                    HNODE_SID(um->nodeid),
-                    service_query_name(serviceid));
+            if (level == LOG_DEBUG) {
+                char strnode[HNODESTR_MAX];
+                host_strnode(node, strnode);
+                host_debug("Receive msg:%d, from %s, to service:%s", 
+                        msgid, strnode, service_query_name(serviceid));
+            }
             return serviceid;
         }
     }
-    host_debug("Receive invalid msg:%d, from node:%s%04d", 
-            msgid, 
-            host_node_typename(HNODE_TID(um->nodeid)), 
-            HNODE_SID(um->nodeid));
+    if (level == LOG_DEBUG) {
+        char strnode[HNODESTR_MAX];
+        host_strnode(node, strnode);
+        host_debug("Receive invalid msg:%d, from %s", msgid, strnode);
+    }
     return SERVICE_INVALID;
 }
 
@@ -53,7 +66,7 @@ dispatcher_service(struct service* s, struct service_message* sm) {
     int serviceid = sm->sessionid;
     int msgid = (int)(intptr_t)sm->msg;
 
-    if (msgid >= 0 && msgid < UMID_MAX) {
+    if (msgid >= 0 && msgid < IDUM_MAX) {
         int tmp = self->services[msgid];
         if (tmp == SERVICE_INVALID) {
             self->services[msgid] = serviceid; 
@@ -122,5 +135,15 @@ dispatcher_net(struct service* s, struct net_message* nm) {
             }
             host_net_dropread(id, 0);
         }
+    }
+}
+
+void
+dispatcher_usermsg(struct service* s, int id, void* msg, int sz) {
+    struct dispatcher* self = SERVICE_SELF; 
+    struct node_message* nm = msg;
+    int serviceid = _locate_service(self, nm->um);
+    if (serviceid != SERVICE_INVALID) {
+        service_notify_usermsg(serviceid, id, msg, sz);
     }
 }

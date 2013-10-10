@@ -9,12 +9,13 @@
 
 static inline void
 _forward_world(struct gate_client* c, struct UM_base* um) {
-    UM_DEFVAR(UM_forward, fw, UMID_FORWARD);
+    UM_DEFVAR(UM_FORWARD, fw);
     fw->cid = c->connid;
     memcpy(&fw->wrap, um, um->msgsz);
+    fw->wrap.nodeid = host_id();
     const struct host_node* node = host_node_get(HNODE_ID(NODE_WORLD, 0));
     if (node) {
-        UM_SEND(node->connid, fw, UM_forward_size(fw));
+        UM_SEND(node->connid, fw, UM_FORWARD_size(fw));
     }
 }
 void
@@ -31,12 +32,12 @@ forward_nodemsg(struct service* s, int id, void* msg, int sz) {
     if (node == NULL)
         return;
     switch (um->msgid) {
-    case UMID_FORWARD: {
-        UM_CAST(UM_forward, fw, um);
+    case IDUM_FORWARD: {
+        UM_CAST(UM_FORWARD, fw, um);
         struct UM_base* m = &fw->wrap;
         struct gate_client* c = host_gate_getclient(fw->cid);
         if (c) {
-            if (m->msgid == UMID_LOGOUT) {
+            if (m->msgid == IDUM_LOGOUT) {
                 host_gate_disconnclient(c, true);
             } else {
                 UM_SENDTOCLI(c->connid, m, m->msgsz);
@@ -49,14 +50,14 @@ forward_nodemsg(struct service* s, int id, void* msg, int sz) {
 void
 forward_net(struct service* s, struct gate_message* gm) {
     struct net_message* nm = gm->msg;
-    UM_DEFFIX(UM_logout, logout, UMID_LOGOUT);
+    UM_DEFFIX(UM_LOGOUT, logout);
     switch (nm->type) {
     case NETE_SOCKERR:
-        logout.type = LOGOUT_SOCKERR;
-        _forward_world(gm->c, (struct UM_base*)&logout);
+        logout->type = LOGOUT_SOCKERR;
+        _forward_world(gm->c, (struct UM_base*)logout);
     case NETE_TIMEOUT:
-        logout.type = LOGOUT_TIMEOUT;
-        _forward_world(gm->c, (struct UM_base*)&logout);
+        logout->type = LOGOUT_TIMEOUT;
+        _forward_world(gm->c, (struct UM_base*)logout);
         break;
     }
 }

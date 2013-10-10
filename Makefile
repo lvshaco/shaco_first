@@ -4,8 +4,8 @@ CFLAGS=-g -Wall -Werror
 SHARED=-fPIC -shared
 
 service_dir=service
-service_src=$(wildcard $(service_dir)/*.c)
-service_so=$(patsubst %.c,%.so,$(notdir $(service_src)))
+#service_src=$(wildcard $(service_dir)/*.c)
+#service_so=$(patsubst %.c,%.so,$(notdir $(service_src)))
 
 lur_src=\
 	lur/lur.c \
@@ -67,13 +67,38 @@ test_src=\
 LDFLAGS=-Wl,-rpath,. \
 		net.so lur.so base.so -llua -lm -ldl -lrt -rdynamic# -Wl,-E
 
-all: lur.so net.so base.so shaco shaco-cli $(service_so) world.so
+service_so=\
+	service_benchmark.so \
+	service_echo.so \
+	service_log.so \
+	service_dispatcher.so \
+	service_centerc.so \
+	service_centers.so \
+	service_node.so \
+	service_cmds.so \
+	service_cmdctl.so \
+	service_gate.so \
+	service_forward.so \
+	service_game.so
+
+worldservice_so=\
+	service_world.so \
+	service_gamematch.so
+
+all: lur.so net.so base.so shaco shaco-cli \
+	$(service_so) \
+	$(worldservice_so) world.so
+
 release: CFLAGS += -O2
 release: all
 
 $(service_so): %.so: $(service_dir)/%.c
 	@rm -f $@
-	gcc $(CFLAGS) $(SHARED) -o $@ $< -Ihost -Inet -Ibase -Imessage -Iworld
+	gcc $(CFLAGS) $(SHARED) -o $@ $< -Ihost -Inet -Ibase -Imessage
+
+$(worldservice_so): %.so: $(service_dir)/%.c world.so
+	@rm -f $@
+	gcc $(CFLAGS) $(SHARED) -o $@ $< -Ihost -Inet -Ibase -Imessage -Iworld -Wl,-rpath,. world.so
 
 world.so: $(world_src)
 	@rm -f $@

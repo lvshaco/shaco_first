@@ -34,7 +34,7 @@ cmds_init(struct service* s) {
         host_error("lost cmdctl service");
         return 1;
     }
-    SUBSCRIBE_MSG(s->serviceid, UMID_CMD_RES);
+    SUBSCRIBE_MSG(s->serviceid, IDUM_CMDRES);
     return 0;
 }
 
@@ -119,7 +119,7 @@ cmds_usermsg(struct service* s, int id, void* msg, int sz) {
     int tid = HNODE_TID(nodeid);
     int sid = HNODE_SID(nodeid);
 
-    UM_DEFVAR(UM_cmd_req, req, UMID_CMD_REQ);
+    UM_DEFVAR(UM_CMDREQ, req);
     req->cid = id;
     size_t l = strlen(A.argv[2]);
     memcpy(req->cmd, A.argv[2], l);
@@ -140,7 +140,7 @@ _res(struct server* self, int id, struct UM_base* um) {
     const struct host_node* node = host_node_get(um->nodeid);
     if (node == NULL)
         return;
-    UM_CAST(UM_cmd_res, res, um);
+    UM_CAST(UM_CMDRES, res, um);
     struct gate_client* c = host_gate_getclient(res->cid);
     if (c == NULL)
         return;
@@ -162,7 +162,7 @@ cmds_nodemsg(struct service* s, int id, void* msg, int sz) {
     struct server* self = SERVICE_SELF;
     UM_CAST(UM_base, um, msg);
     switch (um->msgid) {
-    case UMID_CMD_RES:
+    case IDUM_CMDRES:
         _res(self, id, um);
         break;
     }

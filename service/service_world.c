@@ -16,12 +16,14 @@
 struct world {
     uint32_t chariditer;
 };
+
 struct world*
 world_create() {
     struct world* self = malloc(sizeof(*self));
     memset(self, 0, sizeof(*self));
     return self;
 }
+
 void
 world_free(struct world* self) {
     if (self == NULL)
@@ -29,32 +31,34 @@ world_free(struct world* self) {
     _freeplayers();
     free(self);
 }
+
 int
 world_init(struct service* s) {
-    //struct world* self = SERVICE_SELF;
+    struct world* self = SERVICE_SELF;
+    self->chariditer = 0;
     int cmax = host_getint("world_cmax_pergate", 0);
     int hmax = host_getint("world_hmax_pergate", cmax);
     int gmax = host_getint("world_gmax", 0);
     _allocplayers(cmax, hmax, gmax);
-    SUBSCRIBE_MSG(s->serviceid, UMID_FORWARD);
+    SUBSCRIBE_MSG(s->serviceid, IDUM_FORWARD);
     return 0;
-}
-void
-world_service(struct service* s, struct service_message* sm) {
-    //struct world* self = SERVICE_SELF;
 }
 
 static void 
-_login_req(struct world* self, const struct host_node* node, int cid, struct UM_base* um) {
+_login(struct world* self, struct node_message* nm) {
+    UM_CAST(UM_FORWARD, req, nm->um);
+    const struct host_node* node = nm->hn;
+    int cid = req->cid;
+
     struct player* p;
     p = _getplayer(node->sid, cid);
     if (p != NULL) {
-        _notify_logout(node, cid, LOGOUT_RELOGIN);
+        _forward_logoutplayer(node, cid, LOGOUT_RELOGIN);
         return;
     }
     p = _allocplayer(node->sid, cid);
     if (p == NULL) {
-        _notify_logout(node, cid, LOGOUT_FULL);
+        _forward_logoutplayer(node, cid, LOGOUT_FULL);
         return;
     }
     p->status = PS_LOGIN;
@@ -66,44 +70,48 @@ _login_req(struct world* self, const struct host_node* node, int cid, struct UM_
     data->charid = charid;
     snprintf(data->name, sizeof(data->name), "wabao-n%u", charid);
     if (_hashplayer(p)) {
-        _notify_logout(node, cid, LOGOUT_FULL);
+        _forward_logoutplayer(node, cid, LOGOUT_FULL);
         _freeplayer(p);
         return;
     }
-    UM_FORWARD(fw, cid, UM_charinfo, ci, UMID_CHARINFO);
+    UM_FORWARD(fw, cid, UM_CHARINFO, ci);
     ci->data = *data;
     UM_SENDFORWARD(node->connid, fw);
 }
+
 static void
-_logout_req(struct world* self, struct player* p) {
+_logout(struct world* self, struct player* p) {
     _freeplayer(p);
+    //struct gate_message gm;
+    //gm.c = c;
+    //gm.msg = nm;
+    //service_notify_net(self->handler, (void*)&gm);
+    //host_gate_disconnclient(c, false);
 }
+
 static void 
 _handlegate(struct world* self, struct node_message* nm) {
-    assert(nm->um->msgid == UMID_FORWARD);
-    UM_CAST(UM_forward, fw, nm->um);
-
-    const struct host_node* hn = nm->hn;
-    struct UM_base* m = &fw->wrap;
-    switch (m->msgid) {
-    case UMID_LOGIN:
-        _login_req(self, hn, fw->cid, m);
+    assert(nm->um->msgid == IDUM_FORWARD);
+    UM_CAST(UM_FORWARD, fw, nm->um);
+    switch (fw->wrap.msgid) {
+    case IDUM_LOGIN:
+        _login(self, nm);
         break;
     default: {
-        struct player* p = _getplayer(hn->sid, fw->cid);
-        if (p == NULL) {
-            _notify_logout(hn, fw->cid, LOGOUT_NOLOGIN);
+        struct player_message pm;
+        if (_decode_playermessage(nm, &pm)) {
             return;
         }
-        switch (m->msgid) {
-        case UMID_LOGOUT:
-            _logout_req(self, p);
+        host_dispatcher_usermsg(&pm, 0);
+        switch (pm.um->msgid) {
+        case IDUM_LOGOUT:
+            _logout(self, pm.p);
             break;
         }
-        break;
         }
     }
 }
+
 void
 world_nodemsg(struct service* s, int id, void* msg, int sz) {
     struct world* self = SERVICE_SELF;
@@ -117,6 +125,7 @@ world_nodemsg(struct service* s, int id, void* msg, int sz) {
         break;
     }
 }
+
 void
 world_time(struct service* s) {
     //struct world* self= SERVICE_SELF;

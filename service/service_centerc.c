@@ -29,12 +29,12 @@ centerc_init(struct service* s) {
 static void
 _reg_request(int id) {
     struct host_node* me = host_me();
-    UM_DEFFIX(UM_node_reg, reg, UMID_NODE_REG);
-    reg.addr = me->addr;
-    reg.port = me->port;
-    reg.gaddr = me->gaddr;
-    reg.gport = me->gport;
-    UM_SEND(id, &reg, sizeof(reg));
+    UM_DEFFIX(UM_NODEREG, reg);
+    reg->addr = me->addr;
+    reg->port = me->port;
+    reg->gaddr = me->gaddr;
+    reg->gport = me->gport;
+    UM_SEND(id, reg, sizeof(*reg));
 }
 
 static void
@@ -47,7 +47,7 @@ _sub_request(int id) {
     char tmp[(NODE_TYPE_MAX+1) * HNODE_NAME_MAX];
     strncpy(tmp, str, sizeof(tmp)-1);
    
-    UM_DEFVAR(UM_node_subs, req, UMID_NODE_SUB);
+    UM_DEFVAR(UM_NODESUBS, req);
     const char* p = tmp;
     char* next;
     int n = 0;
@@ -67,7 +67,7 @@ _sub_request(int id) {
         p = next+1;
     }
     req->n = n; 
-    UM_SEND(id, req, UM_node_subs_size(req));
+    UM_SEND(id, req, UM_NODESUBS_size(req));
 }
 
 void

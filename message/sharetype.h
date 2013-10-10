@@ -20,10 +20,6 @@ struct chardata {
 
 // team member detail info
 struct tmemberdetail {
-    int32_t login:1;
-    int32_t online:1;
-    int32_t unused:30;
-    int tagid;
     uint32_t charid;
     char name[NAME_MAX];
 };

@@ -111,7 +111,7 @@ cmdctl_free(struct cmdctl* self) {
 int
 cmdctl_init(struct service* s) {
     struct cmdctl* self = SERVICE_SELF;
-    SUBSCRIBE_MSG(s->serviceid, UMID_CMD_REQ);
+    SUBSCRIBE_MSG(s->serviceid, IDUM_CMDREQ);
 
     if (HNODE_TID(host_id()) == NODE_CENTER) {
         self->cmds_service = service_query_id("cmds");
@@ -147,7 +147,7 @@ _execute(struct args* A, struct memrw* rw) {
 
 static void
 _cmdreq(struct cmdctl* self, int id, struct UM_base* um) {
-    UM_CAST(UM_cmd_req, req, um);
+    UM_CAST(UM_CMDREQ, req, um);
 
     char* cmd = (char*)(req+1);
     size_t cl = req->msgsz - sizeof(*req);
@@ -157,7 +157,7 @@ _cmdreq(struct cmdctl* self, int id, struct UM_base* um) {
         return; // null
     }
 
-    UM_DEFVAR(UM_cmd_res, res, UMID_CMD_RES);
+    UM_DEFVAR(UM_CMDRES, res);
     res->cid = req->cid; 
     struct memrw rw;
     memrw_init(&rw, res+1, res->msgsz-sizeof(*res));
@@ -183,7 +183,7 @@ cmdctl_nodemsg(struct service* s, int id, void* msg, int sz) {
     struct cmdctl* self = SERVICE_SELF;
     UM_CAST(UM_base, um, msg);
     switch (um->msgid) {
-    case UMID_CMD_REQ:
+    case IDUM_CMDREQ:
         _cmdreq(self, id, msg);
         break;
     }

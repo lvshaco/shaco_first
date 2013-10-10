@@ -15,14 +15,16 @@ struct player {
     uint16_t gid;
     uint16_t cid;
     int status;
+    int roomid;
     struct chardata data;
 };
+
 void _allocplayers(int cmax, int hmax, int gmax);
 void _freeplayers();
 struct player* _getplayer(uint16_t gid, int cid);
 struct player* _getplayerbyid(uint32_t charid);
 struct player* _allocplayer(uint16_t gid, int cid);
 void _freeplayer(struct player* p);
-int _hashplayer(struct player* p);
+int  _hashplayer(struct player* p);
 
 #endif

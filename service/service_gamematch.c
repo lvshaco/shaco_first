@@ -2,12 +2,15 @@
 #include "host_node.h"
 #include "host_timer.h"
 #include "host_dispatcher.h"
+#include "player.h"
 #include "worldhelper.h"
 #include "sharetype.h"
 #include "gfreeid.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
+
+#define CREATE_TIMEOUT 5000
 
 struct matchtag {
     uint16_t gid;
@@ -17,12 +20,12 @@ struct matchtag {
 };
 
 struct playerv {
-    int sz;
+    int np;
     struct player* p[MEMBER_MAX];
 };
 
 struct memberv {
-    int sz;
+    int np;
     struct matchtag p[MEMBER_MAX];
 };
 struct room {
@@ -30,7 +33,6 @@ struct room {
     int used;
     uint64_t createtime;
     int8_t type;
-    int load;
     uint16_t sid;
     uint32_t key;
     struct memberv mtag;
@@ -42,39 +44,78 @@ struct gfroom {
 
 struct gamematch {
     uint32_t key;
-    uint32_t create_timeout; 
     struct matchtag mtag;
     struct gfroom creating;
 };
 
-static void
-_notify_playfail(struct player* p) {
-    UM_FORWARD(fw, p->cid, UM_playfail, fail, UMID_PLAYFAIL);
-    fail->error = 0;
-    UM_SENDTOPLAYER(p, fw);
+struct gamematch*
+gamematch_create() {
+    struct gamematch* self = malloc(sizeof(*self));
+    memset(self, 0, sizeof(*self));
+    return self;
 }
+
+void
+gamematch_free(struct gamematch* self) {
+    if (self == NULL)
+        return;
+    GFREEID_FINI(room, &self->creating);
+    free(self);
+}
+
+int
+gamematch_init(struct service* s) {
+    struct gamematch* self = SERVICE_SELF;
+    // todo test this
+    GFREEID_INIT(room, &self->creating, 1);
+
+    SUBSCRIBE_MSG(s->serviceid, IDUM_PLAY);
+    SUBSCRIBE_MSG(s->serviceid, IDUM_LOGOUT);
+    SUBSCRIBE_MSG(s->serviceid, IDUM_CREATEROOMRES);
+    SUBSCRIBE_MSG(s->serviceid, IDUM_OVERROOM);
+
+    host_timer_register(s->serviceid, 1000);
+    return 0;
+}
+
 static void
-_notify_gameaddr(struct player* p, const struct host_node* hn, uint32_t key) {
-    UM_FORWARD(fw, p->cid, UM_notifygame, game, UMID_NOTIFYGAME);
+_notify_playfail(struct player* p, int8_t error) {
+    UM_FORWARD(fw, p->cid, UM_PLAYfail, fail);
+    fail->error = error;
+    _forward_toplayer(p, fw);
+}
+
+static void
+_notify_gameaddr(struct player* p, const struct host_node* hn, struct room* ro) {
+    UM_FORWARD(fw, p->cid, UM_NOTIFYGAME, game);
     game->addr = hn->gaddr;
     game->port = hn->gport;
-    game->key = key;
-    UM_SENDTOPLAYER(p, fw);
+    game->key = ro->key;
+    _forward_toplayer(p, fw);
 }
+
 static uint32_t 
 _genkey(struct gamematch* self) {
     return self->key++;
 }
+
 static int
 _calcload(int8_t type) {
     return 2;
 }
 
 static void
-_buildmember(struct player* p, struct tmemberbrief* mb) {
-    mb->charid = p->data.charid;
-    memcpy(mb->name, p->data.name, sizeof(mb->name));
+_build_memberbrief(struct player* p, struct tmemberbrief* brief) {
+    brief->charid = p->data.charid;
+    memcpy(brief->name, p->data.name, sizeof(brief->name));
 }
+
+static void
+_build_memberdetail(struct player* p, struct tmemberdetail* detail) {
+    detail->charid = p->data.charid;
+    memcpy(detail->name, p->data.name, sizeof(detail->name));
+}
+
 static inline void
 _build_matchtag(struct player* p, struct matchtag* mtag) {
     mtag->gid = p->gid;
@@ -82,6 +123,7 @@ _build_matchtag(struct player* p, struct matchtag* mtag) {
     mtag->charid = p->data.charid;
     memcpy(p->data.name, mtag->name, NAME_MAX);
 }
+
 static inline void
 _clear_matchtag(struct matchtag* mtag) {
     mtag->gid = 0;
@@ -89,68 +131,97 @@ _clear_matchtag(struct matchtag* mtag) {
     mtag->charid = 0;
     mtag->name[0] = '\0';
 }
+
 static void
-_getmembers(struct room* r, struct playerv* v) {
-    struct memberv* mv = &r->mtag;
-    assert(mv->sz <= MEMBER_MAX);
+_del_waitmember(struct gamematch* self, struct player* p) {
+    if (p->data.charid == self->mtag.charid) {
+        _clear_matchtag(&self->mtag);
+    }
+}
+
+static void
+_get_tmpmembers(struct room* ro, struct playerv* v) {
+    struct memberv* mv = &ro->mtag;
+    assert(mv->np <= MEMBER_MAX);
     struct player* p;
     int i;
-    for (i=0; i<mv->sz; ++i) {
+    for (i=0; i<mv->np; ++i) {
         p = _getplayer(mv->p[i].gid, mv->p[i].cid);
         if (p && p->data.charid == mv->p[i].charid)
             v->p[i] = p;
         else
             v->p[i] = NULL;
     }
-    v->sz = mv->sz;
+    v->np = mv->np;
 }
+
+static void
+_del_tmpmember(struct gamematch* self, struct player* p) {
+    struct room* ro = GFREEID_SLOT(&self->creating, p->roomid);
+    if (ro == NULL) {
+        return;
+    }
+    struct matchtag* mtag;
+    int i;
+    for (i=0; i<ro->mtag.np; ++i) {
+        mtag = &ro->mtag.p[i];
+        if (mtag->charid == p->data.charid) {
+            _clear_matchtag(mtag);
+        }
+    } 
+}
+
 static struct room*
 _create_tmproom(struct gamematch* self) {
-    struct room* tmproom = GFREEID_ALLOC(room, &self->creating);
-    assert(tmproom);
+    struct room* ro = GFREEID_ALLOC(room, &self->creating);
+    assert(ro);
    
-    tmproom->createtime = host_timer_now();
-    tmproom->key = _genkey(self);
-    return tmproom;
+    ro->createtime = host_timer_now();
+    ro->key = _genkey(self);
+    return ro;
 }
-static void
-_destroy_tmproom(struct gamematch* self, struct room* r, int status) {
-    struct playerv pv;
-    _getmembers(r, &pv);
 
+static int
+_destroy_tmproom(struct gamematch* self, struct room* ro, int ok) {
+    const struct host_node* node;
+    struct playerv pv;
+    _get_tmpmembers(ro, &pv);
+
+    int status = ok ? PS_ROOM : PS_GAME;
     struct player* p;
     int i;
-    for (i=0; i<pv.sz; ++i) {
+    for (i=0; i<pv.np; ++i) {
         p = pv.p[i];
         if (p) 
             p->status = status;
     }
-    const struct host_node* hn = host_node_get(HNODE_ID(NODE_GAME, r->sid));
-    switch (status) {
-    case PS_GAME:
-        if (hn) {
-            host_node_updateload(hn->id, -r->load);
-        }
-        for (i=0; i<pv.sz; ++i) {
+    if (!ok) {
+        for (i=0; i<pv.np; ++i) {
             p = pv.p[i];
             if (p) {
-                _notify_playfail(p);
+                _notify_playfail(p, 0);
             }
         }
-        break;
-    case PS_ROOM:
-        if (hn) {
-            for (i=0; i<pv.sz; ++i) {
+    }
+    int nodeid = HNODE_ID(NODE_GAME, ro->sid);
+    node = host_node_get(nodeid);
+    if (node) {
+        if (ok) {
+            for (i=0; i<pv.np; ++i) {
                 p = pv.p[i];
                 if (p) {
-                    _notify_gameaddr(p, hn, r->key);
+                    _notify_gameaddr(p, node, ro);
                 }
             }
+        } else {
+            int load = _calcload(ro->type);
+            host_node_updateload(node->id, -load);
         }
-        break;
     }
-    GFREEID_FREE(room, &self->creating, r);
+    GFREEID_FREE(room, &self->creating, ro);
+    return node ? 0 : 1;
 }
+
 static void
 _timeout_tmproom(struct gamematch* self) {
     uint64_t now = host_timer_now();
@@ -159,40 +230,48 @@ _timeout_tmproom(struct gamematch* self) {
     for (i=0; i<GFREEID_CAP(&self->creating); ++i) {
         if (GFREEID_USED(&rs[i])) {
             if (now > rs[i].createtime &&
-                now - rs[i].createtime >= self->create_timeout) {
-                _destroy_tmproom(self, &rs[i], PS_GAME);
+                now - rs[i].createtime >= CREATE_TIMEOUT) {
+                _destroy_tmproom(self, &rs[i], 0);
             }
         }
     }
 }
+
 static int
 _match(struct gamematch* self, struct player* p, struct player* mp, int8_t type) {
     const struct host_node* hn = host_node_minload(NODE_GAME);
     if (hn == NULL) {
         return 1;
     }
-    UM_FORWARD(fw, p->cid, UM_playloading, pl, UMID_PLAYLOADING);
+    UM_FORWARD(fw, p->cid, UM_PLAYLOADING, pl);
     pl->leasttime = 3;
-    _buildmember(mp, &pl->member);
-    UM_SENDTOPLAYER(p, fw);
+    _build_memberbrief(mp, &pl->member);
+    _forward_toplayer(p, fw);
 
-    _buildmember(p, &pl->member);
-    UM_SENDTOPLAYER(mp, fw);
+    _build_memberbrief(p, &pl->member);
+    _forward_toplayer(mp, fw);
 
-    struct room* tmproom = _create_tmproom(self); 
-    tmproom->type = type;
-    tmproom->sid = hn->sid;
-    _build_matchtag(p, &tmproom->mtag.p[0]);
-    _build_matchtag(mp, &tmproom->mtag.p[1]);
+    struct room* ro = _create_tmproom(self); 
+    ro->type = type;
+    ro->sid = hn->sid; 
+    _build_matchtag(p, &ro->mtag.p[0]);
+    _build_matchtag(mp, &ro->mtag.p[1]);
+    ro->mtag.np = 2;
 
-    UM_DEFFIX(UM_createroom, cr, UMID_CREATEROOM);
-    cr.type = type;
-    cr.id = GFREEID_ID(tmproom, &self->creating);
-    cr.key = tmproom->key;
+    UM_DEFVAR(UM_CREATEROOM, cr);
+    cr->type = type;
+    cr->id = GFREEID_ID(ro, &self->creating);
+    cr->key = ro->key;
+    int i;
+    for (i=0; i<ro->mtag.np; ++i) {
+        _build_memberdetail(p, &cr->members[i]);
+    }
+    cr->nmember = ro->mtag.np;
     UM_SENDTONODE(hn, &cr, sizeof(cr));
-    host_node_updateload(hn->id, _calcload(cr.type));
+    host_node_updateload(hn->id, _calcload(cr->type));
     return 0;
 }
+
 static int
 _lookup(struct gamematch* self, struct player* p, int8_t type) {
     struct matchtag* mtag = &self->mtag;
@@ -201,15 +280,15 @@ _lookup(struct gamematch* self, struct player* p, int8_t type) {
         p->status = PS_WAITING;
         _build_matchtag(p, mtag);
 
-        UM_DEFFIX(UM_playwait, pw, UMID_PLAYWAIT); 
-        pw.timeout = 60;
-        UM_SENDTONID(NODE_GATE, p->gid, &pw, sizeof(pw));
+        UM_DEFFIX(UM_PLAYWAIT, pw);
+        pw->timeout = 60; // todo just test
+        UM_SENDTONID(NODE_GATE, p->gid, pw, sizeof(*pw));
         return 0;
     } else {
         _clear_matchtag(mtag);
         if (_match(self, p, mp, type)) {
-            _notify_playfail(p);
-            _notify_playfail(mp);
+            _notify_playfail(p, 0);
+            _notify_playfail(mp, 0);
             p->status = PS_GAME;
             mp->status = PS_GAME;
 
@@ -223,64 +302,44 @@ _lookup(struct gamematch* self, struct player* p, int8_t type) {
 
 static void
 _onoverroom(struct gamematch* self, struct node_message* nm) {
-    UM_CAST(UM_overroom, or, nm->um);
+    UM_CAST(UM_OVERROOM, or, nm->um);
     int load = _calcload(or->type);
     host_node_updateload(nm->hn->id, -load);
 }
 
 static void
 _oncreateroom(struct gamematch* self, struct node_message* nm) {
-    UM_CAST(UM_createroomres, res, nm->um);
+    UM_CAST(UM_CREATEROOMRES, res, nm->um);
    
-    struct room* tmproom = GFREEID_SLOT(&self->creating, res->id);
-    if (tmproom || !GFREEID_USED(tmproom)) {
-        return;
+    struct room* ro = GFREEID_SLOT(&self->creating, res->id);
+    if (ro) {
+        if (ro->key == res->key &&
+            ro->sid == nm->hn->sid) {
+            if (_destroy_tmproom(self, ro, res->ok) == 0)
+                return;
+        }
     }
-    if (tmproom->key == res->key &&
-        tmproom->sid == nm->hn->sid) {
-        _destroy_tmproom(self, tmproom, res->ok ? PS_ROOM : PS_GAME);
+    if (res->ok) {
+        res->ok = 0;
+        UM_SENDTONODE(nm->hn, res, res->msgsz);
     }
 }
+
 static void
 _playreq(struct gamematch* self, struct player_message* pm) {
-    UM_CAST(UM_play, um, pm->um);
-    _lookup(self, pm->pl, um->type);
-}
-
-struct gamematch*
-gamematch_create() {
-    struct gamematch* self = malloc(sizeof(*self));
-    memset(self, 0, sizeof(*self));
-    return self;
-}
-
-void
-gamematch_free(struct gamematch* self) {
-    free(self);
-}
-
-int
-gamematch_init(struct service* s) {
-    SUBSCRIBE_MSG(s->serviceid, UMID_PLAY);
-    SUBSCRIBE_MSG(s->serviceid, UMID_CREATEROOMRES);
-    SUBSCRIBE_MSG(s->serviceid, UMID_OVERROOM);
-    return 0;
-}
-
-void
-gamematch_service(struct service* s, struct service_message* sm) {
-    //struct gamematch* self = SERVICE_SELF;
+    UM_CAST(UM_PLAY, um, pm->um);
+    _lookup(self, pm->p, um->type);
 }
 
 static void
-_handlegate(struct gamematch* self, struct node_message* nm) {
-    struct player_message pm;
-    if (_decode_playermessage(nm, &pm)) {
-        return;
-    }
-    switch (pm.um->msgid) {
-    case UMID_PLAY:
-        _playreq(self, &pm);
+_logout(struct gamematch* self, struct player_message* pm) {
+    struct player* p = pm->p;
+    switch (p->status) {
+    case PS_WAITING:
+        _del_waitmember(self, p);
+        break;
+    case PS_CREATING:
+        _del_tmpmember(self, p);
         break;
     }
 }
@@ -288,11 +347,25 @@ _handlegate(struct gamematch* self, struct node_message* nm) {
 static void
 _handlegame(struct gamematch* self, struct node_message* nm) {
     switch (nm->um->msgid) {
-    case UMID_OVERROOM:
+    case IDUM_OVERROOM:
         _onoverroom(self, nm);
         break;
-    case UMID_CREATEROOMRES:
+    case IDUM_CREATEROOMRES:
         _oncreateroom(self, nm);
+        break;
+    }
+}
+
+void
+gamematch_usermsg(struct service* s, int id, void* msg, int sz) {
+    struct gamematch* self = SERVICE_SELF;
+    struct player_message* pm = msg;
+    switch (pm->um->msgid) {
+    case IDUM_PLAY:
+        _playreq(self, pm);
+        break;
+    case IDUM_LOGOUT:
+        _logout(self, pm);
         break;
     }
 }
@@ -306,7 +379,6 @@ gamematch_nodemsg(struct service* s, int id, void* msg, int sz) {
     }
     switch (nm.hn->tid) {
     case NODE_GATE:
-        _handlegate(self, &nm);
         break;
     case NODE_GAME:
         _handlegame(self, &nm);

@@ -57,23 +57,35 @@ struct game {
 
 struct game*
 game_create() {
-    return NULL;
+    struct game* self = malloc(sizeof(*self));
+    memset(self, 0, sizeof(*self));
+    return self;
 }
 
 void
 game_free(struct game* self) {
+    if (self == NULL)
+        return;
+    free(self->players);
+    GFREEID_FINI(room, &self->rooms);
+    free(self);
 }
 
 int
 game_init(struct service* s) {
-    //struct game* self = SERVICE_SELF;
-    SUBSCRIBE_MSG(s->serviceid, UMID_CREATEROOM);
+    struct game* self = SERVICE_SELF;
+    int pmax = host_gate_maxclient();
+    if (pmax == 0) {
+        host_error("maxclient is zero, try load service gate before this");
+        return 1;
+    }
+    self->pmax = pmax;
+    self->players = malloc(sizeof(struct player) * pmax);
+    memset(self->players, 0, sizeof(struct player) * pmax);
+    // todo test this
+    GFREEID_INIT(room, &self->rooms, 1);
+    SUBSCRIBE_MSG(s->serviceid, IDUM_CREATEROOM);
     return 0;
-}
-
-void
-game_service(struct service* s, struct service_message* sm) {
-    //struct game* self = SERVICE_SELF;
 }
 
 static struct player*
@@ -86,10 +98,7 @@ _getplayer(struct game* self, struct gate_client* c) {
 static struct room*
 _getroom(struct game* self, int roomid) {
     struct room* ro = GFREEID_SLOT(&self->rooms, roomid);
-    if (ro && GFREEID_USED(ro)) {
-        return ro;
-    }
-    return NULL;
+    return ro;
 }
 static struct member*
 _getmember(struct room* ro, uint32_t charid) {
@@ -118,9 +127,9 @@ _count_onlinemember(struct room* ro) {
 }
 static void
 _verifyfail(struct gate_client* c, int8_t error) {
-    UM_DEFFIX(UM_gameloginfail, fail, UMID_GAMELOGINFAIL);
-    fail.error = error;
-    UM_SENDTOCLI(c->connid, &fail, fail.msgsz);
+    UM_DEFFIX(UM_GAMELOGINFAIL, fail);
+    fail->error = error;
+    UM_SENDTOCLI(c->connid, fail, sizeof(*fail));
 }
 static inline bool
 _elapsed(uint64_t t, uint64_t elapse) {
@@ -151,14 +160,14 @@ static void
 _gameenter(struct room* ro) {
     ro->status = RS_ENTER;
     ro->entertime = host_timer_now();
-    UM_DEFFIX(UM_gameenter, enter, UMID_GAMEENTER);
-    _multicast_msg(ro, (struct UM_base*)&enter);
+    UM_DEFFIX(UM_GAMEENTER, enter);
+    _multicast_msg(ro, (struct UM_base*)enter);
 }
 static void
 _gamestart(struct room* ro) {
     ro->status = RS_START;
-    UM_DEFFIX(UM_gamestart, start, UMID_GAMESTART);
-    _multicast_msg(ro, (struct UM_base*)&start);
+    UM_DEFFIX(UM_GAMESTART, start);
+    _multicast_msg(ro, (struct UM_base*)start);
 }
 static void
 _gamedestroy(struct game* self, struct room* ro) {
@@ -210,17 +219,17 @@ _try_gameover(struct game* self, struct room* ro) {
 }
 static void
 _notify_gameinfo(struct gate_client* c, struct room* ro) {
-    UM_DEFVAR(UM_gameinfo, ri, UMID_GAMEINFO);
+    UM_DEFVAR(UM_GAMEINFO, ri);
     ri->nmember = ro->np;
     int i;
     for (i=0; i<ro->np; ++i) {
         ri->members[i] = ro->p[i].detail;
     }
-    UM_SENDTOCLI(c->connid, ri, UM_gameinfo_size(ri));
+    UM_SENDTOCLI(c->connid, ri, UM_GAMEINFO_size(ri));
 } 
 static void
 _login(struct game* self, struct gate_client* c, struct UM_base* um) {
-    UM_CAST(UM_gamelogin, login, um);
+    UM_CAST(UM_GAMELOGIN, login, um);
     struct room* ro = _getroom(self, login->roomid);
     if (ro == NULL) {
         _verifyfail(c, 0);
@@ -285,10 +294,10 @@ game_usermsg(struct service* s, int id, void* msg, int sz) {
     assert(gm->c);
     UM_CAST(UM_base, um, gm->msg);
     switch (um->msgid) {
-    case UMID_GAMELOGIN:
+    case IDUM_GAMELOGIN:
         _login(self, gm->c, um);
         break;
-    case UMID_GAMELOGOUT:
+    case IDUM_GAMELOGOUT:
         _logout(self, gm->c, true);
         break;
     }
@@ -296,7 +305,7 @@ game_usermsg(struct service* s, int id, void* msg, int sz) {
 
 static void
 _creategame(struct game* self, struct node_message* nm) {
-    UM_CAST(UM_createroom, cr, nm->um);
+    UM_CAST(UM_CREATEROOM, cr, nm->um);
 
     struct room* ro = _gamecreate(self);
     assert(ro);
@@ -308,16 +317,16 @@ _creategame(struct game* self, struct node_message* nm) {
     for (i=0; i<ro->np; ++i) {
         ro->p[i].online = 0;
     }
-    UM_DEFFIX(UM_createroomres, res, UMID_CREATEROOMRES);
-    res.ok = 1;
-    res.id = ro->id;
-    res.key = ro->key;
-    res.roomid = GFREEID_ID(ro, &self->rooms);
-    UM_SENDTONODE(nm->hn, &res, sizeof(res));
+    UM_DEFFIX(UM_CREATEROOMRES, res);
+    res->ok = 1;
+    res->id = ro->id;
+    res->key = ro->key;
+    res->roomid = GFREEID_ID(ro, &self->rooms);
+    UM_SENDTONODE(nm->hn, res, sizeof(*res));
 }
 static void
 _destroyroom(struct game* self, struct UM_base* um) {
-    UM_CAST(UM_createroomres, dr, um);
+    UM_CAST(UM_CREATEROOMRES, dr, um);
     struct room* ro = _getroom(self, dr->roomid);
     if (ro && (ro->status == RS_CREATE)) {
         _gamedestroy(self, ro);
@@ -326,10 +335,10 @@ _destroyroom(struct game* self, struct UM_base* um) {
 static void
 _handleworld(struct game* self, struct node_message* nm) {
     switch (nm->um->msgid) {
-    case UMID_CREATEROOM:
+    case IDUM_CREATEROOM:
         _creategame(self, nm);
         break;
-    case UMID_CREATEROOMRES:
+    case IDUM_CREATEROOMRES:
         _destroyroom(self, nm->um);
         break;
     }
@@ -365,7 +374,7 @@ game_time(struct service* s) {
     int i;
     for (i=0; i<GFREEID_CAP(&self->rooms); ++i) {
         ro = GFREEID_SLOT(&self->rooms, i);
-        if (ro && GFREEID_USED(ro)) {
+        if (ro) {
             switch (ro->status) {
             case RS_CREATE:
                 _try_gameenter(self, ro);

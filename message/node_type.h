@@ -16,9 +16,12 @@ const char* NODE_NAMES[NODE_TYPE_MAX] = {
     "center", "gate", "world", "game",
 };
 
-struct node_message {
+#define _NODEM_header \
+    struct UM_base* um; \
     const struct host_node* hn;
-    struct UM_base* um;
+
+struct node_message {
+    _NODEM_header;
 };
 
 static inline int
