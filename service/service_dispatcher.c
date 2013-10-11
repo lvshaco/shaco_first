@@ -20,7 +20,7 @@ dispatcher_create() {
 }
 
 static inline int
-_locate_service(struct dispatcher* self, struct UM_base* um)  {
+_locate_service(struct dispatcher* self, struct UM_BASE* um)  {
     const struct host_node* node;
     int msgid = um->msgid;
     int level = host_log_level();
@@ -81,18 +81,21 @@ dispatcher_service(struct service* s, struct service_message* sm) {
     }
 }
 
-static inline struct UM_base*
+static inline struct UM_BASE*
 _read_one(struct net_message* nm, int skip) {
     int id = nm->connid; 
-    struct UM_base* base;
+    struct UM_BASE* base;
     void* data;
     base = host_net_read(id, sizeof(*base), skip);
     if (base == NULL) {
         goto null;
     }
-    data = host_net_read(id, base->msgsz + skip - sizeof(*base), 0);
-    if (data == NULL) {
-        goto null;
+    int sz = base->msgsz + skip - sizeof(*base);
+    if (sz != 0) {
+        data = host_net_read(id, sz, 0);
+        if (data == NULL) {
+            goto null;
+        }
     }
     return base;
 null:
@@ -111,7 +114,7 @@ dispatcher_net(struct service* s, struct net_message* nm) {
     struct dispatcher* self = SERVICE_SELF; 
     int id = nm->connid;
     int serviceid;
-    struct UM_base* um;
+    struct UM_BASE* um;
 
     if (nm->ut >= CLI_UNTRUST) {
         // untrust client route to the service of the socket binded

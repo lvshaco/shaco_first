@@ -11,35 +11,35 @@
 #pragma pack(1)
 
 // nodeid: source node id where UM from
-#define _NODE_header \
+#define _NODE_HEADER \
     uint16_t nodeid;
 
 #define _UM_HEADER \
-    _NODE_header; \
+    _NODE_HEADER; \
     uint16_t msgsz; \
     uint16_t msgid;
 
-struct NODE_header {
-    _NODE_header;
+struct NODE_HEADER {
+    _NODE_HEADER;
 };
 
-struct UM_base {
+struct UM_BASE {
     _UM_HEADER;
     uint8_t data[0];
 };
 
-#define UM_SKIP sizeof(struct NODE_header)
-#define UM_HSIZE sizeof(struct UM_base)
+#define UM_SKIP sizeof(struct NODE_HEADER)
+#define UM_HSIZE sizeof(struct UM_BASE)
 //#define UM_MAXDATA UM_MAXSIZE - UM_HSIZE
 #define UM_DEF(um, n) \
     char um##data[n]; \
-    struct UM_base* um = (void*)um##data;
+    struct UM_BASE* um = (void*)um##data;
 
 #define UM_DEFFIX(type, name) \
     struct type name##data; \
     struct type* name = &name##data; \
     name->msgid = ID##type; \
-    name->msgsz = sizeof(name);
+    name->msgsz = sizeof(*name);
 
 #define UM_DEFVAR(type, name) \
     char name##data[UM_MAXSIZE]; \

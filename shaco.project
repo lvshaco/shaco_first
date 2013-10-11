@@ -65,7 +65,14 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.h *.c" {
   netbuf.c
   test.c
  }
+ cnet=cnet{
+  Makefile
+  cnet.h
+  cnet.c
+  test.c
+ }
  service=service{
+  worldhelper.h
   service_benchmark.c
   service_centerc.c
   service_centers.c
@@ -80,7 +87,6 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.h *.c" {
   service_log.c
   service_node.c
   service_world.c
-  worldhelper.h
  }
  world=world{
   player.h

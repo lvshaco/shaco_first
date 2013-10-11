@@ -90,7 +90,7 @@ _subscribecb(const struct host_node* node, void* ud) {
 }
 
 static void
-_subscribe(struct centers* self, int id, struct UM_base* um) {
+_subscribe(struct centers* self, int id, struct UM_BASE* um) {
     UM_CAST(UM_NODESUBS, req, um);
     uint16_t src_tid = HNODE_TID(req->nodeid);
     uint16_t tid;
@@ -141,7 +141,7 @@ centers_service(struct service* s, struct service_message* sm) {
 void
 centers_nodemsg(struct service* s, int id, void* msg, int sz) {
     struct centers* self = SERVICE_SELF;
-    struct UM_base* um = msg;
+    struct UM_BASE* um = msg;
     switch (um->msgid) {
     case IDUM_NODESUBS:
         _subscribe(self, id, um);

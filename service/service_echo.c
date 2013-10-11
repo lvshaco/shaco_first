@@ -7,7 +7,8 @@ void
 echo_usermsg(struct service* s, int id, void* msg, int sz) {
     struct gate_message* gm = msg;
     assert(gm->c);
-    UM_CAST(UM_base, um, gm->msg);
+    
+    UM_CAST(UM_BASE, um, gm->msg);
     UM_SENDTOCLI(id, um, um->msgsz);
 }
 void

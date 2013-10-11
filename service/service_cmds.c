@@ -47,13 +47,13 @@ _response_error(int id, const char* error) {
 
 static inline int
 _sendto_remote(const struct host_node* node, void* ud) {
-    struct UM_base* um = ud;
+    struct UM_BASE* um = ud;
     UM_SEND(node->connid, um, um->msgsz);
     return 0;
 }
 
 static void
-_routeto_node(struct server* self, uint16_t nodeid, struct UM_base* um) {
+_routeto_node(struct server* self, uint16_t nodeid, struct UM_BASE* um) {
     if (nodeid == host_id()) {
         service_notify_nodemsg(self->ctl_service, -1, um, um->msgsz);
     } else {
@@ -65,7 +65,7 @@ _routeto_node(struct server* self, uint16_t nodeid, struct UM_base* um) {
 }
 
 static void
-_broadcast_type(struct server* self, int tid, struct UM_base* um) {
+_broadcast_type(struct server* self, int tid, struct UM_BASE* um) {
     if (tid == NODE_CENTER) {
         _routeto_node(self, host_id(), um); 
     } else {
@@ -74,7 +74,7 @@ _broadcast_type(struct server* self, int tid, struct UM_base* um) {
 }
 
 static void
-_broadcast_all(struct server* self, struct UM_base* um) {
+_broadcast_all(struct server* self, struct UM_BASE* um) {
     int i;
     for (i=0; i<host_node_types(); ++i) {
         _broadcast_type(self, i, um);
@@ -103,7 +103,7 @@ cmds_usermsg(struct service* s, int id, void* msg, int sz) {
     struct gate_message* gm = msg;
     struct gate_client* c = host_gate_getclient(id);
     assert(c);
-    UM_CAST(UM_base, um, gm->msg);
+    UM_CAST(UM_BASE, um, gm->msg);
    
     struct args A;
     args_parsestrl(&A, 3, (char*)(um+1), sz-UM_HSIZE);
@@ -125,7 +125,7 @@ cmds_usermsg(struct service* s, int id, void* msg, int sz) {
     memcpy(req->cmd, A.argv[2], l);
     req->msgsz = sizeof(*req) + l;
 
-    um = (struct UM_base*)req;
+    um = (struct UM_BASE*)req;
     if (tid == HNODE_TID_MAX) {
         _broadcast_all(self, um); 
     } else if (sid == HNODE_SID_MAX) {
@@ -136,7 +136,7 @@ cmds_usermsg(struct service* s, int id, void* msg, int sz) {
 }
 
 static void
-_res(struct server* self, int id, struct UM_base* um) {
+_res(struct server* self, int id, struct UM_BASE* um) {
     const struct host_node* node = host_node_get(um->nodeid);
     if (node == NULL)
         return;
@@ -160,7 +160,7 @@ _res(struct server* self, int id, struct UM_base* um) {
 void
 cmds_nodemsg(struct service* s, int id, void* msg, int sz) {
     struct server* self = SERVICE_SELF;
-    UM_CAST(UM_base, um, msg);
+    UM_CAST(UM_BASE, um, msg);
     switch (um->msgid) {
     case IDUM_CMDRES:
         _res(self, id, um);

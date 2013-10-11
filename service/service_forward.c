@@ -8,7 +8,7 @@
 #include <string.h>
 
 static inline void
-_forward_world(struct gate_client* c, struct UM_base* um) {
+_forward_world(struct gate_client* c, struct UM_BASE* um) {
     UM_DEFVAR(UM_FORWARD, fw);
     fw->cid = c->connid;
     memcpy(&fw->wrap, um, um->msgsz);
@@ -22,23 +22,28 @@ void
 forward_usermsg(struct service* s, int id, void* msg, int sz) {
     struct gate_message* gm = msg;
     struct gate_client* c = gm->c;
-    UM_CAST(UM_base, um, gm->msg);
+    UM_CAST(UM_BASE, um, gm->msg);
     _forward_world(c, um);
 }
 void
 forward_nodemsg(struct service* s, int id, void* msg, int sz) {
-    UM_CAST(UM_base, um, msg);
+    UM_CAST(UM_BASE, um, msg);
     const struct host_node* node = host_node_get(um->nodeid);
     if (node == NULL)
         return;
     switch (um->msgid) {
     case IDUM_FORWARD: {
         UM_CAST(UM_FORWARD, fw, um);
-        struct UM_base* m = &fw->wrap;
+        struct UM_BASE* m = &fw->wrap;
         struct gate_client* c = host_gate_getclient(fw->cid);
         if (c) {
             if (m->msgid == IDUM_LOGOUT) {
-                host_gate_disconnclient(c, true);
+                UM_CAST(UM_LOGOUT, lo, m);
+                if (lo->type >= LOGOUT_GATEMAX) {
+                    UM_SENDTOCLI(c->connid, m, m->msgsz);
+                    host_gate_disconnclient(c, true);
+                }
+                
             } else {
                 UM_SENDTOCLI(c->connid, m, m->msgsz);
             }
@@ -54,10 +59,10 @@ forward_net(struct service* s, struct gate_message* gm) {
     switch (nm->type) {
     case NETE_SOCKERR:
         logout->type = LOGOUT_SOCKERR;
-        _forward_world(gm->c, (struct UM_base*)logout);
+        _forward_world(gm->c, (struct UM_BASE*)logout);
     case NETE_TIMEOUT:
         logout->type = LOGOUT_TIMEOUT;
-        _forward_world(gm->c, (struct UM_base*)logout);
+        _forward_world(gm->c, (struct UM_BASE*)logout);
         break;
     }
 }

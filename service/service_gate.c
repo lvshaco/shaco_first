@@ -70,7 +70,7 @@ gate_usermsg(struct service* s, int id, void* msg, int sz) {
     assert(c);
     c->active_time = host_timer_now();
 
-    UM_CAST(UM_base, um, msg);
+    UM_CAST(UM_BASE, um, msg);
     if (um->msgid != IDUM_HEARTBEAT) {
         struct gate_message gm;
         gm.c = c;

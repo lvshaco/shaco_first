@@ -65,7 +65,7 @@ _connect(struct service* s) {
 
 static void
 _send_one(struct benchmark* self, int id) {
-    const int sz = self->packetsz;
+    int sz = self->packetsz;
     UM_DEF(um, sz);
     um->msgid = 100;
     //memcpy(tm.data, "ping pong!", sizeof(tm.data));
@@ -94,8 +94,10 @@ benchmark_init(struct service* s) {
     self->query = host_getint("benchmark_query", 0); 
     self->query_send = 0;
     self->query_done = 0;
-    self->packetsz = host_getint("benchmark_packet_size", 10);
-
+    int sz = host_getint("benchmark_packet_size", 10);
+    if (sz < sizeof(struct UM_BASE))
+        sz = sizeof(struct UM_BASE);
+    self->packetsz = sz;
     int hmax = host_getint("host_connmax", 0);
     int cmax = host_getint("benchmark_client_max", 0); 
     

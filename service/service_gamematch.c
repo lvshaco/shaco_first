@@ -16,7 +16,7 @@ struct matchtag {
     uint16_t gid;
     uint16_t cid;
     uint32_t charid;
-    char name[NAME_MAX];
+    char name[CHAR_NAME_MAX];
 };
 
 struct playerv {
@@ -80,7 +80,7 @@ gamematch_init(struct service* s) {
 
 static void
 _notify_playfail(struct player* p, int8_t error) {
-    UM_FORWARD(fw, p->cid, UM_PLAYfail, fail);
+    UM_FORWARD(fw, p->cid, UM_PLAYFAIL, fail);
     fail->error = error;
     _forward_toplayer(p, fw);
 }
@@ -121,7 +121,7 @@ _build_matchtag(struct player* p, struct matchtag* mtag) {
     mtag->gid = p->gid;
     mtag->cid = p->cid;
     mtag->charid = p->data.charid;
-    memcpy(p->data.name, mtag->name, NAME_MAX);
+    memcpy(p->data.name, mtag->name, CHAR_NAME_MAX);
 }
 
 static inline void
@@ -244,7 +244,7 @@ _match(struct gamematch* self, struct player* p, struct player* mp, int8_t type)
         return 1;
     }
     UM_FORWARD(fw, p->cid, UM_PLAYLOADING, pl);
-    pl->leasttime = 3;
+    pl->leasttime = ROOM_LOAD_TIMELEAST;
     _build_memberbrief(mp, &pl->member);
     _forward_toplayer(p, fw);
 

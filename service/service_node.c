@@ -90,7 +90,7 @@ _reg_request(int id) {
 }
 
 static void
-_reg(struct service* s, int id, struct UM_base* um) {
+_reg(struct service* s, int id, struct UM_BASE* um) {
     struct node* self = SERVICE_SELF;
     UM_CAST(UM_NODEREG, reg, um);
     struct host_node node;
@@ -124,7 +124,7 @@ _reg(struct service* s, int id, struct UM_base* um) {
 }
 
 static void
-_regok(struct service* s, int id, struct UM_base* um) {
+_regok(struct service* s, int id, struct UM_BASE* um) {
     struct node* self = SERVICE_SELF;
     UM_CAST(UM_NODEREGOK, ok, um);
     struct host_node node;
@@ -151,7 +151,7 @@ _regok(struct service* s, int id, struct UM_base* um) {
 }
 
 static void
-_onnotify(struct service* s, int id, struct UM_base* um) {
+_onnotify(struct service* s, int id, struct UM_BASE* um) {
     UM_CAST(UM_NODENOTIFY, notify, um);
     struct in_addr in;
     in.s_addr = notify->addr;
@@ -166,7 +166,7 @@ _onnotify(struct service* s, int id, struct UM_base* um) {
 }
 void
 node_nodemsg(struct service* s, int id, void* msg, int sz) {
-    struct UM_base* um = msg;
+    struct UM_BASE* um = msg;
     switch (um->msgid) {
     case IDUM_NODEREG:
         _reg(s, id, um);

@@ -71,7 +71,7 @@ struct UM_CMDRES {
 struct UM_FORWARD {
     _UM_HEADER;
     int32_t cid;
-    struct UM_base wrap;
+    struct UM_BASE wrap;
 };
 static inline uint16_t
 UM_FORWARD_size(struct UM_FORWARD* um) {
@@ -127,7 +127,7 @@ struct UM_OVERROOM {
 
 static inline void
 UM_SENDTONODE(const struct host_node* hn, void* msg, int sz) {
-    UM_CAST(UM_base, um, msg);
+    UM_CAST(UM_BASE, um, msg);
     um->nodeid = host_id();
     um->msgsz = sz;
     host_net_send(hn->connid, um, sz);

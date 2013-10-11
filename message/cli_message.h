@@ -15,7 +15,7 @@
 #define IDUM_CHARINFO       IDUM_CBEGIN+4
 
 #define IDUM_PLAY           IDUM_CBEGIN+100
-#define IDUM_PLAYfail       IDUM_CBEGIN+101
+#define IDUM_PLAYFAIL       IDUM_CBEGIN+101
 #define IDUM_PLAYWAIT       IDUM_CBEGIN+102
 #define IDUM_PLAYLOADING    IDUM_CBEGIN+103
 #define IDUM_PLAYbegin      IDUM_CBEGIN+104
@@ -51,17 +51,13 @@ struct UM_LOGIN {
     _UM_HEADER;
 };
 
-struct UM_LOGINFAIL {
-    _UM_HEADER;
-    int8_t error;
-};
-
 #define LOGOUT_NORMAL 0
 #define LOGOUT_TIMEOUT 1
 #define LOGOUT_SOCKERR 2
-#define LOGOUT_FULL 3
-#define LOGOUT_RELOGIN 4
-#define LOGOUT_NOLOGIN 5
+#define LOGOUT_GATEMAX 3
+#define LOGOUT_FULL LOGOUT_GATEMAX
+#define LOGOUT_RELOGIN LOGOUT_GATEMAX+1
+#define LOGOUT_NOLOGIN LOGOUT_GATEMAX+2
 
 struct UM_LOGOUT {
     _UM_HEADER;
@@ -80,7 +76,7 @@ struct UM_PLAY {
     int8_t type; // see ROOM_TYPE*
 };
 
-struct UM_PLAYfail {
+struct UM_PLAYFAIL {
     _UM_HEADER;
     int8_t error;
 };

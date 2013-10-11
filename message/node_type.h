@@ -17,7 +17,7 @@ const char* NODE_NAMES[NODE_TYPE_MAX] = {
 };
 
 #define _NODEM_header \
-    struct UM_base* um; \
+    struct UM_BASE* um; \
     const struct host_node* hn;
 
 struct node_message {
@@ -27,7 +27,7 @@ struct node_message {
 static inline int
 _decode_nodemessage(void* msg, int sz, struct node_message* nm) {
     const struct host_node* hn;
-    UM_CAST(UM_base, um, msg);
+    UM_CAST(UM_BASE, um, msg);
 
     hn = host_node_get(um->nodeid);
     if (hn == NULL) {

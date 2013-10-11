@@ -146,7 +146,7 @@ _execute(struct args* A, struct memrw* rw) {
 }
 
 static void
-_cmdreq(struct cmdctl* self, int id, struct UM_base* um) {
+_cmdreq(struct cmdctl* self, int id, struct UM_BASE* um) {
     UM_CAST(UM_CMDREQ, req, um);
 
     char* cmd = (char*)(req+1);
@@ -181,7 +181,7 @@ _cmdreq(struct cmdctl* self, int id, struct UM_base* um) {
 void
 cmdctl_nodemsg(struct service* s, int id, void* msg, int sz) {
     struct cmdctl* self = SERVICE_SELF;
-    UM_CAST(UM_base, um, msg);
+    UM_CAST(UM_BASE, um, msg);
     switch (um->msgid) {
     case IDUM_CMDREQ:
         _cmdreq(self, id, msg);
