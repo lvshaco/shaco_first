@@ -89,7 +89,7 @@ all: lur.so net.so base.so shaco shaco-cli \
 	$(service_so) \
 	$(worldservice_so) world.so
 
-release: CFLAGS += -O2
+release: CFLAGS += -O2 -fno-strict-aliasing
 release: all
 
 $(service_so): %.so: $(service_dir)/%.c

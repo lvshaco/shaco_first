@@ -21,7 +21,7 @@ dispatcher_create() {
 
 static inline int
 _locate_service(struct dispatcher* self, struct UM_BASE* um)  {
-    const struct host_node* node;
+    const struct host_node* node = NULL;
     int msgid = um->msgid;
     int level = host_log_level();
     if (level == LOG_DEBUG) {

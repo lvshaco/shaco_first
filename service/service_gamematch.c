@@ -267,7 +267,7 @@ _match(struct gamematch* self, struct player* p, struct player* mp, int8_t type)
         _build_memberdetail(p, &cr->members[i]);
     }
     cr->nmember = ro->mtag.np;
-    UM_SENDTONODE(hn, &cr, sizeof(cr));
+    UM_SENDTONODE(hn, cr, sizeof(*cr));
     host_node_updateload(hn->id, _calcload(cr->type));
     return 0;
 }

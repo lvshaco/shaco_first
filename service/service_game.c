@@ -164,13 +164,13 @@ _gameenter(struct room* ro) {
     ro->status = RS_ENTER;
     ro->entertime = host_timer_now();
     UM_DEFFIX(UM_GAMEENTER, enter);
-    _multicast_msg(ro, (struct UM_BASE*)enter);
+    _multicast_msg(ro, (void*)enter);
 }
 static void
 _gamestart(struct room* ro) {
     ro->status = RS_START;
     UM_DEFFIX(UM_GAMESTART, start);
-    _multicast_msg(ro, (struct UM_BASE*)start);
+    _multicast_msg(ro, (void*)start);
 }
 static void
 _gamedestroy(struct game* self, struct room* ro) {

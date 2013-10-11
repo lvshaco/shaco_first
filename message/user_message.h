@@ -114,34 +114,31 @@ struct UM_OVERROOM {
 
 #pragma pack()
 
-#define UM_SEND(id, um, sz) \
-    (um)->nodeid = host_id(); \
-    (um)->msgsz = sz; \
-    host_net_send(id, um, sz);
+#define UM_SEND(id, um, sz) do { \
+    (um)->nodeid = host_id();   \
+    (um)->msgsz = sz;           \
+    host_net_send(id, um, sz);  \
+} while(0)
 
-#define UM_SENDTOCLI(id, um, sz) \
-    (um)->msgsz = sz - UM_SKIP; \
-    host_net_send(id, (char*)um + UM_SKIP, (um)->msgsz);
+#define UM_SENDTOCLI(id, um, sz) do { \
+    (um)->msgsz = sz - UM_SKIP;                         \
+    host_net_send(id, (char*)um + UM_SKIP, (um)->msgsz);\
+} while(0)
 
 #define UM_SENDTOSVR UM_SENDTOCLI
 
-static inline void
-UM_SENDTONODE(const struct host_node* hn, void* msg, int sz) {
-    UM_CAST(UM_BASE, um, msg);
-    um->nodeid = host_id();
-    um->msgsz = sz;
-    host_net_send(hn->connid, um, sz);
-}
-static inline void
-UM_SENDTONID(uint16_t tid, uint16_t sid, void* msg, int sz) {
-    uint16_t id = HNODE_ID(tid, sid);
-    const struct host_node* hn = host_node_get(id);
-    if (hn) {
-        UM_SENDTONODE(hn, msg, sz);
-    }
-}
-static inline void
-UM_SENDFORWARD(int id, struct UM_FORWARD* fw) {
+#define UM_SENDTONODE(hn, um, sz) \
+    UM_SEND(hn->connid, um, sz)
+
+#define UM_SENDTONID(tid, sid, um, sz) do { \
+    uint16_t id = HNODE_ID(tid, sid);               \
+    const struct host_node* hn = host_node_get(id); \
+    if (hn) {                                       \
+        UM_SENDTONODE(hn, um, sz);                  \
+    }                                               \
+} while(0)
+
+#define UM_SENDFORWARD(id, fw) \
     UM_SEND(id, fw, UM_FORWARD_size(fw));
-}
+
 #endif
