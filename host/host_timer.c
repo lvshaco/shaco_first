@@ -100,7 +100,7 @@ _closest_time() {
     struct _event_holder* eh = &T->eh;
     struct _event* e;
     int i;
-    uint64_t min = -1;
+    uint64_t min = -1; // todo: larger this will slow
     for (i=0; i<eh->sz; ++i) {
         e = &eh->p[i];
         if (e->next_time < min) {

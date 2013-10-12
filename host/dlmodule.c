@@ -18,7 +18,8 @@ _open(struct dlmodule* dl) {
         host_error("dlmodule %s open error: %s", dl->name, dlerror());
         return 1;
     } 
-
+    dlerror();
+    printf("open dl->name:%s, %p\n", dl->name, handle);
     size_t len = strlen(dl->name);
     strcpy(tmp, dl->name);
     strcpy(tmp+len, "_create");
@@ -60,8 +61,9 @@ static void
 _dlclose(struct dlmodule* dl) {
     if (dl->handle == NULL)
         return;
-
-    dlclose(dl->handle);
+    printf("dl->name:%s, %p\n", dl->name, dl->handle);
+    //if (strcmp("log", dl->name) !=0)
+        dlclose(dl->handle);
     dl->handle = NULL;
     dl->create = NULL;
     dl->free = NULL;
