@@ -47,7 +47,11 @@ _remove(const char* name) {
 */
 static int
 _create(const char* name) {
-    struct service* s = malloc(sizeof(*s));
+    struct service* s = _find(name);
+    if (s) {
+        return 0;
+    }
+    s = malloc(sizeof(*s));
     if (dlmodule_load(&s->dl, name)) {
         free(s);
         return 1;
