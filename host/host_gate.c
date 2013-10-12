@@ -77,9 +77,8 @@ host_gate_getclient(int connid) {
    assert(id >= 0 && id < G->cmax);
    struct gate_client* c = &G->p[id];
    assert(c->connid == connid);
-   if (c->connected)
-       return c;
-   return NULL;
+   assert(c->connected);
+   return c;
 }
 
 struct gate_client*

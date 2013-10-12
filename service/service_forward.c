@@ -1,11 +1,18 @@
 #include "host_service.h"
 #include "host_gate.h"
 #include "host_node.h"
+#include "host_dispatcher.h"
 #include "user_message.h"
 #include "cli_message.h"
 #include "node_type.h"
 #include <stdlib.h>
 #include <string.h>
+
+int
+forward_init(struct service* s) {
+    SUBSCRIBE_MSG(s->serviceid, IDUM_FORWARD);
+    return 0;
+}
 
 static inline void
 _forward_world(struct gate_client* c, struct UM_BASE* um) {
@@ -18,6 +25,7 @@ _forward_world(struct gate_client* c, struct UM_BASE* um) {
         UM_SEND(node->connid, fw, UM_FORWARD_size(fw));
     }
 }
+
 void
 forward_usermsg(struct service* s, int id, void* msg, int sz) {
     struct gate_message* gm = msg;
@@ -25,6 +33,7 @@ forward_usermsg(struct service* s, int id, void* msg, int sz) {
     UM_CAST(UM_BASE, um, gm->msg);
     _forward_world(c, um);
 }
+
 void
 forward_nodemsg(struct service* s, int id, void* msg, int sz) {
     UM_CAST(UM_BASE, um, msg);
@@ -37,6 +46,7 @@ forward_nodemsg(struct service* s, int id, void* msg, int sz) {
         struct UM_BASE* m = &fw->wrap;
         struct gate_client* c = host_gate_getclient(fw->cid);
         if (c) {
+            host_debug("Send msg:%u",  m->msgid);
             if (m->msgid == IDUM_LOGOUT) {
                 UM_CAST(UM_LOGOUT, lo, m);
                 if (lo->type >= LOGOUT_GATEMAX) {

@@ -75,6 +75,7 @@ _default_log(int level, const char* log) {
     int off = strftime(buf, sizeof(buf), "%y%m%d-%H:%M:%S.", localtime(&sec));
     snprintf(buf+off, sizeof(buf)-off, "%03d", msec);
     printf("[%d %s] %s: %s\n", (int)getpid(), buf, _levelstr(level), log);
+    fflush(stdout);
 }
 
 #define _gen_message(log, n, fmt) \

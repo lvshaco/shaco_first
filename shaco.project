@@ -1,4 +1,5 @@
 shaco=~/shaco CD=. filter="Makefile README.md *.lua *.h *.c" {
+ start
  Makefile
  README.md
  config.lua
@@ -19,7 +20,6 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.h *.c" {
   host_net.h
   host_node.h
   host_reload.h
-  host_remote.h
   host_service.h
   host_timer.h
   dlmodule.c
@@ -32,7 +32,6 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.h *.c" {
   host_net.c
   host_node.c
   host_reload.c
-  host_remote.c
   host_service.c
   host_timer.c
  }
@@ -53,7 +52,6 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.h *.c" {
   args.c
  }
  net=net{
-  Makefile
   net.h
   net_message.h
   netbuf.h

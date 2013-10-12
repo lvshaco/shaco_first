@@ -85,10 +85,14 @@ freeid_alloc(struct freeid* fi, int hash) {
 
 static inline int
 freeid_free(struct freeid* fi, int hash) {
-    int id = freeid_find(fi, hash);
+    if (hash < 0 || hash >= fi->hash) {
+        return -1;
+    }
+    int id = fi->slots[hash];
     if (id == -1) {
         return -1;
     }
+    fi->slots[hash] = -1;
     int* free = &fi->ids[id];
     *free = fi->free - fi->ids;
     fi->free = free;

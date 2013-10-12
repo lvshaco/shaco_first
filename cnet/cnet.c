@@ -110,6 +110,10 @@ _dispatch() {
 int 
 cnet_connect(const char* ip, uint16_t port, int ut) {
     uint32_t addr = inet_addr(ip);
+    return cnet_connecti(addr, port, ut);
+}
+int  
+cnet_connecti(uint32_t addr, uint16_t port, int ut) {
     int n = net_connect(N, addr, port, false, 0, ut);
     if (n <= 0) {
         _dispatch(); 

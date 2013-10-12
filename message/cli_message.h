@@ -43,6 +43,7 @@ struct UM_NOTIFYGAME {
     uint32_t addr;
     uint16_t port;
     uint32_t key;
+    int32_t  roomid;
 };
 
 ////////////////////////////////////////////////////////////

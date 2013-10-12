@@ -72,6 +72,7 @@ gate_usermsg(struct service* s, int id, void* msg, int sz) {
 
     UM_CAST(UM_BASE, um, msg);
     if (um->msgid != IDUM_HEARTBEAT) {
+        host_debug("Receive msg:%u",  um->msgid);
         struct gate_message gm;
         gm.c = c;
         gm.msg = msg;

@@ -132,4 +132,4 @@ clean:
 	rm -f shaco shaco-cli t *.so
 
 cleanall: clean
-	rm -f cscope.* tags *.vallog
+	rm -f cscope.* tags *.vallog *.log

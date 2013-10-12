@@ -1,0 +1,11 @@
+#!/bin/bash
+
+echo "start center"
+./shaco config_center.lua -d > center.log
+sleep 3
+echo "start gate"
+./shaco config_gate.lua -d > gate.log
+echo "start world"
+./shaco config_world.lua -d > world.log
+echo "start game"
+./shaco config_game.lua -d > game.log

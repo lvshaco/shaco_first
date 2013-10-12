@@ -86,6 +86,7 @@ game_init(struct service* s) {
     // todo test this
     GFREEID_INIT(room, &self->rooms, 1);
     SUBSCRIBE_MSG(s->serviceid, IDUM_CREATEROOM);
+    SUBSCRIBE_MSG(s->serviceid, IDUM_CREATEROOMRES);
 
     host_timer_register(s->serviceid, 1000);
     return 0;
@@ -103,6 +104,15 @@ _getroom(struct game* self, int roomid) {
     struct room* ro = GFREEID_SLOT(&self->rooms, roomid);
     return ro;
 }
+
+static inline void
+_initmember(struct member* m, struct tmemberdetail* detail) {
+    m->detail = *detail;
+    m->login = false;
+    m->online = false;
+    m->connid = -1;
+}
+
 static struct member*
 _getmember(struct room* ro, uint32_t charid) {
     struct member* m;
@@ -238,25 +248,25 @@ _login(struct game* self, struct gate_client* c, struct UM_BASE* um) {
     UM_CAST(UM_GAMELOGIN, login, um);
     struct room* ro = _getroom(self, login->roomid);
     if (ro == NULL) {
-        _verifyfail(c, 0);
+        _verifyfail(c, 1);
         return;
     }
     if (login->roomkey != ro->key) {
-        _verifyfail(c, 0);
+        _verifyfail(c, 2);
         return;
     }
     struct member* m = _getmember(ro, login->charid);
     if (m == NULL) {
-        _verifyfail(c, 0);
+        _verifyfail(c, 3);
         return;
     }
     if (ro->status == RS_OVER) {
-        _verifyfail(c, 0);
+        _verifyfail(c, 4);
         return;
     }
     struct player* p = _getplayer(self, c);
     if (p == NULL) {
-        _verifyfail(c, 0);
+        _verifyfail(c, 5);
         return;
     }
     p->login = true;
@@ -318,15 +328,14 @@ _creategame(struct game* self, struct node_message* nm) {
     ro->type = cr->type;
     ro->key = cr->key;
     ro->np = cr->nmember;
-    memcpy(ro->p, cr->members, sizeof(ro->p[0])*ro->np);
     int i;
-    for (i=0; i<ro->np; ++i) {
-        ro->p[i].online = 0;
+    for (i=0; i<cr->nmember; ++i) {
+        _initmember(&ro->p[i], &cr->members[i]);
     }
     UM_DEFFIX(UM_CREATEROOMRES, res);
     res->ok = 1;
-    res->id = ro->id;
-    res->key = ro->key;
+    res->id = cr->id;
+    res->key = cr->key;
     res->roomid = GFREEID_ID(ro, &self->rooms);
     UM_SENDTONODE(nm->hn, res, sizeof(*res));
 }

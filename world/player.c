@@ -33,8 +33,11 @@ _allocplayers(int cmax, int hmax, int gmax) {
 }
 void
 _freeplayers() {
-    freeid_fini(&PH->fi);
-    hashid_fini(&PH->hi);
+    if (PH) {
+        freeid_fini(&PH->fi);
+        hashid_fini(&PH->hi);
+        PH = NULL;
+    }
 }
 
 #define _isvalidid(gid, cid) \
@@ -66,10 +69,14 @@ _getplayerbyid(uint32_t charid) {
 }
 struct player*
 _allocplayer(uint16_t gid, int cid) {
+    struct player* p;
     if (_isvalidid(gid, cid)) {
         int id = freeid_alloc(&PH->fi, _hashid(gid, cid));
         if (id >= 0) {
-            return &PH->p[id];
+            p = &PH->p[id];
+            p->gid = gid;
+            p->cid = cid;
+            return p;
         }
     }
     return NULL;
@@ -93,6 +100,9 @@ _freeplayer(struct player* p) {
         int id2 = hashid_remove(&PH->hi, p->data.charid);
         assert(id1 == id2);
         p->data.charid = 0;
+        p->data.name[0] = '\0';
     }
-    p->status = PS_FREE; 
+    p->status = PS_FREE;
+    p->gid = 0;
+    p->cid = 0;
 }

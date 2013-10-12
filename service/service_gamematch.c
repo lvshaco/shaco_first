@@ -34,6 +34,7 @@ struct room {
     uint64_t createtime;
     int8_t type;
     uint16_t sid;
+    int roomid; 
     uint32_t key;
     struct memberv mtag;
 };
@@ -91,6 +92,7 @@ _notify_gameaddr(struct player* p, const struct host_node* hn, struct room* ro) 
     game->addr = hn->gaddr;
     game->port = hn->gport;
     game->key = ro->key;
+    game->roomid = ro->roomid;
     _forward_toplayer(p, fw);
 }
 
@@ -105,23 +107,23 @@ _calcload(int8_t type) {
 }
 
 static void
-_build_memberbrief(struct player* p, struct tmemberbrief* brief) {
+_build_memberbrief(const struct player* p, struct tmemberbrief* brief) {
     brief->charid = p->data.charid;
     memcpy(brief->name, p->data.name, sizeof(brief->name));
 }
 
 static void
-_build_memberdetail(struct player* p, struct tmemberdetail* detail) {
+_build_memberdetail(const struct player* p, struct tmemberdetail* detail) {
     detail->charid = p->data.charid;
     memcpy(detail->name, p->data.name, sizeof(detail->name));
 }
 
 static inline void
-_build_matchtag(struct player* p, struct matchtag* mtag) {
+_build_matchtag(const struct player* p, struct matchtag* mtag) {
     mtag->gid = p->gid;
     mtag->cid = p->cid;
     mtag->charid = p->data.charid;
-    memcpy(p->data.name, mtag->name, CHAR_NAME_MAX);
+    memcpy(mtag->name, p->data.name, CHAR_NAME_MAX);
 }
 
 static inline void
@@ -248,6 +250,7 @@ _match(struct gamematch* self, struct player* p, struct player* mp, int8_t type)
     _build_memberbrief(mp, &pl->member);
     _forward_toplayer(p, fw);
 
+    fw->cid = mp->cid;
     _build_memberbrief(p, &pl->member);
     _forward_toplayer(mp, fw);
 
@@ -262,12 +265,11 @@ _match(struct gamematch* self, struct player* p, struct player* mp, int8_t type)
     cr->type = type;
     cr->id = GFREEID_ID(ro, &self->creating);
     cr->key = ro->key;
-    int i;
-    for (i=0; i<ro->mtag.np; ++i) {
-        _build_memberdetail(p, &cr->members[i]);
-    }
+    _build_memberdetail(p, &cr->members[0]);
+    _build_memberdetail(mp, &cr->members[1]);
     cr->nmember = ro->mtag.np;
-    UM_SENDTONODE(hn, cr, sizeof(*cr));
+
+    UM_SENDTONODE(hn, cr, UM_CREATEROOM_size(cr));
     host_node_updateload(hn->id, _calcload(cr->type));
     return 0;
 }
@@ -280,9 +282,9 @@ _lookup(struct gamematch* self, struct player* p, int8_t type) {
         p->status = PS_WAITING;
         _build_matchtag(p, mtag);
 
-        UM_DEFFIX(UM_PLAYWAIT, pw);
+        UM_FORWARD(fw, p->cid, UM_PLAYWAIT, pw);
         pw->timeout = 60; // todo just test
-        UM_SENDTONID(NODE_GATE, p->gid, pw, sizeof(*pw));
+        _forward_toplayer(p, fw);
         return 0;
     } else {
         _clear_matchtag(mtag);
@@ -315,6 +317,7 @@ _oncreateroom(struct gamematch* self, struct node_message* nm) {
     if (ro) {
         if (ro->key == res->key &&
             ro->sid == nm->hn->sid) {
+            ro->roomid = res->roomid;
             if (_destroy_tmproom(self, ro, res->ok) == 0)
                 return;
         }

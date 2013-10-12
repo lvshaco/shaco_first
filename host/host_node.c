@@ -109,7 +109,12 @@ _isme(struct host_node* node) {
 
 static inline bool
 _equal_node(struct host_node* a, struct host_node* b) {
-    return memcmp(a, b, sizeof(*a)) == 0;
+    return a->id == b->id &&
+        a->addr == b->addr &&
+        a->port == b->port &&
+        a->gaddr == b->gaddr &&
+        a->gport == b->gport &&
+        a->connid == b->connid;
 }
 
 static inline void
@@ -155,6 +160,7 @@ _add_node(struct _array* arr, struct host_node* node) {
     struct host_node* c = &arr->p[idx];
     if (_isfree_node(c)) {
         *c = *node;
+        c->load = 0;
         arr->size = idx + 1;
         return 0;
     }
@@ -332,8 +338,8 @@ host_node_minload(uint16_t tid) {
     int i;
     if (tid >= 0 && tid < N->size) {
         arr = &N->nodes[tid];
-        for (i=0; i<N->size; ++i) {
-            idx = (arr->loaditer+i)%N->size;
+        for (i=0; i<arr->size; ++i) {
+            idx = (arr->loaditer+i)%arr->size;
             node = &arr->p[idx];
             if (node->connid != -1) {
                 if (node->load < minload) {

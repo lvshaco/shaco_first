@@ -21,35 +21,20 @@ dispatcher_create() {
 
 static inline int
 _locate_service(struct dispatcher* self, struct UM_BASE* um)  {
-    const struct host_node* node = NULL;
     int msgid = um->msgid;
-    int level = host_log_level();
-    if (level == LOG_DEBUG) {
-        node = host_node_get(um->nodeid);
-        if (node == NULL) {
-            host_error("Receive msg:%d, from unknown node", msgid);
-            return SERVICE_INVALID;
-        }
-    }
-    
     int serviceid;
     if (msgid >= 0 && msgid < IDUM_MAX) {
         serviceid = self->services[msgid];
         if (serviceid != SERVICE_INVALID) {
-            if (level == LOG_DEBUG) {
-                char strnode[HNODESTR_MAX];
-                host_strnode(node, strnode);
-                host_debug("Receive msg:%d, from %s, to service:%s", 
-                        msgid, strnode, service_query_name(serviceid));
-            }
+            host_debug("Receive msg:%d, from %s, to service:%s", 
+                    msgid, 
+                    host_node_typename(HNODE_TID(um->nodeid)), 
+                    service_query_name(serviceid));
             return serviceid;
         }
     }
-    if (level == LOG_DEBUG) {
-        char strnode[HNODESTR_MAX];
-        host_strnode(node, strnode);
-        host_debug("Receive invalid msg:%d, from %s", msgid, strnode);
-    }
+    host_debug("Receive invalid msg:%d, from %s", msgid,
+            host_node_typename(HNODE_TID(um->nodeid)));
     return SERVICE_INVALID;
 }
 
