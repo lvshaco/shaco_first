@@ -67,6 +67,7 @@ static void
 _send_one(struct benchmark* self, int id) {
     int sz = self->packetsz;
     UM_DEF(um, sz);
+    memset(um, 0, sz);
     um->msgid = 100;
     //memcpy(tm.data, "ping pong!", sizeof(tm.data));
     host_net_subscribe(id, true, false);
