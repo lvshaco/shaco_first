@@ -71,10 +71,12 @@ _onconnect(struct net_message* nm) {
 static void
 _onconnerr(struct net_message* nm) {
     printf("onconnerr: %d\n", nm->error);
+    _server_set(nm->ut, -1);
 }
 static void
 _onsockerr(struct net_message* nm) {
     printf("onsockerr: %d\n", nm->error);
+    _server_set(nm->ut, -1);
 }
 
 static void
