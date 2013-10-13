@@ -12,20 +12,22 @@ struct _hashid_slot {
 
 struct hashid {
     int cap;
-    int hash;
+    int hashmod;
     struct _hashid_slot* p;
-    struct _hashid_slot* freelist;
+    struct _hashid_slot* free;
     struct _hashid_slot** slots;
 };
 
 int
-hashid_init(struct hashid* hi, int cap, int hash) {
-    assert(cap > 0);
-
+hashid_init(struct hashid* hi, int cap, int hashcap) {
+    if (cap <= 0)
+        cap = 1;
+    if (hashcap <= 2)
+        hashcap = 2;
     int tmp = 1;
-    while (tmp < hash)
+    while (tmp < hashcap)
         tmp *= 2;
-    hash = tmp;
+    hashcap = tmp;
 
     hi->p = malloc(sizeof(struct _hashid_slot) * cap);
     int i;
@@ -36,9 +38,11 @@ hashid_init(struct hashid* hi, int cap, int hash) {
     hi->p[i].next = NULL;
     hi->p[i].id = -1;
 
-    hi->freelist = hi->p;
-    hi->slots = malloc(sizeof(struct _hashid_slot*) * hash);
-    memset(hi->slots, 0, sizeof(struct _hashid_slot*) * hash);
+    hi->free = hi->p;
+    hi->slots = malloc(sizeof(struct _hashid_slot*) * hashcap);
+    memset(hi->slots, 0, sizeof(struct _hashid_slot*) * hashcap);
+    hi->cap = cap;
+    hi->hashmod = hashcap-1;
     return 0;
 }
 
@@ -48,73 +52,74 @@ hashid_fini(struct hashid* hi) {
         return;
     free(hi->p);
     hi->p = NULL;
-    hi->freelist = NULL;
+    hi->free = NULL;
     free(hi->slots);
     hi->slots = NULL;
     hi->cap = 0;
-    hi->hash = 0;
+    hi->hashmod = 0;
 }
 
 int
-hashid_hash(struct hashid* hi, int id) {
-    struct _hashid_slot* free = hi->freelist;
+hashid_alloc(struct hashid* hi, int id) {
+    struct _hashid_slot* free = hi->free;
     if (free == NULL) {
         return -1;
     }
-    hi->freelist = free->next;
+    hi->free = free->next;
    
-    int hash = id & hi->hash;
-    struct _hashid_slot* next = hi->slots[hash];
+    int h = id & hi->hashmod;
+    struct _hashid_slot* next = hi->slots[h];
     free->next = next;
     free->id = id;
-    hi->slots[hash] = free;
+    hi->slots[h] = free;
     
     return free - hi->p;
 }
 
 int
-hashid_remove(struct hashid* hi, int id) {
-    int hash = id & hi->hash;
-    struct _hashid_slot* first = hi->slots[hash];
-    if (first == NULL) {
+hashid_free(struct hashid* hi, int id) {
+    int h = id & hi->hashmod;
+    struct _hashid_slot* s = hi->slots[h];
+    if (s == NULL) {
         return -1;
     }
-    if (first->id == id) {
-        first->id = -1;
-        first->next = hi->freelist;
-        hi->freelist = first;
-        return first - hi->p;
+    if (s->id == id) {
+        hi->slots[h] = s->next;
+        s->id = -1;
+        s->next = hi->free;
+        hi->free = s;
+        return s - hi->p;
     }
-    struct _hashid_slot* next = first->next;
-    while (next) {
-        if (next->id == id) {
-            next->id = -1;
-            first->next = next->next;
-            next->next = hi->freelist;
-            hi->freelist = next;
-            return next - hi->p;
+    while (s->next) {
+        if (s->next->id == id) {
+            struct _hashid_slot* tmp = s->next;
+            s->next = tmp->next;
+            tmp->id = -1;
+            tmp->next = hi->free;
+            hi->free = tmp;
+            return tmp - hi->p;
         }
-        next = next->next;
+        s = s->next;
     }
     return -1;
 }
 
 int
 hashid_find(struct hashid* hi, int id) {
-    int hash = id & hi->hash;
-    struct _hashid_slot* slot = hi->slots[hash];
-    while (slot) {
-        if (slot->id == id) {
-            return slot - hi->p;
+    int h = id & hi->hashmod;
+    struct _hashid_slot* s = hi->slots[h];
+    while (s) {
+        if (s->id == id) {
+            return s - hi->p;
         }
-        slot = slot->next;
+        s = s->next;
     }
     return -1;
 }
 
 int
 hashid_full(struct hashid* hi) {
-    return hi->freelist == NULL;
+    return hi->free == NULL;
 }
 
 #endif

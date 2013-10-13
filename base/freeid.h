@@ -7,22 +7,21 @@
 
 struct freeid {
     int cap;
-    int hash; 
+    int hashcap; 
     int* ids;
     int* free;
     int* slots;
 };
 
 static void 
-freeid_init(struct freeid* fi, int cap, int hash) {
+freeid_init(struct freeid* fi, int cap, int hashcap) {
     int* p;
     int i;
-    assert(cap > 0);    
-    if (hash < cap)
-        hash = cap;
+    if (cap <= 0)
+        cap = 1;
+    if (hashcap < cap)
+        hashcap = cap;
     
-    fi->cap = cap;
-    fi->hash = hash;
     p = malloc(sizeof(int) * cap);
     for (i=0; i<cap-1; ++i) {
         p[i] = i+1;
@@ -30,10 +29,12 @@ freeid_init(struct freeid* fi, int cap, int hash) {
     p[i] = -1;
     fi->ids = p;
     fi->free = &fi->ids[0];
-    fi->slots = malloc(sizeof(int) * hash);
-    for (i=0; i<hash; ++i) {
+    fi->slots = malloc(sizeof(int) * hashcap);
+    for (i=0; i<hashcap; ++i) {
         fi->slots[i] = -1;
     }
+    fi->cap = cap;
+    fi->hashcap = hashcap;
 }
 
 static void
@@ -42,7 +43,7 @@ freeid_fini(struct freeid* fi) {
         return;
 
     fi->cap = 0;
-    fi->hash = 0;
+    fi->hashcap = 0;
     fi->free = NULL;
     free(fi->ids);
     fi->ids = NULL;
@@ -52,7 +53,7 @@ freeid_fini(struct freeid* fi) {
 
 static inline bool
 freeid_full(struct freeid* fi, int hash) {
-    if (hash >= 0 && hash < fi->hash) {
+    if (hash >= 0 && hash < fi->hashcap) {
         if (fi->free != NULL)
             return false;
     }
@@ -61,7 +62,7 @@ freeid_full(struct freeid* fi, int hash) {
 
 static inline int
 freeid_find(struct freeid* fi, int hash) {
-    if (hash >= 0 && hash < fi->hash) {
+    if (hash >= 0 && hash < fi->hashcap) {
         return fi->slots[hash];
     }
     return -1;
@@ -85,7 +86,7 @@ freeid_alloc(struct freeid* fi, int hash) {
 
 static inline int
 freeid_free(struct freeid* fi, int hash) {
-    if (hash < 0 || hash >= fi->hash) {
+    if (hash < 0 || hash >= fi->hashcap) {
         return -1;
     }
     int id = fi->slots[hash];

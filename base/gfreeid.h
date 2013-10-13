@@ -4,6 +4,8 @@
 #include <stdlib.h>
 #include <assert.h>
 
+// notice: the alloc return pointer is not valid always, 
+// due to the grow feature
 #define GFREEID_FIELDS(type) \
     int cap;            \
     struct type* p;     \
@@ -25,6 +27,8 @@
     s[end-1].id = -1;               \
 } while (0);
 
+// notice: the alloc return pointer is not valid always, 
+// due to the grow feature
 #define GFREEID_ALLOC(type, gfi) ({ \
     if ((gfi)->freep == NULL) {                                 \
         assert((gfi)->cap > 0);                                 \
@@ -44,6 +48,8 @@
     free;                                                       \
 })
 
+// notice: the alloc return pointer is not valid always, 
+// due to the grow feature
 #define GFREEID_FREE(type, gfi, s) do { \
     assert(s->used);                    \
     int id = s - (gfi)->p;              \

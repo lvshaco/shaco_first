@@ -83,7 +83,7 @@ _allocplayer(uint16_t gid, int cid) {
 }
 int 
 _hashplayer(struct player* p) {
-    int id = hashid_hash(&PH->hi, p->data.charid);
+    int id = hashid_alloc(&PH->hi, p->data.charid);
     if (id == -1)
         return 1;
     assert(id == p-PH->p);
@@ -97,7 +97,7 @@ _freeplayer(struct player* p) {
     assert(id1 >= 0);
     assert(id1 == p-PH->p);
     if (p->data.charid > 0) {
-        int id2 = hashid_remove(&PH->hi, p->data.charid);
+        int id2 = hashid_free(&PH->hi, p->data.charid);
         assert(id1 == id2);
         p->data.charid = 0;
         p->data.name[0] = '\0';

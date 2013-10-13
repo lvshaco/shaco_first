@@ -118,7 +118,7 @@ base.so: $(base_src)
 
 shaco: $(host_src)
 	@rm -f $@
-	gcc $(CFLAGS) $(LDFLAGS) -o $@ $^ -Ihost -Ilur -Inet -Ibase 
+	gcc $(CFLAGS) -o $@ $^ -Ihost -Ilur -Inet -Ibase  $(LDFLAGS)
 
 shaco-cli: $(cli_src)
 	@rm -f $@
@@ -126,7 +126,7 @@ shaco-cli: $(cli_src)
 
 t: $(test_src)
 	@rm -f $@
-	gcc $(CFLAGS) $(LDFLAGS) -o $@ $^ -Ihost -Ilur -Inet -Ibase 
+	gcc $(CFLAGS) -o $@ $^ -Ihost -Ilur -Inet -Ibase $(LDFLAGS)
 
 clean:
 	rm -f shaco shaco-cli t *.so

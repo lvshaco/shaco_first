@@ -39,9 +39,9 @@ endif
 test: test.c
 	@rm -f $@
 ifeq ($(plat),linux)
-	gcc $(CFLAGS) $(LDFLAGS) -o $@ $^ $(inc_dir)
+	gcc $(CFLAGS) -o $@ $^ $(inc_dir) $(LDFLAGS)
 else
-	gcc $(CFLAGS) $(LDFLAGS) -o $@ $^ $(inc_dir)
+	gcc $(CFLAGS) -o $@ $^ $(inc_dir) $(LDFLAGS)
 endif
 
 clean:

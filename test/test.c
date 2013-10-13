@@ -1,9 +1,12 @@
+#include "lur.h"
+#include "args.h"
+#include "freeid.h"
+#include "hashid.h"
+#include "gfreeid.h"
 #include <stdint.h>
 #include <stdarg.h>
 #include <stdio.h>
-#include <string.h>
-#include "lur.h"
-#include "args.h"
+#include <string.h> 
 /*
 void 
 host_log(int level, const char* fmt, ...) {
@@ -32,8 +35,6 @@ struct Test {
 
 void
 test_lur() {
-    struct Test t;
-    t.v[1].i = 1;
     struct lur* L = lur_create();
     const char* r = lur_dofile(L, "config.lua", "shaco");
     if (!LUR_OK(r)) {
@@ -117,10 +118,97 @@ void test_union() {
     id.sid = i2;
     printf("size:%d, %u,%u,%u\n", sizeof(id), id.tid, id.sid, id.id);
 }
+
+void test_freeid() {
+    struct freeid fi;
+    freeid_init(&fi, 3, 5);
+
+    assert(freeid_alloc(&fi, -1) == -1);
+    assert(freeid_alloc(&fi, 6) == -1);
+    assert(freeid_alloc(&fi, 100) == -1);
+
+    int i;
+    for (i=0; i<3; ++i) {
+        assert(freeid_alloc(&fi, i) == i);
+    }
+    assert(freeid_alloc(&fi, 3) == -1);
+    assert(freeid_free(&fi, 2) == 2);
+    assert(freeid_alloc(&fi, 3) == 2);
+    assert(freeid_free(&fi, 0) == 0);
+    assert(freeid_free(&fi, 1) == 1);
+    assert(freeid_free(&fi, 3) == 2);
+    assert(freeid_free(&fi, 2) == -1);
+    assert(freeid_alloc(&fi, 4) == 2);
+
+    freeid_fini(&fi);
+}
+
+void test_hashid() {
+    struct hashid fi;
+    hashid_init(&fi, 3, 5); // 8
+
+    assert(hashid_alloc(&fi, 0) == 0);
+    assert(hashid_alloc(&fi, 1) == 1);
+    assert(hashid_alloc(&fi, 2) == 2);
+    assert(hashid_alloc(&fi, 3) == -1);
+    assert(hashid_free(&fi, 0) == 0);
+    assert(hashid_free(&fi, 4) == -1);
+    assert(hashid_free(&fi, 1) == 1);
+    assert(hashid_free(&fi, 2) == 2);
+
+    assert(hashid_alloc(&fi, 123) == 2);
+    assert(hashid_alloc(&fi, 124) == 1);
+    assert(hashid_alloc(&fi, 125) == 0);
+    assert(hashid_alloc(&fi, 126) == -1);
+  
+    assert(hashid_free(&fi, 123) == 2);
+    assert(hashid_free(&fi, 124) == 1);
+    assert(hashid_free(&fi, 125) == 0);
+
+    assert(hashid_alloc(&fi, 125) == 0);
+    assert(hashid_alloc(&fi, 133) == 1);
+    assert(hashid_alloc(&fi, 141) == 2);
+    assert(hashid_alloc(&fi, 142) == -1);
+
+    assert(hashid_free(&fi, 142) == -1);
+    assert(hashid_free(&fi, 125) == 0);
+    assert(hashid_free(&fi, 133) == 1);
+    assert(hashid_free(&fi, 141) == 2);
+    hashid_fini(&fi);
+}
+
+struct idtest{
+    int id;
+    int used;
+};
+struct gftest {
+    GFREEID_FIELDS(idtest);
+};
+void test_gfreeid() {
+    struct gftest gf;
+    GFREEID_INIT(idtest, &gf, 1);
+    struct idtest* i1 = GFREEID_ALLOC(idtest, &gf);
+    assert(i1-gf.p == 0);
+    assert(gf.cap == 1);
+    struct idtest* i2 = GFREEID_ALLOC(idtest, &gf);
+    assert(i2-gf.p == 1);
+    assert(gf.cap == 2);
+    struct idtest* i3 = GFREEID_ALLOC(idtest, &gf);
+    assert(i3-gf.p == 2);
+    assert(gf.cap == 4);
+    GFREEID_FREE(idtest, &gf, GFREEID_SLOT(&gf, 0));
+    GFREEID_FREE(idtest, &gf, GFREEID_SLOT(&gf, 1));
+    GFREEID_FREE(idtest, &gf, GFREEID_SLOT(&gf, 2));
+    GFREEID_FINI(idtest, &gf);
+}
+
 int 
 main(int argc, char* argv[]) {
     //test_lur();
     //test_args();
-    test_union();
+    //test_union();
+    test_freeid();
+    test_hashid();
+    test_gfreeid();
     return 0;
 }
