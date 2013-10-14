@@ -45,7 +45,7 @@ else
 endif
 
 clean:
-	rm -f test test.exe cnet.so cnet.a cnet.def
+	rm -f test *.exe *.so *.a *.def *.lib
 
 install_dir=D:/wa-client/trunk/cocos2d-x-2.1.4/Debug.win32
 source_dir=D:/wa-client/trunk/cocos2d-x-2.1.4/driller/Classes
