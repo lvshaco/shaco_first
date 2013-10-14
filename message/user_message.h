@@ -78,10 +78,11 @@ UM_FORWARD_size(struct UM_FORWARD* um) {
     return sizeof(*um) + um->wrap.msgsz - UM_HSIZE;
 }
 #define UM_CLIMAX (UM_MAXSIZE-sizeof(struct UM_FORWARD)+UM_HSIZE)
-#define UM_FORWARD(fw, fid, type, name) \
+#define UM_DEFFORWARD(fw, fid, type, name) \
     UM_DEFVAR(UM_FORWARD, fw); \
     fw->cid = fid; \
     UM_CAST(type, name, &fw->wrap); \
+    name->nodeid = 0; \
     name->msgid = ID##type; \
     name->msgsz = sizeof(*name);
 

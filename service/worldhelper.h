@@ -19,7 +19,7 @@ static inline int  _decode_playermessage(struct node_message* nm, struct player_
     
 static inline void
 _forward_logoutplayer(const struct host_node* node, int cid, int8_t type) {
-    UM_FORWARD(fw, cid, UM_LOGOUT, lo);
+    UM_DEFFORWARD(fw, cid, UM_LOGOUT, lo);
     lo->type = type;
     UM_SENDFORWARD(node->connid, fw);
 }

@@ -36,6 +36,8 @@ _freeplayers() {
     if (PH) {
         freeid_fini(&PH->fi);
         hashid_fini(&PH->hi);
+        free(PH->p);
+        free(PH);
         PH = NULL;
     }
 }

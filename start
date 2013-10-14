@@ -1,8 +1,6 @@
 #!/bin/bash
 
-echo "start center"
-./shaco config_center.lua -d > center.log
-sleep 3
+ps -ef |grep shaco
 echo "start gate"
 ./shaco config_gate.lua -d > gate.log
 echo "start world"

@@ -74,7 +74,7 @@ _login(struct world* self, struct node_message* nm) {
         _freeplayer(p);
         return;
     }
-    UM_FORWARD(fw, cid, UM_CHARINFO, ci);
+    UM_DEFFORWARD(fw, cid, UM_CHARINFO, ci);
     ci->data = *data;
     UM_SENDFORWARD(node->connid, fw);
 }

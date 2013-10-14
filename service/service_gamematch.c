@@ -81,14 +81,14 @@ gamematch_init(struct service* s) {
 
 static void
 _notify_playfail(struct player* p, int8_t error) {
-    UM_FORWARD(fw, p->cid, UM_PLAYFAIL, fail);
+    UM_DEFFORWARD(fw, p->cid, UM_PLAYFAIL, fail);
     fail->error = error;
     _forward_toplayer(p, fw);
 }
 
 static void
 _notify_gameaddr(struct player* p, const struct host_node* hn, struct room* ro) {
-    UM_FORWARD(fw, p->cid, UM_NOTIFYGAME, game);
+    UM_DEFFORWARD(fw, p->cid, UM_NOTIFYGAME, game);
     game->addr = hn->gaddr;
     game->port = hn->gport;
     game->key = ro->key;
@@ -245,7 +245,7 @@ _match(struct gamematch* self, struct player* p, struct player* mp, int8_t type)
     if (hn == NULL) {
         return 1;
     }
-    UM_FORWARD(fw, p->cid, UM_PLAYLOADING, pl);
+    UM_DEFFORWARD(fw, p->cid, UM_PLAYLOADING, pl);
     pl->leasttime = ROOM_LOAD_TIMELEAST;
     _build_memberbrief(mp, &pl->member);
     _forward_toplayer(p, fw);
@@ -282,7 +282,7 @@ _lookup(struct gamematch* self, struct player* p, int8_t type) {
         p->status = PS_WAITING;
         _build_matchtag(p, mtag);
 
-        UM_FORWARD(fw, p->cid, UM_PLAYWAIT, pw);
+        UM_DEFFORWARD(fw, p->cid, UM_PLAYWAIT, pw);
         pw->timeout = 60; // todo just test
         _forward_toplayer(p, fw);
         return 0;

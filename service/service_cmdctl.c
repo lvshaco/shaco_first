@@ -1,4 +1,5 @@
 #include "host_service.h"
+#include "host.h"
 #include "host_dispatcher.h"
 #include "host_log.h"
 #include "host_node.h"
@@ -31,6 +32,11 @@ _strerror(int error) {
     if (error >= 0 && error < sizeof(STRERROR)/sizeof(STRERROR[0]))
         return STRERROR[error];
     return "execute unknown error";
+}
+
+static inline bool
+_iscenter() {
+    return (HNODE_TID(host_id()) == NODE_CENTER);
 }
 
 ///////////////////
@@ -76,6 +82,27 @@ _shownode(struct args* A, struct memrw* rw) {
     }
     return R_OK;
 }
+static int
+_stop(struct args* A, struct memrw* rw) {
+    if (!_iscenter()) {
+        host_stop();
+    }
+    return R_OK;
+}
+static int
+_start(struct args* A, struct memrw* rw) {
+    if (_iscenter()) {
+        system("./start");
+    }
+    return R_OK;
+}
+static int
+_startmem(struct args* A, struct memrw* rw) {
+    if (_iscenter()) {
+        system("./start-memcheck");
+    }
+    return R_OK;
+}
 
 ///////////////////
 struct command {
@@ -88,6 +115,9 @@ static struct command COMMAND_MAP[] = {
     { "setloglevel", _setloglevel },
     { "reload",      _reload },
     { "shownode",    _shownode },
+    { "stop",        _stop },
+    { "start",       _start },
+    { "startmem",    _startmem },
     { NULL, NULL },
 };
 

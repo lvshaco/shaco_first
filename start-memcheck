@@ -1,0 +1,15 @@
+#!/bin/bash
+
+ps -ef |grep shaco
+echo "start-memcheck gate"
+#./shaco config_gate.lua -d > gate.log
+valgrind -v --leak-check=full --show-reachable=yes --suppressions=shaco.supp --log-file=shaco.gate.vallog ./shaco config_gate.lua -d > gate.log
+#valgrind -v --leak-check=full --show-reachable=yes --log-file=shaco.gate.vallog ./shaco config_gate.lua -d > gate.log
+echo "start-memcheck world"
+#./shaco config_world.lua -d > world.log
+valgrind -v --leak-check=full --show-reachable=yes --suppressions=shaco.supp --log-file=shaco.world.vallog ./shaco config_world.lua -d > world.log
+#valgrind -v --leak-check=full --show-reachable=yes --log-file=shaco.world.vallog ./shaco config_world.lua -d > world.log
+echo "start-memcheck game"
+#./shaco config_game.lua -d > game.log
+valgrind -v --leak-check=full --show-reachable=yes --suppressions=shaco.supp --log-file=shaco.game.vallog ./shaco config_game.lua -d > game.log
+#valgrind -v --leak-check=full --show-reachable=yes --log-file=shaco.game.vallog ./shaco config_game.lua -d > game.log
