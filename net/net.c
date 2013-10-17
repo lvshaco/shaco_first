@@ -309,7 +309,6 @@ net_read(struct net* self, int id, int sz, int skip, int* e) {
                 rb->rptr = 0;
                 return NULL;
             } else if (error == SEINTR) {
-assert(0);
                 error = 0;
                 continue;
             } else {
