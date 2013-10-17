@@ -23,6 +23,7 @@ struct benchmark {
     int max;
     int connected;
     int query;
+    int query_first;
     int query_send;
     int query_done;
     int packetsz;
@@ -83,11 +84,15 @@ _start(struct benchmark* self) {
     for (i=0; i<self->max; ++i) {
         c = &self->clients[i];
         if (c->connected) {
-            int n;
-            for (n=0; n<self->query; ++n) {
+            if (self->query_first > 0) {
+                int n;
+                for (n=0; n<self->query_first; ++n) {
+                    _send_one(self, c->connid);
+                }
+                host_info("start send %d", n);
+            } else {
                 _send_one(self, c->connid);
             }
-            host_info("start send %d", n);
         }
     }
 }
@@ -97,6 +102,7 @@ benchmark_init(struct service* s) {
     struct benchmark* self = SERVICE_SELF;
 
     self->query = host_getint("benchmark_query", 0); 
+    self->query_first = host_getint("benchmark_query_first", 0);
     self->query_send = 0;
     self->query_done = 0;
     int sz = host_getint("benchmark_packet_size", 10);

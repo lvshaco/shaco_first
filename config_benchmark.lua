@@ -8,6 +8,7 @@ echo_ip="192.168.1.140",
 echo_port=10001,
 
 benchmark_client_max=1, -- active client
-benchmark_query=100000,     -- query times
-benchmark_packet_size=6, -- packet size in bytes
+benchmark_query=10000,     -- query times
+benchmark_query_first=10000,
+benchmark_packet_size=256, -- packet size in bytes
 }

@@ -106,6 +106,7 @@ dispatcher_net(struct service* s, struct net_message* nm) {
     if (nm->ut >= CLI_UNTRUST) {
         // untrust client route to the service of the socket binded
         // and then the service to filter this msg type
+        int n=0;
         while ((um = _read_one(nm, UM_SKIP)) != NULL) {
             um->msgsz += UM_SKIP;
             if (um->msgsz > UM_CLIMAX) {
@@ -117,15 +118,22 @@ dispatcher_net(struct service* s, struct net_message* nm) {
             }
             service_notify_usermsg(nm->ud, id, um, um->msgsz);
             host_net_dropread(id, UM_SKIP);
+            n++;
+            if (n > 10)
+                break;
         }
     } else {
         // trust client route to the subscribe service directly
+        int n=0;
         while ((um = _read_one(nm, 0)) != NULL) { 
             serviceid = _locate_service(self, um);
             if (serviceid != SERVICE_INVALID) {
                 service_notify_nodemsg(serviceid, id, um, um->msgsz);
             }
             host_net_dropread(id, 0);
+            n++;
+            if (n > 10)
+                break;
         }
     }
 }
