@@ -12,28 +12,33 @@
 static struct net* N = NULL;
 
 static void
-_dispatch_events() {
+_dispatch_one(struct net_message* nm) {
+    if (nm->type == NETE_INVALID) {
+        return;
+    }
+    int serviceid = nm->ud;
+    if (nm->type == NETE_CONN_THEN_READ) {
+        nm->type = NETE_CONNECT;
+        service_notify_net(serviceid, nm);
+        nm->type = NETE_READ;
+    }
+    if (nm->type == NETE_READ) {
+        if (host_dispatcher_publish(nm)) {
+            service_notify_net(serviceid, nm);
+        }
+    } else {
+        service_notify_net(serviceid, nm);
+    }
+}
+
+static void
+_dispatch() {
     struct net_message* all = NULL;
-    struct net_message* e = NULL;
-    int i;
     int n = net_getevents(N, &all);
+    int i;
     for (i=0; i<n; ++i) {
-        e = &all[i];
-        if (e->type == NETE_INVALID)
-            continue;
-        int serviceid = e->ud;
-        if (e->type == NETE_CONN_THEN_READ) {
-            e->type = NETE_CONNECT;
-            service_notify_net(serviceid, e);
-            e->type = NETE_READ;
-        }
-        if (e->type == NETE_READ) {
-            if (host_dispatcher_publish(e)) {
-                service_notify_net(serviceid, e);
-            }
-        } else {
-            service_notify_net(serviceid, e);
-        }
+        struct net_message* nm = &all[i];
+        _dispatch_one(nm);
     }
 }
 
@@ -54,43 +59,46 @@ host_net_fini() {
 int
 host_net_listen(const char* addr, uint16_t port, int serviceid, int ut) {
     uint32_t ip = inet_addr(addr);
-    int r = net_listen(N, ip, port, serviceid, ut);
-    if (r) {
-        host_error("listen %s:%u fail: %s", addr, port, host_net_error(host_net_errorid())); 
+    int err = net_listen(N, ip, port, serviceid, ut);
+    if (err) {
+        host_error("listen %s:%u fail: %s", addr, port, host_net_error(err)); 
     } else {
         host_info("listen on %s:%d", addr, port);
     }
-    return r;
+    return err;
 }
 
 int 
 host_net_connect(const char* addr, uint16_t port, bool block, int serviceid, int ut) { 
     uint32_t ip = inet_addr(addr);
-    int r = net_connect(N, ip, port, block, serviceid, ut);
-    if (r <= 0) {
-        _dispatch_events();
+    struct net_message nm;
+    int n = net_connect(N, ip, port, block, serviceid, ut, &nm);
+    if (n > 0) {
+        _dispatch_one(&nm);
+        return nm.type == NETE_CONNERR;
     }
-    return r;
+    return 0;
 }
 
 void
 host_net_poll(int timeout) {
     int n = net_poll(N, timeout);
     if (n > 0) {
-        _dispatch_events();
+        _dispatch();
     }
 }
 
 int 
-host_net_send(int id, void* data, int sz) { 
-    int r = net_send(N, id, data, sz);
-    if (r > 0) {
-        _dispatch_events();
+host_net_send(int id, void* data, int sz) {
+    struct net_message nm;
+    int n = net_send(N, id, data, sz, &nm);
+    if (n > 0) {
+        _dispatch_one(&nm);
     }
-    return r;
+    return n;
 }
-void* host_net_read(int id, int sz, int skip) { 
-    return net_read(N, id, sz, skip); 
+void* host_net_read(int id, int sz, int skip, int* e) { 
+    return net_read(N, id, sz, skip, e); 
 }
 void host_net_dropread(int id, int skip) { 
     net_dropread(N, id, skip); 
@@ -101,14 +109,11 @@ void host_net_close_socket(int id) {
 const char* host_net_error(int err) { 
     return net_error(N, err); 
 }
-int host_net_errorid() {
-    return net_errorid(N);
-}
 int host_net_max_socket() { 
     return net_max_socket(N); 
 }
-int host_net_subscribe(int id, bool read, bool write) { 
-    return net_subscribe(N, id, read, write); 
+int host_net_subscribe(int id, bool read) { 
+    return net_subscribe(N, id, read); 
 }
 int host_net_socket_address(int id, uint32_t* addr, uint16_t* port) { 
     return net_socket_address(N, id, addr, port); 

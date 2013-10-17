@@ -13,7 +13,7 @@ _connect_center(struct service* s) {
     const char* addr = host_getstr("center_ip", "");
     int port = host_getint("center_port", 0);
     host_info("connect to %s:%u ...", addr, port);
-    if (host_net_connect(addr, port, true, s->serviceid, 0) < 0) { 
+    if (host_net_connect(addr, port, true, s->serviceid, 0)) { 
         return 1;
     }
     return 0;
@@ -81,7 +81,7 @@ centerc_net(struct service* s, struct net_message* nm) {
     switch (nm->type) {
     case NETE_CONNECT:
         host_info("connect to center ok");
-        host_net_subscribe(nm->connid, true, false);
+        host_net_subscribe(nm->connid, true);
         _reg_request(nm->connid);
         break;
     case NETE_CONNERR:

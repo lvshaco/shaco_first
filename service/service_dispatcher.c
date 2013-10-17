@@ -71,22 +71,24 @@ _read_one(struct net_message* nm, int skip) {
     int id = nm->connid; 
     struct UM_BASE* base;
     void* data;
-    base = host_net_read(id, sizeof(*base), skip);
+    int e;
+    base = host_net_read(id, sizeof(*base), skip, &e);
     if (base == NULL) {
         goto null;
     }
     int sz = base->msgsz + skip - sizeof(*base);
     if (sz != 0) {
-        data = host_net_read(id, sz, 0);
+        data = host_net_read(id, sz, 0, &e);
         if (data == NULL) {
             goto null;
         }
     }
     return base;
 null:
-    if (host_net_socket_isclosed(id)) {
+    if (e) {
         // error occur, route to net service
         nm->type = NETE_SOCKERR;
+        nm->error = e;
         service_notify_net(nm->ud, nm);
     }
     return NULL;
@@ -109,7 +111,9 @@ dispatcher_net(struct service* s, struct net_message* nm) {
             if (um->msgsz > UM_CLIMAX) {
                 host_net_close_socket(id);
                 nm->type = NETE_SOCKERR;
+                nm->error = -2;
                 service_notify_net(nm->ud, nm);
+                break;
             }
             service_notify_usermsg(nm->ud, id, um, um->msgsz);
             host_net_dropread(id, UM_SKIP);

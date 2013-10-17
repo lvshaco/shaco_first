@@ -184,11 +184,11 @@ void
 node_net(struct service* s, struct net_message* nm) {
     switch (nm->type) {
     case NETE_ACCEPT:
-        host_net_subscribe(nm->connid, true, false);
+        host_net_subscribe(nm->connid, true);
         break;
     case NETE_CONNECT:
         host_info("connect to node ok");
-        host_net_subscribe(nm->connid, true, false);
+        host_net_subscribe(nm->connid, true);
         _reg_request(nm->connid);
         break;
     case NETE_CONNERR:

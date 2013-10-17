@@ -4,7 +4,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#define UM_MAXSIZE 60000
+#define UM_MAXSIZE 61000
 #define IDUM_MAX 65536
 #define IDUM_INVALID -1
 

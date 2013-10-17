@@ -18,6 +18,6 @@ int  cnet_connect(const char* ip, uint16_t port, int ut);
 int  cnet_connecti(uint32_t addr, uint16_t port, int ut);
 int  cnet_send(int id, void* um, int sz);
 int  cnet_poll(int timeout);
-int  cnet_subscribe(int id, int read, int write);
+int  cnet_subscribe(int id, int read);
 
 #endif

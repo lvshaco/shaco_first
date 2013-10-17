@@ -55,7 +55,7 @@ _connect(struct service* s) {
     int count = 0;
     int i;
     for (i=0; i<self->max; ++i) { 
-        if (host_net_connect(ip, port, 1, s->serviceid, CLI_GAME) >= 0) {
+        if (host_net_connect(ip, port, 1, s->serviceid, CLI_GAME) == 0) {
             count++;
         }
     }
@@ -70,7 +70,7 @@ _send_one(struct benchmark* self, int id) {
     memset(um, 0, sz);
     um->msgid = 100;
     //memcpy(tm.data, "ping pong!", sizeof(tm.data));
-    host_net_subscribe(id, true, false);
+    host_net_subscribe(id, true);
     UM_SENDTOSVR(id, um, sz);
     self->query_send++;
 }
@@ -83,7 +83,11 @@ _start(struct benchmark* self) {
     for (i=0; i<self->max; ++i) {
         c = &self->clients[i];
         if (c->connected) {
-            _send_one(self, c->connid);
+            int n;
+            for (n=0; n<self->query; ++n) {
+                _send_one(self, c->connid);
+            }
+            host_info("start send %d", n);
         }
     }
 }
@@ -163,7 +167,7 @@ _onconnect(struct benchmark* self, int connid) {
     c->connid = connid;
     //c->active_time = host_timer_now();
     
-    host_net_subscribe(connid, false, false);
+    host_net_subscribe(connid, false);
 }
 
 static void

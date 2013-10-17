@@ -56,7 +56,7 @@ _onconnect(struct net_message* nm) {
     int id = nm->connid;
     _server_set(ut, id);
   
-    cnet_subscribe(id, 1, 0);
+    cnet_subscribe(id, 1);
 
     switch (ut) {
     case TGATE:

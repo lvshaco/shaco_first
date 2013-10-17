@@ -52,7 +52,7 @@ host_gate_acceptclient(int connid, uint64_t now) {
     c->connected = true;
     c->connid = connid;
     c->active_time = now;
-    host_net_subscribe(connid, true, false);
+    host_net_subscribe(connid, true);
     return c;
 }
 

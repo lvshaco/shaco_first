@@ -31,7 +31,13 @@ forward_usermsg(struct service* s, int id, void* msg, int sz) {
     struct gate_message* gm = msg;
     struct gate_client* c = gm->c;
     UM_CAST(UM_BASE, um, gm->msg);
-    _forward_world(c, um);
+    if (um->msgid >= IDUM_CBEGIN &&
+        um->msgid <  IDUM_CEND) {
+        _forward_world(c, um);
+    } else {
+        // todo: just disconnect it ?
+        host_gate_disconnclient(c, true); 
+    }
 }
 
 void
@@ -53,7 +59,6 @@ forward_nodemsg(struct service* s, int id, void* msg, int sz) {
                     UM_SENDTOCLI(c->connid, m, m->msgsz);
                     host_gate_disconnclient(c, true);
                 }
-                
             } else {
                 UM_SENDTOCLI(c->connid, m, m->msgsz);
             }
