@@ -1,5 +1,6 @@
 #include "host_service.h"
 #include "host.h"
+#include "host_timer.h"
 #include "host_dispatcher.h"
 #include "host_log.h"
 #include "host_node.h"
@@ -11,6 +12,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <time.h>
 
 ///////////////////
 #define R_OK 0
@@ -103,6 +105,16 @@ _startmem(struct args* A, struct memrw* rw) {
     }
     return R_OK;
 }
+static int
+_time(struct args* A, struct memrw* rw) {
+    uint64_t now = host_timer_now();
+    time_t sec = now / 1000;
+    int n = strftime(rw->ptr, RW_SPACE(rw), "%y%m%d-%H:%M:%S", localtime(&sec));
+    memrw_pos(rw, n);
+    n = snprintf(rw->ptr, RW_SPACE(rw), "[%lu]", host_timer_elapsed());
+    memrw_pos(rw, n);
+    return R_OK;
+}
 
 ///////////////////
 struct command {
@@ -118,6 +130,7 @@ static struct command COMMAND_MAP[] = {
     { "stop",        _stop },
     { "start",       _start },
     { "startmem",    _startmem },
+    { "time",        _time },
     { NULL, NULL },
 };
 

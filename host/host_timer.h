@@ -10,5 +10,6 @@ int host_timer_max_timeout();
 void host_timer_dispatch_timeout();
 void host_timer_register(int serviceid, int interval);
 uint64_t host_timer_now();
+uint64_t host_timer_elapsed();
 
 #endif

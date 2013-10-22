@@ -51,21 +51,25 @@ struct host_timer {
 static struct host_timer* T = NULL;
 
 static uint64_t
+_now() {
+    struct timespec ti;
+    clock_gettime(CLOCK_REALTIME, &ti);
+    return ti.tv_sec * 1000 + ti.tv_nsec / 1000000;
+}
+
+static uint64_t
 _elapsed() {
-    if (!T->dirty) {
-        return T->elapsed_time;
-    }
-    T->dirty = false;
     struct timespec ti;
     clock_gettime(CLOCK_MONOTONIC, &ti);
     return ti.tv_sec * 1000 + ti.tv_nsec / 1000000;
 }
 
-static uint64_t
-_now() {
-    struct timespec ti;
-    clock_gettime(CLOCK_REALTIME, &ti);
-    return ti.tv_sec * 1000 + ti.tv_nsec / 1000000;
+static void
+_elapsed_time() {
+    if (T->dirty) {
+        T->dirty = false;
+        T->elapsed_time = _elapsed();
+    }
 }
 
 int 
@@ -89,8 +93,14 @@ host_timer_fini() {
 
 uint64_t 
 host_timer_now() {
-    T->elapsed_time = _elapsed();
+    _elapsed_time();
     return T->start_time + T->elapsed_time;
+}
+
+uint64_t 
+host_timer_elapsed() {
+    _elapsed_time();
+    return T->elapsed_time;
 }
 
 static uint64_t
@@ -110,22 +120,21 @@ _closest_time() {
 
 int
 host_timer_max_timeout() {
+    T->elapsed_time = _elapsed(); 
     T->dirty = true;
-    T->elapsed_time = _elapsed();
     uint64_t next_time = _closest_time(T->elapsed_time);
     int timeout = -1;
     if (next_time != -1) {
         timeout = next_time > T->elapsed_time ?
             next_time - T->elapsed_time : 0;
-    }
-    T->dirty = true;
+    } 
     return timeout;
 }
 
 void
 host_timer_dispatch_timeout() {
     //T->dirty = true;
-    T->elapsed_time = _elapsed();
+    _elapsed_time();
     struct _event_holder* eh = &T->eh;
     struct _event* e;
     int i;
