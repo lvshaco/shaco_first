@@ -85,6 +85,7 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.h *.c" {
   service_log.c
   service_node.c
   service_world.c
+  service_redisc.c
  }
  world=world{
   player.h

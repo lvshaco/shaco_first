@@ -3,7 +3,7 @@
 ps -ef |grep shaco
 echo "start center"
 ./shaco config_center.lua -d > center.log
-sleep 3
+sleep 2
 echo "start gate"
 ./shaco config_gate.lua -d > gate.log
 echo "start world"

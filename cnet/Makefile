@@ -34,6 +34,7 @@ ifeq ($(plat),linux)
 	gcc $(CFLAGS) $(SHARED) -o $@ $^ $(inc_dir) #-lws2_32
 else
 	gcc $(CFLAGS) $(SHARED) -o $@ $^ $(inc_dir) -lws2_32 -lws2_32 -Wl,--output-def,cnet.def,--out-implib,cnet.lib
+	LIB /MACHINE:IX86 /DEF:cnet.def
 endif
 
 test: test.c
@@ -45,13 +46,13 @@ else
 endif
 
 clean:
-	rm -f test *.exe *.so *.a *.def *.lib
+	rm -f test *.exe *.so *.a *.def *.lib *.exp
 
 install_dir=D:/wa-client/trunk/cocos2d-x-2.1.4/Debug.win32
 source_dir=D:/wa-client/trunk/cocos2d-x-2.1.4/driller/Classes
 install:
 	cp test.exe $(install_dir)/test.exe
-	cp cnet.lib $(install_dir)/cnet.lib
-	cp -r ../net $(source_dir)
+	cp -r ../net $(source_dir)	
 	cp -r ../cnet $(source_dir)
+	mv $(source_dir)/cnet/cnet.so $(source_dir)/cnet/cnet.dll
 	cp -r ../message $(source_dir)

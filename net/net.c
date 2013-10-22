@@ -121,6 +121,7 @@ _create_socket(struct net* self, socket_t fd, uint32_t addr, uint16_t port, int 
         self->free_socket = &self->sockets[s->fd];
     else
         self->free_socket = NULL;
+    assert(s->mask == 0);
     s->fd = fd;
     s->status = STATUS_SUSPEND;
     s->ud = ud;
@@ -545,6 +546,7 @@ _onconnect(struct net* self, struct socket* s) {
     }
     if (err == 0) {
         s->status = STATUS_CONNECTED;
+        _subscribe(self, s, 0);
     }
     if (err) {
         _close_socket(self, s);
@@ -638,6 +640,7 @@ int
 net_poll(struct net* self, int timeout) {
     int i;
     int n = np_poll(&self->np, self->ev, self->max, timeout);
+    int c = 0;
     for (i=0; i<n; ++i) {
         struct np_event* e = &self->ev[i];
         struct socket* s = e->ud;
@@ -654,6 +657,7 @@ net_poll(struct net* self, int timeout) {
                 oe->type = NETE_ACCEPT;
                 oe->ud = s->ud;
                 oe->ut = s->ut;
+                c++;
             }
             break;
         case STATUS_CONNECTING:
@@ -665,12 +669,13 @@ net_poll(struct net* self, int timeout) {
                 oe->error = _onconnect(self, s);
                 if (oe->error) {
                     oe->type = NETE_CONNERR;
-                    break;
+                } else {
+                    oe->type = NETE_CONNECT;
+                    if (e->read) {
+                        oe->type = NETE_CONN_THEN_READ;
+                    }
                 }
-                oe->type = NETE_CONNECT;
-                if (e->read) {
-                    oe->type = NETE_CONN_THEN_READ;
-                }
+                c++;
             }
             break;
         case STATUS_CONNECTED:
@@ -682,6 +687,7 @@ net_poll(struct net* self, int timeout) {
                     oe->ud = s->ud;
                     oe->ut = s->ut;
                     oe->type = NETE_SOCKERR;
+                    c++;
                     break;
                 }
             }
@@ -691,12 +697,13 @@ net_poll(struct net* self, int timeout) {
                 oe->ud = s->ud;
                 oe->ut = s->ut;
                 oe->type = NETE_READ;
+                c++;
             }
             break;
         }
     }
-    self->nevent = n;
-    return n;
+    self->nevent = c; 
+    return c;
 }
 
 int

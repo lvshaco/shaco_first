@@ -45,7 +45,6 @@ struct host_timer {
     uint64_t start_time;
     uint64_t elapsed_time;
     bool dirty;
-    uint64_t trigger_time;
     struct _event_holder eh;
 };
 
@@ -75,7 +74,6 @@ host_timer_init() {
     T->dirty = true;
     T->elapsed_time = _elapsed();
     T->start_time = _now() - T->elapsed_time;
-    T->trigger_time = -1;
     _event_holder_init(&T->eh);
     return 0;
 }
@@ -100,7 +98,7 @@ _closest_time() {
     struct _event_holder* eh = &T->eh;
     struct _event* e;
     int i;
-    uint64_t min = -1; // todo: larger this will slow
+    uint64_t min = -1;
     for (i=0; i<eh->sz; ++i) {
         e = &eh->p[i];
         if (e->next_time < min) {
@@ -120,7 +118,6 @@ host_timer_max_timeout() {
         timeout = next_time > T->elapsed_time ?
             next_time - T->elapsed_time : 0;
     }
-    T->trigger_time = next_time;
     T->dirty = true;
     return timeout;
 }
@@ -128,13 +125,13 @@ host_timer_max_timeout() {
 void
 host_timer_dispatch_timeout() {
     //T->dirty = true;
-    //T->elapsed_time = _elapsed();
+    T->elapsed_time = _elapsed();
     struct _event_holder* eh = &T->eh;
     struct _event* e;
     int i;
     for (i=0; i<eh->sz; ++i) {
         e = &eh->p[i];
-        if (e->next_time == T->trigger_time) {
+        if (e->next_time <= T->elapsed_time) {
             service_notify_time(e->serviceid);
             e->next_time += e->interval;
         }
