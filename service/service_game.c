@@ -147,7 +147,7 @@ _verifyfail(struct gate_client* c, int8_t error) {
 static inline bool
 _elapsed(uint64_t t, uint64_t elapse) {
     uint64_t now = host_timer_now();
-    return t > now && (t - now >= elapse);
+    return now > t && (now - t >= elapse);
 }
 
 static void
@@ -157,7 +157,7 @@ _multicast_msg(struct room* ro, struct UM_BASE* um) {
     for (i=0; i<ro->np; ++i) {
         m = &ro->p[i];
         if (m->online) {
-            UM_SENDTOCLI(m->connid, um, um->msgsz);
+            UM_SENDTOCLIDIRECT(m->connid, um);
         }
     }
 }
@@ -174,12 +174,14 @@ _gameenter(struct room* ro) {
     ro->status = RS_ENTER;
     ro->entertime = host_timer_now();
     UM_DEFFIX(UM_GAMEENTER, enter);
+    enter->msgsz -= UM_SKIP;
     _multicast_msg(ro, (void*)enter);
 }
 static void
 _gamestart(struct room* ro) {
     ro->status = RS_START;
     UM_DEFFIX(UM_GAMESTART, start);
+    start->msgsz -= UM_SKIP;
     _multicast_msg(ro, (void*)start);
 }
 static void
