@@ -23,7 +23,11 @@ _dispatch_one(struct net_message* nm) {
         nm->type = NETE_READ;
     }
     if (nm->type == NETE_READ) {
-        if (host_dispatcher_publish(nm)) {
+        if (nm->ut == NETUT_TRUST) {
+            if (host_dispatcher_publish(nm)) {
+                service_notify_net(serviceid, nm);
+            }
+        } else {
             service_notify_net(serviceid, nm);
         }
     } else {

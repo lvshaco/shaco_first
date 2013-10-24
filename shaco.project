@@ -94,6 +94,7 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.h *.c" {
   player.c
  }
  message=message{
+  message_reader.h
   cli_message.h
   client_type.h
   message.h

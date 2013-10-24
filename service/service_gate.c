@@ -5,6 +5,8 @@
 #include "host_timer.h"
 #include "host.h"
 #include "host_gate.h"
+#include "message_reader.h"
+#include "user_message.h"
 #include "client_type.h"
 #include "message.h"
 #include "cli_message.h"
@@ -63,35 +65,57 @@ gate_init(struct service* s) {
     return 0;
 }
 
-void
-gate_usermsg(struct service* s, int id, void* msg, int sz) {
-    struct gate* self = SERVICE_SELF;
-    struct gate_client* c = host_gate_getclient(id);
-    assert(c);
+static inline void
+_handlemsg(struct gate* self, struct gate_client* c, struct UM_BASE* um) {
     c->active_time = host_timer_now();
-
-    UM_CAST(UM_BASE, um, msg);
     if (um->msgid != IDUM_HEARTBEAT) {
         host_debug("Receive msg:%u",  um->msgid);
         struct gate_message gm;
         gm.c = c;
-        gm.msg = msg;
-        service_notify_usermsg(self->handler, id, &gm, sz);
+        gm.msg = um;
+        service_notify_usermsg(self->handler, c->connid, &gm, um->msgsz);
     }
 }
 
+static void
+_read(struct gate* self, struct gate_client* c, struct net_message* nm) {
+    int n = 0;
+    struct UM_BASE* um;
+    while ((um = _message_read_one(nm, UM_SKIP)) != NULL) {
+        um->msgsz += UM_SKIP;
+        if (um->msgsz > UM_CLIMAX) {
+            host_net_close_socket(nm->connid);
+            nm->type = NETE_SOCKERR;
+            nm->error = -2;
+            service_notify_net(nm->ud, nm);
+            break;
+        }
+        _handlemsg(self, c, um);
+        host_net_dropread(nm->connid, UM_SKIP);
+        if (++n > 10)
+            break;
+    }
+
+}
 void
 gate_net(struct service* s, struct net_message* nm) {
     struct gate* self = SERVICE_SELF;
     struct gate_client* c;
+    int id = nm->connid;
     switch (nm->type) {
+    case NETE_READ: {
+        c = host_gate_getclient(id); 
+        assert(c);
+        _read(self, c, nm);
+        }
+        break;
     case NETE_ACCEPT: {
         uint64_t now = host_timer_now();
-        c = host_gate_acceptclient(nm->connid, now);
+        c = host_gate_acceptclient(id, now);
         }
         break;
     case NETE_SOCKERR: {
-        c = host_gate_getclient(nm->connid);
+        c = host_gate_getclient(id);
         assert(c);
         struct gate_message gm;
         gm.c = c;

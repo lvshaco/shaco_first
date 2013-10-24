@@ -6,6 +6,7 @@
 #include "host.h"
 #include "hashid.h"
 #include "freeid.h"
+#include "message_reader.h"
 #include "user_message.h"
 #include "client_type.h"
 #include <stdlib.h>
@@ -139,13 +140,8 @@ _getclient(struct benchmark* self, int id) {
     return NULL;
 }
 
-void
-benchmark_usermsg(struct service* s, int id, void* msg, int sz) {
-    struct benchmark* self = SERVICE_SELF;
-    struct client* c = _getclient(self, id);
-    assert(c);
-    assert(c->connid == id);
-    
+static inline void
+_handlemsg(struct benchmark* self, struct client* c, struct UM_BASE* um) {
     self->query_done++;
     if (self->query_done == self->query) {
         self->end = host_timer_now();
@@ -157,7 +153,32 @@ benchmark_usermsg(struct service* s, int id, void* msg, int sz) {
         self->start = self->end;
         self->query_done = 0;
     }
-    _send_one(self, id);
+    _send_one(self, c->connid);
+}
+
+static void
+_read(struct benchmark* self, struct net_message* nm) {
+    int id = nm->connid;
+    struct client* c = _getclient(self, id);
+    assert(c);
+    assert(c->connid == id);
+    int n = 0;
+    struct UM_BASE* um;
+    while ((um = _message_read_one(nm, UM_SKIP)) != NULL) {
+        um->msgsz += UM_SKIP;
+        if (um->msgsz > UM_CLIMAX) {
+            host_net_close_socket(nm->connid);
+            nm->type = NETE_SOCKERR;
+            nm->error = -2;
+            service_notify_net(nm->ud, nm);
+            break;
+        }
+        _handlemsg(self, c, um);
+        host_net_dropread(nm->connid, UM_SKIP);
+        if (++n > 10)
+            break;
+    }
+
 }
 
 static void
@@ -204,6 +225,9 @@ void
 benchmark_net(struct service* s, struct net_message* nm) {
     struct benchmark* self = SERVICE_SELF;
     switch (nm->type) {
+    case NETE_READ:
+        _read(self, nm);
+        break;
     case NETE_CONNECT:
         _onconnect(self, nm->connid);
         break;

@@ -1,7 +1,7 @@
 #include "host_service.h"
 #include "host_log.h"
+#include "message_reader.h"
 #include "user_message.h"
-#include "client_type.h"
 #include "node_type.h"
 #include <assert.h>
 
@@ -66,75 +66,22 @@ dispatcher_service(struct service* s, struct service_message* sm) {
     }
 }
 
-static inline struct UM_BASE*
-_read_one(struct net_message* nm, int skip) {
-    int id = nm->connid; 
-    struct UM_BASE* base;
-    void* data;
-    int e;
-    base = host_net_read(id, sizeof(*base), skip, &e);
-    if (base == NULL) {
-        goto null;
-    }
-    int sz = base->msgsz + skip - sizeof(*base);
-    if (sz != 0) {
-        data = host_net_read(id, sz, 0, &e);
-        if (data == NULL) {
-            goto null;
-        }
-    }
-    return base;
-null:
-    if (e) {
-        // error occur, route to net service
-        nm->type = NETE_SOCKERR;
-        nm->error = e;
-        service_notify_net(nm->ud, nm);
-    }
-    return NULL;
-}
-
 void
 dispatcher_net(struct service* s, struct net_message* nm) {
     assert(nm->type == NETE_READ);
-    
-    struct dispatcher* self = SERVICE_SELF; 
-    int id = nm->connid;
-    int serviceid;
-    struct UM_BASE* um;
+    struct dispatcher* self = SERVICE_SELF;
 
-    if (nm->ut >= CLI_UNTRUST) {
-        // untrust client route to the service of the socket binded
-        // and then the service to filter this msg type
-        int n=0;
-        while ((um = _read_one(nm, UM_SKIP)) != NULL) {
-            um->msgsz += UM_SKIP;
-            if (um->msgsz > UM_CLIMAX) {
-                host_net_close_socket(id);
-                nm->type = NETE_SOCKERR;
-                nm->error = -2;
-                service_notify_net(nm->ud, nm);
-                break;
-            }
-            service_notify_usermsg(nm->ud, id, um, um->msgsz);
-            host_net_dropread(id, UM_SKIP);
-            n++;
-            if (n > 10)
-                break;
+    int n = 0;
+    // trust client route to the subscribe service directly
+    struct UM_BASE* um; 
+    while ((um = _message_read_one(nm, 0)) != NULL) { 
+        int serviceid = _locate_service(self, um);
+        if (serviceid != SERVICE_INVALID) {
+            service_notify_nodemsg(serviceid, nm->connid, um, um->msgsz);
         }
-    } else {
-        // trust client route to the subscribe service directly
-        int n=0;
-        while ((um = _read_one(nm, 0)) != NULL) { 
-            serviceid = _locate_service(self, um);
-            if (serviceid != SERVICE_INVALID) {
-                service_notify_nodemsg(serviceid, id, um, um->msgsz);
-            }
-            host_net_dropread(id, 0);
-            n++;
-            if (n > 10)
-                break;
-        }
+        host_net_dropread(nm->connid, 0);
+        if (++n > 10)
+            break;
     }
 }
 
