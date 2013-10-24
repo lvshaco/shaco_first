@@ -10,6 +10,7 @@ void host_net_fini();
 int host_net_listen(const char* addr, uint16_t port, int serviceid, int ut);
 int host_net_connect(const char* addr, uint16_t port, bool block, int serviceid, int ut);
 void host_net_poll(int timeout);
+int host_net_readto(int id, void* buf, int space, int* e);
 void* host_net_read(int id, int sz, int skip, int* e);
 void host_net_dropread(int id, int skip);
 int host_net_send(int id, void* data, int sz);

@@ -101,6 +101,10 @@ host_net_send(int id, void* data, int sz) {
     }
     return n;
 }
+int 
+host_net_readto(int id, void* buf, int space, int* e) {
+    return net_readto(N, id, buf, space, e); 
+}
 void* host_net_read(int id, int sz, int skip, int* e) { 
     return net_read(N, id, sz, skip, e); 
 }

@@ -14,6 +14,7 @@ int net_poll(struct net* self, int timeout);
 int net_getevents(struct net* self, struct net_message** e);
 int net_subscribe(struct net* self, int id, bool read);
 
+int net_readto(struct net* self, int id, void* buf, int space, int* e);
 void* net_read(struct net* self, int id, int size, int skip, int* e);
 void net_dropread(struct net* self, int id, int skip);
 int net_send(struct net* self, int id, void* data, int sz, struct net_message* nm);

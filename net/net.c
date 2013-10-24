@@ -260,6 +260,40 @@ net_free(struct net* self) {
     free(self);
 }
 
+int
+net_readto(struct net* self, int id, void* buf, int space, int* e) {
+    assert(space > 0);
+    *e = 0;
+    struct socket* s = _get_socket(self, id);
+    if (s == NULL) {
+        return -1;
+    } 
+    int error = 0;
+    for (;;) {
+        int nbyte = _socket_read(s->fd, buf, space);
+        if (nbyte < 0) {
+            error = _socket_geterror(s->fd);
+            if (error == SEAGAIN) {
+                return 0;
+            } else if (error == SEINTR) {
+                continue;
+            } else {
+                _close_socket(self, s);
+                *e = NETERR(error);
+                return -1;
+            }
+        } else if (nbyte == 0) {
+            error = _socket_geterror(s->fd); // errno == 0
+            _close_socket(self, s);
+            *e = NETERR(error);
+            return -1;
+        } else {
+            return nbyte;
+        } 
+        
+    }
+}
+
 void*
 net_read(struct net* self, int id, int sz, int skip, int* e) {
     *e = 0;
