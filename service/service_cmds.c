@@ -88,7 +88,7 @@ _getnodeid(const char* tidstr, const char* sidstr) {
     }
     int tid = host_node_typeid(tidstr);
     if (tid == -1) {
-        return -1;
+        return -1;        
     }
     if (strcasecmp(sidstr, "all") == 0) {
         return HNODE_ID(tid, HNODE_SID_MAX);
@@ -107,23 +107,33 @@ cmds_usermsg(struct service* s, int id, void* msg, int sz) {
    
     struct args A;
     args_parsestrl(&A, 3, (char*)(um+1), sz-UM_HSIZE);
-    if (A.argc < 3) {
-        _response_error(id, "usage: node sid command [arg1 arg2 .. ]");
+    if (A.argc < 1) {
+        _response_error(id, "usage: [node sid] command [arg1 arg2 .. ]");
         return;
     }
-    int nodeid = _getnodeid(A.argv[0], A.argv[1]);
-    if (nodeid == -1) {
-        _response_error(id, "invalid node");
-        return;
-    }
+    int starti = 0;
+    int nodeid = HNODE_ID(NODE_CENTER, 0);
+    if (A.argc > 2) {
+        int id = _getnodeid(A.argv[0], A.argv[1]);
+        if (id != -1) {
+            nodeid = id;
+            starti = 2;
+        }
+    } 
     int tid = HNODE_TID(nodeid);
     int sid = HNODE_SID(nodeid);
-
+    
     UM_DEFVAR(UM_CMDREQ, req);
     req->cid = id;
-    size_t l = strlen(A.argv[2]);
-    memcpy(req->cmd, A.argv[2], l);
-    req->msgsz = sizeof(*req) + l;
+    struct memrw rw;
+    memrw_init(&rw, req->cmd, req->msgsz - sizeof(*req));
+    int i;
+    for (i=starti; i<A.argc; ++i) {
+        size_t l = strlen(A.argv[i]);
+        memrw_write(&rw, A.argv[i], l);
+        memrw_write(&rw, " ", 1);
+    }
+    req->msgsz = sizeof(*req) + RW_CUR(&rw);
 
     um = (struct UM_BASE*)req;
     if (tid == HNODE_TID_MAX) {
