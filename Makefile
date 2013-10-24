@@ -18,6 +18,10 @@ net_src=\
 	net/netbuf.c \
 	net/netbuf.h
 
+redis_src=\
+	redis/redis.c \
+	redis/redis.h
+
 base_src=\
 	base/array.h \
 	base/freeid.h \
@@ -62,7 +66,8 @@ test_src=\
 	test/test.c \
 	net.so \
 	lur.so \
-	base.so
+	base.so \
+	redis.so
 
 LDFLAGS=-Wl,-rpath,. \
 		net.so lur.so base.so -llua -lm -ldl -lrt -rdynamic# -Wl,-E
@@ -85,7 +90,13 @@ worldservice_so=\
 	service_world.so \
 	service_gamematch.so
 
-all: lur.so net.so base.so shaco shaco-cli \
+all: \
+	lur.so \
+	net.so \
+	redis.so \
+	base.so \
+	shaco \
+	shaco-cli \
 	$(service_so) \
 	$(worldservice_so) world.so
 
@@ -112,6 +123,10 @@ net.so: $(net_src)
 	@rm -f $@
 	gcc $(CFLAGS) $(SHARED) -o $@ $^
 
+redis.so: $(redis_src)
+	@rm -f $@
+	gcc $(CFLAGS) $(SHARED) -o $@ $^
+
 base.so: $(base_src)
 	@rm -f $@
 	gcc $(CFLAGS) $(SHARED) -o $@ $^
@@ -126,7 +141,7 @@ shaco-cli: $(cli_src)
 
 t: $(test_src)
 	@rm -f $@
-	gcc $(CFLAGS) -o $@ $^ -Ihost -Ilur -Inet -Ibase $(LDFLAGS)
+	gcc $(CFLAGS) -o $@ $^ -Ihost -Ilur -Inet -Ibase -Iredis $(LDFLAGS) redis.so
 
 clean:
 	rm -f shaco shaco-cli t *.so

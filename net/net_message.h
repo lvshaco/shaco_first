@@ -14,13 +14,15 @@
 #define NETE_TIMEOUT 7
 #define NETE_LOGOUT 8
 
+#define NETUT_TRUST 0 // or UNTRUST
+
 struct net_message {
     int fd;
     int connid;
     int type;     // see NETE
     int error;
     int ud;
-    int ut;
+    int ut; // see NETUT_*
 };
 
 #endif

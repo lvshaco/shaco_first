@@ -1,5 +1,4 @@
 shaco=~/shaco CD=. filter="Makefile README.md *.lua *.h *.c" {
- start
  Makefile
  README.md
  config.lua
@@ -61,7 +60,10 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.h *.c" {
   socket_select.h
   net.c
   netbuf.c
-  test.c
+ }
+ redis=redis{
+  redis.h
+  redis.c
  }
  cnet=cnet{
   Makefile
@@ -84,8 +86,8 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.h *.c" {
   service_gate.c
   service_log.c
   service_node.c
+  service_redisproxy.c
   service_world.c
-  service_redisc.c
  }
  world=world{
   player.h

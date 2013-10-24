@@ -3,10 +3,14 @@
 #include "freeid.h"
 #include "hashid.h"
 #include "gfreeid.h"
+#include "redis.h"
 #include <stdint.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h> 
+#include <stdlib.h>
+#include <time.h>
+
 /*
 void 
 host_log(int level, const char* fmt, ...) {
@@ -184,12 +188,376 @@ void test_gfreeid() {
     GFREEID_FINI(idtest, &gf);
 }
 
+static void
+_printf_empty(int depth) {
+    int i;
+    for (i=0; i<depth; ++i) {
+        printf("|_|_"); 
+    }
+}
+
+static void
+_walk_reply(struct redis_replyitem* item, int depth) {
+    switch (item->type) {
+    case REDIS_REPLY_STATUS:
+        _printf_empty(depth);
+        printf("+%s\n", item->value.p);
+        break;
+    case REDIS_REPLY_ERROR:
+        _printf_empty(depth);
+        printf("-%s\n", item->value.p);
+        break;
+    case REDIS_REPLY_INTEGER:
+        _printf_empty(depth);
+        printf(":%ld\n", item->value.i);
+        break;
+    case REDIS_REPLY_STRING:
+        _printf_empty(depth);
+        printf(" %s\n", item->value.p);
+        break;
+    case REDIS_REPLY_ARRAY:
+        _printf_empty(depth);
+        printf("*%ld\n", item->value.i);
+        int i;
+        for (i=0; i<(int)item->nchild; ++i) {
+            struct redis_replyitem* sub = &item->child[i];
+            _walk_reply(sub, depth+1);
+        }
+        break;
+    default:
+        printf("error occur in depth: %d\n", depth);
+        break;
+    }
+}
+
+static void
+_test_redisstep(struct redis_reply* reply, int initstep, int random) {
+    int r;
+    struct redis_reader* reader = &reply->reader;
+    redis_resetreply(reply); 
+    const char* tmp = "*2\r\n"
+        "*5\r\n+OK\r\n$6\r\nlvxiao\r\n-UNKNOW ERROR\r\n:1\r\n$1\r\nJ\r\n"
+        "*3\r\n$3\r\nabc\r\n$6\r\nlvxiao\r\n$4\r\n1234\r\n";
+    int sz = strlen(tmp);
+    int i;
+    int step = initstep;
+    for (i=0; i<sz; i+=step) {
+        if (random) {
+            step = rand() % initstep + 1;
+            printf("%d ", step);
+        }
+        if (i+step > sz) {
+            step = sz-i;
+        }
+        strncpy(&reader->buf[reader->sz], tmp+i, step);
+        reader->sz += step;
+        r = redis_getreply(reply);
+        if (i+step < sz) {
+            assert(r == REDIS_NEXTTIME);
+        } else {
+            assert(r == REDIS_SUCCEED);
+            _walk_reply(reply->stack[0], 0);
+        }
+    }
+}
+
+void test_redis() {
+    struct redis_reply reply;
+    redis_initreply(&reply, 512);
+    struct redis_reader* reader = &reply.reader;
+    const char* tmp;
+    int sz;
+    int r;
+    int i;
+    // 1
+    tmp = "$6\r\nfoobar\r\n";
+    sz = strlen(tmp);
+    strncpy(&reader->buf[reader->sz], tmp, sz);
+    reader->sz += sz;
+    r = redis_getreply(&reply);
+    assert(r == REDIS_SUCCEED);
+    _walk_reply(reply.stack[0], 0);
+
+    // 2
+    redis_resetreply(&reply); 
+
+    tmp = "+OK\r\n";
+    sz = strlen(tmp);
+    strncpy(&reader->buf[reader->sz], tmp, sz);
+    reader->sz += sz;
+    r = redis_getreply(&reply);
+    assert(r == REDIS_SUCCEED);
+    _walk_reply(reply.stack[0], 0);
+
+    // 3
+    redis_resetreply(&reply); 
+
+    tmp = "+QUEUED\r\n";
+    sz = strlen(tmp);
+    strncpy(&reader->buf[reader->sz], tmp, sz);
+    reader->sz += sz;
+    r = redis_getreply(&reply);
+    assert(r == REDIS_SUCCEED);
+    _walk_reply(reply.stack[0], 0);
+
+    // 4
+    redis_resetreply(&reply); 
+
+    tmp = "-ERROR\r\n";
+    sz = strlen(tmp);
+    strncpy(&reader->buf[reader->sz], tmp, sz);
+    reader->sz += sz;
+    r = redis_getreply(&reply);
+    assert(r == REDIS_SUCCEED);
+    _walk_reply(reply.stack[0], 0);
+
+    // 5
+    redis_resetreply(&reply); 
+
+    tmp = "-WALK unknown command\r\n";
+    sz = strlen(tmp);
+    strncpy(&reader->buf[reader->sz], tmp, sz);
+    reader->sz += sz;
+    r = redis_getreply(&reply);
+    assert(r == REDIS_SUCCEED);
+    _walk_reply(reply.stack[0], 0);
+
+    // 6
+    redis_resetreply(&reply); 
+
+    tmp = ":12345\r\n";
+    sz = strlen(tmp);
+    strncpy(&reader->buf[reader->sz], tmp, sz);
+    reader->sz += sz;
+    r = redis_getreply(&reply);
+    assert(r == REDIS_SUCCEED);
+    _walk_reply(reply.stack[0], 0);
+
+    // 7
+    redis_resetreply(&reply); 
+
+    tmp = ":0\r\n";
+    sz = strlen(tmp);
+    strncpy(&reader->buf[reader->sz], tmp, sz);
+    reader->sz += sz;
+    r = redis_getreply(&reply);
+    assert(r == REDIS_SUCCEED);
+    _walk_reply(reply.stack[0], 0);
+
+    // 8
+    redis_resetreply(&reply); 
+
+    tmp = "$-1\r\n";
+    sz = strlen(tmp);
+    strncpy(&reader->buf[reader->sz], tmp, sz);
+    reader->sz += sz;
+    r = redis_getreply(&reply);
+    assert(r == REDIS_SUCCEED);
+    _walk_reply(reply.stack[0], 0);
+
+    // 8
+    redis_resetreply(&reply); 
+
+    tmp = "$0\r\n";
+    sz = strlen(tmp);
+    strncpy(&reader->buf[reader->sz], tmp, sz);
+    reader->sz += sz;
+    r = redis_getreply(&reply);
+    assert(r == REDIS_SUCCEED);
+    _walk_reply(reply.stack[0], 0);
+
+    // 9
+    redis_resetreply(&reply); 
+
+    tmp = "*1\r\n$3\r\nabc\r\n";
+    sz = strlen(tmp);
+    strncpy(&reader->buf[reader->sz], tmp, sz);
+    reader->sz += sz;
+    r = redis_getreply(&reply);
+    assert(r == REDIS_SUCCEED);
+    _walk_reply(reply.stack[0], 0);
+
+    // 10
+    redis_resetreply(&reply); 
+
+    tmp = "*3\r\n$3\r\nabc\r\n$6\r\nlvxiao\r\n$4\r\n1234\r\n";
+    sz = strlen(tmp);
+    strncpy(&reader->buf[reader->sz], tmp, sz);
+    reader->sz += sz;
+    r = redis_getreply(&reply);
+    assert(r == REDIS_SUCCEED);
+    _walk_reply(reply.stack[0], 0);
+
+    // 11
+    redis_resetreply(&reply); 
+
+    tmp = "*5\r\n+OK\r\n$6\r\nlvxiao\r\n-UNKNOW ERROR\r\n:1\r\n$1\r\nJ\r\n";
+    sz = strlen(tmp);
+    strncpy(&reader->buf[reader->sz], tmp, sz);
+    reader->sz += sz;
+    r = redis_getreply(&reply);
+    assert(r == REDIS_SUCCEED);
+    _walk_reply(reply.stack[0], 0);
+
+    // 12
+    redis_resetreply(&reply); 
+
+    tmp = "*2\r\n"
+        "*5\r\n+OK\r\n$6\r\nlvxiao\r\n-UNKNOW ERROR\r\n:1\r\n$1\r\nJ\r\n"
+        "*3\r\n$3\r\nabc\r\n$6\r\nlvxiao\r\n$4\r\n1234\r\n";
+    sz = strlen(tmp);
+    strncpy(&reader->buf[reader->sz], tmp, sz);
+    reader->sz += sz;
+    r = redis_getreply(&reply);
+    assert(r == REDIS_SUCCEED);
+    _walk_reply(reply.stack[0], 0);
+/*
+    // REDIS_ERROR
+    // 13
+    redis_resetreply(&reply); 
+
+    tmp = "*2YU\r\n("
+        "*5\r\n+OK\r\n$6\r\nlvxiao\r\n-UNKNOW ERROR\r\n:1\r\n$1\r\nJ\r\n"
+        "*3\r\n$3\r\nabc\r\n$6\r\nlvxiao\r\n$4\r\n1234\r\n";
+    sz = strlen(tmp);
+    strncpy(&reader->buf[reader->sz], tmp, sz);
+    reader->sz += sz;
+    r = redis_getreply(&reply);
+    assert(r == REDIS_ERROR);
+    _walk_reply(reply.stack[0], 0);
+*/
+    // REDIS_NEXTTIME
+    // 14
+    printf("-----------14\n");
+    redis_resetreply(&reply); 
+
+    tmp = "*2\r\n";
+    sz = strlen(tmp);
+    strncpy(&reader->buf[reader->sz], tmp, sz);
+    reader->sz += sz;
+    r = redis_getreply(&reply);
+    assert(r == REDIS_NEXTTIME);
+
+    tmp = "*5\r\n+OK\r\n$6\r\nlvxiao\r\n-UNKNOW ERROR\r\n:1\r\n$1\r\nJ\r\n";
+    sz = strlen(tmp);
+    strncpy(&reader->buf[reader->sz], tmp, sz);
+    reader->sz += sz;
+    r = redis_getreply(&reply);
+    assert(r == REDIS_NEXTTIME);
+
+    tmp = "*3\r\n$3\r\nabc\r\n$6\r\nlvxiao\r\n$4\r\n1234\r\n";
+    sz = strlen(tmp);
+    strncpy(&reader->buf[reader->sz], tmp, sz);
+    reader->sz += sz;
+    r = redis_getreply(&reply);
+    assert(r == REDIS_SUCCEED);
+
+    _walk_reply(reply.stack[0], 0);
+
+    // 15
+    printf("-------------------------15\n");
+    for (i=1; i<100; ++i) {
+        _test_redisstep(&reply, i, 0);
+    }
+  
+    printf("-------------------------16\n");
+    for (i=1; i<100; ++i) {
+        srand(time(NULL) + 1);
+        _test_redisstep(&reply, i, 1);
+    }
+
+    // 17
+    printf("-----------17\n");
+    redis_resetreply(&reply); 
+
+    tmp = "*";
+    sz = strlen(tmp);
+    strncpy(&reader->buf[reader->sz], tmp, sz);
+    reader->sz += sz;
+    r = redis_getreply(&reply);
+    assert(r == REDIS_NEXTTIME);
+
+    tmp = "2\r";
+    sz = strlen(tmp);
+    strncpy(&reader->buf[reader->sz], tmp, sz);
+    reader->sz += sz;
+    r = redis_getreply(&reply);
+    assert(r == REDIS_NEXTTIME);
+
+    tmp = "\n";
+    sz = strlen(tmp);
+    strncpy(&reader->buf[reader->sz], tmp, sz);
+    reader->sz += sz;
+    r = redis_getreply(&reply);
+    assert(r == REDIS_NEXTTIME);
+
+    tmp = "*5\r";
+    sz = strlen(tmp);
+    strncpy(&reader->buf[reader->sz], tmp, sz);
+    reader->sz += sz;
+    r = redis_getreply(&reply);
+    assert(r == REDIS_NEXTTIME);
+
+    tmp = "\n+OK\r\n$6\r\nlvxiao\r\n-UNK";
+    sz = strlen(tmp);
+    strncpy(&reader->buf[reader->sz], tmp, sz);
+    reader->sz += sz;
+    r = redis_getreply(&reply);
+    assert(r == REDIS_NEXTTIME);
+
+    tmp = "NOW ERROR\r\n:1\r\n$1";
+    sz = strlen(tmp);
+    strncpy(&reader->buf[reader->sz], tmp, sz);
+    reader->sz += sz;
+    r = redis_getreply(&reply);
+    assert(r == REDIS_NEXTTIME);
+
+    tmp = "\r\nJ\r\n*3";
+    sz = strlen(tmp);
+    strncpy(&reader->buf[reader->sz], tmp, sz);
+    reader->sz += sz;
+    r = redis_getreply(&reply);
+    assert(r == REDIS_NEXTTIME);
+ 
+    tmp = "\r\n$3\r\nabc\r\n$6\r\nlvxiao\r\n$4\r\n12";
+    sz = strlen(tmp);
+    strncpy(&reader->buf[reader->sz], tmp, sz);
+    reader->sz += sz;
+    r = redis_getreply(&reply);
+    assert(r == REDIS_NEXTTIME);
+
+    tmp = "34\r\n$4\r\nabcd";
+    sz = strlen(tmp);
+    strncpy(&reader->buf[reader->sz], tmp, sz);
+    reader->sz += sz;
+    r = redis_getreply(&reply);
+    assert(r == REDIS_SUCCEED);
+
+    _walk_reply(reply.stack[0], 0);
+
+    redis_resetreply(&reply);
+
+    r = redis_getreply(&reply);
+    assert(r == REDIS_NEXTTIME);
+
+    tmp = "\r\n";
+    sz = strlen(tmp);
+    strncpy(&reader->buf[reader->sz], tmp, sz);
+    reader->sz += sz;
+    r = redis_getreply(&reply);
+    assert(r == REDIS_SUCCEED);
+    _walk_reply(reply.stack[0], 0);
+
+    redis_finireply(&reply);
+}
+
 int 
 main(int argc, char* argv[]) {
     //test_lur();
     //test_args();
-    test_freeid();
-    test_hashid();
-    test_gfreeid();
+    //test_freeid();
+    //test_hashid();
+    //test_gfreeid();
+    test_redis();
     return 0;
 }

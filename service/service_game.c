@@ -232,8 +232,9 @@ _try_gameover(struct game* self, struct room* ro) {
     int n = _count_onlinemember(ro);
     if (n == 0) {
         _gamedestroy(self, ro);
+        return true;
     }
-    return true;
+    return false;
 }
 static void
 _notify_gameinfo(struct gate_client* c, struct room* ro) {
@@ -302,6 +303,7 @@ _logout(struct game* self, struct gate_client* c, bool active) {
                     _try_gameover(self, ro);
                 }
             }
+            // todo: multicast logout
         }
     }
 }
