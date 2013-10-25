@@ -1,24 +1,22 @@
-[7874 131025-18:32:36.604] INFO: load service log ok
-[7874 131025-18:32:36.604] INFO: host log level DEBUG
-[7874 131025-18:32:36.604] INFO: load service dispatcher ok
-[7874 131025-18:32:36.604] INFO: load service node ok
-[7874 131025-18:32:36.604] INFO: load service centerc ok
-[7874 131025-18:32:36.604] INFO: load service cmdctl ok
-[7874 131025-18:32:36.604] INFO: load service gate ok
-[7874 131025-18:32:36.604] INFO: load service game ok
-[7874 131025-18:32:36.604] INFO: node register, NODE[game0000,T02,C-001,L0.0.0.0:0,N127.0.0.1:8200,G192.168.1.140:18200]
-[7874 131025-18:32:36.604] INFO: listen on 127.0.0.1:8200
-[7874 131025-18:32:36.604] INFO: connect to 127.0.0.1:8000 ...
-[7874 131025-18:32:36.604] INFO: connect to center ok
-[7874 131025-18:32:36.604] INFO: listen on 192.168.1.140:18200
-[7874 131025-18:32:36.604] INFO: gate_clientmax = 5000
-[7874 131025-18:32:36.604] INFO: Shaco start
-[7874 131025-18:32:36.905] DEBUG: Receive msg:2, from center, to service:node
-[7874 131025-18:32:36.905] INFO: node register, NODE[center0000,T00,C0001,L127.0.0.1:8000,N127.0.0.1:8000,G127.0.0.1:18000]
-[7874 131025-18:32:36.905] DEBUG: Receive msg:4, from center, to service:node
-[7874 131025-18:32:36.905] INFO: connect to 127.0.0.1:8300 ...
-[7874 131025-18:32:36.929] INFO: connect to node ok
-[7874 131025-18:32:36.932] DEBUG: Receive msg:2, from world, to service:node
-[7874 131025-18:32:36.932] INFO: node register, NODE[world0000,T03,C0003,L127.0.0.1:8300,N127.0.0.1:8300,G0.0.0.0:0]
-[7874 131025-18:33:32.628] WARNING: Received SIGTERM, schedule stop ...
-[7874 131025-18:33:32.628] INFO: Shaco stop
+[12630 131025-20:15:34.189] INFO: load service log ok
+[12630 131025-20:15:34.189] INFO: host log level DEBUG
+[12630 131025-20:15:34.189] INFO: load service dispatcher ok
+[12630 131025-20:15:34.189] INFO: load service node ok
+[12630 131025-20:15:34.189] INFO: load service centerc ok
+[12630 131025-20:15:34.189] INFO: load service cmdctl ok
+[12630 131025-20:15:34.189] INFO: load service gate ok
+[12630 131025-20:15:34.189] INFO: load service game ok
+[12630 131025-20:15:34.189] INFO: node register, NODE[game0000,T02,C-001,L0.0.0.0:0,N127.0.0.1:8200,G192.168.1.140:18200]
+[12630 131025-20:15:34.189] INFO: listen on 127.0.0.1:8200
+[12630 131025-20:15:34.189] INFO: connect to 127.0.0.1:8000 ...
+[12630 131025-20:15:34.189] INFO: connect to center ok
+[12630 131025-20:15:34.189] INFO: listen on 192.168.1.140:18200
+[12630 131025-20:15:34.189] INFO: gate_clientmax = 5000
+[12630 131025-20:15:34.189] INFO: Shaco start
+[12630 131025-20:15:34.489] DEBUG: Receive msg:2, from center, to service:node
+[12630 131025-20:15:34.489] INFO: node register, NODE[center0000,T00,C0001,L127.0.0.1:8000,N127.0.0.1:8000,G127.0.0.1:18000]
+[12630 131025-20:15:34.489] DEBUG: Receive msg:4, from center, to service:node
+[12630 131025-20:15:34.489] INFO: connect to 127.0.0.1:8300 ...
+[12630 131025-20:15:34.513] INFO: connect to node ok
+[12630 131025-20:15:34.516] DEBUG: Receive msg:2, from world, to service:node
+[12630 131025-20:15:34.516] INFO: node register, NODE[world0000,T03,C0003,L127.0.0.1:8300,N127.0.0.1:8300,G0.0.0.0:0]

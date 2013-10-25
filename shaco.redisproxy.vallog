@@ -1,174 +1,121 @@
-==7861== Memcheck, a memory error detector
-==7861== Copyright (C) 2002-2010, and GNU GPL'd, by Julian Seward et al.
-==7861== Using Valgrind-3.6.0.SVN-Debian and LibVEX; rerun with -h for copyright info
-==7861== Command: ./shaco config_redisproxy.lua -d
-==7861== Parent PID: 7853
-==7861== 
---7861-- 
---7861-- Valgrind options:
---7861--    --suppressions=/usr/lib/valgrind/debian-libc6-dbg.supp
---7861--    -v
---7861--    --leak-check=full
---7861--    --show-reachable=yes
---7861--    --suppressions=shaco.supp
---7861--    --log-file=shaco.redisproxy.vallog
---7861-- Contents of /proc/version:
---7861--   Linux version 2.6.32-5-amd64 (Debian 2.6.32-46) (dannf@debian.org) (gcc version 4.3.5 (Debian 4.3.5-4) ) #1 SMP Sun Sep 23 10:07:46 UTC 2012
---7861-- Arch and hwcaps: AMD64, amd64-sse3-cx16
---7861-- Page sizes: currently 4096, max supported 4096
---7861-- Valgrind library directory: /usr/lib/valgrind
---7861-- Reading syms from /home/lvxiaojun/shaco/shaco (0x400000)
---7861-- Reading syms from /lib/ld-2.11.3.so (0x4000000)
---7861--   Considering /lib/ld-2.11.3.so ..
---7861--   .. CRC mismatch (computed e1ef7574 wanted d51f0f40)
---7861--   Considering /usr/lib/debug/lib/ld-2.11.3.so ..
---7861--   .. CRC is valid
---7861-- Reading syms from /usr/lib/valgrind/memcheck-amd64-linux (0x38000000)
---7861--    object doesn't have a dynamic symbol table
---7861-- Reading suppressions file: /usr/lib/valgrind/debian-libc6-dbg.supp
---7861-- Reading suppressions file: shaco.supp
---7861-- Reading suppressions file: /usr/lib/valgrind/default.supp
---7861-- REDIR: 0x4016660 (strlen) redirected to 0x380408a7 (vgPlain_amd64_linux_REDIR_FOR_strlen)
---7861-- Reading syms from /usr/lib/valgrind/vgpreload_core-amd64-linux.so (0x4a20000)
---7861-- Reading syms from /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so (0x4c21000)
-==7861== WARNING: new redirection conflicts with existing -- ignoring it
---7861--     new: 0x04016660 (strlen              ) R-> 0x04c25850 strlen
---7861-- REDIR: 0x40164d0 (index) redirected to 0x4c25460 (index)
---7861-- REDIR: 0x4016550 (strcmp) redirected to 0x4c25e30 (strcmp)
---7861-- Reading syms from /home/lvxiaojun/shaco/net.so (0x4e29000)
---7861-- Reading syms from /home/lvxiaojun/shaco/lur.so (0x502d000)
---7861-- Reading syms from /home/lvxiaojun/shaco/base.so (0x526c000)
---7861-- Reading syms from /lib/libm-2.11.3.so (0x546d000)
---7861--   Considering /lib/libm-2.11.3.so ..
---7861--   .. CRC mismatch (computed 25a2c360 wanted 8c5ca758)
---7861--   Considering /usr/lib/debug/lib/libm-2.11.3.so ..
---7861--   .. CRC is valid
---7861-- Reading syms from /lib/libdl-2.11.3.so (0x56ef000)
---7861--   Considering /lib/libdl-2.11.3.so ..
---7861--   .. CRC mismatch (computed abc91181 wanted fe19b8f3)
---7861--   Considering /usr/lib/debug/lib/libdl-2.11.3.so ..
---7861--   .. CRC is valid
---7861-- Reading syms from /lib/librt-2.11.3.so (0x58f3000)
---7861--   Considering /lib/librt-2.11.3.so ..
---7861--   .. CRC mismatch (computed 8844bb6d wanted d7c320c6)
---7861--   Considering /usr/lib/debug/lib/librt-2.11.3.so ..
---7861--   .. CRC is valid
---7861-- Reading syms from /lib/libc-2.11.3.so (0x5afb000)
---7861--   Considering /lib/libc-2.11.3.so ..
---7861--   .. CRC mismatch (computed 2137ef5d wanted 0a691870)
---7861--   Considering /usr/lib/debug/lib/libc-2.11.3.so ..
---7861--   .. CRC is valid
---7861-- Reading syms from /lib/libpthread-2.11.3.so (0x5e5d000)
---7861--   Considering /lib/libpthread-2.11.3.so ..
---7861--   .. CRC mismatch (computed 7238dc0c wanted 8666a25b)
---7861--   Considering /usr/lib/debug/lib/libpthread-2.11.3.so ..
---7861--   .. CRC is valid
---7861-- REDIR: 0x5b789e0 (__GI_strrchr) redirected to 0x4c25280 (__GI_strrchr)
---7864-- REDIR: 0x5b71c00 (malloc) redirected to 0x4c24466 (malloc)
---7861-- REDIR: 0x5b71b20 (free) redirected to 0x4c24076 (free)
---7864-- REDIR: 0x5b79720 (memset) redirected to 0x4c26a70 (memset)
---7864-- REDIR: 0x5b72c50 (realloc) redirected to 0x4c24517 (realloc)
---7864-- REDIR: 0xffffffffff600400 (???) redirected to 0x3804089d (vgPlain_amd64_linux_REDIR_FOR_vtime)
-==7861== 
-==7861== HEAP SUMMARY:
-==7861==     in use at exit: 0 bytes in 0 blocks
-==7861==   total heap usage: 0 allocs, 0 frees, 0 bytes allocated
-==7861== 
-==7861== All heap blocks were freed -- no leaks are possible
-==7861== 
-==7861== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 4 from 4)
---7861-- 
---7861-- used_suppression:      2 dl-hack3-cond-1
---7861-- used_suppression:      2 glibc-2.5.x-on-SUSE-10.2-(PPC)-2a
-==7861== 
-==7861== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 4 from 4)
---7864-- REDIR: 0x5b7ab30 (memcpy) redirected to 0x4c25f00 (memcpy)
---7864-- REDIR: 0x5b76ef0 (strlen) redirected to 0x4a205ac (_vgnU_ifunc_wrapper)
-==7864== WARNING: new redirection conflicts with existing -- ignoring it
---7864--     new: 0x05b76f20 (__GI_strlen         ) R-> 0x04c257f0 strlen
---7864-- REDIR: 0x5b76f20 (__GI_strlen) redirected to 0x4c25810 (__GI_strlen)
---7864-- REDIR: 0x5b71b20 (free) redirected to 0x4c24076 (free)
---7864-- REDIR: 0x5b79160 (bcmp) redirected to 0x4c26690 (bcmp)
---7864-- REDIR: 0x5b75400 (index) redirected to 0x4a205ac (_vgnU_ifunc_wrapper)
-==7864== WARNING: new redirection conflicts with existing -- ignoring it
---7864--     new: 0x05b75430 (__GI_strchr         ) R-> 0x04c25320 index
---7864-- REDIR: 0x5b75430 (__GI_strchr) redirected to 0x4c25360 (__GI_strchr)
---7864-- REDIR: 0x5b7a250 (mempcpy) redirected to 0x4c26bc0 (mempcpy)
-==7864== WARNING: new redirection conflicts with existing -- ignoring it
---7864--     new: 0x05b76f20 (__GI_strlen         ) R-> 0x04c257f0 strlen
---7864-- REDIR: 0x5b76940 (strcpy) redirected to 0x4a205ac (_vgnU_ifunc_wrapper)
---7864-- REDIR: 0x5c05a60 (???) redirected to 0x4c25870 (strcpy)
-==7864== WARNING: new redirection conflicts with existing -- ignoring it
---7864--     new: 0x05b75430 (__GI_strchr         ) R-> 0x04c25320 index
---7864-- REDIR: 0x5b7bf10 (strchrnul) redirected to 0x4c26b50 (strchrnul)
---7864-- REDIR: 0x5b71190 (calloc) redirected to 0x4c23729 (calloc)
---7864-- Reading syms from /home/lvxiaojun/shaco/service_log.so (0x6479000)
---7864-- REDIR: 0x4017160 (stpcpy) redirected to 0x4c269a0 (stpcpy)
---7864-- REDIR: 0x5b76970 (__GI_strcpy) redirected to 0x4c25940 (__GI_strcpy)
---7864-- REDIR: 0x5b754f0 (__GI_strcmp) redirected to 0x4c25de0 (__GI_strcmp)
---7864-- REDIR: 0x5b7bec0 (__GI___rawmemchr) redirected to 0x4c26ba0 (__GI___rawmemchr)
---7864-- REDIR: 0x5b754b0 (strcmp) redirected to 0x4a205ac (_vgnU_ifunc_wrapper)
---7864-- REDIR: 0x5c09000 (__strcmp_ssse3) redirected to 0x4c25d90 (strcmp)
---7864-- Reading syms from /home/lvxiaojun/shaco/service_dispatcher.so (0x667a000)
---7864-- Reading syms from /home/lvxiaojun/shaco/service_node.so (0xa6fd000)
---7864-- Reading syms from /home/lvxiaojun/shaco/service_centerc.so (0xa8ff000)
-==7864== WARNING: new redirection conflicts with existing -- ignoring it
---7864--     new: 0x05b75430 (__GI_strchr         ) R-> 0x04c25320 index
---7864-- REDIR: 0x5b78980 (strncpy) redirected to 0x4a205ac (_vgnU_ifunc_wrapper)
---7864-- Reading syms from /home/lvxiaojun/shaco/service_cmdctl.so (0xab01000)
---7864-- Reading syms from /home/lvxiaojun/shaco/service_redisproxy.so (0xad03000)
---7864-- Reading syms from /home/lvxiaojun/shaco/redis.so (0xaf05000)
---7864-- REDIR: 0x5c06480 (???) redirected to 0x4c25a10 (strncpy)
---7864-- Discarding syms at 0x6479810-0x6479b48 in /home/lvxiaojun/shaco/service_log.so due to munmap()
---7864-- Discarding syms at 0xa6fdef0-0xa6fe548 in /home/lvxiaojun/shaco/service_node.so due to munmap()
---7864-- Discarding syms at 0x667aa70-0x667af08 in /home/lvxiaojun/shaco/service_dispatcher.so due to munmap()
---7864-- Discarding syms at 0xa8ffb00-0xa8ffeb8 in /home/lvxiaojun/shaco/service_centerc.so due to munmap()
---7864-- Discarding syms at 0xab02040-0xab02648 in /home/lvxiaojun/shaco/service_cmdctl.so due to munmap()
---7864-- Discarding syms at 0xad03dc0-0xad04678 in /home/lvxiaojun/shaco/service_redisproxy.so due to munmap()
---7864-- Discarding syms at 0xaf058c0-0xaf06548 in /home/lvxiaojun/shaco/redis.so due to munmap()
-==7864== 
-==7864== HEAP SUMMARY:
-==7864==     in use at exit: 200 bytes in 2 blocks
-==7864==   total heap usage: 467 allocs, 465 frees, 65,993,232 bytes allocated
-==7864== 
-==7864== Searching for pointers to 2 not-freed blocks
-==7864== Checked 130,416 bytes
-==7864== 
-==7864== 32 bytes in 1 blocks are still reachable in loss record 1 of 2
-==7864==    at 0x4C2380C: calloc (vg_replace_malloc.c:467)
-==7864==    by 0x56F035F: _dlerror_run (dlerror.c:142)
-==7864==    by 0x56EFEE0: dlopen@@GLIBC_2.2.5 (dlopen.c:88)
-==7864==    by 0x4057FC: _open (dlmodule.c:16)
-==7864==    by 0x405B7C: dlmodule_load (dlmodule.c:82)
-==7864==    by 0x403A13: service_load (host_service.c:55)
-==7864==    by 0x4045BD: host_log_init (host_log.c:54)
-==7864==    by 0x403063: host_create (host.c:106)
-==7864==    by 0x402E1A: main (host_main.c:18)
-==7864== 
-==7864== 168 bytes in 1 blocks are still reachable in loss record 2 of 2
-==7864==    at 0x4C244E8: malloc (vg_replace_malloc.c:236)
-==7864==    by 0x4011CDB: add_to_global (dl-open.c:107)
-==7864==    by 0x4012276: dl_open_worker (dl-open.c:482)
-==7864==    by 0x400D905: _dl_catch_error (dl-error.c:178)
-==7864==    by 0x4011929: _dl_open (dl-open.c:568)
-==7864==    by 0x56EFF65: dlopen_doit (dlopen.c:67)
-==7864==    by 0x400D905: _dl_catch_error (dl-error.c:178)
-==7864==    by 0x56F02EB: _dlerror_run (dlerror.c:164)
-==7864==    by 0x56EFEE0: dlopen@@GLIBC_2.2.5 (dlopen.c:88)
-==7864==    by 0x4057FC: _open (dlmodule.c:16)
-==7864==    by 0x405B7C: dlmodule_load (dlmodule.c:82)
-==7864==    by 0x403A13: service_load (host_service.c:55)
-==7864== 
-==7864== LEAK SUMMARY:
-==7864==    definitely lost: 0 bytes in 0 blocks
-==7864==    indirectly lost: 0 bytes in 0 blocks
-==7864==      possibly lost: 0 bytes in 0 blocks
-==7864==    still reachable: 200 bytes in 2 blocks
-==7864==         suppressed: 0 bytes in 0 blocks
-==7864== 
-==7864== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 25 from 7)
---7864-- 
---7864-- used_suppression:     23 dl-hack3-cond-1
---7864-- used_suppression:      2 glibc-2.5.x-on-SUSE-10.2-(PPC)-2a
-==7864== 
-==7864== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 25 from 7)
+==12617== Memcheck, a memory error detector
+==12617== Copyright (C) 2002-2010, and GNU GPL'd, by Julian Seward et al.
+==12617== Using Valgrind-3.6.0.SVN-Debian and LibVEX; rerun with -h for copyright info
+==12617== Command: ./shaco config_redisproxy.lua -d
+==12617== Parent PID: 12611
+==12617== 
+--12617-- 
+--12617-- Valgrind options:
+--12617--    --suppressions=/usr/lib/valgrind/debian-libc6-dbg.supp
+--12617--    -v
+--12617--    --leak-check=full
+--12617--    --show-reachable=yes
+--12617--    --suppressions=shaco.supp
+--12617--    --log-file=shaco.redisproxy.vallog
+--12617-- Contents of /proc/version:
+--12617--   Linux version 2.6.32-5-amd64 (Debian 2.6.32-46) (dannf@debian.org) (gcc version 4.3.5 (Debian 4.3.5-4) ) #1 SMP Sun Sep 23 10:07:46 UTC 2012
+--12617-- Arch and hwcaps: AMD64, amd64-sse3-cx16
+--12617-- Page sizes: currently 4096, max supported 4096
+--12617-- Valgrind library directory: /usr/lib/valgrind
+--12617-- Reading syms from /home/lvxiaojun/shaco/shaco (0x400000)
+--12617-- Reading syms from /lib/ld-2.11.3.so (0x4000000)
+--12617--   Considering /lib/ld-2.11.3.so ..
+--12617--   .. CRC mismatch (computed e1ef7574 wanted d51f0f40)
+--12617--   Considering /usr/lib/debug/lib/ld-2.11.3.so ..
+--12617--   .. CRC is valid
+--12617-- Reading syms from /usr/lib/valgrind/memcheck-amd64-linux (0x38000000)
+--12617--    object doesn't have a dynamic symbol table
+--12617-- Reading suppressions file: /usr/lib/valgrind/debian-libc6-dbg.supp
+--12617-- Reading suppressions file: shaco.supp
+--12617-- Reading suppressions file: /usr/lib/valgrind/default.supp
+--12617-- REDIR: 0x4016660 (strlen) redirected to 0x380408a7 (vgPlain_amd64_linux_REDIR_FOR_strlen)
+--12617-- Reading syms from /usr/lib/valgrind/vgpreload_core-amd64-linux.so (0x4a20000)
+--12617-- Reading syms from /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so (0x4c21000)
+==12617== WARNING: new redirection conflicts with existing -- ignoring it
+--12617--     new: 0x04016660 (strlen              ) R-> 0x04c25850 strlen
+--12617-- REDIR: 0x40164d0 (index) redirected to 0x4c25460 (index)
+--12617-- REDIR: 0x4016550 (strcmp) redirected to 0x4c25e30 (strcmp)
+--12617-- Reading syms from /home/lvxiaojun/shaco/net.so (0x4e29000)
+--12617-- Reading syms from /home/lvxiaojun/shaco/lur.so (0x502d000)
+--12617-- Reading syms from /home/lvxiaojun/shaco/base.so (0x526c000)
+--12617-- Reading syms from /lib/libm-2.11.3.so (0x546d000)
+--12617--   Considering /lib/libm-2.11.3.so ..
+--12617--   .. CRC mismatch (computed 25a2c360 wanted 8c5ca758)
+--12617--   Considering /usr/lib/debug/lib/libm-2.11.3.so ..
+--12617--   .. CRC is valid
+--12617-- Reading syms from /lib/libdl-2.11.3.so (0x56ef000)
+--12617--   Considering /lib/libdl-2.11.3.so ..
+--12617--   .. CRC mismatch (computed abc91181 wanted fe19b8f3)
+--12617--   Considering /usr/lib/debug/lib/libdl-2.11.3.so ..
+--12617--   .. CRC is valid
+--12617-- Reading syms from /lib/librt-2.11.3.so (0x58f3000)
+--12617--   Considering /lib/librt-2.11.3.so ..
+--12617--   .. CRC mismatch (computed 8844bb6d wanted d7c320c6)
+--12617--   Considering /usr/lib/debug/lib/librt-2.11.3.so ..
+--12617--   .. CRC is valid
+--12617-- Reading syms from /lib/libc-2.11.3.so (0x5afb000)
+--12617--   Considering /lib/libc-2.11.3.so ..
+--12617--   .. CRC mismatch (computed 2137ef5d wanted 0a691870)
+--12617--   Considering /usr/lib/debug/lib/libc-2.11.3.so ..
+--12617--   .. CRC is valid
+--12617-- Reading syms from /lib/libpthread-2.11.3.so (0x5e5d000)
+--12617--   Considering /lib/libpthread-2.11.3.so ..
+--12617--   .. CRC mismatch (computed 7238dc0c wanted 8666a25b)
+--12617--   Considering /usr/lib/debug/lib/libpthread-2.11.3.so ..
+--12617--   .. CRC is valid
+--12617-- REDIR: 0x5b789e0 (__GI_strrchr) redirected to 0x4c25280 (__GI_strrchr)
+--12620-- REDIR: 0x5b71c00 (malloc) redirected to 0x4c24466 (malloc)
+--12617-- REDIR: 0x5b71b20 (free) redirected to 0x4c24076 (free)
+--12620-- REDIR: 0x5b79720 (memset) redirected to 0x4c26a70 (memset)
+--12620-- REDIR: 0x5b72c50 (realloc) redirected to 0x4c24517 (realloc)
+--12620-- REDIR: 0xffffffffff600400 (???) redirected to 0x3804089d (vgPlain_amd64_linux_REDIR_FOR_vtime)
+==12617== 
+==12617== HEAP SUMMARY:
+==12617==     in use at exit: 0 bytes in 0 blocks
+==12617==   total heap usage: 0 allocs, 0 frees, 0 bytes allocated
+==12617== 
+==12617== All heap blocks were freed -- no leaks are possible
+==12617== 
+==12617== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 4 from 4)
+--12617-- 
+--12617-- used_suppression:      2 dl-hack3-cond-1
+--12617-- used_suppression:      2 glibc-2.5.x-on-SUSE-10.2-(PPC)-2a
+==12617== 
+==12617== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 4 from 4)
+--12620-- REDIR: 0x5b7ab30 (memcpy) redirected to 0x4c25f00 (memcpy)
+--12620-- REDIR: 0x5b76ef0 (strlen) redirected to 0x4a205ac (_vgnU_ifunc_wrapper)
+==12620== WARNING: new redirection conflicts with existing -- ignoring it
+--12620--     new: 0x05b76f20 (__GI_strlen         ) R-> 0x04c257f0 strlen
+--12620-- REDIR: 0x5b76f20 (__GI_strlen) redirected to 0x4c25810 (__GI_strlen)
+--12620-- REDIR: 0x5b71b20 (free) redirected to 0x4c24076 (free)
+--12620-- REDIR: 0x5b79160 (bcmp) redirected to 0x4c26690 (bcmp)
+--12620-- REDIR: 0x5b75400 (index) redirected to 0x4a205ac (_vgnU_ifunc_wrapper)
+==12620== WARNING: new redirection conflicts with existing -- ignoring it
+--12620--     new: 0x05b75430 (__GI_strchr         ) R-> 0x04c25320 index
+--12620-- REDIR: 0x5b75430 (__GI_strchr) redirected to 0x4c25360 (__GI_strchr)
+--12620-- REDIR: 0x5b7a250 (mempcpy) redirected to 0x4c26bc0 (mempcpy)
+==12620== WARNING: new redirection conflicts with existing -- ignoring it
+--12620--     new: 0x05b76f20 (__GI_strlen         ) R-> 0x04c257f0 strlen
+--12620-- REDIR: 0x5b76940 (strcpy) redirected to 0x4a205ac (_vgnU_ifunc_wrapper)
+--12620-- REDIR: 0x5c05a60 (???) redirected to 0x4c25870 (strcpy)
+==12620== WARNING: new redirection conflicts with existing -- ignoring it
+--12620--     new: 0x05b75430 (__GI_strchr         ) R-> 0x04c25320 index
+--12620-- REDIR: 0x5b7bf10 (strchrnul) redirected to 0x4c26b50 (strchrnul)
+--12620-- REDIR: 0x5b71190 (calloc) redirected to 0x4c23729 (calloc)
+--12620-- Reading syms from /home/lvxiaojun/shaco/service_log.so (0x6479000)
+--12620-- REDIR: 0x4017160 (stpcpy) redirected to 0x4c269a0 (stpcpy)
+--12620-- REDIR: 0x5b76970 (__GI_strcpy) redirected to 0x4c25940 (__GI_strcpy)
+--12620-- REDIR: 0x5b754f0 (__GI_strcmp) redirected to 0x4c25de0 (__GI_strcmp)
+--12620-- REDIR: 0x5b7bec0 (__GI___rawmemchr) redirected to 0x4c26ba0 (__GI___rawmemchr)
+--12620-- REDIR: 0x5b754b0 (strcmp) redirected to 0x4a205ac (_vgnU_ifunc_wrapper)
+--12620-- REDIR: 0x5c09000 (__strcmp_ssse3) redirected to 0x4c25d90 (strcmp)
+--12620-- Reading syms from /home/lvxiaojun/shaco/service_dispatcher.so (0x667a000)
+--12620-- Reading syms from /home/lvxiaojun/shaco/service_node.so (0xa6fd000)
+--12620-- Reading syms from /home/lvxiaojun/shaco/service_centerc.so (0xa8ff000)
+==12620== WARNING: new redirection conflicts with existing -- ignoring it
+--12620--     new: 0x05b75430 (__GI_strchr         ) R-> 0x04c25320 index
+--12620-- REDIR: 0x5b78980 (strncpy) redirected to 0x4a205ac (_vgnU_ifunc_wrapper)
+--12620-- Reading syms from /home/lvxiaojun/shaco/service_cmdctl.so (0xab01000)
+--12620-- Reading syms from /home/lvxiaojun/shaco/service_redisproxy.so (0xad03000)
+--12620-- Reading syms from /home/lvxiaojun/shaco/redis.so (0xaf05000)
+--12620-- REDIR: 0x5c06480 (???) redirected to 0x4c25a10 (strncpy)

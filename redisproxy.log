@@ -1,20 +1,18 @@
-[7864 131025-18:32:34.622] INFO: load service log ok
-[7864 131025-18:32:34.622] INFO: host log level INFO
-[7864 131025-18:32:34.622] INFO: load service dispatcher ok
-[7864 131025-18:32:34.622] INFO: load service node ok
-[7864 131025-18:32:34.622] INFO: load service centerc ok
-[7864 131025-18:32:34.622] INFO: load service cmdctl ok
-[7864 131025-18:32:34.622] INFO: load service redisproxy ok
-[7864 131025-18:32:34.622] INFO: node register, NODE[redisproxy0000,T04,C-001,L0.0.0.0:0,N127.0.0.1:8400,G0.0.0.0:0]
-[7864 131025-18:32:34.622] INFO: listen on 127.0.0.1:8400
-[7864 131025-18:32:34.622] INFO: connect to 127.0.0.1:8000 ...
-[7864 131025-18:32:34.622] INFO: connect to center ok
-[7864 131025-18:32:34.622] INFO: connect to redis 127.0.0.1:6379 ...
-[7864 131025-18:32:34.622] INFO: connect to redis ok
-[7864 131025-18:32:34.622] INFO: Shaco start
-[7864 131025-18:32:34.926] INFO: node register, NODE[center0000,T00,C0001,L127.0.0.1:8000,N127.0.0.1:8000,G127.0.0.1:18000]
-[7864 131025-18:32:35.748] INFO: connect to 127.0.0.1:8300 ...
-[7864 131025-18:32:35.757] INFO: connect to node ok
-[7864 131025-18:32:35.908] INFO: node register, NODE[world0000,T03,C0003,L127.0.0.1:8300,N127.0.0.1:8300,G0.0.0.0:0]
-[7864 131025-18:33:32.628] WARNING: Received SIGTERM, schedule stop ...
-[7864 131025-18:33:32.628] INFO: Shaco stop
+[12620 131025-20:15:31.710] INFO: load service log ok
+[12620 131025-20:15:31.710] INFO: host log level INFO
+[12620 131025-20:15:31.710] INFO: load service dispatcher ok
+[12620 131025-20:15:31.710] INFO: load service node ok
+[12620 131025-20:15:31.710] INFO: load service centerc ok
+[12620 131025-20:15:31.710] INFO: load service cmdctl ok
+[12620 131025-20:15:31.710] INFO: load service redisproxy ok
+[12620 131025-20:15:31.710] INFO: node register, NODE[redisproxy0000,T04,C-001,L0.0.0.0:0,N127.0.0.1:8400,G0.0.0.0:0]
+[12620 131025-20:15:31.710] INFO: listen on 127.0.0.1:8400
+[12620 131025-20:15:31.710] INFO: connect to 127.0.0.1:8000 ...
+[12620 131025-20:15:31.710] INFO: connect to center ok
+[12620 131025-20:15:31.710] INFO: connect to redis 127.0.0.1:6379 ...
+[12620 131025-20:15:31.710] INFO: connect to redis ok
+[12620 131025-20:15:31.710] INFO: Shaco start
+[12620 131025-20:15:32.024] INFO: node register, NODE[center0000,T00,C0001,L127.0.0.1:8000,N127.0.0.1:8000,G127.0.0.1:18000]
+[12620 131025-20:15:33.310] INFO: connect to 127.0.0.1:8300 ...
+[12620 131025-20:15:33.318] INFO: connect to node ok
+[12620 131025-20:15:33.472] INFO: node register, NODE[world0000,T03,C0003,L127.0.0.1:8300,N127.0.0.1:8300,G0.0.0.0:0]

@@ -5,54 +5,61 @@ SERVERS="redisproxy world game gate"
 ls() {
     ps -ef |grep shaco
 }
-
-startone() { 
-    echo "start ${1}"
-    ./shaco config_${1}.lua -d > ${1}.log
+startone() {
+    if [ $MEMCHECK -eq 0 ]
+    then
+        echo "start ${1}"
+        ./shaco config_${1}.lua -d > ${1}.log
+    else
+        echo "start-memcheck ${1}"
+        valgrind -v \
+        --leak-check=full \
+        --show-reachable=yes \
+        --suppressions=shaco.supp \
+        --log-file=shaco.${1}.vallog \
+        ./shaco config_${1}.lua -d > ${1}.log
+    fi
     sleep ${2}
 }
 startall() {
-    ls 
     startone center 2
     for S in $SERVERS;do
-        startone $S 0.2
+        startone $S 0.5
     done
-    sleep 0.1
+    sleep 1
     ls
 }
 start() {
     for S in $@;do
-        startone $S 0.2
+        startone $S 0.5
     done
-    sleep 0.1
     ls
 }
-
-startonemem() {
-    echo "start-memcheck ${1}"
-    valgrind -v --leak-check=full --show-reachable=yes --suppressions=shaco.supp --log-file=shaco.${1}.vallog ./shaco config_${1}.lua -d > ${1}.log
-    sleep ${2}
-}
-startallmem() {
-    ls 
-    startonemem center 2
-    for S in $SERVERS;do
-        startonemem $S 0.2
-    done
-    sleep 0.1
-    ls
-}
-startmem() {
-    for S in $@;do
-        startonemem $S 0.2
-    done
-    sleep 0.1
-    ls
+stop() {
+    if [ $MEMCHECK -eq 0 ]
+    then pkill -2 shaco
+    else pkill mem
+    fi
 }
 
-USAGE="Usage: shaco-foot [startall[mem]] [start[mem] [svr .. ]] [stop[mem]] [ls]"
+USAGE="Usage: shaco-foot [startall] [start [svr .. ]] [stop] [ls] -m"
+MEMCHECK=0
+CMD=$1
+shift
+while getopts ":m" optname
+do
+    case "$optname" in
+    "m")
+        MEMCHECK=1
+        echo [memcheck mode]
+        ;;
+    *)
+        #echo shout not be here
+        ;;
+    esac
+done
 
-case "$1" in
+case "$CMD" in
 startall)
     startall
     ;;
@@ -60,18 +67,8 @@ start)
     shift
     start "$@"
     ;;
-startallmem)
-    startallmem
-    ;;
-startmem)
-    shift
-    startmem "$@"
-    ;;
 stop)
-    pkill -2 shaco
-    ;;
-stopmem)
-    pkill mem
+    stop
     ;;
 ls)
     ls
