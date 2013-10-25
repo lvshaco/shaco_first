@@ -86,7 +86,7 @@ _read(struct gate* self, struct gate_client* c, struct net_message* nm) {
         if (um->msgsz > UM_CLIMAX) {
             host_net_close_socket(nm->connid);
             nm->type = NETE_SOCKERR;
-            nm->error = -2;
+            nm->error = NET_ERR_MSG;
             service_notify_net(nm->ud, nm);
             break;
         }

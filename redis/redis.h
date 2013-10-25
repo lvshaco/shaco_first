@@ -2,8 +2,8 @@
 #define __redis_h__
 
 #include <stdint.h>
+#include <stdbool.h>
 
-#define REDIS_BUF_MAX 16*1024
 #define DEPTH 7
 
 #define REDIS_REPLY_UNDO 0
@@ -19,7 +19,7 @@
 #define REDIS_NEXTTIME 2
 
 #define REDIS_REPLYBUF(reply) ((reply)->reader.buf+(reply)->reader.sz)
-#define REDIS_REPLYSPACE(reply) (REDIS_BUF_MAX - (reply)->reader.sz)
+#define REDIS_REPLYSPACE(reply) ((reply)->reader.cap - (reply)->reader.sz)
 
 union redis_value {
     uint64_t u;
@@ -46,7 +46,9 @@ struct redis_replyitempool {
 struct redis_reader {
     int sz;
     int pos;
-    char buf[REDIS_BUF_MAX]; 
+    int cap; 
+    char* buf;
+    bool my;
 };
 
 struct redis_reply {
@@ -58,9 +60,11 @@ struct redis_reply {
 };
 
 int  redis_getreply(struct redis_reply* reply);
-int  redis_initreply(struct redis_reply* reply, int max);
+int  redis_initreply(struct redis_reply* reply, int max, int bufcap);
 void redis_finireply(struct redis_reply* reply);
 void redis_resetreply(struct redis_reply* reply);
+void redis_resetreplybuf(struct redis_reply* reply, char* buf, int cap);
+
 void redis_walkreply(struct redis_reply* reply);
 
 #endif

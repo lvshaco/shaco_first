@@ -13,6 +13,7 @@
 #define NETE_CONN_THEN_READ 6
 #define NETE_TIMEOUT 7
 #define NETE_LOGOUT 8
+#define NETE_REDISREPLY 9
 
 #define NETUT_TRUST 0 // or UNTRUST
 

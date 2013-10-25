@@ -135,21 +135,28 @@ _connect(const char* addr, uint16_t port) {
 }
 
 int main(int argc, char* argv[]) {
+    const char* addr = "127.0.0.1";
+    int port = 18000;
+/*
     if (argc < 3) {
         printf("usage: %s ip port\n", argv[0]);
         return 1;
     }
-
-    const char* addr = argv[1];
-    int port = strtol(argv[2], NULL, 10);
+*/
+    if (argc > 2) {
+        addr = argv[1];
+        port = strtol(argv[2], NULL, 10);
+    }
+        
     struct client* c;
     int fd;
-    
     fd = _connect(addr, port);
     if (fd == -1) {
         printf("%s\n", strerror(errno));
         return 1;
     }
+    printf("connect to %s:%d\n", addr, port);
+
     c = malloc(sizeof(*c)); 
     c->fd = fd;
 

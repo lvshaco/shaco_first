@@ -1,0 +1,82 @@
+#!/bin/bash
+
+SERVERS="redisproxy world game gate"
+
+ls() {
+    ps -ef |grep shaco
+}
+
+startone() { 
+    echo "start ${1}"
+    ./shaco config_${1}.lua -d > ${1}.log
+    sleep ${2}
+}
+startall() {
+    ls 
+    startone center 2
+    for S in $SERVERS;do
+        startone $S 0.2
+    done
+    sleep 0.1
+    ls
+}
+start() {
+    for S in $@;do
+        startone $S 0.2
+    done
+    sleep 0.1
+    ls
+}
+
+startonemem() {
+    echo "start-memcheck ${1}"
+    valgrind -v --leak-check=full --show-reachable=yes --suppressions=shaco.supp --log-file=shaco.${1}.vallog ./shaco config_${1}.lua -d > ${1}.log
+    sleep ${2}
+}
+startallmem() {
+    ls 
+    startonemem center 2
+    for S in $SERVERS;do
+        startonemem $S 0.2
+    done
+    sleep 0.1
+    ls
+}
+startmem() {
+    for S in $@;do
+        startonemem $S 0.2
+    done
+    sleep 0.1
+    ls
+}
+
+USAGE="Usage: shaco-foot [startall[mem]] [start[mem] [svr .. ]] [stop[mem]] [ls]"
+
+case "$1" in
+startall)
+    startall
+    ;;
+start)
+    shift
+    start "$@"
+    ;;
+startallmem)
+    startallmem
+    ;;
+startmem)
+    shift
+    startmem "$@"
+    ;;
+stop)
+    pkill -2 shaco
+    ;;
+stopmem)
+    pkill mem
+    ;;
+ls)
+    ls
+    ;;
+*)
+    echo $USAGE
+    ;;
+esac

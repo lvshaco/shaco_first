@@ -4,6 +4,14 @@
 #include <stdint.h>
 #include "net_message.h"
 
+// must be negative, positive for system error number
+//#define OK 0
+#define NET_ERR_UNKNOW      -1
+#define NET_ERR_MSG         -2
+#define NET_ERR_NOSOCK      -3
+#define NET_ERR_CREATESOCK  -4
+#define NET_ERR_NOBUF       -5
+
 struct net;
 struct net* net_create(int max, int block_size);
 void net_free(struct net* self);

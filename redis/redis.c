@@ -58,12 +58,43 @@ _replyitempool_free(struct redis_replyitempool* pool) {
  */
 #define READ_PTR(reader) ((reader)->buf+(reader)->pos)
 static void
-_reader_init(struct redis_reader* reader) {
+_reader_setbuf(struct redis_reader* reader, char* buf, int bufcap) {
+    if (reader->my) {
+        free(reader->buf);
+    }
     reader->sz = 0;
     reader->pos = 0;
+    reader->cap = bufcap;
+    if (bufcap > 0) {
+        if (buf) {
+            reader->buf = buf;
+            reader->my = false;
+        } else {
+            reader->buf = malloc(bufcap);
+            reader->my = true; 
+        }
+    } else {
+        reader->buf = NULL;
+        reader->my = false;
+    }
 }
 
-#define _reader_fini _reader_init
+static void
+_reader_init(struct redis_reader* reader, char* buf, int bufcap) {
+    reader->my = false;
+    _reader_setbuf(reader, buf, bufcap);
+}
+
+static void
+_reader_fini(struct redis_reader* reader) {
+    reader->sz = 0;
+    reader->pos = 0;
+    if (reader->my) {
+        free(reader->buf);
+    }
+    reader->buf = NULL;
+    reader->cap = 0;
+}
 
 /*
  * redis_reply
@@ -159,7 +190,7 @@ _read_message(struct redis_reply* reply) {
     if (_readline(reader)) {
         return REDIS_NEXTTIME;
     }
-    *(READ_PTR(reader)-2) = '\0';
+    //*(READ_PTR(reader)-2) = '\0';
     item->value.len = READ_PTR(reader) - item->value.p;
     return _moveto_nextitem(reply);
 }
@@ -180,6 +211,7 @@ _read_integer(struct redis_reply* reply) {
         ASSERTD(0);
         return REDIS_ERROR;
     }
+    *(READ_PTR(reader)-2) = '\r';
     item->value.i = i;
     return _moveto_nextitem(reply);
 }
@@ -201,6 +233,7 @@ _read_bulkitem(struct redis_reply* reply) {
             ASSERTD(0);
             return REDIS_ERROR;
         }
+        *(READ_PTR(reader)-2) = '\r';
         item->value.len = i;
         item->value.p = READ_PTR(reader);
     }
@@ -212,7 +245,7 @@ _read_bulkitem(struct redis_reply* reply) {
             return REDIS_NEXTTIME;
         }
         ASSERTD(memcmp(READ_PTR(reader)-2, "\r\n", 2) == 0);
-        *(READ_PTR(reader)-2) = '\0';
+        //*(READ_PTR(reader)-2) = '\0';
     }
     return _moveto_nextitem(reply);
 }
@@ -233,6 +266,7 @@ _read_multibulkitem(struct redis_reply* reply) {
         ASSERTD(0);
         return REDIS_ERROR;
     }
+    *(READ_PTR(reader)-2) = '\r';
     item->value.i = i;
     if (i <= 0) {
         return _moveto_nextitem(reply);
@@ -282,8 +316,8 @@ exit:
 }
 
 int
-redis_initreply(struct redis_reply* reply, int max) {
-    _reader_init(&reply->reader);
+redis_initreply(struct redis_reply* reply, int max, int bufcap) {
+    _reader_init(&reply->reader, NULL, bufcap);
     _replyitempool_init(&reply->pool, max);
     memset(reply->stack, 0, sizeof(reply->stack));
     struct redis_replyitem* root = _replyitempool_alloc(&reply->pool, 1);
@@ -322,11 +356,25 @@ redis_resetreply(struct redis_reply* reply) {
     reply->stack[0] = root; 
 }
 
+void 
+redis_resetreplybuf(struct redis_reply* reply, char* buf, int sz) {
+    struct redis_reader* reader = &reply->reader;
+    _reader_setbuf(reader, buf, sz);
+    reader->sz  = sz;
+
+    _replyitempool_free(&reply->pool);
+    memset(reply->stack, 0, sizeof(reply->stack));
+    struct redis_replyitem* root = _replyitempool_alloc(&reply->pool, 1);
+    assert(root);
+    reply->level = 0;
+    reply->stack[0] = root; 
+}
+
 /*
  * dump
  */
 static void
-_printf_empty(int depth) {
+_print_empty(int depth) {
     int i;
     for (i=0; i<depth; ++i) {
         printf("|_|_"); 
@@ -334,27 +382,44 @@ _printf_empty(int depth) {
 }
 
 static void
+_print_type(char type, int depth) {
+    _print_empty(depth);
+    printf("%c", type);
+}
+
+static void
+_print_stringitem(struct redis_replyitem* item) {
+    char tmp[1024];
+    int len = item->value.len;
+    if (len >= sizeof(tmp))
+        len = sizeof(tmp)-1;
+    strncpy(tmp, item->value.p, len);
+    tmp[len] = '\0';
+    printf("%s\n", tmp);
+}
+
+static void
 _walk_reply(struct redis_replyitem* item, int depth) {
     switch (item->type) {
     case REDIS_REPLY_STATUS:
-        _printf_empty(depth);
-        printf("+%s\n", item->value.p);
+        _print_type('+', depth);
+        _print_stringitem(item);
         break;
     case REDIS_REPLY_ERROR:
-        _printf_empty(depth);
-        printf("-%s\n", item->value.p);
+        _print_type('-', depth);
+        _print_stringitem(item);
         break;
     case REDIS_REPLY_INTEGER:
-        _printf_empty(depth);
-        printf(":%ld\n", item->value.i);
+        _print_type(':', depth);
+        printf("%ld\n", item->value.i);
         break;
     case REDIS_REPLY_STRING:
-        _printf_empty(depth);
-        printf(" %s\n", item->value.p);
+        _print_type(' ', depth);
+        _print_stringitem(item);
         break;
     case REDIS_REPLY_ARRAY:
-        _printf_empty(depth);
-        printf("*%ld\n", item->value.i);
+        _print_type('*', depth);
+        printf("%ld\n", item->value.i);
         int i;
         for (i=0; i<(int)item->nchild; ++i) {
             struct redis_replyitem* sub = &item->child[i];

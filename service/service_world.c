@@ -1,5 +1,7 @@
 #include "host_service.h"
+#include "host_assert.h"
 #include "host.h"
+#include "host_timer.h"
 #include "host_dispatcher.h"
 #include "host_log.h"
 #include "host_node.h"
@@ -40,7 +42,9 @@ world_init(struct service* s) {
     int hmax = host_getint("world_hmax_pergate", cmax);
     int gmax = host_getint("world_gmax", 0);
     _allocplayers(cmax, hmax, gmax);
-    SUBSCRIBE_MSG(s->serviceid, IDUM_FORWARD);
+    SUBSCRIBE_MSG(s->serviceid, IDUM_FORWARD); 
+
+    host_timer_register(s->serviceid, 1000);
     return 0;
 }
 
@@ -91,7 +95,8 @@ _logout(struct world* self, struct player* p) {
 
 static void 
 _handlegate(struct world* self, struct node_message* nm) {
-    assert(nm->um->msgid == IDUM_FORWARD);
+    hassertlog(nm->um->msgid == IDUM_FORWARD);
+
     UM_CAST(UM_FORWARD, fw, nm->um);
     switch (fw->wrap.msgid) {
     case IDUM_LOGIN:

@@ -8,12 +8,14 @@
 #define NODE_TYPE_MIN 0
 #define NODE_CENTER 0
 #define NODE_GATE   1
-#define NODE_WORLD  2
-#define NODE_GAME   3
-#define NODE_TYPE_MAX 4
+#define NODE_GAME   2 
+#define NODE_WORLD  3 
+#define NODE_REDISPROXY 4
+#define NODE_BENCHMARKDB 5
+#define NODE_TYPE_MAX 6
 
 const char* NODE_NAMES[NODE_TYPE_MAX] = {
-    "center", "gate", "world", "game",
+    "center", "gate", "game", "world", "redisproxy", "benchmarkdb",
 };
 
 #define _NODEM_header \

@@ -1,0 +1,24 @@
+[7879 131025-18:32:37.364] INFO: load service log ok
+[7879 131025-18:32:37.364] INFO: host log level DEBUG
+[7879 131025-18:32:37.364] INFO: load service dispatcher ok
+[7879 131025-18:32:37.364] INFO: load service node ok
+[7879 131025-18:32:37.364] INFO: load service centerc ok
+[7879 131025-18:32:37.364] INFO: load service cmdctl ok
+[7879 131025-18:32:37.364] INFO: load service gate ok
+[7879 131025-18:32:37.364] INFO: load service forward ok
+[7879 131025-18:32:37.364] INFO: node register, NODE[gate0000,T01,C-001,L0.0.0.0:0,N127.0.0.1:8100,G192.168.1.140:18100]
+[7879 131025-18:32:37.364] INFO: listen on 127.0.0.1:8100
+[7879 131025-18:32:37.364] INFO: connect to 127.0.0.1:8000 ...
+[7879 131025-18:32:37.364] INFO: connect to center ok
+[7879 131025-18:32:37.364] INFO: listen on 192.168.1.140:18100
+[7879 131025-18:32:37.364] INFO: gate_clientmax = 10000
+[7879 131025-18:32:37.364] INFO: Shaco start
+[7879 131025-18:32:37.678] DEBUG: Receive msg:2, from center, to service:node
+[7879 131025-18:32:37.678] INFO: node register, NODE[center0000,T00,C0001,L127.0.0.1:8000,N127.0.0.1:8000,G127.0.0.1:18000]
+[7879 131025-18:32:37.678] DEBUG: Receive msg:4, from center, to service:node
+[7879 131025-18:32:37.678] INFO: connect to 127.0.0.1:8300 ...
+[7879 131025-18:32:37.702] INFO: connect to node ok
+[7879 131025-18:32:37.705] DEBUG: Receive msg:2, from world, to service:node
+[7879 131025-18:32:37.705] INFO: node register, NODE[world0000,T03,C0003,L127.0.0.1:8300,N127.0.0.1:8300,G0.0.0.0:0]
+[7879 131025-18:33:32.627] WARNING: Received SIGTERM, schedule stop ...
+[7879 131025-18:33:32.627] INFO: Shaco stop

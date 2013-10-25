@@ -16,13 +16,6 @@
 
 #define LISTEN_BACKLOG 511
 
-// must be negative, positive for system error number
-//#define OK 0
-#define NET_ERR_UNKNOW      -1
-#define NET_ERR_MSG         -2
-#define NET_ERR_NOSOCK      -3
-#define NET_ERR_CREATESOCK  -4
-#define NET_ERR_NOBUF       -5
 #define NETERR(err) (err) != 0 ? (err) : NET_ERR_UNKNOW;
 
 static const char* STRERROR[] = {

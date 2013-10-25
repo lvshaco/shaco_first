@@ -3,6 +3,7 @@
 #include "freeid.h"
 #include "hashid.h"
 #include "gfreeid.h"
+#include "freelist.h"
 #include "redis.h"
 #include <stdint.h>
 #include <stdarg.h>
@@ -189,48 +190,6 @@ void test_gfreeid() {
 }
 
 static void
-_printf_empty(int depth) {
-    int i;
-    for (i=0; i<depth; ++i) {
-        printf("|_|_"); 
-    }
-}
-
-static void
-_walk_reply(struct redis_replyitem* item, int depth) {
-    switch (item->type) {
-    case REDIS_REPLY_STATUS:
-        _printf_empty(depth);
-        printf("+%s\n", item->value.p);
-        break;
-    case REDIS_REPLY_ERROR:
-        _printf_empty(depth);
-        printf("-%s\n", item->value.p);
-        break;
-    case REDIS_REPLY_INTEGER:
-        _printf_empty(depth);
-        printf(":%ld\n", item->value.i);
-        break;
-    case REDIS_REPLY_STRING:
-        _printf_empty(depth);
-        printf(" %s\n", item->value.p);
-        break;
-    case REDIS_REPLY_ARRAY:
-        _printf_empty(depth);
-        printf("*%ld\n", item->value.i);
-        int i;
-        for (i=0; i<(int)item->nchild; ++i) {
-            struct redis_replyitem* sub = &item->child[i];
-            _walk_reply(sub, depth+1);
-        }
-        break;
-    default:
-        printf("error occur in depth: %d\n", depth);
-        break;
-    }
-}
-
-static void
 _test_redisstep(struct redis_reply* reply, int initstep, int random) {
     int r;
     struct redis_reader* reader = &reply->reader;
@@ -256,7 +215,7 @@ _test_redisstep(struct redis_reply* reply, int initstep, int random) {
             assert(r == REDIS_NEXTTIME);
         } else {
             assert(r == REDIS_SUCCEED);
-            _walk_reply(reply->stack[0], 0);
+            redis_walkreply(reply);
         }
     }
 }
@@ -276,7 +235,7 @@ void test_redis() {
     reader->sz += sz;
     r = redis_getreply(&reply);
     assert(r == REDIS_SUCCEED);
-    _walk_reply(reply.stack[0], 0);
+    redis_walkreply(&reply);
 
     // 2
     redis_resetreply(&reply); 
@@ -287,7 +246,7 @@ void test_redis() {
     reader->sz += sz;
     r = redis_getreply(&reply);
     assert(r == REDIS_SUCCEED);
-    _walk_reply(reply.stack[0], 0);
+    redis_walkreply(&reply);
 
     // 3
     redis_resetreply(&reply); 
@@ -298,7 +257,7 @@ void test_redis() {
     reader->sz += sz;
     r = redis_getreply(&reply);
     assert(r == REDIS_SUCCEED);
-    _walk_reply(reply.stack[0], 0);
+    redis_walkreply(&reply);
 
     // 4
     redis_resetreply(&reply); 
@@ -309,7 +268,7 @@ void test_redis() {
     reader->sz += sz;
     r = redis_getreply(&reply);
     assert(r == REDIS_SUCCEED);
-    _walk_reply(reply.stack[0], 0);
+    redis_walkreply(&reply);
 
     // 5
     redis_resetreply(&reply); 
@@ -320,7 +279,7 @@ void test_redis() {
     reader->sz += sz;
     r = redis_getreply(&reply);
     assert(r == REDIS_SUCCEED);
-    _walk_reply(reply.stack[0], 0);
+    redis_walkreply(&reply);
 
     // 6
     redis_resetreply(&reply); 
@@ -331,7 +290,7 @@ void test_redis() {
     reader->sz += sz;
     r = redis_getreply(&reply);
     assert(r == REDIS_SUCCEED);
-    _walk_reply(reply.stack[0], 0);
+    redis_walkreply(&reply);
 
     // 7
     redis_resetreply(&reply); 
@@ -342,7 +301,7 @@ void test_redis() {
     reader->sz += sz;
     r = redis_getreply(&reply);
     assert(r == REDIS_SUCCEED);
-    _walk_reply(reply.stack[0], 0);
+    redis_walkreply(&reply);
 
     // 8
     redis_resetreply(&reply); 
@@ -353,7 +312,7 @@ void test_redis() {
     reader->sz += sz;
     r = redis_getreply(&reply);
     assert(r == REDIS_SUCCEED);
-    _walk_reply(reply.stack[0], 0);
+    redis_walkreply(&reply);
 
     // 8
     redis_resetreply(&reply); 
@@ -364,7 +323,7 @@ void test_redis() {
     reader->sz += sz;
     r = redis_getreply(&reply);
     assert(r == REDIS_SUCCEED);
-    _walk_reply(reply.stack[0], 0);
+    redis_walkreply(&reply);
 
     // 9
     redis_resetreply(&reply); 
@@ -375,7 +334,7 @@ void test_redis() {
     reader->sz += sz;
     r = redis_getreply(&reply);
     assert(r == REDIS_SUCCEED);
-    _walk_reply(reply.stack[0], 0);
+    redis_walkreply(&reply);
 
     // 10
     redis_resetreply(&reply); 
@@ -386,7 +345,7 @@ void test_redis() {
     reader->sz += sz;
     r = redis_getreply(&reply);
     assert(r == REDIS_SUCCEED);
-    _walk_reply(reply.stack[0], 0);
+    redis_walkreply(&reply);
 
     // 11
     redis_resetreply(&reply); 
@@ -397,7 +356,7 @@ void test_redis() {
     reader->sz += sz;
     r = redis_getreply(&reply);
     assert(r == REDIS_SUCCEED);
-    _walk_reply(reply.stack[0], 0);
+    redis_walkreply(&reply);
 
     // 12
     redis_resetreply(&reply); 
@@ -410,7 +369,7 @@ void test_redis() {
     reader->sz += sz;
     r = redis_getreply(&reply);
     assert(r == REDIS_SUCCEED);
-    _walk_reply(reply.stack[0], 0);
+    redis_walkreply(&reply);
 /*
     // REDIS_ERROR
     // 13
@@ -424,7 +383,7 @@ void test_redis() {
     reader->sz += sz;
     r = redis_getreply(&reply);
     assert(r == REDIS_ERROR);
-    _walk_reply(reply.stack[0], 0);
+    redis_walkreply(&reply);
 */
     // REDIS_NEXTTIME
     // 14
@@ -452,7 +411,7 @@ void test_redis() {
     r = redis_getreply(&reply);
     assert(r == REDIS_SUCCEED);
 
-    _walk_reply(reply.stack[0], 0);
+    redis_walkreply(&reply);
 
     // 15
     printf("-------------------------15\n");
@@ -533,7 +492,7 @@ void test_redis() {
     r = redis_getreply(&reply);
     assert(r == REDIS_SUCCEED);
 
-    _walk_reply(reply.stack[0], 0);
+    redis_walkreply(&reply);
 
     redis_resetreply(&reply);
 
@@ -546,9 +505,55 @@ void test_redis() {
     reader->sz += sz;
     r = redis_getreply(&reply);
     assert(r == REDIS_SUCCEED);
-    _walk_reply(reply.stack[0], 0);
+    redis_walkreply(&reply);
 
     redis_finireply(&reply);
+}
+
+struct fldata {
+    int tag;
+};
+
+struct flink {
+    FREELIST_ENTRY(flink, fldata);
+};
+
+struct fltest {
+    FREELIST(flink);
+};
+
+void test_freelist() {
+    struct fltest fl;
+    FREELIST_INIT(&fl);
+
+    struct fldata d1;
+    d1.tag = 1;
+    FREELIST_PUSH(flink, &fl, &d1);
+    FREELIST_POP(flink, &fl);
+
+    struct fldata d2;
+    d2.tag = 2;
+    FREELIST_PUSH(flink, &fl, &d1);
+    FREELIST_PUSH(flink, &fl, &d2);
+
+    struct fldata* d;
+    d = FREELIST_HEAD(flink, &fl); 
+    {
+        assert(d);
+        assert(d->tag == 1);
+        FREELIST_POP(flink, &fl);
+    } 
+    d = FREELIST_HEAD(flink, &fl);
+    {
+    assert(d2.tag == 2);
+    assert(fl.sz == 2);
+    FREELIST_POP(flink, &fl);
+    }
+
+    FREELIST_PUSH(flink, &fl, &d1);
+    FREELIST_PUSH(flink, &fl, &d2);
+    assert(fl.sz == 2);
+    FREELIST_FINI(flink, &fl);
 }
 
 int 
@@ -559,5 +564,6 @@ main(int argc, char* argv[]) {
     //test_hashid();
     //test_gfreeid();
     test_redis();
+    test_freelist();
     return 0;
 }

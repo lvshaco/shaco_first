@@ -18,6 +18,9 @@
 #define IDUM_CMDRES     IDUM_NBEGIN+11
 #define IDUM_FORWARD    IDUM_NBEGIN+12
 
+#define IDUM_REDISQUERY IDUM_NBEGIN+20
+#define IDUM_REDISREPLY IDUM_NBEGIN+21
+
 #define IDUM_CREATEROOM     IDUM_NBEGIN+200
 #define IDUM_CREATEROOMRES  IDUM_NBEGIN+201
 #define IDUM_OVERROOM       IDUM_NBEGIN+202
@@ -85,6 +88,19 @@ UM_FORWARD_size(struct UM_FORWARD* um) {
     name->nodeid = 0; \
     name->msgid = ID##type; \
     name->msgsz = sizeof(*name);
+
+// redisproxy
+struct UM_REDISQUERY {
+    _UM_HEADER;
+    int32_t tag; // == 0 mean no need reply
+    char data[];
+};
+
+struct UM_REDISREPLY {
+    _UM_HEADER;
+    int32_t tag;
+    char data[];
+};
 
 // room
 struct UM_CREATEROOM {

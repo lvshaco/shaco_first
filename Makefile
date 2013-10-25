@@ -52,6 +52,7 @@ host_src=\
 	host/host_node.h \
 	host/host_gate.c \
 	host/host_gate.h \
+	host/host_assert.h \
  	host/dlmodule.c \
  	host/dlmodule.h
 
@@ -93,12 +94,16 @@ worldservice_so=\
 all: \
 	lur.so \
 	net.so \
-	redis.so \
 	base.so \
+	redis.so \
 	shaco \
 	shaco-cli \
 	$(service_so) \
-	$(worldservice_so) world.so
+	world.so \
+	$(worldservice_so) \
+	service_worlddb.so \
+	service_benchmarkdb.so \
+	service_redisproxy.so
 
 release: CFLAGS += -O2 -fno-strict-aliasing
 release: all
@@ -107,9 +112,21 @@ $(service_so): %.so: $(service_dir)/%.c
 	@rm -f $@
 	gcc $(CFLAGS) $(SHARED) -o $@ $< -Ihost -Inet -Ibase -Imessage
 
-$(worldservice_so): %.so: $(service_dir)/%.c world.so
+$(worldservice_so): %.so: $(service_dir)/%.c
 	@rm -f $@
-	gcc $(CFLAGS) $(SHARED) -o $@ $< -Ihost -Inet -Ibase -Imessage -Iworld -Wl,-rpath,. world.so
+	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Ihost -Inet -Ibase -Imessage -Iworld -Wl,-rpath,. world.so
+
+service_worlddb.so: $(service_dir)/service_worlddb.c
+	@rm -f $@
+	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Ihost -Inet -Ibase -Imessage -Iworld -Iredis -Wl,-rpath,. world.so redis.so
+
+service_benchmarkdb.so: $(service_dir)/service_benchmarkdb.c
+	@rm -f $@
+	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Ihost -Inet -Ibase -Imessage -Iredis -Wl,-rpath,. redis.so
+
+service_redisproxy.so: $(service_dir)/service_redisproxy.c
+	@rm -f $@
+	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Ihost -Inet -Ibase -Imessage -Iredis -Wl,-rpath,. redis.so
 
 world.so: $(world_src)
 	@rm -f $@
