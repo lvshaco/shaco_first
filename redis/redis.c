@@ -5,7 +5,7 @@
 #include <stdio.h>
 
 // todo, the redis-server return error, empty this in release
-#define ASSERTD assert
+#define ASSERTD(x) //assert(x)
 
 /*
  * redis_replyitem
