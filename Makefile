@@ -1,4 +1,4 @@
-.PHONY: all t clean cleanall
+.PHONY: all t clean cleanall res
  #-Wpointer-arith -Winline
 CFLAGS=-g -Wall -Werror 
 SHARED=-fPIC -shared
@@ -159,6 +159,22 @@ shaco-cli: $(cli_src)
 t: $(test_src)
 	@rm -f $@
 	gcc $(CFLAGS) -o $@ $^ -Ihost -Ilur -Inet -Ibase -Iredis $(LDFLAGS) redis.so
+
+res:
+	@rm -rf $(HOME)/.shaco/excel
+	@mkdir -pv $(HOME)/.shaco/excel
+	@rm -rf ./res/tbl
+	@mkdir -pv ./res/tbl
+	@rm -rf ./res/tplt
+	@mkdir -pv ./res/tplt
+	@rm -rf ./tplt/tplt_define.h
+	@svn export $(SHACO_SVN_RES)/res/excel $(HOME)/.shaco/excel --force
+	@cd tool && \
+		python convert_excel.py \
+		$(HOME)/.shaco/excel/excelmake_server.xml \
+		$(HOME)/.shaco/excel tbl=../res/tbl:c=../res/tplt && \
+		python concat.py ../res/tplt ../tplt/tplt_define.h && \
+		rm -rf ../res/tplt
 
 clean:
 	rm -f shaco shaco-cli t *.so

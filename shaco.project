@@ -1,18 +1,19 @@
-shaco=~/shaco CD=. filter="Makefile README.md *.lua *.h *.c" {
+shaco=~/shaco CD=. filter="Makefile README.md *.lua *.py *.h *.c" {
  Makefile
  README.md
  config.lua
  config_benchmark.lua
+ config_benchmarkdb.lua
  config_center.lua
  config_echo.lua
  config_game.lua
  config_gate.lua
- config_world.lua
  config_redisproxy.lua
- config_benchmarkdb.lua
+ config_world.lua
  host=host{
   dlmodule.h
   host.h
+  host_assert.h
   host_dispatcher.h
   host_gate.h
   host_group.h
@@ -35,7 +36,6 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.h *.c" {
   host_reload.c
   host_service.c
   host_timer.c
-  host_assert.h
  }
  lur=lur{
   lur.h
@@ -45,6 +45,7 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.h *.c" {
   args.h
   array.h
   freeid.h
+  freelist.h
   gfreeid.h
   hashid.h
   memrw.h
@@ -52,7 +53,6 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.h *.c" {
   stringtable.h
   util.h
   args.c
-  freelist.h
  }
  net=net{
   net.h
@@ -78,6 +78,7 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.h *.c" {
  service=service{
   worldhelper.h
   service_benchmark.c
+  service_benchmarkdb.c
   service_centerc.c
   service_centers.c
   service_cmdctl.c
@@ -93,24 +94,37 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.h *.c" {
   service_redisproxy.c
   service_world.c
   service_worlddb.c
-  service_benchmarkdb.c
  }
  world=world{
   player.h
   player.c
  }
  message=message{
-  message_reader.h
   cli_message.h
   client_type.h
   message.h
+  message_reader.h
   node_type.h
   sharetype.h
   user_message.h
  }
+ tplt=tplt{
+  tplt_define.h
+ }
  tool=tool{
+  concat.py
+  convert_excel.py
   service_tmp.c
   shaco-cli.c
+  excel2other=excel2other{
+   convertor.py
+   parser.py
+   toc_opt.py
+   tolua_opt.py
+   tolualine_opt.py
+   totbl_opt.py
+   toxml_opt.py
+  }
  }
  test=test{
   test.c
