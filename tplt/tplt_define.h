@@ -3,21 +3,27 @@
 
 #include <stdint.h>
 
-#define TPLT_COPYMAP 0
+#define TPLT_SKINDATA 0
 
 #pragma pack(1)
 
-// copymap_data
-struct copymap_tplt {
-    uint32_t id;             // 副本编号
-    char name[32];           // 副本名称
-    uint32_t chaodai;        // 朝代编号
-    uint32_t icon_id;        // 图标ID
-    int32_t icon_posx;       // 图标位置X
-    int32_t icon_posy;       // 图标位置Y
-    uint64_t npc_icon;       // NPC图标
-    uint32_t man_count;      // 推荐人数
-    char desc[128];          // 简介
+// 角色数据
+struct skindata_tplt {
+    uint32_t id;             // ID
+    char name[32];           // 角色名称
+    uint32_t sex;            // 性别
+    uint32_t oxygen;         // 氧气
+    uint32_t body;           // 体能
+    uint32_t quick;          // 敏捷
+    uint32_t coinprofit;     // 金币收益
+    uint32_t lucky;          // 幸运
+    uint32_t wadist;         // 挖掘距离
+    uint32_t warange;        // 挖掘范围
+    uint32_t waspeed;        // 挖掘速度
+    uint32_t jump;           // 跳跃
+    uint32_t sence;          // 感知
+    uint32_t view;           // 视野
+    uint32_t weapon;         // 武器强度
 
 };
 

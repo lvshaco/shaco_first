@@ -42,7 +42,7 @@ _loadtplt() {
 
 #define TBLFILE(name) "./res/tbl/"#name".tbl"
     struct tplt_desc desc[] = {
-        { TPLT_COPYMAP, sizeof(struct copymap_tplt), TBLFILE(copymap)},
+        { TPLT_SKINDATA, sizeof(struct skindata_tplt), TBLFILE(skindata)},
     };
     return tplt_init(desc, sizeof(desc)/sizeof(desc[0]));
 }
