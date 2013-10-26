@@ -41,7 +41,7 @@ def _serialize_to_file(cname, sheetname, field_map, outfile):
             (fname, fvname, ftype, flen))
             exit(1)
         op.write("    %s; %s %s\n"%(fstr, "//".rjust(25-len(fstr)), fname))
-    op.write("};");
+    op.write("\n};");
     op.close() 
 
 def _convert(infile, sheetdesc, out_dir):

@@ -22,6 +22,14 @@ redis_src=\
 	redis/redis.c \
 	redis/redis.h
 
+tplt_src=\
+	tplt/tplt_internal.h \
+	tplt/tplt_holder.c \
+	tplt/tplt_holder.h \
+	tplt/tplt.c \
+	tplt/tplt.h \
+	tplt/tplt_define.h
+
 base_src=\
 	base/array.h \
 	base/freeid.h \
@@ -96,6 +104,7 @@ all: \
 	net.so \
 	base.so \
 	redis.so \
+	tplt.so \
 	shaco \
 	shaco-cli \
 	$(service_so) \
@@ -114,7 +123,7 @@ $(service_so): %.so: $(service_dir)/%.c
 
 $(worldservice_so): %.so: $(service_dir)/%.c
 	@rm -f $@
-	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Ihost -Inet -Ibase -Imessage -Iworld -Wl,-rpath,. world.so
+	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Ihost -Inet -Ibase -Imessage -Iworld -Itplt -Wl,-rpath,. world.so tplt.so
 
 service_worlddb.so: $(service_dir)/service_worlddb.c
 	@rm -f $@
@@ -148,6 +157,10 @@ base.so: $(base_src)
 	@rm -f $@
 	gcc $(CFLAGS) $(SHARED) -o $@ $^
 
+tplt.so: $(tplt_src)
+	@rm -f $@
+	gcc $(CFLAGS) $(SHARED) -o $@ $^ -DUSE_HOSTLOG -Ihost
+
 shaco: $(host_src)
 	@rm -f $@
 	gcc $(CFLAGS) -o $@ $^ -Ihost -Ilur -Inet -Ibase  $(LDFLAGS)
@@ -180,4 +193,4 @@ clean:
 	rm -f shaco shaco-cli t *.so
 
 cleanall: clean
-	rm -f cscope.* tags
+	rm -rf cscope.* tags res

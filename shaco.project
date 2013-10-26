@@ -109,14 +109,20 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.py *.h *.c" {
   user_message.h
  }
  tplt=tplt{
+  tplt.h
   tplt_define.h
+  tplt_holder.h
+  tplt_include.h
+  tplt_internal.h
+  tplt.c
+  tplt_holder.c
  }
  tool=tool{
   concat.py
   convert_excel.py
   service_tmp.c
   shaco-cli.c
-  excel2other=excel2other{
+  excelto=excelto{
    convertor.py
    parser.py
    toc_opt.py

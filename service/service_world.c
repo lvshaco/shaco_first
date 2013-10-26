@@ -10,6 +10,7 @@
 #include "node_type.h"
 #include "player.h"
 #include "worldhelper.h"
+#include "tplt_include.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -32,11 +33,26 @@ world_free(struct world* self) {
         return;
     _freeplayers();
     free(self);
+
+    tplt_fini();
+}
+
+static int
+_loadtplt() {
+
+#define TBLFILE(name) "./res/tbl/"#name".tbl"
+    struct tplt_desc desc[] = {
+        { TPLT_COPYMAP, sizeof(struct copymap_tplt), TBLFILE(copymap)},
+    };
+    return tplt_init(desc, sizeof(desc)/sizeof(desc[0]));
 }
 
 int
 world_init(struct service* s) {
     struct world* self = SERVICE_SELF;
+    if (_loadtplt()) {
+        return 1;
+    }
     self->chariditer = 0;
     int cmax = host_getint("world_cmax_pergate", 0);
     int hmax = host_getint("world_hmax_pergate", cmax);

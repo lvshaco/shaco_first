@@ -122,3 +122,59 @@
 --12625-- Reading syms from /home/lvxiaojun/shaco/service_worlddb.so (0xb30a000)
 --12625-- Reading syms from /home/lvxiaojun/shaco/redis.so (0xb50c000)
 --12625-- REDIR: 0x5c06480 (???) redirected to 0x4c25a10 (strncpy)
+--12625-- Discarding syms at 0x6479810-0x6479b48 in /home/lvxiaojun/shaco/service_log.so due to munmap()
+--12625-- Discarding syms at 0xa6fdef0-0xa6fe548 in /home/lvxiaojun/shaco/service_node.so due to munmap()
+--12625-- Discarding syms at 0x667aa70-0x667af08 in /home/lvxiaojun/shaco/service_dispatcher.so due to munmap()
+--12625-- Discarding syms at 0xa8ffb00-0xa8ffeb8 in /home/lvxiaojun/shaco/service_centerc.so due to munmap()
+--12625-- Discarding syms at 0xab02040-0xab02648 in /home/lvxiaojun/shaco/service_cmdctl.so due to munmap()
+--12625-- Discarding syms at 0xad03bd0-0xad04188 in /home/lvxiaojun/shaco/service_world.so due to munmap()
+--12625-- Discarding syms at 0xb107b90-0xb108a68 in /home/lvxiaojun/shaco/service_gamematch.so due to munmap()
+--12625-- Discarding syms at 0xb30aa40-0xb30ad48 in /home/lvxiaojun/shaco/service_worlddb.so due to munmap()
+--12625-- Discarding syms at 0xaf05940-0xaf061f8 in /home/lvxiaojun/shaco/world.so due to munmap()
+--12625-- Discarding syms at 0xb50c8c0-0xb50d548 in /home/lvxiaojun/shaco/redis.so due to munmap()
+==12625== 
+==12625== HEAP SUMMARY:
+==12625==     in use at exit: 400 bytes in 2 blocks
+==12625==   total heap usage: 511 allocs, 509 frees, 74,271,650 bytes allocated
+==12625== 
+==12625== Searching for pointers to 2 not-freed blocks
+==12625== Checked 130,440 bytes
+==12625== 
+==12625== 32 bytes in 1 blocks are still reachable in loss record 1 of 2
+==12625==    at 0x4C2380C: calloc (vg_replace_malloc.c:467)
+==12625==    by 0x56F035F: _dlerror_run (dlerror.c:142)
+==12625==    by 0x56EFEE0: dlopen@@GLIBC_2.2.5 (dlopen.c:88)
+==12625==    by 0x4057FC: _open (dlmodule.c:16)
+==12625==    by 0x405B7C: dlmodule_load (dlmodule.c:82)
+==12625==    by 0x403A13: service_load (host_service.c:55)
+==12625==    by 0x4045BD: host_log_init (host_log.c:54)
+==12625==    by 0x403063: host_create (host.c:106)
+==12625==    by 0x402E1A: main (host_main.c:18)
+==12625== 
+==12625== 368 bytes in 1 blocks are still reachable in loss record 2 of 2
+==12625==    at 0x4C244E8: malloc (vg_replace_malloc.c:236)
+==12625==    by 0x4011D3C: add_to_global (dl-open.c:133)
+==12625==    by 0x4012276: dl_open_worker (dl-open.c:482)
+==12625==    by 0x400D905: _dl_catch_error (dl-error.c:178)
+==12625==    by 0x4011929: _dl_open (dl-open.c:568)
+==12625==    by 0x56EFF65: dlopen_doit (dlopen.c:67)
+==12625==    by 0x400D905: _dl_catch_error (dl-error.c:178)
+==12625==    by 0x56F02EB: _dlerror_run (dlerror.c:164)
+==12625==    by 0x56EFEE0: dlopen@@GLIBC_2.2.5 (dlopen.c:88)
+==12625==    by 0x4057FC: _open (dlmodule.c:16)
+==12625==    by 0x405B7C: dlmodule_load (dlmodule.c:82)
+==12625==    by 0x403A13: service_load (host_service.c:55)
+==12625== 
+==12625== LEAK SUMMARY:
+==12625==    definitely lost: 0 bytes in 0 blocks
+==12625==    indirectly lost: 0 bytes in 0 blocks
+==12625==      possibly lost: 0 bytes in 0 blocks
+==12625==    still reachable: 400 bytes in 2 blocks
+==12625==         suppressed: 0 bytes in 0 blocks
+==12625== 
+==12625== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 34 from 7)
+--12625-- 
+--12625-- used_suppression:     32 dl-hack3-cond-1
+--12625-- used_suppression:      2 glibc-2.5.x-on-SUSE-10.2-(PPC)-2a
+==12625== 
+==12625== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 34 from 7)

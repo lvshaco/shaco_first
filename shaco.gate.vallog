@@ -120,3 +120,57 @@
 --12635-- Reading syms from /home/lvxiaojun/shaco/service_gate.so (0x31e03000)
 --12635-- Reading syms from /home/lvxiaojun/shaco/service_forward.so (0x32005000)
 --12635-- REDIR: 0x5c06480 (???) redirected to 0x4c25a10 (strncpy)
+==12635== Warning: set address range perms: large range [0x687c030, 0x317fc058) (noaccess)
+--12635-- Discarding syms at 0x6479810-0x6479b48 in /home/lvxiaojun/shaco/service_log.so due to munmap()
+--12635-- Discarding syms at 0x317fdef0-0x317fe548 in /home/lvxiaojun/shaco/service_node.so due to munmap()
+--12635-- Discarding syms at 0x667aa70-0x667af08 in /home/lvxiaojun/shaco/service_dispatcher.so due to munmap()
+--12635-- Discarding syms at 0x319ffb00-0x319ffeb8 in /home/lvxiaojun/shaco/service_centerc.so due to munmap()
+--12635-- Discarding syms at 0x31c02040-0x31c02648 in /home/lvxiaojun/shaco/service_cmdctl.so due to munmap()
+--12635-- Discarding syms at 0x31e03d40-0x31e042d8 in /home/lvxiaojun/shaco/service_gate.so due to munmap()
+--12635-- Discarding syms at 0x320058d0-0x32005c08 in /home/lvxiaojun/shaco/service_forward.so due to munmap()
+==12635== 
+==12635== HEAP SUMMARY:
+==12635==     in use at exit: 200 bytes in 2 blocks
+==12635==   total heap usage: 481 allocs, 479 frees, 722,641,043 bytes allocated
+==12635== 
+==12635== Searching for pointers to 2 not-freed blocks
+==12635== Checked 130,416 bytes
+==12635== 
+==12635== 32 bytes in 1 blocks are still reachable in loss record 1 of 2
+==12635==    at 0x4C2380C: calloc (vg_replace_malloc.c:467)
+==12635==    by 0x56F035F: _dlerror_run (dlerror.c:142)
+==12635==    by 0x56EFEE0: dlopen@@GLIBC_2.2.5 (dlopen.c:88)
+==12635==    by 0x4057FC: _open (dlmodule.c:16)
+==12635==    by 0x405B7C: dlmodule_load (dlmodule.c:82)
+==12635==    by 0x403A13: service_load (host_service.c:55)
+==12635==    by 0x4045BD: host_log_init (host_log.c:54)
+==12635==    by 0x403063: host_create (host.c:106)
+==12635==    by 0x402E1A: main (host_main.c:18)
+==12635== 
+==12635== 168 bytes in 1 blocks are still reachable in loss record 2 of 2
+==12635==    at 0x4C244E8: malloc (vg_replace_malloc.c:236)
+==12635==    by 0x4011CDB: add_to_global (dl-open.c:107)
+==12635==    by 0x4012276: dl_open_worker (dl-open.c:482)
+==12635==    by 0x400D905: _dl_catch_error (dl-error.c:178)
+==12635==    by 0x4011929: _dl_open (dl-open.c:568)
+==12635==    by 0x56EFF65: dlopen_doit (dlopen.c:67)
+==12635==    by 0x400D905: _dl_catch_error (dl-error.c:178)
+==12635==    by 0x56F02EB: _dlerror_run (dlerror.c:164)
+==12635==    by 0x56EFEE0: dlopen@@GLIBC_2.2.5 (dlopen.c:88)
+==12635==    by 0x4057FC: _open (dlmodule.c:16)
+==12635==    by 0x405B7C: dlmodule_load (dlmodule.c:82)
+==12635==    by 0x403A13: service_load (host_service.c:55)
+==12635== 
+==12635== LEAK SUMMARY:
+==12635==    definitely lost: 0 bytes in 0 blocks
+==12635==    indirectly lost: 0 bytes in 0 blocks
+==12635==      possibly lost: 0 bytes in 0 blocks
+==12635==    still reachable: 200 bytes in 2 blocks
+==12635==         suppressed: 0 bytes in 0 blocks
+==12635== 
+==12635== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 25 from 7)
+--12635-- 
+--12635-- used_suppression:     23 dl-hack3-cond-1
+--12635-- used_suppression:      2 glibc-2.5.x-on-SUSE-10.2-(PPC)-2a
+==12635== 
+==12635== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 25 from 7)

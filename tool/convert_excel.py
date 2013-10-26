@@ -46,7 +46,7 @@ if __name__ == "__main__":
                 (lua.lua2.lualine=*:tbl=*:xml=*:c=*)" % sys.argv[0]
         sys.exit(1)
 
-    _import("excel2other")
+    _import("excelto")
     config = sys.argv[1]
     in_dir = sys.argv[2]
     out_dirs = _get_outdirs(sys.argv[3])

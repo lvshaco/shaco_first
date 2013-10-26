@@ -20,3 +20,5 @@
 [12630 131025-20:15:34.513] INFO: connect to node ok
 [12630 131025-20:15:34.516] DEBUG: Receive msg:2, from world, to service:node
 [12630 131025-20:15:34.516] INFO: node register, NODE[world0000,T03,C0003,L127.0.0.1:8300,N127.0.0.1:8300,G0.0.0.0:0]
+[12630 131026-18:09:22.348] WARNING: Received SIGTERM, schedule stop ...
+[12630 131026-18:09:22.348] INFO: Shaco stop
