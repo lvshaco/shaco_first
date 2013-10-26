@@ -7,7 +7,10 @@ struct tplt_desc {
     const char* name;
 };
 
+struct tplt_holder;
+
 int tplt_init(const struct tplt_desc* desc, int sz);
 void tplt_fini();
+struct tplt_holder* tplt_get(int type);
 
 #endif

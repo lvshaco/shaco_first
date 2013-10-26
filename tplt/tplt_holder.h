@@ -20,7 +20,7 @@ struct tplt_holder {
 */
 
 #define TPLT_HOLDER_NELEM(holder) ((holder)->nelem)
-#define TPLT_HOLDER_FIRSTELEM(type, holder) ((type)((holder)->data))
+#define TPLT_HOLDER_FIRSTELEM(type, holder) ((struct type*)((holder)->data))
 
 struct tplt_holder* tplt_holder_load(const char* file, int elemsz);
 void tplt_holder_free(struct tplt_holder* self);

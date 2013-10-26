@@ -53,6 +53,15 @@ world_init(struct service* s) {
     if (_loadtplt()) {
         return 1;
     }
+    struct tplt_holder* holder = tplt_get(TPLT_SKINDATA);
+    struct skindata_tplt* data;
+    struct skindata_tplt* one;
+    int i;
+    data = TPLT_HOLDER_FIRSTELEM(skindata_tplt, holder);
+    for (i=0; i<TPLT_HOLDER_NELEM(holder); ++i) {
+        one = &data[i];
+    }
+
     self->chariditer = 0;
     int cmax = host_getint("world_cmax_pergate", 0);
     int hmax = host_getint("world_hmax_pergate", cmax);

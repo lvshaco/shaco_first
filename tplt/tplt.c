@@ -65,3 +65,10 @@ tplt_fini() {
     free(T);
     T = NULL;
 }
+
+struct tplt_holder* 
+tplt_get(int type) {
+    if (type >= 0 && type < T->sz)
+        return T->p[type];
+    return NULL;
+}
