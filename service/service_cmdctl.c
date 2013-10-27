@@ -111,7 +111,7 @@ _time(struct args* A, struct memrw* rw) {
     time_t sec = now / 1000;
     int n = strftime(rw->ptr, RW_SPACE(rw), "%y%m%d-%H:%M:%S", localtime(&sec));
     memrw_pos(rw, n);
-    n = snprintf(rw->ptr, RW_SPACE(rw), "[%lu]", host_timer_elapsed());
+    n = snprintf(rw->ptr, RW_SPACE(rw), "[%llu]", host_timer_elapsed());
     memrw_pos(rw, n);
     return R_OK;
 }
