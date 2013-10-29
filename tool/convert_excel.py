@@ -50,5 +50,5 @@ if __name__ == "__main__":
     config = sys.argv[1]
     in_dir = sys.argv[2]
     out_dirs = _get_outdirs(sys.argv[3])
-    convertor = sys.modules["convertor"]
+    convertor = sys.modules["exconvertor"]
     convertor.ec_convert(config, in_dir, out_dirs) 

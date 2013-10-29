@@ -70,10 +70,8 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.py *.h *.c" {
   redis.c
  }
  cnet=cnet{
-  Makefile
   cnet.h
   cnet.c
-  test.c
  }
  service=service{
   worldhelper.h
@@ -108,14 +106,21 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.py *.h *.c" {
   sharetype.h
   user_message.h
  }
+ datadefine=datadefine{
+  tplt_struct.h
+ }
  tplt=tplt{
   tplt.h
-  tplt_define.h
   tplt_holder.h
   tplt_include.h
   tplt_internal.h
+  tplt_visitor.h
+  tplt_visitor_ops.h
+  tplt_visitor_ops_implement.h
   tplt.c
   tplt_holder.c
+  tplt_visitor.c
+  tplt_visitor_ops_implement.c
  }
  tool=tool{
   concat.py
@@ -123,8 +128,8 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.py *.h *.c" {
   service_tmp.c
   shaco-cli.c
   excelto=excelto{
-   convertor.py
-   parser.py
+   exconvertor.py
+   exparser.py
    toc_opt.py
    tolua_opt.py
    tolualine_opt.py
@@ -133,6 +138,7 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.py *.h *.c" {
   }
  }
  test=test{
+  robot.c
   test.c
  }
 }

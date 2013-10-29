@@ -10,13 +10,13 @@ struct tplt_holder {
 };
 
 /* 
- * @ visit element sample
- * struct type* data;
- * int i;
- * data = TPLT_HOLDER_FIRSTELEM(type, holder);
- * for (i=0; i<TPLT_HOLDER_NELEM(holder); ++i) {
- *     data[i];
- * }
+ @ visit element sample
+ struct type* data;
+ int i;
+ data = TPLT_HOLDER_FIRSTELEM(type, holder);
+ for (i=0; i<TPLT_HOLDER_NELEM(holder); ++i) {
+     data[i];
+ }
 */
 
 #define TPLT_HOLDER_NELEM(holder) ((holder)->nelem)

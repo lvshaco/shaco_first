@@ -11,6 +11,7 @@
 #include "player.h"
 #include "worldhelper.h"
 #include "tplt_include.h"
+#include "tplt_struct.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -42,7 +43,7 @@ _loadtplt() {
 
 #define TBLFILE(name) "./res/tbl/"#name".tbl"
     struct tplt_desc desc[] = {
-        { TPLT_SKINDATA, sizeof(struct skindata_tplt), TBLFILE(skindata)},
+        { TPLT_ROLEDATA, sizeof(struct roledata_tplt), TBLFILE(roledata), TPLT_VIST_VEC32},
     };
     return tplt_init(desc, sizeof(desc)/sizeof(desc[0]));
 }
@@ -53,16 +54,7 @@ world_init(struct service* s) {
     if (_loadtplt()) {
         return 1;
     }
-    /*struct tplt_holder* holder = tplt_get(TPLT_SKINDATA);
-    struct skindata_tplt* data;
-    struct skindata_tplt* one;
-    int i;
-    data = TPLT_HOLDER_FIRSTELEM(skindata_tplt, holder);
-    for (i=0; i<TPLT_HOLDER_NELEM(holder); ++i) {
-        one = &data[i];
-    }
-*/
-    self->chariditer = 0;
+    self->chariditer = 1;
     int cmax = host_getint("world_cmax_pergate", 0);
     int hmax = host_getint("world_hmax_pergate", cmax);
     int gmax = host_getint("world_gmax", 0);
@@ -71,6 +63,30 @@ world_init(struct service* s) {
 
     host_timer_register(s->serviceid, 1000);
     return 0;
+}
+
+static void
+_build_chardata(struct chardata* data, uint32_t charid) {
+    // todo: this just for test 
+    memset(data, 0, sizeof(*data));
+    data->charid = charid;
+    snprintf(data->name, sizeof(data->name), "wabao-n%u", charid);
+    data->level = 1;
+    data->exp = 0;
+    data->coin = 1388888;
+    data->diamond = 88888;
+    data->package = 10;
+    data->role = 1;
+    data->skin = 1;
+    const struct tplt_visitor* vist = tplt_get_visitor(TPLT_ROLEDATA);
+    const struct roledata_tplt* role = tplt_visitor_find(vist, data->role);
+    if (role == NULL) {
+        host_error("can not found role %d, charid %u", data->role, data->charid);
+        return;
+    }
+    data->oxygen = role->oxygen;
+    data->body = role->body;
+    data->quick = role->quick;
 }
 
 static void 
@@ -91,20 +107,17 @@ _login(struct world* self, struct node_message* nm) {
         return;
     }
     p->status = PS_LOGIN;
-
-    uint32_t charid = ++self->chariditer;
+    uint32_t charid = self->chariditer++; 
+    _build_chardata(&p->data, charid);
     p->status = PS_GAME;
-    // todo: this just for test
-    struct chardata* data = &p->data;
-    data->charid = charid;
-    snprintf(data->name, sizeof(data->name), "wabao-n%u", charid);
+    
     if (_hashplayer(p)) {
         _forward_logoutplayer(node, cid, LOGOUT_FULL);
         _freeplayer(p);
         return;
     }
     UM_DEFFORWARD(fw, cid, UM_CHARINFO, ci);
-    ci->data = *data;
+    ci->data = p->data;
     UM_SENDFORWARD(node->connid, fw);
 }
 

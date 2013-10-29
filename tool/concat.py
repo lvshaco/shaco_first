@@ -30,7 +30,7 @@ if __name__ == "__main__":
     out.write("\n#pragma pack(1)\n")
     for fname in files:
         fname = os.path.join(path, fname)
-        print "+%s"%fname
+        print "[+]%s"%fname
         f = open(fname, "r");
         s = f.read()
         out.write("\n")
@@ -41,4 +41,4 @@ if __name__ == "__main__":
     out.write("\n")
     out.write("#endif")
     out.close()
-    print "=%s"%outfile 
+    print "[=]%s"%outfile 

@@ -1,16 +1,19 @@
 #ifndef __tplt_h__
 #define __tplt_h__
 
+struct tplt_holder;
+struct tplt_visitor;
+
 struct tplt_desc {
     int type; // see TPLT_*
     int size; // sizeof(*_tplt)
     const char* name;
+    const struct tplt_visitor_ops* vist;
 };
-
-struct tplt_holder;
 
 int tplt_init(const struct tplt_desc* desc, int sz);
 void tplt_fini();
-struct tplt_holder* tplt_get(int type);
+const struct tplt_holder* tplt_get_holder(int type);
+const struct tplt_visitor* tplt_get_visitor(int type);
 
 #endif

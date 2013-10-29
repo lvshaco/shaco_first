@@ -411,7 +411,7 @@ _walk_reply(struct redis_replyitem* item, int depth) {
         break;
     case REDIS_REPLY_INTEGER:
         _print_type(':', depth);
-        printf("%lld\n", item->value.i);
+        printf("%lld\n", (long long int)item->value.i);
         break;
     case REDIS_REPLY_STRING:
         _print_type(' ', depth);
@@ -419,7 +419,7 @@ _walk_reply(struct redis_replyitem* item, int depth) {
         break;
     case REDIS_REPLY_ARRAY:
         _print_type('*', depth);
-        printf("%lld\n", item->value.i);
+        printf("%lld\n", (long long int)item->value.i);
         int i;
         for (i=0; i<(int)item->nchild; ++i) {
             struct redis_replyitem* sub = &item->child[i];

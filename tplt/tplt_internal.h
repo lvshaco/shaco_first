@@ -7,9 +7,11 @@
 #define TPLT_LOGINFO host_info
 #endif
 #ifndef TPLT_LOGERR
+#include <stdio.h>
 #define TPLT_LOGERR printf
 #endif
 #ifndef TPLT_LOGINFO
+#include <stdio.h>
 #define TPLT_LOGINFO printf
 #endif
 

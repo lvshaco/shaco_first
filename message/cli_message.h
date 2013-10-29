@@ -30,6 +30,8 @@
 #define IDUM_GAMEINFO       IDUM_CBEGIN+204
 #define IDUM_GAMEENTER      IDUM_CBEGIN+205
 #define IDUM_GAMESTART      IDUM_CBEGIN+206
+#define IDUM_GAMEUNJOIN     IDUM_CBEGIN+207
+#define IDUM_GAMESYNC       IDUM_CBEGIN+208
 
 #pragma pack(1)
 ////////////////////////////////////////////////////////////
@@ -128,6 +130,17 @@ struct UM_GAMEENTER {
 
 struct UM_GAMESTART {
     _UM_HEADER;
+};
+
+struct UM_GAMEUNJOIN {
+    _UM_HEADER;
+    uint32_t charid;
+};
+
+struct UM_GAMESYNC {
+    _UM_HEADER;
+    uint32_t charid;
+    uint32_t depth;
 };
 
 #pragma pack()

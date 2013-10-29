@@ -108,14 +108,26 @@ _calcload(int8_t type) {
 
 static void
 _build_memberbrief(const struct player* p, struct tmemberbrief* brief) {
-    brief->charid = p->data.charid;
-    memcpy(brief->name, p->data.name, sizeof(brief->name));
+    const struct chardata* data = &p->data;
+    brief->charid = data->charid;
+    memcpy(brief->name, data->name, sizeof(brief->name));
+    brief->role = data->role;
+    brief->skin = data->skin;
+    brief->oxygen = data->oxygen;
+    brief->body = data->body;
+    brief->quick = data->quick;
 }
 
 static void
 _build_memberdetail(const struct player* p, struct tmemberdetail* detail) {
-    detail->charid = p->data.charid;
-    memcpy(detail->name, p->data.name, sizeof(detail->name));
+    const struct chardata* data = &p->data;
+    detail->charid = data->charid;
+    memcpy(detail->name, data->name, sizeof(detail->name));
+    detail->role = data->role;
+    detail->skin = data->skin;
+    detail->oxygen = data->oxygen;
+    detail->body = data->body;
+    detail->quick = data->quick;
 }
 
 static inline void

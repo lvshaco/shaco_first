@@ -30,19 +30,20 @@ tplt_holder_load(const char* file, int elemsz) {
         return NULL;
     }
 
-    long pos = ftell(fp);
+    int pos = ftell(fp);
     fseek(fp, 0, SEEK_END);
-    long fsize = ftell(fp);
+    int fsize = ftell(fp);
 
-    long needfsize = elemsz * nelem + sizeof(nelem) + sizeof(rowsz);
+    int needfsize = elemsz * nelem + sizeof(nelem) + sizeof(rowsz);
     if (fsize != needfsize) {
-        TPLT_LOGERR("file nelem dismatch (tbl#%u, c#%u)", fsize, needfsize);
+        TPLT_LOGERR("file nelem dismatch (tbl#%d, c#%d)", fsize, needfsize);
         fclose(fp);
         return NULL;
     }
     fseek(fp, pos, SEEK_SET);
 
-    struct tplt_holder* t = (struct tplt_holder*)malloc(sizeof(struct tplt_holder) + elemsz * nelem);
+    struct tplt_holder* t = (struct tplt_holder*)malloc
+        (sizeof(struct tplt_holder) + elemsz * nelem);
     t->nelem = nelem;
     t->elemsz = elemsz;
 

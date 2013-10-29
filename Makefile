@@ -26,9 +26,13 @@ tplt_src=\
 	tplt/tplt_internal.h \
 	tplt/tplt_holder.c \
 	tplt/tplt_holder.h \
+	tplt/tplt_visitor.c \
+	tplt/tplt_visitor.h \
+	tplt/tplt_visitor_ops.h \
+	tplt/tplt_visitor_ops_implement.c \
+	tplt/tplt_visitor_ops_implement.h \
 	tplt/tplt.c \
-	tplt/tplt.h \
-	tplt/tplt_define.h
+	tplt/tplt.h
 
 base_src=\
 	base/array.h \
@@ -70,13 +74,6 @@ cli_src=\
 world_src=\
 	world/player.c \
 	world/player.h
-
-test_src=\
-	test/test.c \
-	net.so \
-	lur.so \
-	base.so \
-	redis.so
 
 LDFLAGS=-Wl,-rpath,. \
 		net.so lur.so base.so -llua -lm -ldl -lrt -rdynamic# -Wl,-E
@@ -123,7 +120,7 @@ $(service_so): %.so: $(service_dir)/%.c
 
 $(worldservice_so): %.so: $(service_dir)/%.c
 	@rm -f $@
-	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Ihost -Inet -Ibase -Imessage -Iworld -Itplt -Wl,-rpath,. world.so tplt.so
+	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Ihost -Inet -Ibase -Imessage -Iworld -Itplt -Idatadefine -Wl,-rpath,. world.so tplt.so
 
 service_worlddb.so: $(service_dir)/service_worlddb.c
 	@rm -f $@
@@ -162,17 +159,18 @@ tplt.so: $(tplt_src)
 	gcc $(CFLAGS) $(SHARED) -o $@ $^ -DUSE_HOSTLOG -Ihost
 
 shaco: $(host_src)
-	@rm -f $@
 	gcc $(CFLAGS) -o $@ $^ -Ihost -Ilur -Inet -Ibase  $(LDFLAGS)
 
 shaco-cli: $(cli_src)
-	@rm -f $@
 	gcc $(CFLAGS) -o $@ $^ -lpthread
 
-t: $(test_src)
-	@rm -f $@
+t: test/test.c net.so lur.so base.so redis.so
 	gcc $(CFLAGS) -o $@ $^ -Ihost -Ilur -Inet -Ibase -Iredis $(LDFLAGS) redis.so
 
+robot: test/robot.c cnet/cnet.c cnet/cnet.h net.so
+	gcc $(CFLAGS) -o $@ $^ -Ilur -Icnet -Inet -Ibase -Imessage -Wl,-rpath,. net.so
+
+# res
 res:
 	@rm -rf $(HOME)/.shaco/excel
 	@mkdir -pv $(HOME)/.shaco/excel
@@ -180,17 +178,53 @@ res:
 	@mkdir -pv ./res/tbl
 	@rm -rf ./res/tplt
 	@mkdir -pv ./res/tplt
-	@rm -rf ./tplt/tplt_define.h
+	@rm -rf ./datadefine/tplt_struct.h
 	@svn export $(SHACO_SVN_RES)/res/excel $(HOME)/.shaco/excel --force
 	@cd tool && \
 		python convert_excel.py \
 		$(HOME)/.shaco/excel/excelmake_server.xml \
 		$(HOME)/.shaco/excel tbl=../res/tbl:c=../res/tplt && \
-		python concat.py ../res/tplt ../tplt/tplt_define.h && \
+		python concat.py ../res/tplt ../datadefine/tplt_struct.h && \
 		rm -rf ../res/tplt
 
+# for client
+client: cnet.dll tplt.dll
+
+client_bin=\
+	cnet.dll \
+	cnet.lib \
+	tplt.dll \
+	tplt.lib
+
+cnet_src=\
+	cnet/cnet.c \
+	cnet/cnet.h
+
+cnet.dll: $(net_src) $(cnet_src)
+	gcc $(CFLAGS) -shared -o $@ $^ -Inet -Imessage -lws2_32 -lws2_32 \
+		-Wl,--output-def,cnet.def,--out-implib,cnet.lib
+	LIB /MACHINE:IX86 /DEF:cnet.def
+
+tplt.dll: $(tplt_src)
+	gcc $(CFLAGS) -shared -o $@ $^ -Itplt \
+		-Wl,--output-def,tplt.def,--out-implib,tplt.lib
+	LIB /MACHINE:IX86 /DEF:tplt.def
+
+client_dir=D:/wa-client/trunk
+install_dir=$(client_dir)/driller/proj.win32/Debug.win32
+source_dir=$(client_dir)/driller/Classes
+tool_dir=$(client_dir)/tool
+install:
+	cp $(client_bin) $(install_dir)
+	cp -r net $(source_dir)	
+	cp -r cnet $(source_dir)
+	cp -r message $(source_dir)
+	cp -r tplt $(source_dir)
+	cp -r tool/concat.py tool/convert_excel.py tool/excelto $(tool_dir)
+
+# clean
 clean:
-	rm -f shaco shaco-cli t *.so
+	rm -f shaco shaco-cli t *.so *.dll *.def *.lib *.exp
 
 cleanall: clean
-	rm -rf cscope.* tags res
+	rm -rf cscope.* tags

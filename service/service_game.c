@@ -32,6 +32,7 @@ struct member {
     bool online;
     int connid;
     struct tmemberdetail detail;
+    uint32_t depth;
 };
 
 struct room { 
@@ -92,11 +93,26 @@ game_init(struct service* s) {
     return 0;
 }
 
-static struct player*
+static inline struct player*
+_allocplayer(struct game* self, struct gate_client* c) {
+    int id = host_gate_clientid(c);
+    assert(id >= 0 && id < self->pmax);
+    struct player* p = &self->players[id];
+    assert(!p->login);
+    return p;
+}
+
+static inline struct player*
 _getplayer(struct game* self, struct gate_client* c) {
     int id = host_gate_clientid(c);
     assert(id >= 0 && id < self->pmax);
     return &self->players[id];
+}
+
+static inline struct player*
+_getonlineplayer(struct game* self, struct gate_client* c) {
+    struct player* p = _getplayer(self, c);
+    return p->login ? p : NULL;
 }
 
 static struct room*
@@ -151,12 +167,13 @@ _elapsed(uint64_t t, uint64_t elapse) {
 }
 
 static void
-_multicast_msg(struct room* ro, struct UM_BASE* um) {
+_multicast_msg(struct room* ro, struct UM_BASE* um, uint32_t except) {
     struct member* m;
     int i;
     for (i=0; i<ro->np; ++i) {
         m = &ro->p[i];
-        if (m->online) {
+        if (m->detail.charid != except &&
+            m->online) {
             UM_SENDTOCLIDIRECT(m->connid, um);
         }
     }
@@ -175,14 +192,14 @@ _gameenter(struct room* ro) {
     ro->entertime = host_timer_now();
     UM_DEFFIX(UM_GAMEENTER, enter);
     enter->msgsz -= UM_SKIP;
-    _multicast_msg(ro, (void*)enter);
+    _multicast_msg(ro, (void*)enter, 0);
 }
 static void
 _gamestart(struct room* ro) {
     ro->status = RS_START;
     UM_DEFFIX(UM_GAMESTART, start);
     start->msgsz -= UM_SKIP;
-    _multicast_msg(ro, (void*)start);
+    _multicast_msg(ro, (void*)start, 0);
 }
 static void
 _gamedestroy(struct game* self, struct room* ro) {
@@ -267,7 +284,7 @@ _login(struct game* self, struct gate_client* c, struct UM_BASE* um) {
         _verifyfail(c, 4);
         return;
     }
-    struct player* p = _getplayer(self, c);
+    struct player* p = _allocplayer(self, c);
     if (p == NULL) {
         _verifyfail(c, 5);
         return;
@@ -291,19 +308,40 @@ _logout(struct game* self, struct gate_client* c, bool active) {
     }
     if (p->login) {
         int roomid = p->roomid;
+        uint32_t charid = p->charid;
         p->login = false;
         p->roomid = 0;
         p->charid = 0;
+
         struct room* ro = _getroom(self, roomid);
         if (ro) {
-            struct member* m = _getmember(ro, p->charid);
+            struct member* m = _getmember(ro, charid);
             if (m) {
                 m->online = false;
+                UM_DEFFIX(UM_GAMEUNJOIN, unjoin);
+                unjoin->charid = charid;
+                _multicast_msg(ro, (void*)unjoin, charid);
+                
                 if (active) {
                     _try_gameover(self, ro);
                 }
             }
-            // todo: multicast logout
+        }
+    }
+}
+static void
+_sync(struct game* self, struct gate_client* c, struct UM_BASE* um) {
+    struct player* p = _getonlineplayer(self, c);
+    if (p == NULL) {
+        return;
+    }
+    struct room* ro = _getroom(self, p->roomid);
+    if (ro) {
+        struct member* m = _getmember(ro, p->charid);
+        if (m) {
+            UM_CAST(UM_GAMESYNC, sync, um);
+            m->depth = sync->depth;
+            _multicast_msg(ro, (void*)sync, p->charid);
         }
     }
 }
@@ -319,6 +357,9 @@ game_usermsg(struct service* s, int id, void* msg, int sz) {
         break;
     case IDUM_GAMELOGOUT:
         _logout(self, gm->c, true);
+        break;
+    case IDUM_GAMESYNC:
+        _sync(self, gm->c, um);
         break;
     }
 }

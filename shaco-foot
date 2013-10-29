@@ -3,7 +3,7 @@
 SERVERS="redisproxy world game gate"
 
 ls() {
-    ps -ef |grep shaco
+    ps -ef |grep shaco |grep config
 }
 startone() {
     if [ $MEMCHECK -eq 0 ]

@@ -1,124 +1,178 @@
-==15984== Memcheck, a memory error detector
-==15984== Copyright (C) 2002-2010, and GNU GPL'd, by Julian Seward et al.
-==15984== Using Valgrind-3.6.0.SVN-Debian and LibVEX; rerun with -h for copyright info
-==15984== Command: ./shaco config_center.lua -d
-==15984== Parent PID: 15983
-==15984== 
---15984-- 
---15984-- Valgrind options:
---15984--    --suppressions=/usr/lib/valgrind/debian-libc6-dbg.supp
---15984--    -v
---15984--    --leak-check=full
---15984--    --show-reachable=yes
---15984--    --suppressions=shaco.supp
---15984--    --log-file=shaco.center.vallog
---15984-- Contents of /proc/version:
---15984--   Linux version 2.6.32-5-amd64 (Debian 2.6.32-46) (dannf@debian.org) (gcc version 4.3.5 (Debian 4.3.5-4) ) #1 SMP Sun Sep 23 10:07:46 UTC 2012
---15984-- Arch and hwcaps: AMD64, amd64-sse3-cx16
---15984-- Page sizes: currently 4096, max supported 4096
---15984-- Valgrind library directory: /usr/lib/valgrind
---15984-- Reading syms from /home/lvxiaojun/shaco/shaco (0x400000)
---15984-- Reading syms from /lib/ld-2.11.3.so (0x4000000)
---15984--   Considering /lib/ld-2.11.3.so ..
---15984--   .. CRC mismatch (computed e1ef7574 wanted d51f0f40)
---15984--   Considering /usr/lib/debug/lib/ld-2.11.3.so ..
---15984--   .. CRC is valid
---15984-- Reading syms from /usr/lib/valgrind/memcheck-amd64-linux (0x38000000)
---15984--    object doesn't have a dynamic symbol table
---15984-- Reading suppressions file: /usr/lib/valgrind/debian-libc6-dbg.supp
---15984-- Reading suppressions file: shaco.supp
---15984-- Reading suppressions file: /usr/lib/valgrind/default.supp
---15984-- REDIR: 0x4016660 (strlen) redirected to 0x380408a7 (vgPlain_amd64_linux_REDIR_FOR_strlen)
---15984-- Reading syms from /usr/lib/valgrind/vgpreload_core-amd64-linux.so (0x4a20000)
---15984-- Reading syms from /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so (0x4c21000)
-==15984== WARNING: new redirection conflicts with existing -- ignoring it
---15984--     new: 0x04016660 (strlen              ) R-> 0x04c25850 strlen
---15984-- REDIR: 0x40164d0 (index) redirected to 0x4c25460 (index)
---15984-- REDIR: 0x4016550 (strcmp) redirected to 0x4c25e30 (strcmp)
---15984-- Reading syms from /home/lvxiaojun/shaco/net.so (0x4e29000)
---15984-- Reading syms from /home/lvxiaojun/shaco/lur.so (0x502e000)
---15984-- Reading syms from /home/lvxiaojun/shaco/base.so (0x526d000)
---15984-- Reading syms from /lib/libm-2.11.3.so (0x546e000)
---15984--   Considering /lib/libm-2.11.3.so ..
---15984--   .. CRC mismatch (computed 25a2c360 wanted 8c5ca758)
---15984--   Considering /usr/lib/debug/lib/libm-2.11.3.so ..
---15984--   .. CRC is valid
---15984-- Reading syms from /lib/libdl-2.11.3.so (0x56f0000)
---15984--   Considering /lib/libdl-2.11.3.so ..
---15984--   .. CRC mismatch (computed abc91181 wanted fe19b8f3)
---15984--   Considering /usr/lib/debug/lib/libdl-2.11.3.so ..
---15984--   .. CRC is valid
---15984-- Reading syms from /lib/librt-2.11.3.so (0x58f4000)
---15984--   Considering /lib/librt-2.11.3.so ..
---15984--   .. CRC mismatch (computed 8844bb6d wanted d7c320c6)
---15984--   Considering /usr/lib/debug/lib/librt-2.11.3.so ..
---15984--   .. CRC is valid
---15984-- Reading syms from /lib/libc-2.11.3.so (0x5afc000)
---15984--   Considering /lib/libc-2.11.3.so ..
---15984--   .. CRC mismatch (computed 2137ef5d wanted 0a691870)
---15984--   Considering /usr/lib/debug/lib/libc-2.11.3.so ..
---15984--   .. CRC is valid
---15984-- Reading syms from /lib/libpthread-2.11.3.so (0x5e5e000)
---15984--   Considering /lib/libpthread-2.11.3.so ..
---15984--   .. CRC mismatch (computed 7238dc0c wanted 8666a25b)
---15984--   Considering /usr/lib/debug/lib/libpthread-2.11.3.so ..
---15984--   .. CRC is valid
---15984-- REDIR: 0x5b799e0 (__GI_strrchr) redirected to 0x4c25280 (__GI_strrchr)
---15984-- REDIR: 0x5b764b0 (strcmp) redirected to 0x4a205ac (_vgnU_ifunc_wrapper)
---15984-- REDIR: 0x5c0a000 (__strcmp_ssse3) redirected to 0x4c25d90 (strcmp)
---15987-- REDIR: 0x5b72c00 (malloc) redirected to 0x4c24466 (malloc)
---15984-- REDIR: 0x5b72b20 (free) redirected to 0x4c24076 (free)
---15987-- REDIR: 0x5b7a720 (memset) redirected to 0x4c26a70 (memset)
---15987-- REDIR: 0x5b73c50 (realloc) redirected to 0x4c24517 (realloc)
-==15984== 
-==15984== HEAP SUMMARY:
-==15984==     in use at exit: 0 bytes in 0 blocks
-==15984==   total heap usage: 0 allocs, 0 frees, 0 bytes allocated
-==15984== 
-==15984== All heap blocks were freed -- no leaks are possible
-==15984== 
-==15984== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 4 from 4)
---15984-- 
---15984-- used_suppression:      2 dl-hack3-cond-1
---15984-- used_suppression:      2 glibc-2.5.x-on-SUSE-10.2-(PPC)-2a
-==15984== 
-==15984== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 4 from 4)
---15987-- REDIR: 0xffffffffff600400 (???) redirected to 0x3804089d (vgPlain_amd64_linux_REDIR_FOR_vtime)
---15987-- REDIR: 0x5b7bb30 (memcpy) redirected to 0x4c25f00 (memcpy)
---15987-- REDIR: 0x5b77ef0 (strlen) redirected to 0x4a205ac (_vgnU_ifunc_wrapper)
-==15987== WARNING: new redirection conflicts with existing -- ignoring it
---15987--     new: 0x05b77f20 (__GI_strlen         ) R-> 0x04c257f0 strlen
---15987-- REDIR: 0x5b77f20 (__GI_strlen) redirected to 0x4c25810 (__GI_strlen)
---15987-- REDIR: 0x5b72b20 (free) redirected to 0x4c24076 (free)
---15987-- REDIR: 0x5b7a160 (bcmp) redirected to 0x4c26690 (bcmp)
---15987-- REDIR: 0x5b76400 (index) redirected to 0x4a205ac (_vgnU_ifunc_wrapper)
-==15987== WARNING: new redirection conflicts with existing -- ignoring it
---15987--     new: 0x05b76430 (__GI_strchr         ) R-> 0x04c25320 index
---15987-- REDIR: 0x5b76430 (__GI_strchr) redirected to 0x4c25360 (__GI_strchr)
---15987-- REDIR: 0x5b7b250 (mempcpy) redirected to 0x4c26bc0 (mempcpy)
-==15987== WARNING: new redirection conflicts with existing -- ignoring it
---15987--     new: 0x05b77f20 (__GI_strlen         ) R-> 0x04c257f0 strlen
---15987-- REDIR: 0x5b77940 (strcpy) redirected to 0x4a205ac (_vgnU_ifunc_wrapper)
---15987-- REDIR: 0x5c06a60 (???) redirected to 0x4c25870 (strcpy)
-==15987== WARNING: new redirection conflicts with existing -- ignoring it
---15987--     new: 0x05b76430 (__GI_strchr         ) R-> 0x04c25320 index
---15987-- REDIR: 0x5b7cf10 (strchrnul) redirected to 0x4c26b50 (strchrnul)
---15987-- REDIR: 0x5b72190 (calloc) redirected to 0x4c23729 (calloc)
---15987-- Reading syms from /home/lvxiaojun/shaco/service_log.so (0x647a000)
---15987-- REDIR: 0x4017160 (stpcpy) redirected to 0x4c269a0 (stpcpy)
---15987-- REDIR: 0x5b77970 (__GI_strcpy) redirected to 0x4c25940 (__GI_strcpy)
---15987-- REDIR: 0x5b764f0 (__GI_strcmp) redirected to 0x4c25de0 (__GI_strcmp)
---15987-- REDIR: 0x5b7cec0 (__GI___rawmemchr) redirected to 0x4c26ba0 (__GI___rawmemchr)
---15987-- Reading syms from /home/lvxiaojun/shaco/service_dispatcher.so (0x667b000)
-==15987== Warning: set address range perms: large range [0x687d040, 0x317fd048) (undefined)
---15987-- Reading syms from /home/lvxiaojun/shaco/service_node.so (0x317fe000)
---15987-- Reading syms from /home/lvxiaojun/shaco/service_centers.so (0x31a00000)
---15987-- Reading syms from /home/lvxiaojun/shaco/service_gate.so (0x31c02000)
---15987-- Reading syms from /home/lvxiaojun/shaco/service_cmds.so (0x31e04000)
-==15987== WARNING: new redirection conflicts with existing -- ignoring it
---15987--     new: 0x05b77f20 (__GI_strlen         ) R-> 0x04c257f0 strlen
---15987-- Reading syms from /home/lvxiaojun/shaco/service_cmdctl.so (0x32006000)
---15987-- REDIR: 0x5b79980 (strncpy) redirected to 0x4a205ac (_vgnU_ifunc_wrapper)
---15987-- REDIR: 0x5c07480 (???) redirected to 0x4c25a10 (strncpy)
---15987-- REDIR: 0x5b78130 (__GI_strncmp) redirected to 0x4c25d20 (__GI_strncmp)
---15987-- REDIR: 0x5b7b890 (__GI_stpcpy) redirected to 0x4c26800 (__GI_stpcpy)
+==21981== Memcheck, a memory error detector
+==21981== Copyright (C) 2002-2010, and GNU GPL'd, by Julian Seward et al.
+==21981== Using Valgrind-3.6.0.SVN-Debian and LibVEX; rerun with -h for copyright info
+==21981== Command: ./shaco config_center.lua -d
+==21981== Parent PID: 21980
+==21981== 
+--21981-- 
+--21981-- Valgrind options:
+--21981--    --suppressions=/usr/lib/valgrind/debian-libc6-dbg.supp
+--21981--    -v
+--21981--    --leak-check=full
+--21981--    --show-reachable=yes
+--21981--    --suppressions=shaco.supp
+--21981--    --log-file=shaco.center.vallog
+--21981-- Contents of /proc/version:
+--21981--   Linux version 2.6.32-5-amd64 (Debian 2.6.32-46) (dannf@debian.org) (gcc version 4.3.5 (Debian 4.3.5-4) ) #1 SMP Sun Sep 23 10:07:46 UTC 2012
+--21981-- Arch and hwcaps: AMD64, amd64-sse3-cx16
+--21981-- Page sizes: currently 4096, max supported 4096
+--21981-- Valgrind library directory: /usr/lib/valgrind
+--21981-- Reading syms from /home/lvxiaojun/shaco/shaco (0x400000)
+--21981-- Reading syms from /lib/ld-2.11.3.so (0x4000000)
+--21981--   Considering /lib/ld-2.11.3.so ..
+--21981--   .. CRC mismatch (computed e1ef7574 wanted d51f0f40)
+--21981--   Considering /usr/lib/debug/lib/ld-2.11.3.so ..
+--21981--   .. CRC is valid
+--21981-- Reading syms from /usr/lib/valgrind/memcheck-amd64-linux (0x38000000)
+--21981--    object doesn't have a dynamic symbol table
+--21981-- Reading suppressions file: /usr/lib/valgrind/debian-libc6-dbg.supp
+--21981-- Reading suppressions file: shaco.supp
+--21981-- Reading suppressions file: /usr/lib/valgrind/default.supp
+--21981-- REDIR: 0x4016660 (strlen) redirected to 0x380408a7 (vgPlain_amd64_linux_REDIR_FOR_strlen)
+--21981-- Reading syms from /usr/lib/valgrind/vgpreload_core-amd64-linux.so (0x4a20000)
+--21981-- Reading syms from /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so (0x4c21000)
+==21981== WARNING: new redirection conflicts with existing -- ignoring it
+--21981--     new: 0x04016660 (strlen              ) R-> 0x04c25850 strlen
+--21981-- REDIR: 0x40164d0 (index) redirected to 0x4c25460 (index)
+--21981-- REDIR: 0x4016550 (strcmp) redirected to 0x4c25e30 (strcmp)
+--21981-- Reading syms from /home/lvxiaojun/shaco/net.so (0x4e29000)
+--21981-- Reading syms from /home/lvxiaojun/shaco/lur.so (0x502d000)
+--21981-- Reading syms from /home/lvxiaojun/shaco/base.so (0x526c000)
+--21981-- Reading syms from /lib/libm-2.11.3.so (0x546d000)
+--21981--   Considering /lib/libm-2.11.3.so ..
+--21981--   .. CRC mismatch (computed 25a2c360 wanted 8c5ca758)
+--21981--   Considering /usr/lib/debug/lib/libm-2.11.3.so ..
+--21981--   .. CRC is valid
+--21981-- Reading syms from /lib/libdl-2.11.3.so (0x56ef000)
+--21981--   Considering /lib/libdl-2.11.3.so ..
+--21981--   .. CRC mismatch (computed abc91181 wanted fe19b8f3)
+--21981--   Considering /usr/lib/debug/lib/libdl-2.11.3.so ..
+--21981--   .. CRC is valid
+--21981-- Reading syms from /lib/librt-2.11.3.so (0x58f3000)
+--21981--   Considering /lib/librt-2.11.3.so ..
+--21981--   .. CRC mismatch (computed 8844bb6d wanted d7c320c6)
+--21981--   Considering /usr/lib/debug/lib/librt-2.11.3.so ..
+--21981--   .. CRC is valid
+--21981-- Reading syms from /lib/libc-2.11.3.so (0x5afb000)
+--21981--   Considering /lib/libc-2.11.3.so ..
+--21981--   .. CRC mismatch (computed 2137ef5d wanted 0a691870)
+--21981--   Considering /usr/lib/debug/lib/libc-2.11.3.so ..
+--21981--   .. CRC is valid
+--21981-- Reading syms from /lib/libpthread-2.11.3.so (0x5e5d000)
+--21981--   Considering /lib/libpthread-2.11.3.so ..
+--21981--   .. CRC mismatch (computed 7238dc0c wanted 8666a25b)
+--21981--   Considering /usr/lib/debug/lib/libpthread-2.11.3.so ..
+--21981--   .. CRC is valid
+--21981-- REDIR: 0x5b789e0 (__GI_strrchr) redirected to 0x4c25280 (__GI_strrchr)
+--21984-- REDIR: 0x5b71c00 (malloc) redirected to 0x4c24466 (malloc)
+--21981-- REDIR: 0x5b71b20 (free) redirected to 0x4c24076 (free)
+--21984-- REDIR: 0x5b79720 (memset) redirected to 0x4c26a70 (memset)
+--21984-- REDIR: 0x5b72c50 (realloc) redirected to 0x4c24517 (realloc)
+--21984-- REDIR: 0xffffffffff600400 (???) redirected to 0x3804089d (vgPlain_amd64_linux_REDIR_FOR_vtime)
+==21981== 
+==21981== HEAP SUMMARY:
+==21981==     in use at exit: 0 bytes in 0 blocks
+==21981==   total heap usage: 0 allocs, 0 frees, 0 bytes allocated
+==21981== 
+==21981== All heap blocks were freed -- no leaks are possible
+==21981== 
+==21981== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 4 from 4)
+--21981-- 
+--21981-- used_suppression:      2 dl-hack3-cond-1
+--21981-- used_suppression:      2 glibc-2.5.x-on-SUSE-10.2-(PPC)-2a
+==21981== 
+==21981== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 4 from 4)
+--21984-- REDIR: 0x5b7ab30 (memcpy) redirected to 0x4c25f00 (memcpy)
+--21984-- REDIR: 0x5b76ef0 (strlen) redirected to 0x4a205ac (_vgnU_ifunc_wrapper)
+==21984== WARNING: new redirection conflicts with existing -- ignoring it
+--21984--     new: 0x05b76f20 (__GI_strlen         ) R-> 0x04c257f0 strlen
+--21984-- REDIR: 0x5b76f20 (__GI_strlen) redirected to 0x4c25810 (__GI_strlen)
+--21984-- REDIR: 0x5b71b20 (free) redirected to 0x4c24076 (free)
+--21984-- REDIR: 0x5b79160 (bcmp) redirected to 0x4c26690 (bcmp)
+--21984-- REDIR: 0x5b75400 (index) redirected to 0x4a205ac (_vgnU_ifunc_wrapper)
+==21984== WARNING: new redirection conflicts with existing -- ignoring it
+--21984--     new: 0x05b75430 (__GI_strchr         ) R-> 0x04c25320 index
+--21984-- REDIR: 0x5b75430 (__GI_strchr) redirected to 0x4c25360 (__GI_strchr)
+--21984-- REDIR: 0x5b7a250 (mempcpy) redirected to 0x4c26bc0 (mempcpy)
+==21984== WARNING: new redirection conflicts with existing -- ignoring it
+--21984--     new: 0x05b76f20 (__GI_strlen         ) R-> 0x04c257f0 strlen
+--21984-- REDIR: 0x5b76940 (strcpy) redirected to 0x4a205ac (_vgnU_ifunc_wrapper)
+--21984-- REDIR: 0x5c05a60 (???) redirected to 0x4c25870 (strcpy)
+==21984== WARNING: new redirection conflicts with existing -- ignoring it
+--21984--     new: 0x05b75430 (__GI_strchr         ) R-> 0x04c25320 index
+--21984-- REDIR: 0x5b7bf10 (strchrnul) redirected to 0x4c26b50 (strchrnul)
+--21984-- REDIR: 0x5b71190 (calloc) redirected to 0x4c23729 (calloc)
+--21984-- Reading syms from /home/lvxiaojun/shaco/service_log.so (0x6479000)
+--21984-- REDIR: 0x4017160 (stpcpy) redirected to 0x4c269a0 (stpcpy)
+--21984-- REDIR: 0x5b76970 (__GI_strcpy) redirected to 0x4c25940 (__GI_strcpy)
+--21984-- REDIR: 0x5b754f0 (__GI_strcmp) redirected to 0x4c25de0 (__GI_strcmp)
+--21984-- REDIR: 0x5b7bec0 (__GI___rawmemchr) redirected to 0x4c26ba0 (__GI___rawmemchr)
+--21984-- REDIR: 0x5b754b0 (strcmp) redirected to 0x4a205ac (_vgnU_ifunc_wrapper)
+--21984-- REDIR: 0x5c09000 (__strcmp_ssse3) redirected to 0x4c25d90 (strcmp)
+--21984-- Reading syms from /home/lvxiaojun/shaco/service_dispatcher.so (0x667a000)
+==21984== Warning: set address range perms: large range [0x687c040, 0x317fc048) (undefined)
+--21984-- Reading syms from /home/lvxiaojun/shaco/service_node.so (0x317fd000)
+--21984-- Reading syms from /home/lvxiaojun/shaco/service_centers.so (0x319ff000)
+--21984-- Reading syms from /home/lvxiaojun/shaco/service_gate.so (0x31c01000)
+--21984-- Reading syms from /home/lvxiaojun/shaco/service_cmds.so (0x31e03000)
+==21984== WARNING: new redirection conflicts with existing -- ignoring it
+--21984--     new: 0x05b76f20 (__GI_strlen         ) R-> 0x04c257f0 strlen
+--21984-- Reading syms from /home/lvxiaojun/shaco/service_cmdctl.so (0x32005000)
+--21984-- REDIR: 0x5b78980 (strncpy) redirected to 0x4a205ac (_vgnU_ifunc_wrapper)
+--21984-- REDIR: 0x5c06480 (???) redirected to 0x4c25a10 (strncpy)
+--21984-- REDIR: 0x5b77130 (__GI_strncmp) redirected to 0x4c25d20 (__GI_strncmp)
+--21984-- REDIR: 0x5b7a890 (__GI_stpcpy) redirected to 0x4c26800 (__GI_stpcpy)
+==21984== Warning: set address range perms: large range [0x687c030, 0x317fc058) (noaccess)
+--21984-- Discarding syms at 0x6479810-0x6479b48 in /home/lvxiaojun/shaco/service_log.so due to munmap()
+--21984-- Discarding syms at 0x317fdef0-0x317fe548 in /home/lvxiaojun/shaco/service_node.so due to munmap()
+--21984-- Discarding syms at 0x667aa70-0x667af08 in /home/lvxiaojun/shaco/service_dispatcher.so due to munmap()
+--21984-- Discarding syms at 0x319ff990-0x319ffde8 in /home/lvxiaojun/shaco/service_centers.so due to munmap()
+--21984-- Discarding syms at 0x31c01d40-0x31c022d8 in /home/lvxiaojun/shaco/service_gate.so due to munmap()
+--21984-- Discarding syms at 0x31e03d50-0x31e04508 in /home/lvxiaojun/shaco/service_cmds.so due to munmap()
+--21984-- Discarding syms at 0x32006040-0x32006648 in /home/lvxiaojun/shaco/service_cmdctl.so due to munmap()
+==21984== 
+==21984== HEAP SUMMARY:
+==21984==     in use at exit: 200 bytes in 2 blocks
+==21984==   total heap usage: 456 allocs, 454 frees, 722,396,192 bytes allocated
+==21984== 
+==21984== Searching for pointers to 2 not-freed blocks
+==21984== Checked 130,480 bytes
+==21984== 
+==21984== 32 bytes in 1 blocks are still reachable in loss record 1 of 2
+==21984==    at 0x4C2380C: calloc (vg_replace_malloc.c:467)
+==21984==    by 0x56F035F: _dlerror_run (dlerror.c:142)
+==21984==    by 0x56EFEE0: dlopen@@GLIBC_2.2.5 (dlopen.c:88)
+==21984==    by 0x4057FC: _open (dlmodule.c:16)
+==21984==    by 0x405B7C: dlmodule_load (dlmodule.c:82)
+==21984==    by 0x403A13: service_load (host_service.c:55)
+==21984==    by 0x4045BD: host_log_init (host_log.c:54)
+==21984==    by 0x403063: host_create (host.c:106)
+==21984==    by 0x402E1A: main (host_main.c:18)
+==21984== 
+==21984== 168 bytes in 1 blocks are still reachable in loss record 2 of 2
+==21984==    at 0x4C244E8: malloc (vg_replace_malloc.c:236)
+==21984==    by 0x4011CDB: add_to_global (dl-open.c:107)
+==21984==    by 0x4012276: dl_open_worker (dl-open.c:482)
+==21984==    by 0x400D905: _dl_catch_error (dl-error.c:178)
+==21984==    by 0x4011929: _dl_open (dl-open.c:568)
+==21984==    by 0x56EFF65: dlopen_doit (dlopen.c:67)
+==21984==    by 0x400D905: _dl_catch_error (dl-error.c:178)
+==21984==    by 0x56F02EB: _dlerror_run (dlerror.c:164)
+==21984==    by 0x56EFEE0: dlopen@@GLIBC_2.2.5 (dlopen.c:88)
+==21984==    by 0x4057FC: _open (dlmodule.c:16)
+==21984==    by 0x405B7C: dlmodule_load (dlmodule.c:82)
+==21984==    by 0x403A13: service_load (host_service.c:55)
+==21984== 
+==21984== LEAK SUMMARY:
+==21984==    definitely lost: 0 bytes in 0 blocks
+==21984==    indirectly lost: 0 bytes in 0 blocks
+==21984==      possibly lost: 0 bytes in 0 blocks
+==21984==    still reachable: 200 bytes in 2 blocks
+==21984==         suppressed: 0 bytes in 0 blocks
+==21984== 
+==21984== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 25 from 7)
+--21984-- 
+--21984-- used_suppression:     23 dl-hack3-cond-1
+--21984-- used_suppression:      2 glibc-2.5.x-on-SUSE-10.2-(PPC)-2a
+==21984== 
+==21984== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 25 from 7)

@@ -10,8 +10,8 @@
 
 import struct
 import os 
-from parser import *
-from convertor import *
+from exparser import *
+from exconvertor import *
 
 __all__ = []
 
