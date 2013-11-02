@@ -53,5 +53,6 @@ const char* host_strnode(const struct host_node* node, char str[HNODESTR_MAX]);
 // load
 const struct host_node* host_node_minload(uint16_t tid);
 void host_node_updateload(uint16_t id, int value);
+void host_node_setload(uint16_t id, int value);
 
 #endif

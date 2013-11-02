@@ -13,15 +13,18 @@
 #define IDUM_LOGINFAIL      IDUM_CBEGIN+2
 #define IDUM_LOGOUT         IDUM_CBEGIN+3
 #define IDUM_CHARINFO       IDUM_CBEGIN+4
+#define IDUM_LOGINACCOUNT   IDUM_CBEGIN+10
+#define IDUM_LOGINACCOUNTFAIL IDUM_CBEGIN+11
+#define IDUM_NOTIFYGATE IDUM_CBEGIN+12
 
 #define IDUM_PLAY           IDUM_CBEGIN+100
 #define IDUM_PLAYFAIL       IDUM_CBEGIN+101
 #define IDUM_PLAYWAIT       IDUM_CBEGIN+102
 #define IDUM_PLAYLOADING    IDUM_CBEGIN+103
-#define IDUM_PLAYbegin      IDUM_CBEGIN+104
-#define IDUM_PLAYjoin       IDUM_CBEGIN+105
-#define IDUM_PLAYunjoin     IDUM_CBEGIN+106
-#define IDUM_PLAYdone       IDUM_CBEGIN+107
+#define IDUM_PLAYBEGIN      IDUM_CBEGIN+104
+#define IDUM_PLAYJOIN       IDUM_CBEGIN+105
+#define IDUM_PLAYUNJOIN     IDUM_CBEGIN+106
+#define IDUM_PLAYDONE       IDUM_CBEGIN+107
 
 #define IDUM_NOTIFYGAME     IDUM_CBEGIN+200
 #define IDUM_GAMELOGIN      IDUM_CBEGIN+201
@@ -34,6 +37,27 @@
 #define IDUM_GAMESYNC       IDUM_CBEGIN+208
 
 #pragma pack(1)
+////////////////////////////////////////////////////////////
+// login account
+struct UM_LOGINACCOUNT {
+    _UM_HEADER;
+    char account[ACCOUNT_NAME_MAX];
+    char passwd[ACCOUNT_PASSWD_MAX];
+};
+
+struct UM_LOGINACCOUNTFAIL {
+    _UM_HEADER;
+    int8_t error;
+};
+
+struct UM_NOTIFYGATE {
+    _UM_HEADER;
+    uint32_t accid;
+    uint64_t key;
+    uint32_t addr;
+    uint16_t port;
+};
+
 ////////////////////////////////////////////////////////////
 // heartbeat
 struct UM_HEARTBEAT {
@@ -52,12 +76,16 @@ struct UM_NOTIFYGAME {
 // login
 struct UM_LOGIN {
     _UM_HEADER;
+    uint32_t accid;
+    uint64_t key;
+    char account[ACCOUNT_NAME_MAX];
 };
 
 #define LOGOUT_NORMAL 0
 #define LOGOUT_TIMEOUT 1
 #define LOGOUT_SOCKERR 2
-#define LOGOUT_GATEMAX 3
+#define LOGOUT_VERIFY 3
+#define LOGOUT_GATEMAX 4
 #define LOGOUT_FULL LOGOUT_GATEMAX
 #define LOGOUT_RELOGIN LOGOUT_GATEMAX+1
 #define LOGOUT_NOLOGIN LOGOUT_GATEMAX+2

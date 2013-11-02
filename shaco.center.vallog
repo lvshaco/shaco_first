@@ -138,24 +138,23 @@
 ==21984== Searching for pointers to 2 not-freed blocks
 ==21984== Checked 130,480 bytes
 ==21984== 
-==21984== 32 bytes in 1 blocks are still reachable in loss record 1 of 2
-==21984==    at 0x4C2380C: calloc (vg_replace_malloc.c:467)
-==21984==    by 0x56F035F: _dlerror_run (dlerror.c:142)
-==21984==    by 0x56EFEE0: dlopen@@GLIBC_2.2.5 (dlopen.c:88)
-==21984==    by 0x4057FC: _open (dlmodule.c:16)
-==21984==    by 0x405B7C: dlmodule_load (dlmodule.c:82)
-==21984==    by 0x403A13: service_load (host_service.c:55)
-==21984==    by 0x4045BD: host_log_init (host_log.c:54)
-==21984==    by 0x403063: host_create (host.c:106)
-==21984==    by 0x402E1A: main (host_main.c:18)
-==21984== 
-==21984== 168 bytes in 1 blocks are still reachable in loss record 2 of 2
-==21984==    at 0x4C244E8: malloc (vg_replace_malloc.c:236)
-==21984==    by 0x4011CDB: add_to_global (dl-open.c:107)
-==21984==    by 0x4012276: dl_open_worker (dl-open.c:482)
-==21984==    by 0x400D905: _dl_catch_error (dl-error.c:178)
-==21984==    by 0x4011929: _dl_open (dl-open.c:568)
-==21984==    by 0x56EFF65: dlopen_doit (dlopen.c:67)
+==21984== 32 bytes in 1 blocks are still reachable in loss record 1 of ==21705== WARNING: new redirection conflicts with existing -- ignoring it
+--21705--     new: 0x05b75430 (__GI_strchr         ) R-> 0x04c25320 index
+==21705== Syscall param write(buf) points to uninitialised byte(s)
+==21705==    at 0x5BBE8D0: __write_nocancel (syscall-template.S:82)
+==21705==    by 0x4E2A7B9: net_send (net.c:444)
+==21705==    by 0x4033CF: host_net_send (host_net.c:98)
+==21705==    by 0x31E03F63: _res (service_cmds.c:167)
+==21705==    by 0x403747: service_notify_nodemsg (host_service.c:209)
+==21705==    by 0x667ADDE: dispatcher_net (service_dispatcher.c:80)
+==21705==    by 0x4036A7: service_notify_net (host_service.c:189)
+==21705==    by 0x403343: _dispatch_one (host_net.c:27)
+==21705==    by 0x403443: host_net_poll (host_net.c:45)
+==21705==    by 0x402E9D: host_start (host.c:159)
+==21705==    by 0x402E23: main (host_main.c:19)
+==21705==  Address 0x7feff1364 is on thread 1's stack
+==21705== 
+)
 ==21984==    by 0x400D905: _dl_catch_error (dl-error.c:178)
 ==21984==    by 0x56F02EB: _dlerror_run (dlerror.c:164)
 ==21984==    by 0x56EFEE0: dlopen@@GLIBC_2.2.5 (dlopen.c:88)

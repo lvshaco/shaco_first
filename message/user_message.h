@@ -17,9 +17,16 @@
 #define IDUM_CMDREQ     IDUM_NBEGIN+10
 #define IDUM_CMDRES     IDUM_NBEGIN+11
 #define IDUM_FORWARD    IDUM_NBEGIN+12
+#define IDUM_MINLOADFAIL IDUM_NBEGIN+13
+#define IDUM_UPDATELOAD IDUM_NBEGIN+14
 
 #define IDUM_REDISQUERY IDUM_NBEGIN+20
 #define IDUM_REDISREPLY IDUM_NBEGIN+21
+
+#define IDUM_MINLOADBEGIN IDUM_NBEGIN+100 // minload begin
+#define IDUM_ACCOUNTLOGINREG IDUM_NBEGIN+100
+#define IDUM_ACCOUNTLOGINRES IDUM_NBEGIN+101
+#define IDUM_MINLOADEND   IDUM_NBEGIN+199 // minload end
 
 #define IDUM_CREATEROOM     IDUM_NBEGIN+200
 #define IDUM_CREATEROOMRES  IDUM_NBEGIN+201
@@ -89,6 +96,15 @@ UM_FORWARD_size(struct UM_FORWARD* um) {
     name->msgid = ID##type; \
     name->msgsz = sizeof(*name);
 
+// load
+struct UM_UPDATELOAD {
+    _UM_HEADER;
+    int value; // load value
+};
+struct UM_MINLOADFAIL {
+    _UM_HEADER;
+};
+
 // redisproxy
 struct UM_REDISQUERY {
     _UM_HEADER;
@@ -100,6 +116,25 @@ struct UM_REDISREPLY {
     _UM_HEADER;
     int32_t tag;
     char data[];
+};
+
+// account login
+struct UM_ACCOUNTLOGINREG {
+    _UM_HEADER;
+    int32_t cid;
+    uint32_t accid;
+    uint64_t key;
+    uint32_t clientip;
+    char account[ACCOUNT_NAME_MAX];
+};
+struct UM_ACCOUNTLOGINRES {
+    _UM_HEADER;
+    int8_t ok;
+    int32_t cid;
+    uint32_t accid;
+    uint64_t key;
+    uint32_t addr;
+    uint16_t port;
 };
 
 // room

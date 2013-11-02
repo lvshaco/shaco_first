@@ -5,8 +5,8 @@
 #include <stdbool.h>
 
 struct gate_client {
-    bool connected;
     int connid;
+    uint64_t create_time;
     uint64_t active_time;
 };
 

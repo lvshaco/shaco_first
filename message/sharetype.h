@@ -6,6 +6,8 @@
 #pragma pack(1)
 
 // character
+#define ACCOUNT_NAME_MAX 48
+#define ACCOUNT_PASSWD_MAX 40
 #define CHAR_NAME_MAX 32
 
 // 玩家信息

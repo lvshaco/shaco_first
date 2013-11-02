@@ -61,7 +61,9 @@ gate_init(struct service* s) {
 
     int live = host_getint("gate_clientlive", 3);
     self->livetime = live * 1000;
-    host_timer_register(s->serviceid, self->livetime);
+    if (self->livetime > 0) {
+        host_timer_register(s->serviceid, self->livetime);
+    }
     return 0;
 }
 
@@ -112,6 +114,10 @@ gate_net(struct service* s, struct net_message* nm) {
     case NETE_ACCEPT: {
         uint64_t now = host_timer_now();
         c = host_gate_acceptclient(id, now);
+        if (c == NULL) {
+            host_gate_disconnclient(c, true);
+            break;
+        }
         }
         break;
     case NETE_SOCKERR: {
@@ -138,7 +144,7 @@ gate_time(struct service* s) {
     int i;
     for (i=0; i<max; ++i) {
         c = &p[i];
-        if (!c->connected) {
+        if (c->connid == -1) {
             continue;
         }
         if (now > c->active_time &&

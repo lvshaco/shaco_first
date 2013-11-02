@@ -5,13 +5,65 @@
 #include "user_message.h"
 #include "cli_message.h"
 #include "node_type.h"
+#include "map.h"
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
+
+struct accinfo {
+    uint32_t accid;
+    uint64_t key;
+    uint32_t clientip;
+    char account[ACCOUNT_NAME_MAX];
+};
+
+#define STATE_INVALID 0
+#define STATE_LOGIN 1
+struct player {
+    int state;
+};
+
+struct forward {
+    int pmax;
+    struct player* players;
+    struct idmap* regacc;
+};
+
+struct forward*
+forward_create() {
+    struct forward* self = malloc(sizeof(*self));
+    memset(self, 0, sizeof(*self));
+    return self;
+}
+
+void
+forward_free(struct forward* self) {
+    if (self == NULL)
+        return;
+    free(self->players);
+    // todo: free all accinfo
+    idmap_free(self->regacc);
+    free(self);
+}
 
 int
 forward_init(struct service* s) {
+    struct forward* self = SERVICE_SELF;
+    int cmax = host_gate_maxclient();
+    self->players = malloc(sizeof(struct player) * cmax);
+    memset(self->players, 0, sizeof(struct player) * cmax);
+    self->pmax = cmax;
+    self->regacc = idmap_create(cmax); // memory
+
     SUBSCRIBE_MSG(s->serviceid, IDUM_FORWARD);
     return 0;
+}
+
+struct player* 
+_getplayer(struct forward* self, struct gate_client* c) {
+    int id = host_gate_clientid(c);
+    assert(id >= 0 && id < self->pmax);
+    return &self->players[id];
 }
 
 static inline void
@@ -26,13 +78,46 @@ _forward_world(struct gate_client* c, struct UM_BASE* um) {
     }
 }
 
+static int
+_login(struct forward* self, struct gate_client* c, struct UM_BASE* um) {
+    struct player* p = _getplayer(self, c);
+    assert(p);
+    if (p->state == STATE_LOGIN) {
+        return 1;
+    }
+    UM_CAST(UM_LOGIN, login, um);
+    struct accinfo* acc = idmap_remove(self->regacc, login->accid);
+    if (acc == NULL) {
+        host_gate_disconnclient(c, true);
+        return 1;
+    }
+    uint32_t addr;
+    uint16_t port;
+    host_net_socket_address(c->connid, &addr, &port);
+    if (acc->key == login->key &&
+        acc->clientip == addr &&
+        memcmp(acc->account, login->account, ACCOUNT_NAME_MAX) == 0) {
+        free(acc);
+        return 0;
+    } else {
+        free(acc);
+        return 1;
+    }
+}
+
 void
 forward_usermsg(struct service* s, int id, void* msg, int sz) {
+    struct forward* self = SERVICE_SELF;
     struct gate_message* gm = msg;
     struct gate_client* c = gm->c;
     UM_CAST(UM_BASE, um, gm->msg);
     if (um->msgid >= IDUM_CBEGIN &&
         um->msgid <  IDUM_CEND) {
+        if (um->msgid == IDUM_LOGIN) {
+            if (_login(self, c, um)) {
+                return;
+            }
+        }
         _forward_world(c, um);
     } else {
         // todo: just disconnect it ?
@@ -40,33 +125,84 @@ forward_usermsg(struct service* s, int id, void* msg, int sz) {
     }
 }
 
-void
-forward_nodemsg(struct service* s, int id, void* msg, int sz) {
-    UM_CAST(UM_BASE, um, msg);
-    const struct host_node* node = host_node_get(um->nodeid);
-    if (node == NULL)
+static void
+_accountreg(struct forward* self, int fid, const struct host_node* source, struct UM_BASE* um) {
+    UM_CAST(UM_ACCOUNTLOGINREG, reg, um);
+    int8_t ok = 0;
+    struct accinfo* acc = idmap_find(self->regacc, reg->accid);
+    if (acc == NULL) {
+        acc = malloc(sizeof(*acc));
+        acc->accid = reg->accid;
+        acc->key = reg->key;
+        acc->clientip = reg->clientip;
+        strncpy(acc->account, reg->account, ACCOUNT_NAME_MAX);
+        idmap_insert(self->regacc, reg->accid, acc);
+        ok = 1;
+    }
+    const struct host_node* me = host_me();
+    UM_DEFFORWARD(fw, fid, UM_ACCOUNTLOGINRES, res);
+    res->ok = ok;
+    res->cid = reg->cid;
+    res->accid = reg->accid;
+    res->key = reg->key;
+    res->addr = me->gaddr;
+    res->port = me->gport;
+    UM_SENDFORWARD(source->id, fw);
+}
+
+static void
+_handleload(struct forward* self, struct node_message* nm) {
+    if (nm->um->msgid != IDUM_FORWARD) {
         return;
-    switch (um->msgid) {
-    case IDUM_FORWARD: {
-        UM_CAST(UM_FORWARD, fw, um);
-        struct UM_BASE* m = &fw->wrap;
-        struct gate_client* c = host_gate_getclient(fw->cid);
-        if (c) {
-            host_debug("Send msg:%u",  m->msgid);
-            if (m->msgid == IDUM_LOGOUT) {
-                UM_CAST(UM_LOGOUT, lo, m);
-                if (lo->type >= LOGOUT_GATEMAX) {
-                    UM_SENDTOCLI(c->connid, m, m->msgsz);
-                    host_gate_disconnclient(c, true);
-                }
-            } else {
-                UM_SENDTOCLI(c->connid, m, m->msgsz);
-            }
-        }
+    }
+    UM_CAST(UM_FORWARD, fw, nm->um);
+    struct UM_BASE* m = &fw->wrap;
+    switch (m->msgid) {
+    case IDUM_ACCOUNTLOGINREG:
+        _accountreg(self, fw->cid, nm->hn, m);
         break;
+    }
+}
+
+static void
+_handledef(struct node_message* nm) {
+    if (nm->um->msgid != IDUM_FORWARD) {
+        return;
+    }
+    UM_CAST(UM_FORWARD, fw, nm->um);
+    struct UM_BASE* m = &fw->wrap;
+    struct gate_client* c = host_gate_getclient(fw->cid);
+    if (c) {
+        host_debug("Send msg:%u",  m->msgid);
+        if (m->msgid == IDUM_LOGOUT) {
+            UM_CAST(UM_LOGOUT, lo, m);
+            if (lo->type >= LOGOUT_GATEMAX) {
+                UM_SENDTOCLI(c->connid, m, m->msgsz);
+                host_gate_disconnclient(c, true);
+            }
+        } else {
+            UM_SENDTOCLI(c->connid, m, m->msgsz);
         }
     }
 }
+
+void
+forward_nodemsg(struct service* s, int id, void* msg, int sz) {
+    struct forward* self = SERVICE_SELF;
+    struct node_message nm;
+    if (_decode_nodemessage(msg, sz, &nm)) {
+        return;
+    }
+    switch (nm.hn->tid) {
+    case NODE_LOAD:
+        _handleload(self, &nm);
+        break;
+    default:
+        _handledef(&nm);
+        break;
+    }
+}
+
 void
 forward_net(struct service* s, struct gate_message* gm) {
     struct net_message* nm = gm->msg;

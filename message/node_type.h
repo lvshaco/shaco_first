@@ -12,10 +12,19 @@
 #define NODE_WORLD  3 
 #define NODE_REDISPROXY 4
 #define NODE_BENCHMARKDB 5
-#define NODE_TYPE_MAX 6
+#define NODE_LOGIN 6
+#define NODE_LOAD 7
+#define NODE_TYPE_MAX 8
 
 const char* NODE_NAMES[NODE_TYPE_MAX] = {
-    "center", "gate", "game", "world", "redisproxy", "benchmarkdb",
+    "center", 
+    "gate", 
+    "game", 
+    "world", 
+    "redisproxy", 
+    "benchmarkdb", 
+    "login", 
+    "load",
 };
 
 #define _NODEM_header \

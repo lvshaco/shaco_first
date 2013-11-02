@@ -8,6 +8,8 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.py *.h *.c" {
  config_echo.lua
  config_game.lua
  config_gate.lua
+ config_login.lua
+ config_gateload.lua
  config_redisproxy.lua
  config_world.lua
  host=host{
@@ -48,11 +50,17 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.py *.h *.c" {
   freelist.h
   gfreeid.h
   hashid.h
+  hmap.h
+  map.h
   memrw.h
+  mpool.h
   stringsplice.h
   stringtable.h
   util.h
   args.c
+  hmap.c
+  map.c
+  mpool.c
  }
  net=net{
   net.h
@@ -87,7 +95,9 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.py *.h *.c" {
   service_game.c
   service_gamematch.c
   service_gate.c
+  service_load.c
   service_log.c
+  service_login.c
   service_node.c
   service_redisproxy.c
   service_world.c

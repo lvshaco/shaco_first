@@ -35,22 +35,28 @@ host_gate_prepare(int cmax, int hmax) {
     if (cmax < 0)
         cmax = 1;
     G->cmax = cmax;
-    G->p = malloc(sizeof(struct gate_client) * cmax);
-    memset(G->p, 0, sizeof(struct gate_client) * cmax);
+    struct gate_client* c = malloc(sizeof(struct gate_client) * cmax);
+    int i;
+    for (i=0; i<cmax; ++i) {
+        c[i].connid = -1;
+        c[i].active_time = 0;
+    }
+    G->p = c;
     freeid_init(&G->fi, cmax, hmax);
     return 0;
 }
 
 struct gate_client*
 host_gate_acceptclient(int connid, uint64_t now) {
+    assert(connid != -1);
     int id = freeid_alloc(&G->fi, connid);
     if (id == -1)
         return NULL;
     assert(id >= 0 && id < G->cmax);
     struct gate_client* c = &G->p[id];
-    assert(!c->connected);
-    c->connected = true;
+    assert(c->connid == -1);
     c->connid = connid;
+    c->create_time = now;
     c->active_time = now;
     host_net_subscribe(connid, true);
     return c;
@@ -63,8 +69,8 @@ host_gate_disconnclient(struct gate_client* c, bool closesocket) {
     if (closesocket) {
         host_net_close_socket(c->connid);
     }
-    c->connected = false;
     c->connid = -1;
+    c->create_time = 0;
     c->active_time = 0;
     return 0;
 }
@@ -77,7 +83,6 @@ host_gate_getclient(int connid) {
    assert(id >= 0 && id < G->cmax);
    struct gate_client* c = &G->p[id];
    assert(c->connid == connid);
-   assert(c->connected);
    return c;
 }
 

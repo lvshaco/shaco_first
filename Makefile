@@ -35,6 +35,12 @@ tplt_src=\
 	tplt/tplt.h
 
 base_src=\
+	base/mpool.c \
+	base/mpool.h \
+	base/map.c \
+	base/map.h \
+	base/hmap.c \
+	base/hmap.h \
 	base/array.h \
 	base/freeid.h \
 	base/hashid.h \
@@ -90,7 +96,8 @@ service_so=\
 	service_cmdctl.so \
 	service_gate.so \
 	service_forward.so \
-	service_game.so
+	service_game.so \
+	service_load.so
 
 worldservice_so=\
 	service_world.so \
@@ -109,10 +116,11 @@ all: \
 	$(worldservice_so) \
 	service_worlddb.so \
 	service_benchmarkdb.so \
-	service_redisproxy.so
+	service_redisproxy.so \
+	service_login.so
 
 release: CFLAGS += -O2 -fno-strict-aliasing
-release: all
+release: all t
 
 $(service_so): %.so: $(service_dir)/%.c
 	@rm -f $@
@@ -131,6 +139,10 @@ service_benchmarkdb.so: $(service_dir)/service_benchmarkdb.c
 	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Ihost -Inet -Ibase -Imessage -Iredis -Wl,-rpath,. redis.so
 
 service_redisproxy.so: $(service_dir)/service_redisproxy.c
+	@rm -f $@
+	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Ihost -Inet -Ibase -Imessage -Iredis -Wl,-rpath,. redis.so
+
+service_login.so: $(service_dir)/service_login.c
 	@rm -f $@
 	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Ihost -Inet -Ibase -Imessage -Iredis -Wl,-rpath,. redis.so
 
@@ -194,7 +206,8 @@ client_bin=\
 	cnet.dll \
 	cnet.lib \
 	tplt.dll \
-	tplt.lib
+	tplt.lib \
+	tplt.def
 
 cnet_src=\
 	cnet/cnet.c \

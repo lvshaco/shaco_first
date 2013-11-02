@@ -133,52 +133,43 @@
 ==21720==    by 0x402E9D: host_start (host.c:159)
 ==21720==  Address 0x7ff0001ba is on thread 1's stack
 ==21720== 
-.so due to munmap()
---21999-- Discarding syms at 0x1ad43d40-0x1ad442d8 in /home/lvxiaojun/shaco/service_gate.so due to munmap()
---21999-- Discarding syms at 0x1af45b30-0x1af469c8 in /home/lvxiaojun/shaco/service_game.so due to munmap()
-==21999== 
-==21999== HEAP SUMMARY:
-==21999==     in use at exit: 200 bytes in 2 blocks
-==21999==   total heap usage: 461 allocs, 459 frees, 335,097,040 bytes allocated
-==21999== 
-==21999== Searching for pointers to 2 not-freed blocks
-==21999== Checked 130,480 bytes
-==21999== 
-==21999== 32 bytes in 1 blocks are still reachable in loss record 1 of 2
-==21999==    at 0x4C2380C: calloc (vg_replace_malloc.c:467)
-==21999==    by 0x56F035F: _dlerror_run (dlerror.c:142)
-==21999==    by 0x56EFEE0: dlopen@@GLIBC_2.2.5 (dlopen.c:88)
-==21999==    by 0x4057FC: _open (dlmodule.c:16)
-==21999==    by 0x405B7C: dlmodule_load (dlmodule.c:82)
-==21999==    by 0x403A13: service_load (host_service.c:55)
-==21999==    by 0x4045BD: host_log_init (host_log.c:54)
-==21999==    by 0x403063: host_create (host.c:106)
-==21999==    by 0x402E1A: main (host_main.c:18)
-==21999== 
-==21999== 168 bytes in 1 blocks are still reachable in loss record 2 of 2
-==21999==    at 0x4C244E8: malloc (vg_replace_malloc.c:236)
-==21999==    by 0x4011CDB: add_to_global (dl-open.c:107)
-==21999==    by 0x4012276: dl_open_worker (dl-open.c:482)
-==21999==    by 0x400D905: _dl_catch_error (dl-error.c:178)
-==21999==    by 0x4011929: _dl_open (dl-open.c:568)
-==21999==    by 0x56EFF65: dlopen_doit (dlopen.c:67)
-==21999==    by 0x400D905: _dl_catch_error (dl-error.c:178)
-==21999==    by 0x56F02EB: _dlerror_run (dlerror.c:164)
-==21999==    by 0x56EFEE0: dlopen@@GLIBC_2.2.5 (dlopen.c:88)
-==21999==    by 0x4057FC: _open (dlmodule.c:16)
-==21999==    by 0x405B7C: dlmodule_load (dlmodule.c:82)
-==21999==    by 0x403A13: service_load (host_service.c:55)
-==21999== 
-==21999== LEAK SUMMARY:
-==21999==    definitely lost: 0 bytes in 0 blocks
-==21999==    indirectly lost: 0 bytes in 0 blocks
-==21999==      possibly lost: 0 bytes in 0 blocks
-==21999==    still reachable: 200 bytes in 2 blocks
-==21999==         suppressed: 0 bytes in 0 blocks
-==21999== 
-==21999== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 25 from 7)
---21999-- 
---21999-- used_suppression:     23 dl-hack3-cond-1
---21999-- used_suppression:      2 glibc-2.5.x-on-SUSE-10.2-(PPC)-2a
+==21720== WARNING: new redirection conflicts with existing -- ignoring it
+--21720--     new: 0x05b75430 (__GI_strchr         ) R-> 0x04c25320 index
+--21720-- Discarding syms at 0x1af45b30-0x1af469c8 in /home/lvxiaojun/shaco/service_game.so due to munmap()
+--21720-- Reading syms from /home/lvxiaojun/shaco/service_game.so (0x1af45000)
+--21720-- REDIR: 0x5b79560 (memmove) redirected to 0x4c26ae0 (memmove)
+==21720== Syscall param write(buf) points to uninitialised byte(s)
+==21720==    at 0x5BBE8D0: __write_nocancel (syscall-template.S:82)
+==21720==    by 0x4E2A7B9: net_send (net.c:444)
+==21720==    by 0x4033CF: host_net_send (host_net.c:98)
+==21720==    by 0x1AF463B0: _multicast_msg (service_game.c:179)
+==21720==    by 0x1AF46CEC: _logout (service_game.c:325)
+==21720==    by 0x1AF471AF: game_net (service_game.c:428)
+==21720==    by 0x4036A7: service_notify_net (host_service.c:189)
+==21720==    by 0x1AD44047: gate_net (service_gate.c:123)
+==21720==    by 0x4036A7: service_notify_net (host_service.c:189)
+==21720==    by 0x1AD440A0: gate_net (message_reader.h:31)
+==21720==    by 0x4036A7: service_notify_net (host_service.c:189)
+==21720==    by 0x403443: host_net_poll (host_net.c:45)
+==21720==  Address 0x7ff00016a is on thread 1's stack
+==21720== 
+--21720-- Discarding syms at 0x1af45b60-0x1af472e8 in /home/lvxiaojun/shaco/service_game.so due to munmap()
+--21720-- Reading syms from /home/lvxiaojun/shaco/service_game.so (0x1af45000)
+==21720== Syscall param write(buf) points to uninitialised byte(s)
+==21720==    at 0x5BBE8D0: __write_nocancel (syscall-template.S:82)
+==21720==    by 0x4E2A7B9: net_send (net.c:444)
+==21720==    by 0x4033CF: host_net_send (host_net.c:98)
+==21720==    by 0x1AF4637C: _multicast_msg (service_game.c:177)
+==21720==    by 0x1AF46CB4: _logout (service_game.c:323)
+==21720==    by 0x1AF47159: game_net (service_game.c:425)
+==21720==    by 0x4036A7: service_notify_net (host_service.c:189)
+==21720==    by 0x1AD44047: gate_net (service_gate.c:123)
+==21720==    by 0x4036A7: service_notify_net (host_service.c:189)
+==21720==    by 0x1AD440A0: gate_net (message_reader.h:31)
+==21720==    by 0x4036A7: service_notify_net (host_service.c:189)
+==21720==    by 0x403443: host_net_poll (host_net.c:45)
+==21720==  Address 0x7ff00016a is on thread 1's stack
+==21720== 
+ssion:      2 glibc-2.5.x-on-SUSE-10.2-(PPC)-2a
 ==21999== 
 ==21999== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 25 from 7)

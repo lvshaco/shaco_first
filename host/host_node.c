@@ -314,7 +314,10 @@ host_node_disconnect(int connid) {
 
 void 
 host_node_foreach(uint16_t tid, int (*cb)(const struct host_node*, void* ud), void* ud) {
-    struct _array* arr; struct host_node* node; int i; if (tid >= 0 && tid < N->size) {
+    struct _array* arr; 
+    struct host_node* node; 
+    int i; 
+    if (tid >= 0 && tid < N->size) {
         arr = &N->nodes[tid];
         for (i=0; i<arr->size; ++i) {
             node = &arr->p[i];
@@ -362,5 +365,13 @@ host_node_updateload(uint16_t id, int value) {
     struct host_node* node = _get_node(id);
     if (node) {
         node->load += value;
+    }
+}
+
+void 
+host_node_setload(uint16_t id, int value) {
+    struct host_node* node = _get_node(id);
+    if (node) {
+        node->load = value;
     }
 }
