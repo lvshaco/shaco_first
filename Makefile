@@ -114,7 +114,7 @@ all: \
 	$(service_so) \
 	world.so \
 	$(worldservice_so) \
-	service_worlddb.so \
+	service_playerdb.so \
 	service_benchmarkdb.so \
 	service_redisproxy.so \
 	service_login.so
@@ -130,7 +130,7 @@ $(worldservice_so): %.so: $(service_dir)/%.c
 	@rm -f $@
 	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Ihost -Inet -Ibase -Imessage -Iworld -Itplt -Idatadefine -Wl,-rpath,. world.so tplt.so
 
-service_worlddb.so: $(service_dir)/service_worlddb.c
+service_playerdb.so: $(service_dir)/service_playerdb.c
 	@rm -f $@
 	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Ihost -Inet -Ibase -Imessage -Iworld -Iredis -Wl,-rpath,. world.so redis.so
 

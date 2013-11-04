@@ -13,6 +13,7 @@
 #define IDUM_LOGINFAIL      IDUM_CBEGIN+2
 #define IDUM_LOGOUT         IDUM_CBEGIN+3
 #define IDUM_CHARINFO       IDUM_CBEGIN+4
+#define IDUM_CHARCREATE     IDUM_CBEGIN+5
 #define IDUM_LOGINACCOUNT   IDUM_CBEGIN+10
 #define IDUM_LOGINACCOUNTFAIL IDUM_CBEGIN+11
 #define IDUM_NOTIFYGATE IDUM_CBEGIN+12
@@ -81,18 +82,20 @@ struct UM_LOGIN {
     char account[ACCOUNT_NAME_MAX];
 };
 
-#define LOGOUT_NORMAL 0
-#define LOGOUT_TIMEOUT 1
-#define LOGOUT_SOCKERR 2
-#define LOGOUT_VERIFY 3
-#define LOGOUT_GATEMAX 4
-#define LOGOUT_FULL LOGOUT_GATEMAX
-#define LOGOUT_RELOGIN LOGOUT_GATEMAX+1
-#define LOGOUT_NOLOGIN LOGOUT_GATEMAX+2
 
 struct UM_LOGOUT {
     _UM_HEADER;
-    int8_t type;
+    int32_t error; // see SERR_OK
+};
+
+struct UM_LOGINFAIL {
+    _UM_HEADER;
+    int32_t error; // see SERR_OK
+};
+
+struct UM_CHARCREATE {
+    _UM_HEADER;
+    char name[CHAR_NAME_MAX];
 };
 
 struct UM_CHARINFO {

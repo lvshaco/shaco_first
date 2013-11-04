@@ -108,13 +108,14 @@ struct UM_MINLOADFAIL {
 // redisproxy
 struct UM_REDISQUERY {
     _UM_HEADER;
-    int32_t tag; // == 0 mean no need reply
+    uint16_t needreply:1;
+    uint16_t cbsz:15; 
     char data[];
 };
 
 struct UM_REDISREPLY {
     _UM_HEADER;
-    int32_t tag;
+    uint16_t cbsz;
     char data[];
 };
 

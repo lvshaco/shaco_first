@@ -3,6 +3,8 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+#include <string.h>
+#include <stdlib.h>
 
 #define DEPTH 7
 
@@ -66,5 +68,24 @@ void redis_resetreply(struct redis_reply* reply);
 void redis_resetreplybuf(struct redis_reply* reply, char* buf, int cap);
 
 void redis_walkreply(struct redis_reply* reply);
+
+static inline int
+redis_bulkitem_isnull(struct redis_replyitem* item) {
+    int len = item->value.len;
+    return len == 4 && memcmp(item->value.p, "null", 4) == 0;
+}
+
+static inline uint32_t
+redis_bulkitem_toul(struct redis_replyitem* item) { 
+    int len = item->value.len;
+    if (len == 4 && memcmp(item->value.p, "null", 4) == 0)
+        return 0;
+    char tmp[16];
+    if (len >= sizeof(tmp))
+        len = sizeof(tmp) - 1;
+    memcpy(tmp, item->value.p, len);
+    tmp[sizeof(tmp)-1] = '\0';
+    return strtoul(tmp, NULL, 10); 
+}
 
 #endif

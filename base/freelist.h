@@ -1,10 +1,6 @@
 #ifndef __freelist_h__
 #define __freelist_h__
 
-#define FREELIST_ENTRY(type, dtype) \
-    struct dtype data; \
-    struct type* next;
-
 #define FREELIST(type) \
     int sz; \
     struct type* free; \
@@ -31,15 +27,18 @@
     (fl)->sz = 0;               \
 } while(0)
 
-#define FREELIST_PUSH(type, fl, value) do { \
+#define FREELIST_ALLOC(type, fl, size) ({ \
     struct type* one = (fl)->free;  \
     if (one == NULL) {              \
-        one = malloc(sizeof(*one)); \
+        one = malloc(size); \
         (fl)->sz++;                 \
     } else {                        \
         (fl)->free = one->next;     \
     }                               \
-    one->data = *(value);           \
+    one;                            \
+})
+
+#define FREELIST_PUSH(type, fl, one) do { \
     one->next = NULL;               \
     if ((fl)->head == NULL) {       \
         (fl)->head = one;           \
@@ -52,16 +51,15 @@
     }                               \
 } while(0)
 
-#define FREELIST_HEAD(type, fl) \
-    (fl)->head ? &(fl)->head->data : NULL
-
-#define FREELIST_POP(type, fl) do { \
-    assert((fl)->head);             \
-    struct type* pop = (fl)->head;  \
-    (fl)->head = pop->next;         \
-    pop->next = (fl)->free;         \
-    (fl)->free = pop;               \
-} while(0)
+#define FREELIST_POP(type, fl) ({ \
+    struct type* pop = (fl)->head; \
+    if (pop) {                     \
+        (fl)->head = pop->next;    \
+        pop->next = (fl)->free;    \
+        (fl)->free = pop;          \
+    }                              \
+    pop;                           \
+})
 
 #define FREELIST_POPALL(type, fl) do {  \
     if ((fl)->head) {                   \

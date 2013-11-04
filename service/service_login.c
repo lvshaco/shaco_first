@@ -5,10 +5,12 @@
 #include "host_gate.h"
 #include "host_log.h"
 #include "host_timer.h"
+#include "host_assert.h"
 #include "redis.h"
 #include "cli_message.h"
 #include "user_message.h"
 #include "node_type.h"
+#include "memrw.h"
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
@@ -98,12 +100,17 @@ _query(struct login* self, struct gate_client* c, struct player* p) {
     if (redisp == NULL) {
         return 1;
     }
-    char buf[1024];
-    snprintf(buf, sizeof(buf), "hmget user:%s id name passwd\r\n", p->account);
     UM_DEFVAR(UM_REDISQUERY, rq);
-    int len = snprintf(rq->data, rq->msgsz-sizeof(*rq), "hgetall user:%s\r\n", p->account);
-    rq->tag = c->connid;
-    UM_SENDTONODE(redisp, rq, sizeof(*rq) + len);
+    rq->needreply = 1;
+    struct memrw rw;
+    memrw_init(&rw, rq->data, rq->msgsz - sizeof(*rq));
+    memrw_write(&rw, (int*)&c->connid, sizeof(int));
+    memrw_write(&rw, p->account, sizeof(p->account));
+    rq->cbsz = RW_CUR(&rw);
+    int len = snprintf(rw.ptr, RW_SPACE(&rw), "hmget user:%s id passwd\r\n", p->account);
+    memrw_pos(&rw, len);
+    rq->msgsz = sizeof(*rq) + RW_CUR(&rw);
+    UM_SENDTONODE(redisp, rq, rq->msgsz);
     return 0;
 }
 
@@ -160,10 +167,14 @@ _checkvalue(struct redis_replyitem* f, const char* value) {
 
 static void
 _handleredis(struct login* self, struct node_message* nm) {
-    assert(nm->um->msgid == IDUM_REDISREPLY);
+    hassertlog(nm->um->msgid == IDUM_REDISREPLY);
 
     UM_CAST(UM_REDISREPLY, rep, nm->um);
-    struct gate_client* c = host_gate_getclient(rep->tag);
+    struct memrw rw;
+    memrw_init(&rw, rep->data, rep->msgsz - sizeof(*rep));
+    int cid;
+    memrw_read(&rw, &cid, sizeof(cid));
+    struct gate_client* c = host_gate_getclient(cid);
     if (c == NULL) {
         return; // maybe disconnect
     }
@@ -171,7 +182,12 @@ _handleredis(struct login* self, struct node_message* nm) {
     if (p == NULL) {
         return; // maybe disconnect, and other connect but not logined
     }
-   
+    char account[ACCOUNT_NAME_MAX];
+    memrw_read(&rw, account, sizeof(account));
+    if (memcmp(p->account, account, sizeof(account)) == 0) {
+        return; // other
+    }
+    
     int result = ERR_REDIS;
 
     int sz = rep->msgsz - sizeof(*rep);
@@ -180,13 +196,17 @@ _handleredis(struct login* self, struct node_message* nm) {
         struct redis_replyitem* item = self->reply.stack[0];
         if (item->type == REDIS_REPLY_ARRAY) {
             int n = item->value.i;
-            if (n == 3) {
-                if (_checkvalue(&item->child[1], p->account) == 0 &&
-                    _checkvalue(&item->child[2], p->passwd) == 0) {
-                    p->accid = item->value.i;
-                    p->key = (((uint64_t)p->accid) << 32) | (++self->key);
-                    p->state = STATE_VERIFYED;
-                    result = VERIFY_OK;
+            if (n == 2) {
+                if (_checkvalue(&item->child[1], p->passwd) == 0) {
+                    uint32_t accid = redis_bulkitem_toul(&item->child[0]);
+                    if (accid > 0) {
+                        p->accid = accid;
+                        p->key = (((uint64_t)p->accid) << 32) | (++self->key);
+                        p->state = STATE_VERIFYED;
+                        result = VERIFY_OK;
+                    } else {
+                        result = VERIFY_FAIL;
+                    }
                 } else {
                     result = VERIFY_FAIL;
                 }

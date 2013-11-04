@@ -3,6 +3,23 @@
 
 #include <stdint.h>
 
+// shaco 错误号
+#define SERR_OK 0
+#define SERR_UNKNOW 1
+#define SERR_TIMEOUT 2
+#define SERR_SOCKET 3
+#define SERR_DBERR 10
+#define SERR_DBREPLY 11
+#define SERR_DBREPLYTYPE 12
+#define SERR_NODB 13
+#define SERR_NOCHAR 20
+#define SERR_NAMEEXIST 21
+#define SERR_RELOGIN 30
+#define SERR_WORLDFULL 31
+#define SERR_ACCLOGINED 32
+#define SERR_NOLOGIN 33
+
+
 #pragma pack(1)
 
 // character
@@ -14,6 +31,7 @@
 struct chardata {
     uint32_t charid;
     char name[CHAR_NAME_MAX];
+    uint32_t accid;   // 账号ID
     uint16_t level;   // 当前等级
     uint32_t exp;     // 当前等级经验
 

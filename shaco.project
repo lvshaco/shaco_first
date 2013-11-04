@@ -82,6 +82,7 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.py *.h *.c" {
   cnet.c
  }
  service=service{
+  playerdb.h
   worldhelper.h
   service_benchmark.c
   service_benchmarkdb.c
@@ -99,9 +100,9 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.py *.h *.c" {
   service_log.c
   service_login.c
   service_node.c
+  service_playerdb.c
   service_redisproxy.c
   service_world.c
-  service_worlddb.c
  }
  world=world{
   player.h

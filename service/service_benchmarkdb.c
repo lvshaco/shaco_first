@@ -8,6 +8,7 @@
 #include "redis.h"
 #include "user_message.h"
 #include "node_type.h"
+#include "memrw.h"
 #include <stdlib.h>
 #include <string.h>
 
@@ -60,16 +61,20 @@ _sendone(struct benchmarkdb* self) {
     }
     char* tmp;
     size_t len;
+    int32_t tag = 1;
     //tmp = "*2\r\n$7\r\nhgetall\r\n$6\r\nuser:1\r\n";
     //host_net_send(self->connid, tmp, strlen(tmp));
     //tmp = "PING\r\n";
     tmp="hgetall user:1\r\n";
     len = strlen(tmp);
     UM_DEFVAR(UM_REDISQUERY, rq);
-    rq->tag = 1;
-    strncpy(rq->data, tmp, len);
-
-    UM_SENDTONODE(redisp, rq, sizeof(*rq) + len);
+    
+    struct memrw rw;
+    memrw_init(&rw, rq->data, rq->msgsz - sizeof(*rq));
+    memrw_write(&rw, &tag, sizeof(tag));
+    memrw_write(&rw, tmp, len);
+    rq->msgsz = sizeof(*rq) + RW_CUR(&rw);
+    UM_SENDTONODE(redisp, rq, rq->msgsz);
     self->query_send++;
 }
 
@@ -77,14 +82,14 @@ static void
 _handleredisproxy(struct benchmarkdb* self, struct node_message* nm) {
     hassertlog(nm->um->msgid == IDUM_REDISREPLY);
 
+    int tag;
+
     UM_CAST(UM_REDISREPLY, rep, nm->um);
-    int sz = rep->msgsz - sizeof(*rep);
-    char tmp[64*1024];
-    strncpy(tmp, rep->data, sz);
-    tmp[sz] = '\0';
-    //host_error(tmp);
-    
-    redis_resetreplybuf(&self->reply, rep->data, sz);
+    struct memrw rw;
+    memrw_init(&rw, rep->data, rep->msgsz - sizeof(*rep));
+    memrw_read(&rw, &tag, sizeof(tag));
+
+    redis_resetreplybuf(&self->reply, rw.ptr, RW_SPACE(&rw));
     hassertlog(redis_getreply(&self->reply) == REDIS_SUCCEED);
     //redis_walkreply(&self->reply);
     self->query_done++;

@@ -9,6 +9,7 @@
 #include "cli_message.h"
 #include "node_type.h"
 #include "player.h"
+#include "playerdb.h"
 #include "worldhelper.h"
 #include "tplt_include.h"
 #include "tplt_struct.h"
@@ -18,6 +19,7 @@
 #include <assert.h>
 
 struct world {
+    uint32_t dbhandler;
     uint32_t chariditer;
 };
 
@@ -51,6 +53,12 @@ _loadtplt() {
 int
 world_init(struct service* s) {
     struct world* self = SERVICE_SELF;
+
+    self->dbhandler = service_query_id("playerdb");
+    if (self->dbhandler == SERVICE_INVALID) {
+        host_error("lost playerdb service");
+        return 1;
+    }
     if (_loadtplt()) {
         return 1;
     }
@@ -66,18 +74,10 @@ world_init(struct service* s) {
 }
 
 static void
-_build_chardata(struct chardata* data, uint32_t charid) {
-    // todo: this just for test 
-    memset(data, 0, sizeof(*data));
-    data->charid = charid;
-    snprintf(data->name, sizeof(data->name), "wabao-n%u", charid);
-    data->level = 1;
-    data->exp = 0;
-    data->coin = 1388888;
-    data->diamond = 88888;
-    data->package = 10;
-    data->role = 1;
-    data->skin = 1;
+_onlogin(struct player* p) {
+    p->status = PS_GAME;
+
+    struct chardata* data = &p->data;
     const struct tplt_visitor* vist = tplt_get_visitor(TPLT_ROLEDATA);
     const struct roledata_tplt* role = tplt_visitor_find(vist, data->role);
     if (role == NULL) {
@@ -87,48 +87,105 @@ _build_chardata(struct chardata* data, uint32_t charid) {
     data->oxygen = role->oxygen;
     data->body = role->body;
     data->quick = role->quick;
+
+    if (_hashplayer(p)) {
+        _forward_logout(p, SERR_WORLDFULL);
+        _freeplayer(p);
+        return;
+    }
+    UM_DEFFORWARD(fw, p->cid, UM_CHARINFO, ci);
+    ci->data = p->data;
+    _forward_toplayer(p, fw);
+}
+
+void
+world_service(struct service* s, struct service_message* sm) {
+    assert(sm->sz == sizeof(struct playerdbres));
+    struct playerdbres* res = sm->msg;
+    struct player* p = res->p;
+    switch (res->error) {
+    case SERR_OK:
+        if (p->status == PS_LOGIN) {
+            _onlogin(p);
+        }
+        break;
+    case SERR_NOCHAR:
+        _forward_loginfail(p, res->error);
+        break;
+    default:
+        _forward_logout(p, res->error);
+        _freeplayer(p);
+        break;
+    }
+}
+
+
+static int
+_dbcmd(struct world* self, struct player* p, int8_t type) {
+    struct service_message sm;
+    sm.sessionid = 0;
+    sm.source = 0;
+   
+    struct playerdbcmd cmd;
+    cmd.type = type;
+    cmd.p = p;
+    cmd.err = 1;
+    sm.msg = &cmd;
+    sm.sz = sizeof(struct playerdbcmd);
+    service_notify_service(self->dbhandler, &sm);
+    return cmd.err;
 }
 
 static void 
-_login(struct world* self, struct node_message* nm) {
-    UM_CAST(UM_FORWARD, req, nm->um);
-    const struct host_node* node = nm->hn;
-    int cid = req->cid;
+_login(struct world* self, const struct host_node* node, int cid, struct UM_BASE* um) {
+    UM_CAST(UM_LOGIN, lo, um);
 
     struct player* p;
     p = _getplayer(node->sid, cid);
     if (p != NULL) {
-        _forward_logoutplayer(node, cid, LOGOUT_RELOGIN);
-        return;
-    }
-    p = _allocplayer(node->sid, cid);
-    if (p == NULL) {
-        _forward_logoutplayer(node, cid, LOGOUT_FULL);
-        return;
-    }
-    p->status = PS_LOGIN;
-    uint32_t charid = self->chariditer++; 
-    _build_chardata(&p->data, charid);
-    p->status = PS_GAME;
-    
-    if (_hashplayer(p)) {
-        _forward_logoutplayer(node, cid, LOGOUT_FULL);
+        _forward_logout(p, SERR_RELOGIN);
         _freeplayer(p);
         return;
     }
-    UM_DEFFORWARD(fw, cid, UM_CHARINFO, ci);
-    ci->data = p->data;
-    UM_SENDFORWARD(node->connid, fw);
+    // todo: check repeat account
+
+    p = _allocplayer(node->sid, cid);
+    if (p == NULL) {
+        _forward_logout(p, SERR_WORLDFULL);
+        return;
+    }
+    
+    p->data.accid = lo->accid;
+    if (_dbcmd(self, p, PDB_QUERY)) {
+        _forward_logout(p, SERR_NODB);
+        _freeplayer(p);
+        return;
+    }
+}
+
+static void
+_createchar(struct world* self, const struct host_node* node, int cid, struct UM_BASE* um) {
+    UM_CAST(UM_CHARCREATE, cre, um);
+
+    struct player* p;
+    p = _getplayer(node->sid, cid);
+    if (p == NULL) {
+        return;
+    }
+    if (p->status == PS_WAITCREATECHAR) {
+        int len = sizeof(p->data.name) - 1;
+        memcpy(p->data.name, cre->name, len);
+        p->data.name[len] = '\0';
+        if (_dbcmd(self, p, PDB_CHECKNAME)) {
+            _forward_logout(p, SERR_NODB);
+            _freeplayer(p);
+        }
+    }
 }
 
 static void
 _logout(struct world* self, struct player* p) {
     _freeplayer(p);
-    //struct gate_message gm;
-    //gm.c = c;
-    //gm.msg = nm;
-    //service_notify_net(self->handler, (void*)&gm);
-    //host_gate_disconnclient(c, false);
 }
 
 static void 
@@ -138,7 +195,10 @@ _handlegate(struct world* self, struct node_message* nm) {
     UM_CAST(UM_FORWARD, fw, nm->um);
     switch (fw->wrap.msgid) {
     case IDUM_LOGIN:
-        _login(self, nm);
+        _login(self, nm->hn, fw->cid, &fw->wrap);
+        break;
+    case IDUM_CHARCREATE:
+        _createchar(self, nm->hn, fw->cid, &fw->wrap);
         break;
     default: {
         struct player_message pm;

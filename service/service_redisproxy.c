@@ -8,18 +8,18 @@
 #include "client_type.h"
 #include "redis.h"
 #include "freelist.h"
+#include "memrw.h"
 #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
 #include <assert.h>
 
-struct querycb {
-    uint16_t nodeid;
-    int32_t  tag; // == 0 mean no need reply
-};
-
 struct querylink {
-    FREELIST_ENTRY(querylink, querycb);
+    struct querylink* next;
+    uint16_t nodeid;
+    uint16_t needreply:1;
+    uint16_t cbsz:15;
+    char cb[];
 };
 
 struct queryqueue {
@@ -76,12 +76,12 @@ redisproxy_init(struct service* s) {
 static void
 _query(struct redisproxy* self, int id, struct UM_BASE* um) {
     UM_CAST(UM_REDISQUERY, rq, um);
-
-    int datasz = rq->msgsz - sizeof(*rq);
+    int datasz = (int)rq->msgsz - (int)sizeof(*rq) - (int)rq->cbsz;
     if (datasz < 3) {
         return; // need 3 bytes at least
     }
-    char* dataptr = rq->data;
+    int cbsz = rq->cbsz;
+    char* dataptr = rq->data + cbsz;
     int lastpos = 0; 
     int n = 0;
     int i;
@@ -97,11 +97,18 @@ _query(struct redisproxy* self, int id, struct UM_BASE* um) {
     if (lastpos != datasz) {
         return; // need endswith \r\n
     }
-    struct querycb cb;
-    cb.nodeid = um->nodeid;
-    cb.tag = rq->tag;
+    char* cbptr = rq->data;
     for (i=0; i<n; ++i) {
-        FREELIST_PUSH(querylink, &self->queryq, &cb);
+        struct querylink* ql = FREELIST_ALLOC(querylink, 
+                                              &self->queryq, 
+                                              sizeof(struct querylink) + cbsz);
+        ql->nodeid = rq->nodeid;
+        ql->needreply = rq->needreply;
+        ql->cbsz = cbsz;
+        if (cbsz > 0) {
+            memcpy(ql->cb, cbptr, cbsz);
+        }
+        FREELIST_PUSH(querylink, &self->queryq, ql);
     }
     host_net_send(self->connid, dataptr, datasz);
 }
@@ -120,28 +127,26 @@ redisproxy_nodemsg(struct service* s, int id, void* msg, int sz) {
 static void
 _handlereply(struct redisproxy* self) {
     //redis_walkreply(&self->reply); // todo: delete
-  
-    struct querycb* cb = FREELIST_HEAD(querylink, &self->queryq);
-    assert(cb);
-    struct querycb query = *cb;
-    FREELIST_POP(querylink, &self->queryq);
-    if (query.tag == 0) {
-        //host_debug("query.tag == 0");
-        return;
+
+    struct querylink* ql = FREELIST_POP(querylink, &self->queryq);
+    assert(ql);
+    if (ql->needreply == 0) {
+        return; // no need reply
     }
-    const struct host_node* node = host_node_get(query.nodeid);
+    const struct host_node* node = host_node_get(ql->nodeid);
     if (node == NULL) {
-        return;
+        return; // the node disconnect
     }
     UM_DEFVAR(UM_REDISREPLY, rep);
-    rep->tag = query.tag;
+    rep->cbsz = ql->cbsz;
+   
     struct redis_reader* reader = &self->reply.reader;
-    assert(reader->pos > 0);
-    assert(reader->pos <= (rep->msgsz - sizeof(*rep)));
-    memcpy(rep->data, reader->buf, reader->pos);
-    rep->msgsz = reader->pos + sizeof(*rep);
+    struct memrw rw;
+    memrw_init(&rw, rep->data, rep->msgsz - sizeof(*rep));
+    memrw_write(&rw, ql->cb, ql->cbsz);
+    memrw_write(&rw, reader->buf, reader->pos);
+    rep->msgsz = RW_CUR(&rw) + sizeof(*rep);
     UM_SENDTONODE(node, rep, rep->msgsz);
-    //host_debug("send to %d, len=%d", query.nodeid, reader->pos);
 }
 
 static void

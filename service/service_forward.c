@@ -175,11 +175,8 @@ _handledef(struct node_message* nm) {
     if (c) {
         host_debug("Send msg:%u",  m->msgid);
         if (m->msgid == IDUM_LOGOUT) {
-            UM_CAST(UM_LOGOUT, lo, m);
-            if (lo->type >= LOGOUT_GATEMAX) {
-                UM_SENDTOCLI(c->connid, m, m->msgsz);
-                host_gate_disconnclient(c, true);
-            }
+            UM_SENDTOCLI(c->connid, m, m->msgsz);
+            host_gate_disconnclient(c, true);
         } else {
             UM_SENDTOCLI(c->connid, m, m->msgsz);
         }
@@ -209,10 +206,10 @@ forward_net(struct service* s, struct gate_message* gm) {
     UM_DEFFIX(UM_LOGOUT, logout);
     switch (nm->type) {
     case NETE_SOCKERR:
-        logout->type = LOGOUT_SOCKERR;
+        logout->error = SERR_SOCKET;
         _forward_world(gm->c, (struct UM_BASE*)logout);
     case NETE_TIMEOUT:
-        logout->type = LOGOUT_TIMEOUT;
+        logout->error = SERR_TIMEOUT;
         _forward_world(gm->c, (struct UM_BASE*)logout);
         break;
     }

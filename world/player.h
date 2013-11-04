@@ -5,6 +5,12 @@
 #include <stdint.h>
 
 #define PS_FREE  0
+#define PS_QUERYCHAR 1
+#define PS_WAITCREATECHAR 2
+#define PS_CHECKCHARNAME 3
+#define PS_CHARUNIQUEID 4
+#define PS_CREATECHAR 5
+#define PS_LOADCHAR 6
 #define PS_LOGIN 1
 #define PS_GAME  2
 #define PS_WAITING  3

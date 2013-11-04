@@ -13,31 +13,37 @@ struct player_message {
     struct player* p;
 };
 
-static inline void _forward_logoutplayer(const struct host_node* node, int cid, int8_t type);
-static inline void _forward_toplayer(struct player* p, struct UM_FORWARD* fw);
-static inline int  _decode_playermessage(struct node_message* nm, struct player_message* pm);
-    
-static inline void
-_forward_logoutplayer(const struct host_node* node, int cid, int8_t type) {
-    UM_DEFFORWARD(fw, cid, UM_LOGOUT, lo);
-    lo->type = type;
-    UM_SENDFORWARD(node->connid, fw);
-}
 static inline void
 _forward_toplayer(struct player* p, struct UM_FORWARD* fw) {
-    const struct host_node* n;
-    n = host_node_get(HNODE_ID(NODE_GATE, p->gid));
+    const struct host_node* n = host_node_get(HNODE_ID(NODE_GATE, p->gid));
     if (n) {
         UM_SENDFORWARD(n->connid, fw);
     }
 }
+
+static inline void
+_forward_logout(struct player* p, int32_t error) {
+    UM_DEFFORWARD(fw, p->cid, UM_LOGOUT, lo);
+    lo->error = error;
+    _forward_toplayer(p, fw);
+}
+
+static inline void
+_forward_loginfail(struct player* p, int32_t error) {
+    UM_DEFFORWARD(fw, p->cid, UM_LOGINFAIL, lf);
+    lf->error = error;
+    _forward_toplayer(p, fw);
+}
+
 static inline int
 _decode_playermessage(struct node_message* nm, struct player_message* pm) {
     const struct host_node* hn = nm->hn;
     UM_CAST(UM_FORWARD, fw, nm->um);
     struct player* p = _getplayer(hn->sid, fw->cid);
     if (p == NULL) {
-        _forward_logoutplayer(hn, fw->cid, LOGOUT_NOLOGIN);
+        UM_DEFFORWARD(fw, p->cid, UM_LOGOUT, lo);
+        lo->error = SERR_NOLOGIN;
+        UM_SENDFORWARD(hn->connid, fw);
         return 1;
     }
     pm->hn = hn; 

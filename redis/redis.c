@@ -238,8 +238,8 @@ _read_bulkitem(struct redis_reply* reply) {
         item->value.p = READ_PTR(reader);
     }
     if (item->value.len <= 0) {
-        item->value.p = "null";
-        item->value.len = 4;
+        item->value.p = "";
+        //item->value.len = 0;
     } else { 
         if (_readbytes(reader, item->value.len+2) == NULL) {
             return REDIS_NEXTTIME;
@@ -389,13 +389,17 @@ _print_type(char type, int depth) {
 
 static void
 _print_stringitem(struct redis_replyitem* item) {
-    char tmp[1024];
     int len = item->value.len;
-    if (len >= sizeof(tmp))
-        len = sizeof(tmp)-1;
-    strncpy(tmp, item->value.p, len);
-    tmp[len] = '\0';
-    printf("%s\n", tmp);
+    if (len <= 0) {
+        printf("null\n");
+    } else {
+        char tmp[1024];
+        if (len >= sizeof(tmp))
+            len = sizeof(tmp)-1;
+        strncpy(tmp, item->value.p, len);
+        tmp[len] = '\0';
+        printf("%s\n", tmp);
+    }
 }
 
 static void
