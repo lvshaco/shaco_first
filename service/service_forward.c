@@ -1,4 +1,5 @@
 #include "host_service.h"
+#include "host_timer.h"
 #include "host_gate.h"
 #include "host_node.h"
 #include "host_dispatcher.h"
@@ -11,6 +12,7 @@
 #include <assert.h>
 
 struct accinfo {
+    uint64_t regtime;
     uint32_t accid;
     uint64_t key;
     uint32_t clientip;
@@ -36,12 +38,16 @@ forward_create() {
     return self;
 }
 
+static void
+_freecb(uint32_t key, void* value, void* ud) {
+    free(value);
+}
 void
 forward_free(struct forward* self) {
     if (self == NULL)
         return;
     free(self->players);
-    // todo: free all accinfo
+    idmap_foreach(self->regacc, _freecb, NULL);
     idmap_free(self->regacc);
     free(self);
 }
@@ -56,6 +62,7 @@ forward_init(struct service* s) {
     self->regacc = idmap_create(cmax); // memory
 
     SUBSCRIBE_MSG(s->serviceid, IDUM_FORWARD);
+    host_timer_register(s->serviceid, 1000);
     return 0;
 }
 
@@ -78,6 +85,26 @@ _forward_world(struct gate_client* c, struct UM_BASE* um) {
     }
 }
 
+static inline void
+_updateload() {
+    const struct host_node* node = host_node_get(HNODE_ID(NODE_LOAD, 0));
+    if (node) {
+        UM_DEFFIX(UM_UPDATELOAD, load);
+        load->value = host_gate_usedclient();
+        UM_SENDTONODE(node, load, load->msgsz);
+    }
+}
+
+static inline void
+_onaccept() {
+    _updateload();
+}
+
+static inline void
+_ondisconn() {
+    _updateload();
+}
+
 static int
 _login(struct forward* self, struct gate_client* c, struct UM_BASE* um) {
     struct player* p = _getplayer(self, c);
@@ -89,6 +116,7 @@ _login(struct forward* self, struct gate_client* c, struct UM_BASE* um) {
     struct accinfo* acc = idmap_remove(self->regacc, login->accid);
     if (acc == NULL) {
         host_gate_disconnclient(c, true);
+        _ondisconn();
         return 1;
     }
     login->account[sizeof(login->account)-1] = '\0';
@@ -123,6 +151,7 @@ forward_usermsg(struct service* s, int id, void* msg, int sz) {
     } else {
         // todo: just disconnect it ?
         host_gate_disconnclient(c, true); 
+        _ondisconn();
     }
 }
 
@@ -132,6 +161,7 @@ _accountreg(struct forward* self, int fid, const struct host_node* source, struc
     struct accinfo* acc = idmap_find(self->regacc, reg->accid);
     if (acc == NULL) {
         acc = malloc(sizeof(*acc));
+        acc->regtime = host_timer_now();
         acc->accid = reg->accid;
         acc->key = reg->key;
         acc->clientip = reg->clientip;
@@ -139,6 +169,7 @@ _accountreg(struct forward* self, int fid, const struct host_node* source, struc
         idmap_insert(self->regacc, reg->accid, acc);
     } else {
         // update (wait for the key timeout is not good!)
+        acc->regtime = host_timer_now();
         acc->key = reg->key;
         acc->clientip = reg->clientip;
         strncpy(acc->account, reg->account, ACCOUNT_NAME_MAX);
@@ -181,6 +212,7 @@ _handledef(struct node_message* nm) {
         if (m->msgid == IDUM_LOGOUT) {
             UM_SENDTOCLI(c->connid, m, m->msgsz);
             host_gate_disconnclient(c, true);
+            _ondisconn();
         } else {
             UM_SENDTOCLI(c->connid, m, m->msgsz);
         }
@@ -209,12 +241,37 @@ forward_net(struct service* s, struct gate_message* gm) {
     struct net_message* nm = gm->msg;
     UM_DEFFIX(UM_LOGOUT, logout);
     switch (nm->type) {
+    case NETE_ACCEPT:
+        _onaccept();
+        break;
     case NETE_SOCKERR:
         logout->error = SERR_SOCKET;
         _forward_world(gm->c, (struct UM_BASE*)logout);
+        _ondisconn();
+        break;
     case NETE_TIMEOUT:
         logout->error = SERR_TIMEOUT;
         _forward_world(gm->c, (struct UM_BASE*)logout);
+        _ondisconn();
         break;
     }
+}
+
+static void
+_acctimecb(uint32_t key, void* value, void* ud) {
+    struct forward* self = ud;
+    struct accinfo* acc = value;
+    uint64_t now = host_timer_now();
+    if (now > acc->regtime &&
+        now - acc->regtime > 10*1000) {
+        // todo: optimize
+        void* rm = idmap_remove(self->regacc, key);
+        free(rm);
+    }
+}
+
+void
+forward_time(struct service* s) {
+    struct forward* self= SERVICE_SELF;
+    idmap_foreach(self->regacc, _acctimecb, self);
 }

@@ -6,6 +6,7 @@
 
 struct gate {
     int cmax;
+    int used;
     struct freeid fi;
     struct gate_client* p;
 };
@@ -59,6 +60,7 @@ host_gate_acceptclient(int connid, uint64_t now) {
     c->create_time = now;
     c->active_time = now;
     host_net_subscribe(connid, true);
+    G->used++;
     return c;
 }
 
@@ -72,6 +74,7 @@ host_gate_disconnclient(struct gate_client* c, bool closesocket) {
     c->connid = -1;
     c->create_time = 0;
     c->active_time = 0;
+    G->used--;
     return 0;
 }
 
@@ -93,6 +96,10 @@ host_gate_firstclient() {
 int
 host_gate_maxclient() {
     return G->cmax;
+}
+int 
+host_gate_usedclient() {
+    return G->used;
 }
 int 
 host_gate_clientid(struct gate_client* c) {

@@ -116,7 +116,11 @@ gate_net(struct service* s, struct net_message* nm) {
         c = host_gate_acceptclient(id, now);
         if (c == NULL) {
             host_gate_disconnclient(c, true);
-            break;
+        } else {
+            struct gate_message gm;
+            gm.c = c;
+            gm.msg = nm;
+            service_notify_net(self->handler, (void*)&gm);
         }
         }
         break;

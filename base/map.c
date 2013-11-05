@@ -127,13 +127,14 @@ idmap_remove(struct idmap* self, uint32_t key) {
 
 void 
 idmap_foreach(struct idmap* self, void (*cb)(uint32_t key, void* value, void* ud), void* ud) {
-    struct idelement* e;
+    struct idelement* e, *tmp;
     uint32_t i;
     for (i=0; i<self->cap; ++i) {
         e = self->slots[i];
         while (e) {
-            cb(e->key, e->pointer, ud);
+            tmp = e;
             e = e->next;
+            cb(tmp->key, tmp->pointer, ud);
         }
     }
 }
@@ -255,13 +256,14 @@ strmap_remove(struct strmap* self, const char* key) {
 
 void 
 strmap_foreach(struct strmap* self, void (*cb)(const char* key, void* value, void* ud), void* ud) {
-    struct strelement* e;
+    struct strelement* e, *tmp;
     uint32_t i;
     for (i=0; i<self->cap; ++i) {
         e = self->slots[i];
         while (e) {
-            cb(e->key, e->pointer, ud);
+            tmp = e;
             e = e->next;
+            cb(tmp->key, tmp->pointer, ud);
         }
     }
 }

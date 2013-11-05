@@ -5,6 +5,7 @@
 #include "host_log.h"
 #include "host_node.h"
 #include "host_reload.h"
+#include "host_gate.h"
 #include "node_type.h"
 #include "user_message.h"
 #include "args.h"
@@ -115,6 +116,13 @@ _time(struct args* A, struct memrw* rw) {
     memrw_pos(rw, n);
     return R_OK;
 }
+static int
+_players(struct args* A, struct memrw* rw) {
+    int count = host_gate_usedclient();
+    int n = snprintf(rw->ptr, RW_SPACE(rw), "[%d]", count);
+    memrw_pos(rw, n);
+    return R_OK;
+}
 
 ///////////////////
 struct command {
@@ -131,6 +139,7 @@ static struct command COMMAND_MAP[] = {
     { "start",       _start },
     { "startmem",    _startmem },
     { "time",        _time },
+    { "players",     _players },
     { NULL, NULL },
 };
 
