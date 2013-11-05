@@ -28,9 +28,11 @@ struct player {
 void _allocplayers(int cmax, int hmax, int gmax);
 void _freeplayers();
 struct player* _getplayer(uint16_t gid, int cid);
-struct player* _getplayerbyid(uint32_t charid);
+struct player* _getplayerbycharid(uint32_t charid);
+struct player* _getplayerbyaccid(uint32_t accid);
 struct player* _allocplayer(uint16_t gid, int cid);
 void _freeplayer(struct player* p);
+int  _hashplayeracc(struct player* p);
 int  _hashplayer(struct player* p);
 
 #endif

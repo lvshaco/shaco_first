@@ -35,15 +35,20 @@ _forward_loginfail(struct player* p, int32_t error) {
     _forward_toplayer(p, fw);
 }
 
+static inline void
+_forward_connlogout(const struct host_node* node, int cid, int32_t error) {
+    UM_DEFFORWARD(fw, cid, UM_LOGOUT, lo);
+    lo->error = error;
+    UM_SENDFORWARD(node->connid, fw);
+}
+
 static inline int
 _decode_playermessage(struct node_message* nm, struct player_message* pm) {
     const struct host_node* hn = nm->hn;
     UM_CAST(UM_FORWARD, fw, nm->um);
     struct player* p = _getplayer(hn->sid, fw->cid);
     if (p == NULL) {
-        UM_DEFFORWARD(fw, p->cid, UM_LOGOUT, lo);
-        lo->error = SERR_NOLOGIN;
-        UM_SENDFORWARD(hn->connid, fw);
+        _forward_connlogout(hn, p->cid, SERR_NOLOGIN);
         return 1;
     }
     pm->hn = hn; 

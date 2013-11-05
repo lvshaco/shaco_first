@@ -139,25 +139,35 @@ _dbcmd(struct world* self, struct player* p, int8_t type) {
 static void 
 _login(struct world* self, const struct host_node* node, int cid, struct UM_BASE* um) {
     UM_CAST(UM_LOGIN, lo, um);
-
+    uint32_t accid = lo->accid;
     struct player* p;
+    struct player* other;
+
     p = _getplayer(node->sid, cid);
     if (p != NULL) {
-        _forward_logout(p, SERR_RELOGIN);
+        _forward_connlogout(node, cid, SERR_RELOGIN);
         _freeplayer(p);
         return;
     }
-    // todo: check repeat account
-
-    p = _allocplayer(node->sid, cid);
-    if (p == NULL) {
-        _forward_logout(p, SERR_WORLDFULL);
+    other = _getplayerbyaccid(accid);
+    if (other) {
+        _forward_connlogout(node, cid, SERR_ACCLOGINED);
+        _freeplayer(p);
         return;
     }
-    
-    p->data.accid = lo->accid;
+    p = _allocplayer(node->sid, cid);
+    if (p == NULL) {
+        _forward_connlogout(node, cid, SERR_WORLDFULL);
+        return;
+    }
+    p->data.accid = accid;
+    if (_hashplayeracc(p)) {
+        _forward_connlogout(node, cid, SERR_WORLDFULL);
+        _freeplayer(p);
+        return;
+    }
     if (_dbcmd(self, p, PDB_QUERY)) {
-        _forward_logout(p, SERR_NODB);
+        _forward_connlogout(node, cid, SERR_NODB);
         _freeplayer(p);
         return;
     }

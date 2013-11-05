@@ -9,6 +9,7 @@ struct player_holder {
     int gmax;
     struct freeid fi;
     struct hashid hi;
+    struct hashid hi2;
     struct player* p;
 };
 
@@ -30,12 +31,14 @@ _allocplayers(int cmax, int hmax, int gmax) {
     memset(PH->p, 0, sizeof(struct player) * gmax*cmax);
     freeid_init(&PH->fi, gmax*cmax, gmax*hmax);
     hashid_init(&PH->hi, gmax*cmax, gmax*hmax);
+    hashid_init(&PH->hi2, gmax*cmax, gmax*hmax);
 }
 void
 _freeplayers() {
     if (PH) {
         freeid_fini(&PH->fi);
         hashid_fini(&PH->hi);
+        hashid_fini(&PH->hi2);
         free(PH->p);
         free(PH);
         PH = NULL;
@@ -59,11 +62,22 @@ _getplayer(uint16_t gid, int cid) {
     return NULL;
 }
 struct player*
-_getplayerbyid(uint32_t charid) {
+_getplayerbycharid(uint32_t charid) {
     if (charid == 0) {
         return NULL;
     }
     int id = hashid_find(&PH->hi, charid);
+    if (id >= 0) {
+        return &PH->p[id];
+    }
+    return NULL;
+}
+struct player*
+_getplayerbyaccid(uint32_t accid) {
+    if (accid== 0) {
+        return NULL;
+    }
+    int id = hashid_find(&PH->hi2, accid);
     if (id >= 0) {
         return &PH->p[id];
     }
@@ -78,13 +92,28 @@ _allocplayer(uint16_t gid, int cid) {
             p = &PH->p[id];
             p->gid = gid;
             p->cid = cid;
+            assert(p->data.accid == 0);
+            assert(p->data.charid == 0);
+            assert(p->data.name[0] == '\0');
             return p;
         }
     }
     return NULL;
 }
+int
+_hashplayeracc(struct player* p) {
+    if (p->data.accid == 0)
+        return 1;
+    int id = hashid_alloc(&PH->hi2, p->data.accid);
+    if (id == -1)
+        return 1;
+    assert(id == p-PH->p);
+    return 0;
+}
 int 
 _hashplayer(struct player* p) {
+    if (p->data.charid == 0)
+        return 1;
     int id = hashid_alloc(&PH->hi, p->data.charid);
     if (id == -1)
         return 1;
@@ -98,9 +127,14 @@ _freeplayer(struct player* p) {
     int id1 = freeid_free(&PH->fi, hashid);
     assert(id1 >= 0);
     assert(id1 == p-PH->p);
-    if (p->data.charid > 0) {
-        int id2 = hashid_free(&PH->hi, p->data.charid);
+    if (p->data.accid > 0) {
+        int id2 = hashid_free(&PH->hi2, p->data.accid);
         assert(id1 == id2);
+        p->data.accid = 0;
+    }
+    if (p->data.charid > 0) {
+        int id3 = hashid_free(&PH->hi, p->data.charid);
+        assert(id1 == id3);
         p->data.charid = 0;
         p->data.name[0] = '\0';
     }

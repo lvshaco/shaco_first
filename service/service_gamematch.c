@@ -289,7 +289,7 @@ _match(struct gamematch* self, struct player* p, struct player* mp, int8_t type)
 static int
 _lookup(struct gamematch* self, struct player* p, int8_t type) {
     struct matchtag* mtag = &self->mtag;
-    struct player* mp = _getplayerbyid(mtag->charid);
+    struct player* mp = _getplayerbycharid(mtag->charid);
     if (mp == NULL) {
         p->status = PS_WAITING;
         _build_matchtag(p, mtag);
