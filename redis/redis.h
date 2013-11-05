@@ -71,16 +71,15 @@ void redis_walkreply(struct redis_reply* reply);
 
 static inline int
 redis_bulkitem_isnull(struct redis_replyitem* item) {
-    int len = item->value.len;
-    return len == 4 && memcmp(item->value.p, "null", 4) == 0;
+    return item->value.len <= 0;
 }
 
 static inline uint32_t
-redis_bulkitem_toul(struct redis_replyitem* item) { 
-    int len = item->value.len;
-    if (len == 4 && memcmp(item->value.p, "null", 4) == 0)
+redis_bulkitem_toul(struct redis_replyitem* item) {
+    if (redis_bulkitem_isnull(item))
         return 0;
     char tmp[16];
+    int len = item->value.len;
     if (len >= sizeof(tmp))
         len = sizeof(tmp) - 1;
     memcpy(tmp, item->value.p, len);

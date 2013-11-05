@@ -2,12 +2,16 @@
 #include "cli_message.h"
 #include <stdio.h>
 #include <assert.h>
+#include <string.h>
+#include <time.h>
 
-#define TGATE 0
-#define TGAME 1
-#define TMAX 2
+#define TLOGIN 0
+#define TGATE 1
+#define TGAME 2
+#define TMAX 3
 static int SERVER[TMAX];
 static struct UM_NOTIFYGAME GAMEADDR;
+static struct UM_NOTIFYGATE GATEADDR;
 static struct chardata CHAR;
 
 static void
@@ -32,9 +36,21 @@ _server_set(int t, int id) {
     cnet_send(SERVER[t], msg, sz);
 
 static void
+_login_account(int id) {
+    UM_DEFFIX(UM_LOGINACCOUNT, la);
+    strncpy(la->account, "wa_account_1", sizeof(la->account)-1);
+    strncpy(la->passwd, "123456", sizeof(la->passwd)-1);
+    _server_send(TLOGIN, la, sizeof(*la));
+    printf("request login account\n");
+}
+
+static void
 _login_gate(int id) {
-    UM_DEFFIX(UM_LOGIN, hb);
-    _server_send(TGATE, hb, sizeof(*hb));
+    UM_DEFFIX(UM_LOGIN, lo);
+    lo->accid = GATEADDR.accid;
+    lo->key = GATEADDR.key;
+    strcpy(lo->account, "wa_account_1");
+    _server_send(TGATE, lo, sizeof(*lo));
     printf("request login gate\n");
 }
 
@@ -59,6 +75,9 @@ _onconnect(struct net_message* nm) {
     cnet_subscribe(id, 1);
 
     switch (ut) {
+    case TLOGIN:
+        _login_account(id);
+        break;
     case TGATE:
         _login_gate(id);
         break;
@@ -80,6 +99,22 @@ _onsockerr(struct net_message* nm) {
 }
 
 static void
+_createchar() {
+    
+    UM_DEFFIX(UM_CHARCREATE, cre);
+    const char* prefix = "wa_char_";
+    int len = strlen(prefix);
+    strcpy(cre->name, prefix);
+    int i;
+    for (i=len; i<sizeof(cre->name)-1; ++i) {
+        cre->name[i] = rand()%26 + 'A';
+    }
+    cre->name[i] = '\0';
+    _server_send(TGATE, cre, sizeof(*cre));
+    printf("request create char: %s\n", cre->name);
+}
+
+static void
 _play(int type) {
     UM_DEFFIX(UM_PLAY, play);
     play->type = type;
@@ -91,11 +126,35 @@ static void
 _handleum(int id, int ut, struct UM_BASE* um) {
     printf("handleum: %d\n", um->msgid);
     switch (um->msgid) {
+    case IDUM_LOGINACCOUNTFAIL: {
+        UM_CAST(UM_LOGINACCOUNTFAIL, fail, um);
+        printf("accout login fail: error#%d\n", fail->error);
+        }
+        break;
+    case IDUM_NOTIFYGATE: {
+        UM_CAST(UM_NOTIFYGATE, g, um);
+        printf("accid %u, gate address: %0x:%u, key: %llu\n", 
+                g->accid, g->addr, g->port, (unsigned long long int)g->key);
+        GATEADDR = *g;
+        if (cnet_connecti(GATEADDR.addr, GATEADDR.port, TGATE) < 0) {
+            printf("connect gate fail\n");
+        }
+        }
+        break;
     case IDUM_LOGOUT: {
         UM_CAST(UM_LOGOUT, lo, um);
-        printf("login out: type %d\n", lo->type);
+        printf("gate logout: error %d\n", lo->error);
         break;
         }
+    case IDUM_LOGINFAIL: {
+        UM_CAST(UM_LOGINFAIL, fail, um);
+        printf("gate login fail: error %d\n", fail->error);
+        if (fail->error == SERR_NOCHAR ||
+            fail->error == SERR_NAMEEXIST) {
+            _createchar();
+        }
+        }
+        break;
     case IDUM_CHARINFO: {
         UM_CAST(UM_CHARINFO, ci, um);
         printf("charinfo: id %u, name %s\n", ci->data.charid, ci->data.name);
@@ -162,12 +221,13 @@ int main(int argc, char* argv[]) {
     if (argc < 3) {
         //printf("usage: test ip port\n");
         //return;
-        ip = "192.168.1.140";
-        port = 18100;
+        ip = "192.168.1.145";
+        port = 18600;
     } else {
         ip = argv[1];
         port = strtoul(argv[2], NULL, 10);
     }
+    srand(time(NULL));
     _server_init();
 
     if (cnet_init(10)) {
@@ -178,7 +238,7 @@ int main(int argc, char* argv[]) {
             _onconnerr, 
             _onsockerr, 
             _handleum);
-    if (cnet_connect(ip, port, TGATE) < 0) {
+    if (cnet_connect(ip, port, TLOGIN) < 0) {
         printf("connect gate fail\n");
         return 1;
     }

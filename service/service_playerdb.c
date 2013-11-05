@@ -12,6 +12,7 @@
 #include "playerdb.h"
 #include "sharetype.h"
 #include "memrw.h"
+#include "util.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -169,24 +170,17 @@ _db(struct player* p, int8_t type) {
     return 0;
 }
 
-static inline void
-mystrncpy(char* dest, int dlen, const char* src, int slen) {
-    if (dlen <= 0)
-        return;
-    int len = slen;
-    if (len >= dlen)
-        len = dlen - 1;
-    memcpy(dest, src, len);
-    dest[len] = '\0';
-}
-
 static int
 _loadpdb(struct player* p, struct redis_replyitem* item) {
     if (item->value.i != 8)
-        return 1;
+        return SERR_DBDATAERR;
     struct chardata* cdata = &p->data;
     struct redis_replyitem* si = item->child;
-    mystrncpy(cdata->name, sizeof(cdata->name), si->value.p, si->value.len); si++;
+    
+    if (strncpychk(cdata->name, sizeof(cdata->name), si->value.p, si->value.len)) {
+        return SERR_DBDATAERR; // maybe no char, this is a empty item, all value is "-1"
+    }
+    si++;
     cdata->level = redis_bulkitem_toul(si++);
     cdata->exp = redis_bulkitem_toul(si++);
     cdata->coin = redis_bulkitem_toul(si++);
@@ -194,7 +188,7 @@ _loadpdb(struct player* p, struct redis_replyitem* item) {
     cdata->package = redis_bulkitem_toul(si++);
     cdata->role = redis_bulkitem_toul(si++);
     cdata->skin = redis_bulkitem_toul(si++);
-    return 0;
+    return SERR_OK;
 }
 
 void
@@ -260,8 +254,11 @@ _handleredis(struct playerdb* self, struct node_message* nm) {
             p->status = PS_WAITCREATECHAR;
             serr = SERR_NOCHAR;
             break;
-        } 
-        p->data.charid = charid;
+        }
+        if (_hashplayer(p, charid)) {
+            serr = SERR_WORLDFULL;
+            break;
+        }
         p->status = PS_LOADCHAR;
         _db(p, PDB_LOAD);
         return;
@@ -285,7 +282,13 @@ _handleredis(struct playerdb* self, struct node_message* nm) {
         }
         if (!redis_bulkitem_isnull(item)) {
             p->status = PS_WAITCREATECHAR;
-            serr = SERR_NAMEEXIST;
+            // limit create char times
+            p->createchar_times++;
+            if (p->createchar_times >= 20) { 
+                serr = SERR_CREATECHARMUCHTIMES;
+            } else {
+                serr = SERR_NAMEEXIST;
+            }
             break;
         }
         p->status = PS_CHARUNIQUEID;
@@ -309,7 +312,15 @@ _handleredis(struct playerdb* self, struct node_message* nm) {
             serr = SERR_DBREPLYTYPE;
             break;
         }
-        p->data.charid = (uint32_t)item->value.u;
+        uint32_t charid = (uint32_t)item->value.u;
+        if (charid == 0) {
+            serr = SERR_UNIQUECHARID;
+            break;
+        }
+        if (_hashplayer(p, charid)) {
+            serr = SERR_WORLDFULL;
+            break;
+        }
         p->status = PS_CREATECHAR;
         _db(p, PDB_CREATE);
         return;
@@ -353,11 +364,9 @@ _handleredis(struct playerdb* self, struct node_message* nm) {
             serr = SERR_DBREPLYTYPE;
             break;
         }
-        if (_loadpdb(p, item)) {
-            serr = SERR_DBERR;
-        } else {
+        serr = _loadpdb(p, item);
+        if (serr == SERR_OK) {
             p->status = PS_LOGIN;
-            serr = SERR_OK;
         }
         }
         break;

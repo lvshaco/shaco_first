@@ -44,6 +44,7 @@ load_init(struct service* s) {
     for (i=IDUM_MINLOADBEGIN; i<IDUM_MINLOADEND; ++i) {
         SUBSCRIBE_MSG(s->serviceid, i);
     }
+    SUBSCRIBE_MSG(s->serviceid, IDUM_FORWARD);
     SUBSCRIBE_MSG(s->serviceid, IDUM_UPDATELOAD);
     return 0;
 }

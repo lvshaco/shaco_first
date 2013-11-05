@@ -5,20 +5,26 @@
 
 // shaco 错误号
 #define SERR_OK 0
-#define SERR_UNKNOW 1
-#define SERR_TIMEOUT 2
-#define SERR_SOCKET 3
-#define SERR_DBERR 10
-#define SERR_DBREPLY 11
-#define SERR_DBREPLYTYPE 12
-#define SERR_NODB 13
-#define SERR_NOCHAR 20
-#define SERR_NAMEEXIST 21
-#define SERR_RELOGIN 30
-#define SERR_WORLDFULL 31
-#define SERR_ACCLOGINED 32
-#define SERR_NOLOGIN 33
-
+#define SERR_UNKNOW         1
+#define SERR_TIMEOUT        2
+#define SERR_SOCKET         3
+#define SERR_DBERR          10
+#define SERR_DBREPLY        11
+#define SERR_DBREPLYTYPE    12
+#define SERR_NODB           13
+#define SERR_DBDATAERR      14
+#define SERR_NOREGION       20
+#define SERR_NOACC          21
+#define SERR_ACCVERIFY      22
+#define SERR_REGGATE        23
+#define SERR_NOCHAR         30
+#define SERR_NAMEEXIST      31
+#define SERR_RELOGIN        32
+#define SERR_WORLDFULL      33
+#define SERR_ACCLOGINED     34
+#define SERR_NOLOGIN        35
+#define SERR_UNIQUECHARID   36
+#define SERR_CREATECHARMUCHTIMES 37
 
 #pragma pack(1)
 

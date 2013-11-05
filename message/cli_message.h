@@ -48,7 +48,7 @@ struct UM_LOGINACCOUNT {
 
 struct UM_LOGINACCOUNTFAIL {
     _UM_HEADER;
-    int8_t error;
+    int32_t error;
 };
 
 struct UM_NOTIFYGATE {
@@ -81,7 +81,6 @@ struct UM_LOGIN {
     uint64_t key;
     char account[ACCOUNT_NAME_MAX];
 };
-
 
 struct UM_LOGOUT {
     _UM_HEADER;

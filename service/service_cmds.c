@@ -133,7 +133,7 @@ cmds_usermsg(struct service* s, int id, void* msg, int sz) {
         memrw_write(&rw, A.argv[i], l);
         memrw_write(&rw, " ", 1);
     }
-    req->msgsz = sizeof(*req) + RW_CUR(&rw);
+    req->msgsz = sizeof(*req) + RW_CUR(&rw) - 1; // -1 for the last blank
 
     um = (struct UM_BASE*)req;
     if (tid == HNODE_TID_MAX) {
