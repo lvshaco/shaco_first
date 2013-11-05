@@ -9,15 +9,15 @@ startone() {
     if [ $MEMCHECK -eq 0 ]
     then
         echo "start ${1}"
-        ./shaco config_${1}.lua -d > ${1}.log
+        ./shaco config_${1}.lua -d > ~/log/${1}.log
     else
         echo "start-memcheck ${1}"
         valgrind -v \
         --leak-check=full \
         --show-reachable=yes \
         --suppressions=shaco.supp \
-        --log-file=shaco.${1}.vallog \
-        ./shaco config_${1}.lua -d > ${1}.log
+        --log-file=~/log/${1}.vallog \
+        ./shaco config_${1}.lua -d > ~/log/${1}.log
     fi
     sleep ${2}
 }

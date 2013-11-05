@@ -231,6 +231,7 @@ install:
 	cp $(client_bin) $(install_dir)
 	cp -r net $(source_dir)	
 	cp -r cnet $(source_dir)
+	cp -r test/robot.c $(source_dir)/cnet
 	cp -r message $(source_dir)
 	cp -r tplt $(source_dir)
 	cp -r tool/concat.py tool/convert_excel.py tool/excelto $(tool_dir)
