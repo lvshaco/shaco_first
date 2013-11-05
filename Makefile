@@ -238,7 +238,7 @@ install:
 
 # clean
 clean:
-	rm -f shaco shaco-cli t *.so *.dll *.def *.lib *.exp
+	rm -f shaco shaco-cli t robot *.so *.dll *.def *.lib *.exp
 
 cleanall: clean
 	rm -rf cscope.* tags
