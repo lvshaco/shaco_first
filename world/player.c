@@ -92,6 +92,7 @@ _allocplayer(uint16_t gid, int cid) {
             p = &PH->p[id];
             p->gid = gid;
             p->cid = cid;
+            p->createchar_times = 0;
             assert(p->data.accid == 0);
             assert(p->data.charid == 0);
             assert(p->data.name[0] == '\0');
@@ -101,20 +102,26 @@ _allocplayer(uint16_t gid, int cid) {
     return NULL;
 }
 int
-_hashplayeracc(struct player* p) {
-    if (p->data.accid == 0)
+_hashplayeracc(struct player* p, uint32_t accid) {
+    if (accid == 0)
         return 1;
-    int id = hashid_alloc(&PH->hi2, p->data.accid);
+    if (p->data.accid != 0)
+        return 1;
+    p->data.accid = accid;
+    int id = hashid_alloc(&PH->hi2, accid);
     if (id == -1)
         return 1;
     assert(id == p-PH->p);
     return 0;
 }
 int 
-_hashplayer(struct player* p) {
-    if (p->data.charid == 0)
+_hashplayer(struct player* p, uint32_t charid) {
+    if (charid == 0)
         return 1;
-    int id = hashid_alloc(&PH->hi, p->data.charid);
+    if (p->data.charid != 0)
+        return 1;
+    p->data.charid = charid;
+    int id = hashid_alloc(&PH->hi, charid);
     if (id == -1)
         return 1;
     assert(id == p-PH->p);
@@ -135,9 +142,9 @@ _freeplayer(struct player* p) {
     if (p->data.charid > 0) {
         int id3 = hashid_free(&PH->hi, p->data.charid);
         assert(id1 == id3);
-        p->data.charid = 0;
-        p->data.name[0] = '\0';
+        p->data.charid = 0; 
     }
+    p->data.name[0] = '\0';
     p->status = PS_FREE;
     p->gid = 0;
     p->cid = 0;

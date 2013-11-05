@@ -23,15 +23,6 @@
 #define STATE_GATELOAD  4
 #define STATE_DONE      5
 
-#define VERIFY_OK 0
-#define VERIFY_FAIL 1
-#define ERR_NOREDIS 2
-#define ERR_REDIS 3
-#define ERR_NOREGION 4
-#define ERR_LOAD 5
-#define ERR_TIMEOUT 6
-#define ERR_REG 7
-
 struct player {
     int state;  // see STATE_*
     uint32_t accid;
@@ -75,7 +66,7 @@ login_init(struct service* s) {
     redis_initreply(&self->reply, 512, 0);
     SUBSCRIBE_MSG(s->serviceid, IDUM_ACCOUNTLOGINRES);
     SUBSCRIBE_MSG(s->serviceid, IDUM_MINLOADFAIL);
-    SUBSCRIBE_MSG(s->serviceid, IDUM_ACCOUNTLOGINRES);
+    SUBSCRIBE_MSG(s->serviceid, IDUM_REDISREPLY);
     return 0;
 }
 
@@ -135,8 +126,13 @@ _login(struct login* self, struct gate_client* c, struct UM_BASE* um) {
         host_gate_disconnclient(c, true);
         return;
     }
+    UM_CAST(UM_LOGINACCOUNT, la, um);
+    memcpy(p->account, la->account, sizeof(p->account));
+    p->account[sizeof(p->account)-1] = '\0';
+    memcpy(p->passwd, la->passwd, sizeof(p->passwd));
+    p->passwd[sizeof(p->passwd)-1] = '\0';
     if (_query(self, c, p)) {
-        _logout(c, p, ERR_NOREDIS, true);
+        _logout(c, p, SERR_NODB, true);
         return;
     }
     p->state = STATE_LOGIN;
@@ -184,56 +180,62 @@ _handleredis(struct login* self, struct node_message* nm) {
     }
     char account[ACCOUNT_NAME_MAX];
     memrw_read(&rw, account, sizeof(account));
-    if (memcmp(p->account, account, sizeof(account)) == 0) {
+    if (memcmp(p->account, account, sizeof(account)) != 0) {
         return; // other
     }
     
-    int result = ERR_REDIS;
+    int error = SERR_UNKNOW;
 
-    int sz = rep->msgsz - sizeof(*rep);
-    redis_resetreplybuf(&self->reply, rep->data, sz);
-    if (redis_getreply(&self->reply) == REDIS_SUCCEED) {
-        struct redis_replyitem* item = self->reply.stack[0];
-        if (item->type == REDIS_REPLY_ARRAY) {
-            int n = item->value.i;
-            if (n == 2) {
-                if (_checkvalue(&item->child[1], p->passwd) == 0) {
-                    uint32_t accid = redis_bulkitem_toul(&item->child[0]);
-                    if (accid > 0) {
-                        p->accid = accid;
-                        p->key = (((uint64_t)p->accid) << 32) | (++self->key);
-                        p->state = STATE_VERIFYED;
-                        result = VERIFY_OK;
-                    } else {
-                        result = VERIFY_FAIL;
-                    }
-                } else {
-                    result = VERIFY_FAIL;
-                }
-            }
-        }
+    const struct host_node* region = host_node_get(HNODE_ID(NODE_LOAD, 0));
+    if (region == NULL) {
+        error = SERR_NOREGION;
+        goto err_out;
     }
-    if (result == VERIFY_OK) {
-        // todo: add multi region
-        const struct host_node* region = host_node_get(HNODE_ID(NODE_LOAD, 0));
-        if (region) {
-            uint32_t ip;
-            uint16_t port;
-            host_net_socket_address(c->connid, &ip, &port);
-            UM_DEFFIX(UM_ACCOUNTLOGINREG, reg);
-            reg->accid = p->accid;
-            reg->key = p->key;
-            reg->clientip = ip;
-            strncpy(reg->account, p->account, ACCOUNT_NAME_MAX);
-            UM_SENDTONODE(region, reg, reg->msgsz);
-            p->state = STATE_GATELOAD;
-        } else {
-            result = ERR_NOREGION;
-        }
+
+    redis_resetreplybuf(&self->reply, rw.ptr, RW_SPACE(&rw));
+    if (redis_getreply(&self->reply) != REDIS_SUCCEED) {
+        error = SERR_DBREPLY;
+        goto err_out;
     }
-    if (result != VERIFY_OK) {
-        _logout(c, p, result, true);
+    struct redis_replyitem* item = self->reply.stack[0];
+    if (item->type != REDIS_REPLY_ARRAY) {
+        error = SERR_DBREPLYTYPE;
+        goto err_out;
     }
+    int n = item->value.i;
+    if (n != 2) {
+        error = SERR_DBERR;
+        goto err_out;
+    }
+    uint32_t accid = redis_bulkitem_toul(&item->child[0]);
+    if (accid == 0) {
+        error = SERR_NOACC;
+        goto err_out;
+    }
+    if (_checkvalue(&item->child[1], p->passwd) != 0) {
+        error = SERR_ACCVERIFY;
+        goto err_out;
+    }
+    p->accid = accid;
+    p->key = (((uint64_t)p->accid) << 32) | (++self->key);
+    p->state = STATE_VERIFYED;
+    error = SERR_OK;
+    
+    // todo: add multi region
+    uint32_t ip;
+    uint16_t port;
+    host_net_socket_address(c->connid, &ip, &port);
+    UM_DEFFIX(UM_ACCOUNTLOGINREG, reg);
+    reg->cid = c->connid;
+    reg->accid = p->accid;
+    reg->key = p->key;
+    reg->clientip = ip;
+    strncpy(reg->account, p->account, ACCOUNT_NAME_MAX);
+    UM_SENDTONODE(region, reg, reg->msgsz);
+    p->state = STATE_GATELOAD;
+    return; 
+err_out:
+    _logout(c, p, error, true);
 }
 
 static void
@@ -259,7 +261,7 @@ _loginres(struct login* self, struct UM_BASE* um) {
             UM_SENDTOCLI(c->connid, notify, notify->msgsz);
             // todo: disconnect
         } else {
-            _logout(c, p, ERR_REG, true);
+            _logout(c, p, SERR_REGGATE, true);
         }
     } else {
         return; // maybe disconnect, then other connected and not gateload 
@@ -300,14 +302,20 @@ login_net(struct service* s, struct gate_message* gm) {
     struct login* self = SERVICE_SELF;
     struct net_message* nm = gm->msg;
     struct player* p = NULL;
+    int error;
     switch (nm->type) {
     case NETE_SOCKERR:
-    case NETE_TIMEOUT:
-        p = _getonlineplayer(self, gm->c);
-        if (p) {
-            _logout(gm->c, p, 0, false);
-        }
+        error = SERR_SOCKET;
         break;
+    case NETE_TIMEOUT:
+        error = SERR_TIMEOUT;
+        break;
+    default:
+        return;
+    }
+    p = _getonlineplayer(self, gm->c);
+    if (p) {
+        _logout(gm->c, p, error, false);
     }
 }
 
@@ -328,7 +336,7 @@ login_time(struct service* s) {
             now - c[i].create_time > 10*1000) { // short connection mode
             p = _getonlineplayer(self, &c[i]);
             if (p) {
-                _logout(&c[i], p, ERR_TIMEOUT, true);
+                _logout(&c[i], p, SERR_TIMEOUT, true);
             } else {
                 host_gate_disconnclient(&c[i], true);
             }

@@ -48,7 +48,7 @@ _decode_playermessage(struct node_message* nm, struct player_message* pm) {
     UM_CAST(UM_FORWARD, fw, nm->um);
     struct player* p = _getplayer(hn->sid, fw->cid);
     if (p == NULL) {
-        _forward_connlogout(hn, p->cid, SERR_NOLOGIN);
+        _forward_connlogout(hn, fw->cid, SERR_NOLOGIN);
         return 1;
     }
     pm->hn = hn; 

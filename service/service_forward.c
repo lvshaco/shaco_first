@@ -91,12 +91,13 @@ _login(struct forward* self, struct gate_client* c, struct UM_BASE* um) {
         host_gate_disconnclient(c, true);
         return 1;
     }
+    login->account[sizeof(login->account)-1] = '\0';
     uint32_t addr;
     uint16_t port;
     host_net_socket_address(c->connid, &addr, &port);
     if (acc->key == login->key &&
         acc->clientip == addr &&
-        memcmp(acc->account, login->account, ACCOUNT_NAME_MAX) == 0) {
+        strcmp(acc->account, login->account) == 0) {
         free(acc);
         return 0;
     } else {
@@ -128,7 +129,6 @@ forward_usermsg(struct service* s, int id, void* msg, int sz) {
 static void
 _accountreg(struct forward* self, int fid, const struct host_node* source, struct UM_BASE* um) {
     UM_CAST(UM_ACCOUNTLOGINREG, reg, um);
-    int8_t ok = 0;
     struct accinfo* acc = idmap_find(self->regacc, reg->accid);
     if (acc == NULL) {
         acc = malloc(sizeof(*acc));
@@ -137,17 +137,21 @@ _accountreg(struct forward* self, int fid, const struct host_node* source, struc
         acc->clientip = reg->clientip;
         strncpy(acc->account, reg->account, ACCOUNT_NAME_MAX);
         idmap_insert(self->regacc, reg->accid, acc);
-        ok = 1;
+    } else {
+        // update (wait for the key timeout is not good!)
+        acc->key = reg->key;
+        acc->clientip = reg->clientip;
+        strncpy(acc->account, reg->account, ACCOUNT_NAME_MAX);
     }
     const struct host_node* me = host_me();
     UM_DEFFORWARD(fw, fid, UM_ACCOUNTLOGINRES, res);
-    res->ok = ok;
+    res->ok = 1;
     res->cid = reg->cid;
     res->accid = reg->accid;
     res->key = reg->key;
     res->addr = me->gaddr;
     res->port = me->gport;
-    UM_SENDFORWARD(source->id, fw);
+    UM_SENDFORWARD(source->connid, fw);
 }
 
 static void

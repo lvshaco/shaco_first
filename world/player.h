@@ -21,6 +21,7 @@ struct player {
     uint16_t gid;
     uint16_t cid;
     int status;
+    int createchar_times;
     int roomid;
     struct chardata data;
 };
@@ -32,7 +33,7 @@ struct player* _getplayerbycharid(uint32_t charid);
 struct player* _getplayerbyaccid(uint32_t accid);
 struct player* _allocplayer(uint16_t gid, int cid);
 void _freeplayer(struct player* p);
-int  _hashplayeracc(struct player* p);
-int  _hashplayer(struct player* p);
+int  _hashplayeracc(struct player* p, uint32_t accid);
+int  _hashplayer(struct player* p, uint32_t charid);
 
 #endif

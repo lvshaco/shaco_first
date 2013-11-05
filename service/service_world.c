@@ -79,19 +79,16 @@ _onlogin(struct player* p) {
 
     struct chardata* data = &p->data;
     const struct tplt_visitor* vist = tplt_get_visitor(TPLT_ROLEDATA);
+    if (data->role == 0) {
+        data->role = 1;
+    }
     const struct roledata_tplt* role = tplt_visitor_find(vist, data->role);
     if (role == NULL) {
         host_error("can not found role %d, charid %u", data->role, data->charid);
-        return;
-    }
-    data->oxygen = role->oxygen;
-    data->body = role->body;
-    data->quick = role->quick;
-
-    if (_hashplayer(p)) {
-        _forward_logout(p, SERR_WORLDFULL);
-        _freeplayer(p);
-        return;
+    } else {
+        data->oxygen = role->oxygen;
+        data->body = role->body;
+        data->quick = role->quick;
     }
     UM_DEFFORWARD(fw, p->cid, UM_CHARINFO, ci);
     ci->data = p->data;
@@ -110,6 +107,7 @@ world_service(struct service* s, struct service_message* sm) {
         }
         break;
     case SERR_NOCHAR:
+    case SERR_NAMEEXIST:
         _forward_loginfail(p, res->error);
         break;
     default:
@@ -160,8 +158,7 @@ _login(struct world* self, const struct host_node* node, int cid, struct UM_BASE
         _forward_connlogout(node, cid, SERR_WORLDFULL);
         return;
     }
-    p->data.accid = accid;
-    if (_hashplayeracc(p)) {
+    if (_hashplayeracc(p, accid)) {
         _forward_connlogout(node, cid, SERR_WORLDFULL);
         _freeplayer(p);
         return;
