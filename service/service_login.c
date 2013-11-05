@@ -11,6 +11,7 @@
 #include "user_message.h"
 #include "node_type.h"
 #include "memrw.h"
+#include "util.h"
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
@@ -127,10 +128,8 @@ _login(struct login* self, struct gate_client* c, struct UM_BASE* um) {
         return;
     }
     UM_CAST(UM_LOGINACCOUNT, la, um);
-    memcpy(p->account, la->account, sizeof(p->account));
-    p->account[sizeof(p->account)-1] = '\0';
-    memcpy(p->passwd, la->passwd, sizeof(p->passwd));
-    p->passwd[sizeof(p->passwd)-1] = '\0';
+    strncpychk(p->account, sizeof(p->account), la->account, sizeof(la->account));
+    strncpychk(p->passwd, sizeof(p->passwd), la->passwd, sizeof(la->passwd));
     if (_query(self, c, p)) {
         _logout(c, p, SERR_NODB, true);
         return;

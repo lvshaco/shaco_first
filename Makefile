@@ -160,7 +160,7 @@ net.so: $(net_src)
 
 redis.so: $(redis_src)
 	@rm -f $@
-	gcc $(CFLAGS) $(SHARED) -o $@ $^
+	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Ibase
 
 base.so: $(base_src)
 	@rm -f $@

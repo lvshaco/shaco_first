@@ -1,6 +1,7 @@
 #ifndef __redis_h__
 #define __redis_h__
 
+#include "util.h"
 #include <stdint.h>
 #include <stdbool.h>
 #include <string.h>
@@ -79,11 +80,7 @@ redis_bulkitem_toul(struct redis_replyitem* item) {
     if (redis_bulkitem_isnull(item))
         return 0;
     char tmp[16];
-    int len = item->value.len;
-    if (len >= sizeof(tmp))
-        len = sizeof(tmp) - 1;
-    memcpy(tmp, item->value.p, len);
-    tmp[sizeof(tmp)-1] = '\0';
+    strncpychk(tmp, sizeof(tmp), item->value.p, item->value.len);
     return strtoul(tmp, NULL, 10); 
 }
 

@@ -6,6 +6,7 @@
 #include "worldhelper.h"
 #include "sharetype.h"
 #include "gfreeid.h"
+#include "util.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
@@ -110,7 +111,7 @@ static void
 _build_memberbrief(const struct player* p, struct tmemberbrief* brief) {
     const struct chardata* data = &p->data;
     brief->charid = data->charid;
-    memcpy(brief->name, data->name, sizeof(brief->name));
+    strncpychk(brief->name, sizeof(brief->name), data->name, sizeof(data->name));
     brief->role = data->role;
     brief->skin = data->skin;
     brief->oxygen = data->oxygen;
@@ -122,7 +123,7 @@ static void
 _build_memberdetail(const struct player* p, struct tmemberdetail* detail) {
     const struct chardata* data = &p->data;
     detail->charid = data->charid;
-    memcpy(detail->name, data->name, sizeof(detail->name));
+    strncpychk(detail->name, sizeof(detail->name), data->name, sizeof(data->name));
     detail->role = data->role;
     detail->skin = data->skin;
     detail->oxygen = data->oxygen;
@@ -135,7 +136,7 @@ _build_matchtag(const struct player* p, struct matchtag* mtag) {
     mtag->gid = p->gid;
     mtag->cid = p->cid;
     mtag->charid = p->data.charid;
-    memcpy(mtag->name, p->data.name, CHAR_NAME_MAX);
+    strncpychk(mtag->name, sizeof(mtag->name), p->data.name, sizeof(p->data.name));
 }
 
 static inline void

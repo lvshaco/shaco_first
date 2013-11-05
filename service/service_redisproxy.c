@@ -99,16 +99,15 @@ _query(struct redisproxy* self, int id, struct UM_BASE* um) {
     }
     char* cbptr = rq->data;
     for (i=0; i<n; ++i) {
-        struct querylink* ql = FREELIST_ALLOC(querylink, 
-                                              &self->queryq, 
-                                              sizeof(struct querylink) + cbsz);
+        struct querylink* ql = FREELIST_PUSH(querylink, 
+                                             &self->queryq, 
+                                             sizeof(struct querylink) + cbsz);
         ql->nodeid = rq->nodeid;
         ql->needreply = rq->needreply;
         ql->cbsz = cbsz;
         if (cbsz > 0) {
             memcpy(ql->cb, cbptr, cbsz);
         }
-        FREELIST_PUSH(querylink, &self->queryq, ql);
     }
     host_net_send(self->connid, dataptr, datasz);
 }

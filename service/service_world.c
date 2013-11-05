@@ -11,6 +11,7 @@
 #include "player.h"
 #include "playerdb.h"
 #include "worldhelper.h"
+#include "util.h"
 #include "tplt_include.h"
 #include "tplt_struct.h"
 #include <stdio.h>
@@ -180,9 +181,7 @@ _createchar(struct world* self, const struct host_node* node, int cid, struct UM
         return;
     }
     if (p->status == PS_WAITCREATECHAR) {
-        int len = sizeof(p->data.name) - 1;
-        memcpy(p->data.name, cre->name, len);
-        p->data.name[len] = '\0';
+        strncpychk(p->data.name, sizeof(p->data.name), cre->name, sizeof(cre->name));
         if (_dbcmd(self, p, PDB_CHECKNAME)) {
             _forward_logout(p, SERR_NODB);
             _freeplayer(p);

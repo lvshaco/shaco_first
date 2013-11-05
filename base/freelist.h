@@ -27,7 +27,7 @@
     (fl)->sz = 0;               \
 } while(0)
 
-#define FREELIST_ALLOC(type, fl, size) ({ \
+#define FREELIST_PUSH(type, fl, size) ({ \
     struct type* one = (fl)->free;  \
     if (one == NULL) {              \
         one = malloc(size); \
@@ -35,10 +35,6 @@
     } else {                        \
         (fl)->free = one->next;     \
     }                               \
-    one;                            \
-})
-
-#define FREELIST_PUSH(type, fl, one) do { \
     one->next = NULL;               \
     if ((fl)->head == NULL) {       \
         (fl)->head = one;           \
@@ -49,7 +45,8 @@
         (fl)->tail->next = one;     \
         (fl)->tail = one;           \
     }                               \
-} while(0)
+    one;                            \
+})
 
 #define FREELIST_POP(type, fl) ({ \
     struct type* pop = (fl)->head; \

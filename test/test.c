@@ -525,7 +525,8 @@ struct fldata {
 };
 
 struct flink {
-    FREELIST_ENTRY(flink, fldata);
+    struct flink* next;
+    struct fldata data;
 };
 
 struct fltest {
@@ -536,32 +537,32 @@ void test_freelist() {
     struct fltest fl;
     FREELIST_INIT(&fl);
 
-    struct fldata d1;
-    d1.tag = 1;
-    FREELIST_PUSH(flink, &fl, &d1);
+    struct flink* d1, *d2;
+    d1 = FREELIST_PUSH(flink, &fl, sizeof(struct flink));
+    d1->data.tag = 1;
     FREELIST_POP(flink, &fl);
 
-    struct fldata d2;
-    d2.tag = 2;
-    FREELIST_PUSH(flink, &fl, &d1);
-    FREELIST_PUSH(flink, &fl, &d2);
+    d1 = FREELIST_PUSH(flink, &fl, sizeof(struct flink));
+    d1->data.tag = 1;
 
-    struct fldata* d;
-    d = FREELIST_HEAD(flink, &fl); 
+    d2 = FREELIST_PUSH(flink, &fl, sizeof(struct flink));
+    d2->data.tag = 2;
+
+    struct flink* d;
+    d = FREELIST_POP(flink, &fl); 
     {
         assert(d);
-        assert(d->tag == 1);
-        FREELIST_POP(flink, &fl);
+        assert(d->data.tag == 1);
     } 
-    d = FREELIST_HEAD(flink, &fl);
+    d = FREELIST_POP(flink, &fl);
     {
-    assert(d2.tag == 2);
+    assert(d->data.tag == 2);
     assert(fl.sz == 2);
-    FREELIST_POP(flink, &fl);
     }
-
-    FREELIST_PUSH(flink, &fl, &d1);
-    FREELIST_PUSH(flink, &fl, &d2);
+    d1 = FREELIST_PUSH(flink, &fl, sizeof(struct flink));
+    d1->data.tag = 1;
+    d2 = FREELIST_PUSH(flink, &fl, sizeof(struct flink));
+    d2->data.tag = 2;
     assert(fl.sz == 2);
     FREELIST_FINI(flink, &fl);
 }
@@ -696,7 +697,7 @@ main(int argc, char* argv[]) {
     //test_hashid();
     //test_gfreeid();
     //test_redis();
-    //test_freelist();
-    test_map();
+    test_freelist();
+    //test_map();
     return 0;
 }
