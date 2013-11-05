@@ -68,6 +68,8 @@ login_init(struct service* s) {
     SUBSCRIBE_MSG(s->serviceid, IDUM_ACCOUNTLOGINRES);
     SUBSCRIBE_MSG(s->serviceid, IDUM_MINLOADFAIL);
     SUBSCRIBE_MSG(s->serviceid, IDUM_REDISREPLY);
+
+    host_timer_register(s->serviceid, 1000);
     return 0;
 }
 

@@ -147,11 +147,12 @@ _handleum(int id, int ut, struct UM_BASE* um) {
         break;
         }
     case IDUM_LOGINFAIL: {
-        UM_CAST(UM_LOGINFAIL, fail, um);
-        printf("gate login fail: error %d\n", fail->error);
+        UM_CAST(UM_LOGINFAIL, fail, um); 
         if (fail->error == SERR_NOCHAR ||
             fail->error == SERR_NAMEEXIST) {
             _createchar();
+        } else {
+            printf("gate login fail: error %d\n", fail->error);
         }
         }
         break;

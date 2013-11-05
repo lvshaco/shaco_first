@@ -9,6 +9,7 @@
 #define PDB_CHECKNAME 3
 #define PDB_CHARID 4
 #define PDB_CREATE 5
+#define PDB_BINDCHARID 6
 
 struct player;
 struct playerdbcmd {
