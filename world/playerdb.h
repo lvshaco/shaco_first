@@ -7,9 +7,10 @@
 #define PDB_LOAD  1
 #define PDB_SAVE  2
 #define PDB_CHECKNAME 3
-#define PDB_CHARID 4
-#define PDB_CREATE 5
-#define PDB_BINDCHARID 6
+#define PDB_SAVENAME 4
+#define PDB_CHARID 5
+#define PDB_CREATE 6
+#define PDB_BINDCHARID 7
 
 struct player;
 struct playerdbcmd {

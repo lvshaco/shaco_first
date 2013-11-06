@@ -78,6 +78,15 @@ _db(struct player* p, int8_t type) {
         memrw_pos(&rw, len);
         }
         break;
+    case PDB_SAVENAME: {
+        rq->needreply = 1;
+        uint32_t accid = cdata->accid;
+        memrw_write(&rw, &accid, sizeof(accid));
+        rq->cbsz = RW_CUR(&rw);
+        int len = snprintf(rw.ptr, RW_SPACE(&rw), "set user:%s:name 1\r\n", cdata->name);
+        memrw_pos(&rw, len);
+        }
+        break;
     case PDB_CHARID: {
         rq->needreply = 1;
         uint32_t accid = cdata->accid;
@@ -302,9 +311,32 @@ _handleredis(struct playerdb* self, struct node_message* nm) {
             }
             break;
         }
-        p->status = PS_CHARUNIQUEID;
-        _db(p, PDB_CHARID);
+        p->status = PS_SAVECHARNAME;
+        _db(p, PDB_SAVENAME);
         return;
+        }
+        break;
+    case PDB_SAVENAME: {
+        uint32_t accid;
+        memrw_read(&rw, &accid, sizeof(accid));
+        if (p->data.accid != accid) {
+            return; // other
+        }
+        redis_resetreplybuf(&self->reply, rw.ptr, RW_SPACE(&rw));
+        if (redis_getreply(&self->reply) != REDIS_SUCCEED) {
+            serr = SERR_DBREPLY;
+            break;
+        }
+        struct redis_replyitem* item = self->reply.stack[0];
+        if (item->type == REDIS_REPLY_STATUS) {
+            p->status = PS_CHARUNIQUEID;
+            _db(p, PDB_CHARID);
+            return;
+        } else if (item->type == REDIS_REPLY_ERROR) {
+            serr = SERR_DBERR;
+        } else {
+            serr = SERR_DBREPLYTYPE;
+        }
         }
         break;
     case PDB_CHARID: {

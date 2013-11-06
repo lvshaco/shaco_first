@@ -8,15 +8,16 @@
 #define PS_QUERYCHAR 1
 #define PS_WAITCREATECHAR 2
 #define PS_CHECKCHARNAME 3
-#define PS_CHARUNIQUEID 4
-#define PS_CREATECHAR 5
-#define PS_BINDCHARID 6
-#define PS_LOADCHAR 7
-#define PS_LOGIN 8
-#define PS_GAME  9
-#define PS_WAITING  10
-#define PS_CREATING 11
-#define PS_ROOM 12
+#define PS_SAVECHARNAME 4
+#define PS_CHARUNIQUEID 5
+#define PS_CREATECHAR 6
+#define PS_BINDCHARID 7
+#define PS_LOADCHAR 8
+#define PS_LOGIN 9
+#define PS_GAME  10
+#define PS_WAITING  11
+#define PS_CREATING 12
+#define PS_ROOM 13
 
 struct player {
     uint16_t gid;

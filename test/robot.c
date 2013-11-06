@@ -38,7 +38,7 @@ _server_set(int t, int id) {
 static void
 _login_account(int id) {
     UM_DEFFIX(UM_LOGINACCOUNT, la);
-    strncpy(la->account, "wa_account_1", sizeof(la->account)-1);
+    strncpy(la->account, "wa_account_2", sizeof(la->account)-1);
     strncpy(la->passwd, "123456", sizeof(la->passwd)-1);
     _server_send(TLOGIN, la, sizeof(*la));
     printf("request login account\n");
@@ -49,7 +49,7 @@ _login_gate(int id) {
     UM_DEFFIX(UM_LOGIN, lo);
     lo->accid = GATEADDR.accid;
     lo->key = GATEADDR.key;
-    strcpy(lo->account, "wa_account_1");
+    strcpy(lo->account, "wa_account_2");
     _server_send(TGATE, lo, sizeof(*lo));
     printf("request login gate\n");
 }

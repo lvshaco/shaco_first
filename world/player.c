@@ -111,7 +111,7 @@ _hashplayeracc(struct player* p, uint32_t accid) {
     int id = hashid_alloc(&PH->hi2, accid);
     if (id == -1)
         return 1;
-    assert(id == p-PH->p);
+    //assert(id == p-PH->p);
     return 0;
 }
 int 
@@ -124,7 +124,7 @@ _hashplayer(struct player* p, uint32_t charid) {
     int id = hashid_alloc(&PH->hi, charid);
     if (id == -1)
         return 1;
-    assert(id == p-PH->p);
+    //assert(id == p-PH->p);
     return 0;
 }
 void
@@ -135,13 +135,13 @@ _freeplayer(struct player* p) {
     assert(id1 >= 0);
     assert(id1 == p-PH->p);
     if (p->data.accid > 0) {
-        int id2 = hashid_free(&PH->hi2, p->data.accid);
-        assert(id1 == id2);
+        hashid_free(&PH->hi2, p->data.accid);
+        //assert(id1 == id2);
         p->data.accid = 0;
     }
     if (p->data.charid > 0) {
-        int id3 = hashid_free(&PH->hi, p->data.charid);
-        assert(id1 == id3);
+        hashid_free(&PH->hi, p->data.charid);
+        //assert(id1 == id3);
         p->data.charid = 0; 
     }
     p->data.name[0] = '\0';
