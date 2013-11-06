@@ -46,9 +46,13 @@ void
 forward_free(struct forward* self) {
     if (self == NULL)
         return;
-    free(self->players);
-    idmap_foreach(self->regacc, _freecb, NULL);
-    idmap_free(self->regacc);
+    if (self->players) {
+        free(self->players);
+    }
+    if (self->regacc) {
+        idmap_foreach(self->regacc, _freecb, NULL);
+        idmap_free(self->regacc);
+    }
     free(self);
 }
 

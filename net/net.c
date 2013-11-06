@@ -16,11 +16,11 @@
 
 #define LISTEN_BACKLOG 511
 
-#define NETERR(err) (err) != 0 ? (err) : NET_ERR_UNKNOW;
+#define NETERR(err) (err) != 0 ? (err) : NET_ERR_EOF;
 
 static const char* STRERROR[] = {
     "close",
-    "net error unknow",
+    "net error end of file",
     "net error msg",
     "net error no socket",
     "net error create socket",
@@ -345,9 +345,9 @@ net_read(struct net* self, int id, int sz, int skip, int* e) {
                 return NULL;
             }
         } else if (nbyte == 0) {
-            error = _socket_geterror(s->fd); // errno == 0
+            // error = _socket_geterror(s->fd); man not point errno if nbyte == 0
             _close_socket(self, s);
-            *e = NETERR(error);
+            *e = NET_ERR_EOF;
             return NULL;
         } else {
             rb->wptr += nbyte;

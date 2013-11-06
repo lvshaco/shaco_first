@@ -5,7 +5,15 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <time.h>
-
+/*
+struct elog {
+    FILE* file_current_fp;
+    char* file_base_name;
+    long file_current_size;
+    long file_max_size;
+    int file_max_num;
+};
+*/
 static inline void
 _log_one(int level, const char* log) {
     char buf[64];
@@ -14,8 +22,7 @@ _log_one(int level, const char* log) {
     uint32_t msec = now % 1000;
     int off = strftime(buf, sizeof(buf), "%y%m%d-%H:%M:%S.", localtime(&sec));
     snprintf(buf+off, sizeof(buf)-off, "%03d", msec);
-    printf("[%d %s] %s: %s\n", (int)getpid(), buf, host_log_levelstr(level), log);
-    fflush(stdout);
+    fprintf(stderr, "[%d %s] %s: %s\n", (int)getpid(), buf, host_log_levelstr(level), log);
 }
 
 int

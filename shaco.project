@@ -133,6 +133,15 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.py *.h *.c" {
   tplt_visitor.c
   tplt_visitor_ops_implement.c
  }
+ elog=elog{
+  elog.h
+  elog.c
+  elog_ops.h
+  elog_ops_file.h
+  elog_ops_file.c
+  elog_ops_rollfile.h
+  elog_ops_rollfile.c
+ }
  tool=tool{
   concat.py
   convert_excel.py

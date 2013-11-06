@@ -34,6 +34,15 @@ tplt_src=\
 	tplt/tplt.c \
 	tplt/tplt.h
 
+elog_src=\
+	elog/elog.h \
+	elog/elog.c \
+	elog/elog_ops.h \
+	elog/elog_ops_file.h \
+	elog/elog_ops_file.c \
+	elog/elog_ops_rollfile.c \
+	elog/elog_ops_rollfile.h
+
 base_src=\
 	base/mpool.c \
 	base/mpool.h \
@@ -109,6 +118,7 @@ all: \
 	base.so \
 	redis.so \
 	tplt.so \
+	elog.so \
 	shaco \
 	shaco-cli \
 	$(service_so) \
@@ -169,6 +179,10 @@ base.so: $(base_src)
 tplt.so: $(tplt_src)
 	@rm -f $@
 	gcc $(CFLAGS) $(SHARED) -o $@ $^ -DUSE_HOSTLOG -Ihost
+
+elog.so: $(elog_src)
+	@rm -f $@
+	gcc $(CFLAGS) $(SHARED) -o $@ $^
 
 shaco: $(host_src)
 	gcc $(CFLAGS) -o $@ $^ -Ihost -Ilur -Inet -Ibase  $(LDFLAGS)

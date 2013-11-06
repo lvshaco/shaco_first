@@ -6,7 +6,7 @@
 
 // must be negative, positive for system error number
 //#define OK 0
-#define NET_ERR_UNKNOW      -1
+#define NET_ERR_EOF         -1
 #define NET_ERR_MSG         -2
 #define NET_ERR_NOSOCK      -3
 #define NET_ERR_CREATESOCK  -4

@@ -222,7 +222,7 @@ int main(int argc, char* argv[]) {
     if (argc < 3) {
         //printf("usage: test ip port\n");
         //return;
-        ip = "192.168.1.145";
+        ip = "192.168.1.140";
         port = 18600;
     } else {
         ip = argv[1];

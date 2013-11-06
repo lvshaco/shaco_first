@@ -151,7 +151,6 @@ _login(struct world* self, const struct host_node* node, int cid, struct UM_BASE
     other = _getplayerbyaccid(accid);
     if (other) {
         _forward_connlogout(node, cid, SERR_ACCLOGINED);
-        _freeplayer(p);
         return;
     }
     p = _allocplayer(node->sid, cid);
