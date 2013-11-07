@@ -17,7 +17,7 @@
 #include <assert.h>
 #include <stdio.h>
 
-#define STATE_INVALID   0
+#define STATE_FREE   0
 #define STATE_CONNECTED 1
 #define STATE_LOGIN     2
 #define STATE_VERIFYED  3
@@ -83,7 +83,7 @@ _getplayer(struct login* self, struct gate_client* c) {
 static inline struct player*
 _getonlineplayer(struct login* self, struct gate_client* c) {
     struct player* p = _getplayer(self, c);
-    if (p && (p->state != STATE_INVALID))
+    if (p && (p->state != STATE_FREE))
         return p;
     return NULL;
 }
@@ -109,12 +109,12 @@ _query(struct login* self, struct gate_client* c, struct player* p) {
 }
 
 static void
-_logout(struct gate_client* c, struct player* p, int8_t result, bool active) {
-    p->state = STATE_INVALID;
+_logout(struct gate_client* c, struct player* p, int32_t error, bool active) {
+    p->state = STATE_FREE;
     // !!! dangers
     if (active) {
         UM_DEFFIX(UM_LOGINACCOUNTFAIL, fail);
-        fail->error = result;
+        fail->error = error;
         UM_SENDTOCLI(c->connid, fail, fail->msgsz);
         // todo disconnect
         host_gate_disconnclient(c, true);
@@ -124,9 +124,9 @@ _logout(struct gate_client* c, struct player* p, int8_t result, bool active) {
 static void
 _login(struct login* self, struct gate_client* c, struct UM_BASE* um) {
     struct player* p = _getplayer(self, c);
-    if (p == NULL ||
-        p->state != STATE_INVALID) {
-        host_gate_disconnclient(c, true);
+    assert(p);
+    if (p->state != STATE_FREE) {
+        //_logout(c, p, SERR_RELOGIN, true); maybe client click login button more then once
         return;
     }
     UM_CAST(UM_LOGINACCOUNT, la, um);
