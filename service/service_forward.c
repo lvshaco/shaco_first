@@ -19,7 +19,7 @@ struct accinfo {
     char account[ACCOUNT_NAME_MAX];
 };
 
-#define STATE_INVALID 0
+#define STATE_FREE 0
 #define STATE_LOGIN 1
 struct player {
     int state;
@@ -105,7 +105,9 @@ _onaccept() {
 }
 
 static inline void
-_ondisconn() {
+_ondisconn(struct forward*self, struct gate_client* c) {
+    struct player* p = _getplayer(self, c);
+    p->state = STATE_FREE;
     _updateload();
 }
 
@@ -120,7 +122,7 @@ _login(struct forward* self, struct gate_client* c, struct UM_BASE* um) {
     struct accinfo* acc = idmap_remove(self->regacc, login->accid);
     if (acc == NULL) {
         host_gate_disconnclient(c, true);
-        _ondisconn();
+        _ondisconn(self, c);
         return 1;
     }
     login->account[sizeof(login->account)-1] = '\0';
@@ -131,6 +133,7 @@ _login(struct forward* self, struct gate_client* c, struct UM_BASE* um) {
         acc->clientip == addr &&
         strcmp(acc->account, login->account) == 0) {
         free(acc);
+        p->state = STATE_LOGIN;
         return 0;
     } else {
         free(acc);
@@ -155,7 +158,7 @@ forward_usermsg(struct service* s, int id, void* msg, int sz) {
     } else {
         // todo: just disconnect it ?
         host_gate_disconnclient(c, true); 
-        _ondisconn();
+        _ondisconn(self, c);
     }
 }
 
@@ -204,7 +207,7 @@ _handleload(struct forward* self, struct node_message* nm) {
 }
 
 static void
-_handledef(struct node_message* nm) {
+_handledef(struct forward*self, struct node_message* nm) {
     if (nm->um->msgid != IDUM_FORWARD) {
         return;
     }
@@ -216,7 +219,7 @@ _handledef(struct node_message* nm) {
         if (m->msgid == IDUM_LOGOUT) {
             UM_SENDTOCLI(c->connid, m, m->msgsz);
             host_gate_disconnclient(c, true);
-            _ondisconn();
+            _ondisconn(self, c);
         } else {
             UM_SENDTOCLI(c->connid, m, m->msgsz);
         }
@@ -235,13 +238,14 @@ forward_nodemsg(struct service* s, int id, void* msg, int sz) {
         _handleload(self, &nm);
         break;
     default:
-        _handledef(&nm);
+        _handledef(self, &nm);
         break;
     }
 }
 
 void
 forward_net(struct service* s, struct gate_message* gm) {
+    struct forward* self = SERVICE_SELF;
     struct net_message* nm = gm->msg;
     UM_DEFFIX(UM_LOGOUT, logout);
     switch (nm->type) {
@@ -251,12 +255,12 @@ forward_net(struct service* s, struct gate_message* gm) {
     case NETE_SOCKERR:
         logout->error = SERR_SOCKET;
         _forward_world(gm->c, (struct UM_BASE*)logout);
-        _ondisconn();
+        _ondisconn(self, gm->c);
         break;
     case NETE_TIMEOUT:
         logout->error = SERR_TIMEOUT;
         _forward_world(gm->c, (struct UM_BASE*)logout);
-        _ondisconn();
+        _ondisconn(self, gm->c);
         break;
     }
 }
