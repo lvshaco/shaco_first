@@ -77,8 +77,6 @@ _onconnect(struct net_message* nm) {
     switch (ut) {
     case TLOGIN:
         _login_account(id);
-        _login_account(id);
-        _login_account(id);
         break;
     case TGATE:
         _login_gate(id);
