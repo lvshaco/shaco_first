@@ -2,40 +2,61 @@
 #include "host_timer.h"
 #include "host_log.h"
 #include "host.h"
+#include "elog_include.h"
+#include <stdlib.h>
+#include <limits.h>
 #include <stdio.h>
-#include <unistd.h>
-#include <time.h>
-/*
-struct elog {
-    FILE* file_current_fp;
-    char* file_base_name;
-    long file_current_size;
-    long file_max_size;
-    int file_max_num;
+#include <string.h>
+
+struct log {
+    struct elog* el;
 };
-*/
-static inline void
-_log_one(int level, const char* log) {
-    char buf[64];
-    uint64_t now = host_timer_now();
-    time_t sec = now / 1000;
-    uint32_t msec = now % 1000;
-    int off = strftime(buf, sizeof(buf), "%y%m%d-%H:%M:%S.", localtime(&sec));
-    snprintf(buf+off, sizeof(buf)-off, "%03d", msec);
-    fprintf(stderr, "[%d %s] %s: %s\n", (int)getpid(), buf, host_log_levelstr(level), log);
+
+struct log*
+log_create() {
+    struct log* self = malloc(sizeof(*self));
+    memset(self, 0, sizeof(*self));
+    return self;
+}
+
+void
+log_free(struct log* self) {
+    if (self->el) {
+        elog_free(self->el);
+        self->el = NULL;
+    }
+    free(self);
 }
 
 int
 log_init(struct service* s) {
-    const char* level = host_getstr("host_loglevel", "");
-    char msg[64];
-    snprintf(msg, sizeof(msg), "host log level %s", level);
-    _log_one(LOG_INFO, msg);
+    struct log* self = SERVICE_SELF;
+
+    char logfile[PATH_MAX];
+    snprintf(logfile, sizeof(logfile), "%s/log/%s%d.log", 
+            getenv("HOME"), 
+            host_getstr("node_type", ""),
+            host_getint("node_sid", 0));
+    struct elog* el = elog_create(logfile);
+    if (el == NULL) {
+        return 1;
+    }
+    elog_set_appender(el, &g_elog_appender_rollfile);
+    struct elog_rollfile_conf conf;
+    conf.file_max_num = 10;
+    conf.file_max_size = 1024*1024*1024;
+    elog_appender_rollfile_config(el, &conf);
+    self->el = el;
+    
+    char msg[128];
+    snprintf(msg, sizeof(msg), ">>> shaco host log level %s\n", 
+            host_getstr("host_loglevel", ""));
+    elog_append(self->el, msg, strlen(msg));
     return 0;
 }
 
 void
 log_service(struct service* s, struct service_message* sm) {
-    int level = sm->sessionid;
-    _log_one(level, sm->msg);     
+    struct log* self = SERVICE_SELF;
+    elog_append(self->el, sm->msg, sm->sz);
 }

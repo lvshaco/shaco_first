@@ -7,12 +7,14 @@
 #include "redis.h"
 #include "map.h"
 #include "hmap.h"
+#include "elog_include.h"
 #include <stdint.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h> 
 #include <stdlib.h>
 #include <time.h>
+#include <unistd.h>
 
 static uint64_t
 _elapsed() {
@@ -689,15 +691,142 @@ void test_map() {
     strhmap_free(m);
 }
 
+void
+test_elog1() {
+    struct elog* el = elog_create("/home/lvxiaojun/log/testlog.log");
+    elog_set_appender(el, &g_elog_appender_file);
+    elog_append(el, "1234567890\n", 11);
+    sleep(1);
+    elog_append(el, "abc\n", 4);
+    sleep(1);
+    elog_append(el, "ABC", 3);
+    sleep(1);
+    elog_append(el, "DEFGHI", 3);
+    sleep(1);
+    elog_free(el);
+}
+
+void
+test_elog2() {
+    struct elog* el = elog_create("/home/lvxiaojun/log/testlog.log");
+    elog_set_appender(el, &g_elog_appender_rollfile);
+    struct elog_rollfile_conf conf;
+    conf.file_max_num = 2;
+    conf.file_max_size = 10;
+    elog_appender_rollfile_config(el, &conf);
+    elog_append(el, "8234567890\n", 11);
+    sleep(0.1);
+    elog_append(el, "abc\n", 4);
+    sleep(0.1);
+    elog_append(el, "ABC", 3);
+    sleep(0.1);
+    elog_append(el, "DEFGHI", 3);
+    sleep(0.1);
+    elog_free(el);
+}
+
+void 
+test_elog3(int times) {
+    uint64_t t1, t2; 
+    char data[1024];
+    //long sz;
+    int i;
+    for (i=0; i<sizeof(data); ++i) {
+        data[i] = '0';
+    }
+    data[sizeof(data)-1] = '\0';
+
+    struct elog* el = elog_create("/home/lvxiaojun/log/testfilelog.log");
+    elog_set_appender(el, &g_elog_appender_file);
+    t1 = _elapsed();
+    for (i=0; i<times; ++i) {
+        elog_append(el, data, sizeof(data));
+    }
+    t2 = _elapsed();
+    printf("elog times: %d, used time: %d\n", times, (int)(t2-t1));
+    elog_free(el);
+
+}
+
+void
+test_elog4(int times) {
+    uint64_t t1, t2; 
+    char data[1024];
+    //long sz;
+    int i;
+    for (i=0; i<sizeof(data); ++i) {
+        data[i] = '0';
+    }
+    data[sizeof(data)-1] = '\0';
+
+    struct elog* el = elog_create("/home/lvxiaojun/log/testlog.log");
+    elog_set_appender(el, &g_elog_appender_rollfile);
+    struct elog_rollfile_conf conf;
+    conf.file_max_num = 2;
+    conf.file_max_size = 1024*1024*100;
+    elog_appender_rollfile_config(el, &conf);
+
+    t1 = _elapsed();
+    for (i=0; i<times; ++i) {
+        elog_append(el, data, sizeof(data));
+    }
+    t2 = _elapsed();
+    printf("elog times: %d, used time: %d\n", times, (int)(t2-t1));
+    elog_free(el);
+
+}
+
+void
+test_log(int times) {
+    uint64_t t1, t2; 
+    char data[1024];
+    long sz;
+    int i;
+    for (i=0; i<sizeof(data); ++i) {
+        data[i] = '0';
+    }
+    data[sizeof(data)-1] = '\0';
+    FILE* fp = fopen("/home/lvxiaojun/log/test1.log", "w+");
+    setbuf(fp, NULL);
+
+    FILE* fp2 = fopen("/home/lvxiaojun/log/test2.log", "w+");
+    setbuf(fp2, NULL);
+
+    t1 = _elapsed();
+    for (i=0; i<times; ++i) {
+        fprintf(fp, data);
+    }
+    t2 = _elapsed();
+    sz = ftell(fp);
+    fclose(fp);
+    printf("write size: %ld, times: %d, fprintf used time: %d\n", sz, times, (int)(t2-t1));
+/*
+    t1 = _elapsed();
+    for (i=0; i<times; ++i) {
+        fwrite(data, sizeof(data)-1, 1, fp2);
+    }
+    t2 = _elapsed();
+    sz = ftell(fp2);
+    fclose(fp2);
+    printf("write size: %ld, times: %d, fwrite used time: %d\n", sz, times, (int)(t2-t1));
+*/
+}
+
 int 
 main(int argc, char* argv[]) {
+    int times = 1;
+    if (argc > 1)
+        times = strtol(argv[1], NULL, 10);
     //test_lur();
     //test_args();
     //test_freeid();
     //test_hashid();
     //test_gfreeid();
     //test_redis();
-    test_freelist();
+    //test_freelist();
     //test_map();
+    //test_elog2();
+    //test_log(times);
+    //test_elog4(times);
     return 0;
 }

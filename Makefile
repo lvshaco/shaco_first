@@ -37,11 +37,12 @@ tplt_src=\
 elog_src=\
 	elog/elog.h \
 	elog/elog.c \
-	elog/elog_ops.h \
-	elog/elog_ops_file.h \
-	elog/elog_ops_file.c \
-	elog/elog_ops_rollfile.c \
-	elog/elog_ops_rollfile.h
+	elog/elog_internal.h \
+	elog/elog_appender.h \
+	elog/elog_appender_file.h \
+	elog/elog_appender_file.c \
+	elog/elog_appender_rollfile.c \
+	elog/elog_appender_rollfile.h
 
 base_src=\
 	base/mpool.c \
@@ -96,7 +97,6 @@ LDFLAGS=-Wl,-rpath,. \
 service_so=\
 	service_benchmark.so \
 	service_echo.so \
-	service_log.so \
 	service_dispatcher.so \
 	service_centerc.so \
 	service_centers.so \
@@ -121,6 +121,7 @@ all: \
 	elog.so \
 	shaco \
 	shaco-cli \
+	service_log.so \
 	$(service_so) \
 	world.so \
 	$(worldservice_so) \
@@ -139,6 +140,11 @@ $(service_so): %.so: $(service_dir)/%.c
 $(worldservice_so): %.so: $(service_dir)/%.c
 	@rm -f $@
 	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Ihost -Inet -Ibase -Imessage -Iworld -Itplt -Idatadefine -Wl,-rpath,. world.so tplt.so
+
+service_log.so: $(service_dir)/service_log.c
+	@rm -f $@
+	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Ihost -Inet -Ibase -Imessage -Ielog -Wl,-rpath,. elog.so
+
 
 service_playerdb.so: $(service_dir)/service_playerdb.c
 	@rm -f $@
@@ -190,8 +196,8 @@ shaco: $(host_src)
 shaco-cli: $(cli_src)
 	gcc $(CFLAGS) -o $@ $^ -lpthread
 
-t: test/test.c net.so lur.so base.so redis.so
-	gcc $(CFLAGS) -o $@ $^ -Ihost -Ilur -Inet -Ibase -Iredis $(LDFLAGS) redis.so
+t: test/test.c net.so lur.so base.so redis.so elog.so
+	gcc $(CFLAGS) -o $@ $^ -Ihost -Ilur -Inet -Ibase -Iredis -Ielog $(LDFLAGS) redis.so
 
 robot: test/robot.c cnet/cnet.c cnet/cnet.h net.so
 	gcc $(CFLAGS) -o $@ $^ -Ilur -Icnet -Inet -Ibase -Imessage -Wl,-rpath,. net.so

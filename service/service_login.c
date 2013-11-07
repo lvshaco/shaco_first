@@ -169,7 +169,7 @@ _handleredis(struct login* self, struct node_message* nm) {
     UM_CAST(UM_REDISREPLY, rep, nm->um);
     struct memrw rw;
     memrw_init(&rw, rep->data, rep->msgsz - sizeof(*rep));
-    int cid;
+    int cid = -1;
     memrw_read(&rw, &cid, sizeof(cid));
     struct gate_client* c = host_gate_getclient(cid);
     if (c == NULL) {

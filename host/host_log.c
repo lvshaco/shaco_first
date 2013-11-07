@@ -66,29 +66,24 @@ host_log_fini() {
     _LOG_SERVICE = -1;
 }
 
-static inline void
-_default_log(int level, const char* log) {
-    char buf[64];
-    uint64_t now = host_timer_now();
-    time_t sec = now / 1000;
-    uint32_t msec = now % 1000;
-    int off = strftime(buf, sizeof(buf), "%y%m%d-%H:%M:%S.", localtime(&sec));
-    snprintf(buf+off, sizeof(buf)-off, "%03d", msec);
-    fprintf(stderr, "[%d %s] %s: %s\n", (int)getpid(), buf, _levelstr(level), log);
-}
-
-#define _gen_message(log, n, fmt) \
-    char log[1024] = {0}; \
-    int n; \
-    do { \
-        va_list ap; \
-        va_start(ap, fmt); \
-        n = vsnprintf(log, sizeof(log), fmt, ap); \
-        va_end(ap); \
-        if (n < 0) { \
-            return; \
-        } \
-    } while(0)
+#define _gen_message(level, log, n, fmt) \
+    char log[2048] = {0}; \
+    uint64_t now = host_timer_now(); \
+    time_t sec = now / 1000; \
+    uint32_t msec = now % 1000; \
+    int n, n2; \
+    n  = snprintf(log, sizeof(log), "[%d ", (int)getpid()); \
+    n += strftime(log+n, sizeof(log)-n, "%y%m%d-%H:%M:%S.", localtime(&sec)); \
+    n += snprintf(log+n, sizeof(log)-n, "%03d] %s: ", msec, _levelstr(level)); \
+    va_list ap; \
+    va_start(ap, fmt); \
+    n += vsnprintf(log+n, sizeof(log)-n, fmt, ap); \
+    va_end(ap); \
+    n2 = snprintf(log+n, sizeof(log)-n, "\n"); \
+    if (n2 < 0) { \
+        return; \
+    } \
+    n += n2;
 
 static void
 _send_to_service(int level, char* log, int sz) {
@@ -96,7 +91,7 @@ _send_to_service(int level, char* log, int sz) {
         return;
     }
     if (_LOG_SERVICE < 0) {
-        _default_log(level, log);
+        fprintf(stderr, log);
         return;
     }
     struct service_message sm;
@@ -109,7 +104,7 @@ _send_to_service(int level, char* log, int sz) {
 
 void 
 host_error(const char* fmt, ...) {
-    _gen_message(log, n, fmt);
+    _gen_message(LOG_ERROR, log, n, fmt);
     _send_to_service(LOG_ERROR, log, n);
 }
 
@@ -117,7 +112,7 @@ void
 host_warning(const char* fmt, ...) {
     if (_LEVEL > LOG_WARNING)
         return;
-    _gen_message(log, n, fmt);
+    _gen_message(LOG_WARNING, log, n, fmt);
     _send_to_service(LOG_WARNING, log, n);
 }
 
@@ -125,7 +120,7 @@ void
 host_info(const char* fmt, ...) {
     if (_LEVEL > LOG_INFO)
         return;
-    _gen_message(log, n, fmt);
+    _gen_message(LOG_INFO, log, n, fmt);
     _send_to_service(LOG_INFO, log, n);
 }
 
@@ -133,6 +128,6 @@ void
 host_debug(const char* fmt, ...) {
     if (_LEVEL > LOG_DEBUG)
         return;
-    _gen_message(log, n, fmt);
+    _gen_message(LOG_DEBUG, log, n, fmt);
     _send_to_service(LOG_DEBUG, log, n);
 }

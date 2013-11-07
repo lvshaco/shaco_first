@@ -237,9 +237,9 @@ _handleredis(struct playerdb* self, struct node_message* nm) {
     hassertlog(nm->um->msgid == IDUM_REDISREPLY);
     UM_CAST(UM_REDISREPLY, rep, nm->um);
         
-    int8_t type; 
-    uint16_t gid;
-    uint16_t cid;
+    int8_t type = 0; 
+    uint16_t gid = 0;
+    uint16_t cid = 0;
     struct memrw rw;
     memrw_init(&rw, rep->data, rep->msgsz - sizeof(*rep));
     memrw_read(&rw, &type, sizeof(type));
@@ -254,7 +254,7 @@ _handleredis(struct playerdb* self, struct node_message* nm) {
     int32_t serr = SERR_UNKNOW;
     switch (type) {
     case PDB_QUERY: {
-        uint32_t accid;
+        uint32_t accid = 0;
         memrw_read(&rw, &accid, sizeof(accid));
         if (p->data.accid != accid) {
             return; // other
@@ -285,7 +285,7 @@ _handleredis(struct playerdb* self, struct node_message* nm) {
         }
         break;
     case PDB_CHECKNAME: {
-        uint32_t accid;
+        uint32_t accid = 0;
         memrw_read(&rw, &accid, sizeof(accid));
         if (p->data.accid != accid) {
             return; // other
@@ -317,7 +317,7 @@ _handleredis(struct playerdb* self, struct node_message* nm) {
         }
         break;
     case PDB_SAVENAME: {
-        uint32_t accid;
+        uint32_t accid = 0;
         memrw_read(&rw, &accid, sizeof(accid));
         if (p->data.accid != accid) {
             return; // other
@@ -340,7 +340,7 @@ _handleredis(struct playerdb* self, struct node_message* nm) {
         }
         break;
     case PDB_CHARID: {
-        uint32_t accid;
+        uint32_t accid = 0;
         memrw_read(&rw, &accid, sizeof(accid));
         if (p->data.accid != accid) {
             return; // other
@@ -370,7 +370,7 @@ _handleredis(struct playerdb* self, struct node_message* nm) {
         }
         break;
     case PDB_CREATE: {
-        uint32_t charid;
+        uint32_t charid = 0;
         memrw_read(&rw, &charid, sizeof(charid));
         if (p->data.charid != charid) {
             return; // other
@@ -393,7 +393,7 @@ _handleredis(struct playerdb* self, struct node_message* nm) {
         }
         break;
     case PDB_BINDCHARID: {
-        uint32_t charid;
+        uint32_t charid = 0;
         memrw_read(&rw, &charid, sizeof(charid));
         if (p->data.charid != charid) {
             return; // other
@@ -415,7 +415,7 @@ _handleredis(struct playerdb* self, struct node_message* nm) {
         }
         break;
     case PDB_LOAD: {
-        uint32_t charid;
+        uint32_t charid = 0;
         memrw_read(&rw, &charid, sizeof(charid));
         if (p->data.charid != charid) {
             return; // other
