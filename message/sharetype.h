@@ -85,10 +85,12 @@ struct tmemberdetail {
 
     uint32_t role;
     uint32_t skin;
-    int32_t oxygenmax;
-    int32_t oxygen; 
+    int32_t oxygen;
+    int32_t oxygencur; 
     int32_t body;
+    int32_t bodycur;
     int32_t quick;
+    int32_t quickcur;
 
     float movespeed;     // 移动速度
     float charfallspeed; // 坠落速度

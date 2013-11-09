@@ -86,6 +86,8 @@ game_free(struct game* self) {
     free(self->players);
     GFREEID_FINI(room, &self->rooms);
     free(self);
+
+    tplt_fini();
 }
 
 static int
@@ -153,6 +155,9 @@ static inline void
 _initmember(struct member* m, struct tmemberdetail* detail) {
     memset(m, 0, sizeof(*m));
     m->detail = *detail;
+    m->detail.oxygencur = m->detail.oxygen;
+    m->detail.bodycur = m->detail.body;
+    m->detail.quickcur = m->detail.quick;
     m->connid = -1;
     m->buffmap = idmap_create(1);
 }
@@ -353,7 +358,7 @@ _check_over_room(struct game* self, struct room* ro) {
     for (i=0; i<ro->np; ++i) {
         m = &ro->p[i];
         if (m->online) {
-            if (m->detail.oxygen == 0) {
+            if (m->detail.oxygencur == 0) {
                 isgameover = true;
                 break;
             }
@@ -492,6 +497,15 @@ _role_press(struct game* self, struct gate_client* c, struct UM_BASE* um) {
 // refresh data type, binary bit
 #define REFRESH_ROLE 1
 
+static inline void
+_update_value(int* cur, int value, int max) {
+    *cur += value;
+    if (*cur < 0)
+        *cur = 0;
+    else if (*cur > max)
+        *cur = max;
+}
+
 static int
 _item_effectone(struct member* m, int effect, int value) {
     if (effect == 0 || value == 0)
@@ -508,17 +522,16 @@ _item_effectone(struct member* m, int effect, int value) {
         // todo:
         break;
     case ITEM_EFFECT_SPEED:
-        if (isabs)
-            detail->quick += value;
-        else
-            detail->quick += detail->quick * value * 0.01;
+        if (!isabs) 
+            value = detail->quick * value * 0.01;
+        _update_value(&detail->quickcur, value, detail->quick);
         refresh_flag |= REFRESH_ROLE;
         break;
     case ITEM_EFFECT_OXYGEN:
-        if (isabs)
-            detail->oxygen += value; 
-        else
-            detail->oxygen += detail->oxygen * value * 0.01;
+        if (!isabs) {
+            value = detail->oxygen * value * 0.01;
+        }
+        _update_value(&detail->oxygencur, value, detail->oxygen);
         refresh_flag |= REFRESH_ROLE;
         break;
     default:
@@ -556,7 +569,7 @@ _item_effect_member(struct game* self, struct room* ro, struct member* m,
     if (item->time > 0) {
         struct buff* b = idmap_find(m->buffmap, item->id);
         if (b == NULL) {
-            struct buff* b = malloc(sizeof(*b));
+            b = malloc(sizeof(*b));
             idmap_insert(m->buffmap, item->id, b);
         }
         b->item = item;
@@ -697,12 +710,10 @@ _update_room(struct game* self, struct room* ro) {
         m = &ro->p[i];
         if (m->online) {
             int oxygen = role_oxygen_time_consume(&m->detail);
-            if ((int)m->detail.oxygen > oxygen) {
-                m->detail.oxygen -= oxygen;
-            } else {
-                m->detail.oxygen = 0;
-            }
+            _update_value(&m->detail.oxygencur, -oxygen, m->detail.oxygen);
+            
             struct _update_buffud udata;
+            udata.m = m;
             udata.effect_flag = 0;
             idmap_foreach(m->buffmap, _update_buffcb, &udata);
             if (udata.effect_flag & REFRESH_ROLE) {

@@ -31,8 +31,6 @@ struct role_tplt {
 // 道具
 struct item_tplt {
     uint32_t id;             // ID
-    char name[32];           // 名称
-    uint32_t icon;           // 图标
     int32_t target;          // 目标
     int32_t time;            // 持续时间
     int32_t effect1;         // 效果类型1

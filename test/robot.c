@@ -14,7 +14,6 @@ static struct UM_NOTIFYGAME GAMEADDR;
 static struct UM_NOTIFYGATE GATEADDR;
 static struct chardata CHAR;
 static char ACCOUNT[ACCOUNT_NAME_MAX];
-
 static void
 _server_init() {
     int i;
@@ -90,12 +89,12 @@ _onconnect(struct net_message* nm) {
 
 static void
 _onconnerr(struct net_message* nm) {
-    printf("onconnerr: %d\n", nm->error);
+    printf("onconnerr: %d, ut %d\n", nm->error, nm->ut);
     _server_set(nm->ut, -1);
 }
 static void
 _onsockerr(struct net_message* nm) {
-    printf("onsockerr: %d\n", nm->error);
+    printf("onsockerr: %d, ut %d\n", nm->error, nm->ut);
     _server_set(nm->ut, -1);
 }
 
@@ -121,6 +120,14 @@ _play(int type) {
     play->type = type;
     _server_send(TGATE, play, sizeof(*play));
     printf("request play: %d\n", type);
+}
+
+static void
+_useitem(uint32_t id) {
+    UM_DEFFIX(UM_USEITEM, ui);
+    ui->itemid = id;
+    _server_send(TGAME, ui, sizeof(*ui));
+    printf("requset use item: %u\n", id);
 }
 
 static void 
@@ -212,8 +219,23 @@ _handleum(int id, int ut, struct UM_BASE* um) {
     case IDUM_GAMESTART: {
         //UM_CAST(UM_GAMESTART, gs, um);
         printf("game start\n");
-        break;
+        if (CHAR.accid % 2 == 0) {
+        _useitem(2);
+        _useitem(3);
+        _useitem(4);
         }
+        }
+        break;
+    case IDUM_ITEMEFFECT: {
+        UM_CAST(UM_ITEMEFFECT, ie, um);
+        printf("item effect %u, to char %u\n", ie->itemid, ie->charid);
+        }
+        break;
+    case IDUM_ROLEINFO: {
+        UM_CAST(UM_ROLEINFO, ri, um);
+        printf("update roleinfo: %u\n", ri->detail.charid);
+        }
+        break;
     }
 }
 
@@ -225,9 +247,9 @@ int main(int argc, char* argv[]) {
     } else {
         strncpy(ACCOUNT, "wa_account_1", sizeof(ACCOUNT)-1);
     }
-    if (argc > 3) {
-        ip = argv[2];
-        port = strtoul(argv[3], NULL, 10);
+    if (argc > 4) {
+        ip = argv[3];
+        port = strtoul(argv[4], NULL, 10);
     } else {
         ip = "192.168.1.140";
         port = 18600;
