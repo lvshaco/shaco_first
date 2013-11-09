@@ -13,6 +13,7 @@ static int SERVER[TMAX];
 static struct UM_NOTIFYGAME GAMEADDR;
 static struct UM_NOTIFYGATE GATEADDR;
 static struct chardata CHAR;
+static char ACCOUNT[ACCOUNT_NAME_MAX];
 
 static void
 _server_init() {
@@ -38,7 +39,7 @@ _server_set(int t, int id) {
 static void
 _login_account(int id) {
     UM_DEFFIX(UM_LOGINACCOUNT, la);
-    strncpy(la->account, "wa_account_2", sizeof(la->account)-1);
+    strncpy(la->account, ACCOUNT, sizeof(la->account)-1);
     strncpy(la->passwd, "123456", sizeof(la->passwd)-1);
     _server_send(TLOGIN, la, sizeof(*la));
     printf("request login account\n");
@@ -49,7 +50,7 @@ _login_gate(int id) {
     UM_DEFFIX(UM_LOGIN, lo);
     lo->accid = GATEADDR.accid;
     lo->key = GATEADDR.key;
-    strcpy(lo->account, "wa_account_2");
+    strcpy(lo->account, ACCOUNT);
     _server_send(TGATE, lo, sizeof(*lo));
     printf("request login gate\n");
 }
@@ -219,15 +220,19 @@ _handleum(int id, int ut, struct UM_BASE* um) {
 int main(int argc, char* argv[]) {
     const char* ip;
     uint16_t port;
-    if (argc < 3) {
-        //printf("usage: test ip port\n");
-        //return;
+    if (argc > 1) {
+        snprintf(ACCOUNT, sizeof(ACCOUNT), "wa_account_%s", argv[1]);
+    } else {
+        strncpy(ACCOUNT, "wa_account_1", sizeof(ACCOUNT)-1);
+    }
+    if (argc > 3) {
+        ip = argv[2];
+        port = strtoul(argv[3], NULL, 10);
+    } else {
         ip = "192.168.1.140";
         port = 18600;
-    } else {
-        ip = argv[1];
-        port = strtoul(argv[2], NULL, 10);
     }
+    
     srand(time(NULL));
     _server_init();
 

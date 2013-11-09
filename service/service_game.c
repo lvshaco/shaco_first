@@ -95,6 +95,7 @@ _loadtplt() {
         { TPLT_ITEM, sizeof(struct item_tplt), TBLFILE(item), TPLT_VIST_VEC32},
     };
     return tplt_init(desc, sizeof(desc)/sizeof(desc[0]));
+    
 }
 
 int
@@ -182,6 +183,18 @@ _count_onlinemember(struct room* ro) {
     return n;
 }
 static void
+_freebuffcb(uint32_t key, void* value, void* ud) {
+    free(value);
+}
+static void
+_freemember(struct member* m) {
+    if (m->buffmap) {
+        idmap_foreach(m->buffmap, _freebuffcb, NULL);
+        idmap_free(m->buffmap);
+        m->buffmap = NULL;
+    }
+}
+static void
 _verifyfail(struct gate_client* c, int8_t error) {
     UM_DEFFIX(UM_GAMELOGINFAIL, fail);
     fail->error = error;
@@ -202,6 +215,34 @@ _multicast_msg(struct room* ro, struct UM_BASE* um, uint32_t except) {
         if (m->detail.charid != except &&
             m->online) {
             UM_SENDTOCLIDIRECT(m->connid, um);
+        }
+    }
+}
+static void
+_logout(struct game* self, struct gate_client* c, bool multicast) {
+    struct player* p = _getplayer(self, c);
+    if (p == NULL) {
+        return;
+    }
+    if (p->login) {
+        int roomid = p->roomid;
+        uint32_t charid = p->charid;
+        p->login = false;
+        p->roomid = 0;
+        p->charid = 0;
+
+        struct room* ro = _getroom(self, roomid);
+        if (ro) {
+            struct member* m = _getmember(ro, charid);
+            if (m) {
+                m->online = false;
+                if (multicast) {
+                    UM_DEFFIX(UM_GAMEUNJOIN, unjoin);
+                    unjoin->charid = charid;
+                    _multicast_msg(ro, (void*)unjoin, charid);
+                }
+                _freemember(m);
+            }
         }
     }
 }
@@ -233,6 +274,17 @@ _start_room(struct room* ro) {
 }
 static void
 _destory_room(struct game* self, struct room* ro) {
+    struct member* m;
+    int i;
+    for (i=0; i<ro->np; ++i) {
+        m = &ro->p[i];
+        if (m->online) {
+            struct gate_client* c = host_gate_getclient(m->connid);
+            if (c == NULL) {
+                _logout(self, c, true);
+            }
+        }
+    } 
     GFREEID_FREE(room, &self->rooms, ro);
 }
 static bool
@@ -257,8 +309,8 @@ _check_enter_room(struct game* self, struct room* ro) {
                 return false;
             }
         }
+        return false;
     }
-    return false;
 }
 static bool
 _check_start_room(struct game* self, struct room* ro) {
@@ -391,32 +443,6 @@ _login(struct game* self, struct gate_client* c, struct UM_BASE* um) {
     _check_enter_room(self, ro);
     return;
 }
-static void
-_logout(struct game* self, struct gate_client* c, bool active) {
-    struct player* p = _getplayer(self, c);
-    if (p == NULL) {
-        return;
-    }
-    if (p->login) {
-        int roomid = p->roomid;
-        uint32_t charid = p->charid;
-        p->login = false;
-        p->roomid = 0;
-        p->charid = 0;
-
-        struct room* ro = _getroom(self, roomid);
-        if (ro) {
-            struct member* m = _getmember(ro, charid);
-            if (m) {
-                m->online = false;
-                UM_DEFFIX(UM_GAMEUNJOIN, unjoin);
-                unjoin->charid = charid;
-                _multicast_msg(ro, (void*)unjoin, charid);
-            }
-        }
-    }
-}
-
 static inline int
 _locate_player(struct game* self, struct gate_client* c, 
                struct player** p, 
@@ -671,6 +697,7 @@ _update_room(struct game* self, struct room* ro) {
                 m->detail.oxygen = 0;
             }
             struct _update_buffud udata;
+            udata.effect_flag = 0;
             idmap_foreach(m->buffmap, _update_buffcb, &udata);
             if (udata.effect_flag & REFRESH_ROLE) {
                 role_attri_build(&ro->gattri, &m->detail);

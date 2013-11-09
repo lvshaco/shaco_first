@@ -37,8 +37,8 @@ tplt_init(const struct tplt_desc* desc, int sz) {
     maxtype += 1;
     T = malloc(sizeof(*T));
     T->sz = maxtype;
-    T->p = malloc(sizeof(struct tplt_one*) * maxtype);
-    memset(T->p, 0, sizeof(struct tplt_one*) * maxtype);
+    T->p = malloc(sizeof(struct tplt_one) * maxtype);
+    memset(T->p, 0, sizeof(struct tplt_one) * maxtype);
  
     struct tplt_holder* holder; 
     struct tplt_visitor* visitor;

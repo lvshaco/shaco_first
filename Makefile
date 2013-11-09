@@ -143,7 +143,7 @@ $(worldservice_so): %.so: $(service_dir)/%.c
 
 service_game.so: $(service_dir)/service_game.c
 	@rm -f $@
-	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Ihost -Inet -Ibase -Imessage -Igame -Itplt -Idatadefine
+	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Ihost -Inet -Ibase -Imessage -Igame -Itplt -Idatadefine -Wl,-rpath,. tplt.so
 
 service_log.so: $(service_dir)/service_log.c
 	@rm -f $@
@@ -249,10 +249,12 @@ tplt.dll: $(tplt_src)
 
 client_dir=D:/wa-client/trunk
 install_dir=$(client_dir)/driller/proj.win32/Debug.win32
+install_dir_rel=$(client_dir)/driller/proj.win32/Release.win32
 source_dir=$(client_dir)/driller/Classes
 tool_dir=$(client_dir)/tool
 install:
 	cp $(client_bin) $(install_dir)
+	cp $(client_bin) $(install_dir_rel)
 	cp -r net $(source_dir)	
 	cp -r cnet $(source_dir)
 	cp -r test/robot.c $(source_dir)/cnet
