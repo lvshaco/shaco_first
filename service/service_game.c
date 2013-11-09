@@ -219,7 +219,7 @@ _multicast_msg(struct room* ro, struct UM_BASE* um, uint32_t except) {
     }
 }
 static void
-_logout(struct game* self, struct gate_client* c, bool multicast) {
+_logout(struct game* self, struct gate_client* c, bool disconn, bool multicast) {
     struct player* p = _getplayer(self, c);
     if (p == NULL) {
         return;
@@ -242,6 +242,10 @@ _logout(struct game* self, struct gate_client* c, bool multicast) {
                     _multicast_msg(ro, (void*)unjoin, charid);
                 }
                 _freemember(m);
+                if (disconn) {
+                    host_debug("disconnect : %u", m->detail.charid);
+                    host_gate_disconnclient(c, true);
+                }
             }
         }
     }
@@ -280,8 +284,8 @@ _destory_room(struct game* self, struct room* ro) {
         m = &ro->p[i];
         if (m->online) {
             struct gate_client* c = host_gate_getclient(m->connid);
-            if (c == NULL) {
-                _logout(self, c, true);
+            if (c) {
+                _logout(self, c, true, false);
             }
         }
     } 
@@ -335,6 +339,8 @@ _rankcmp(const void* p1, const void* p2) {
 }
 static void
 _check_over_room(struct game* self, struct room* ro) {
+    if (ro->status != RS_START)
+        return;
     int n = _count_onlinemember(ro);
     if (n == 0) {
         // todo: destroy directly
@@ -620,7 +626,7 @@ game_usermsg(struct service* s, int id, void* msg, int sz) {
         _login(self, gm->c, um);
         break;
     case IDUM_GAMELOGOUT:
-        _logout(self, gm->c, true);
+        _logout(self, gm->c, true, true);
         break;
     case IDUM_GAMESYNC:
         _sync(self, gm->c, um);
@@ -739,7 +745,7 @@ game_net(struct service* s, struct gate_message* gm) {
     switch (nm->type) {
     case NETE_SOCKERR:
     case NETE_TIMEOUT:
-        _logout(self, gm->c, false);
+        _logout(self, gm->c, false, true);
         break;
     }
 }
