@@ -55,10 +55,28 @@ struct chardata {
 // room type
 #define ROOM_TYPE1 1
 #define ROOM_TYPE2 2
-
 #define ROOM_LOAD_TIMELEAST 3 
-
 #define MEMBER_MAX 8
+
+// 道具目标类型
+#define ITEM_TARGET_SELF  0
+#define ITEM_TARGET_ENEMY 1
+#define ITEM_TARGET_ALL 2
+
+// 道具效果类型
+#define ITEM_EFFECT_CREATE_BAO  1
+#define ITEM_EFFECT_SPEED 2
+#define ITEM_EFFECT_OXYGEN 3
+#define ITEM_EFFECT_MAX 100 // > 100 为按百分比计算
+
+// 关卡信息
+struct groundattri {
+    int32_t difficulty;    // 难度
+    int32_t shaketime;     // 欲坠时间
+    float   cellfallspeed; // 坠落速度
+    int32_t waitdestroy;   // 等待销毁时间
+    int32_t destroytime;   // 销毁时间
+};
 
 // team member detail info
 struct tmemberdetail {
@@ -67,9 +85,18 @@ struct tmemberdetail {
 
     uint32_t role;
     uint32_t skin;
-    uint32_t oxygen; 
-    uint32_t body;
-    uint32_t quick;
+    int32_t oxygenmax;
+    int32_t oxygen; 
+    int32_t body;
+    int32_t quick;
+
+    float movespeed;     // 移动速度
+    float charfallspeed; // 坠落速度
+    float jmpspeed;      // 跳跃速度
+    int32_t jmpacctime;  // 跳跃准备时间
+    int32_t rebirthtime; // 复活时间
+    float dodgedistance; // 闪避距离
+
 };
 
 // team member brief info
@@ -82,6 +109,14 @@ struct tmemberbrief {
     uint32_t oxygen; 
     uint32_t body;
     uint32_t quick;
+};
+
+struct tmemberstat {
+    uint32_t charid;
+    int16_t depth;
+    int16_t noxygenitem;
+    int16_t nitem;
+    int16_t nbao;
 };
 
 #pragma pack()

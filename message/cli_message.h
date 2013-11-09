@@ -36,6 +36,11 @@
 #define IDUM_GAMESTART      IDUM_CBEGIN+206
 #define IDUM_GAMEUNJOIN     IDUM_CBEGIN+207
 #define IDUM_GAMESYNC       IDUM_CBEGIN+208
+#define IDUM_USEITEM        IDUM_CBEGIN+209
+#define IDUM_ITEMEFFECT     IDUM_CBEGIN+210
+#define IDUM_ROLEPRESS      IDUM_CBEGIN+211
+#define IDUM_ROLEINFO       IDUM_CBEGIN+212
+#define IDUM_GAMEOVER       IDUM_CBEGIN+213
 
 #pragma pack(1)
 ////////////////////////////////////////////////////////////
@@ -146,6 +151,7 @@ struct UM_GAMELOGOUT {
 
 struct UM_GAMEINFO {
     _UM_HEADER;
+    struct groundattri gattri;
     int8_t nmember;
     struct tmemberdetail members[0];
 };
@@ -172,6 +178,37 @@ struct UM_GAMESYNC {
     uint32_t charid;
     uint32_t depth;
 };
+
+struct UM_USEITEM {
+    _UM_HEADER;
+    uint32_t itemid;
+};
+
+struct UM_ITEMEFFECT {
+    _UM_HEADER;
+    uint32_t charid;
+    uint32_t itemid;
+};
+
+struct UM_ROLEPRESS {
+    _UM_HEADER;
+    uint32_t charid;
+};
+
+struct UM_ROLEINFO {
+    _UM_HEADER;
+    struct tmemberdetail detail;
+};
+
+struct UM_GAMEOVER {
+    _UM_HEADER;
+    int8_t nmember;
+    struct tmemberstat stats[0];
+};
+static inline uint16_t
+UM_GAMEOVER_size(struct UM_GAMEOVER* um) {
+    return sizeof(*um) + sizeof(um->stats[0])*um->nmember;
+}
 
 #pragma pack()
 

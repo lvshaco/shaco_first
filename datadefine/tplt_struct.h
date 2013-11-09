@@ -3,12 +3,13 @@
 
 #include <stdint.h>
 
-#define TPLT_ROLEDATA 0
+#define TPLT_ROLE 0
+#define TPLT_ITEM 1
 
 #pragma pack(1)
 
 // 角色数据
-struct roledata_tplt {
+struct role_tplt {
     uint32_t id;             // ID
     char name[32];           // 角色名称
     uint32_t sex;            // 性别
@@ -24,6 +25,22 @@ struct roledata_tplt {
     uint32_t sence;          // 感知
     uint32_t view;           // 视野
     uint32_t weapon;         // 武器强度
+
+};
+
+// 道具
+struct item_tplt {
+    uint32_t id;             // ID
+    char name[32];           // 名称
+    uint32_t icon;           // 图标
+    int32_t target;          // 目标
+    int32_t time;            // 持续时间
+    int32_t effect1;         // 效果类型1
+    int32_t effectvalue1;    // 效果值1
+    int32_t effect2;         // 效果类型2
+    int32_t effectvalue2;    // 效果值2
+    int32_t effect3;         // 效果类型3
+    int32_t effectvalue3;    // 效果值3
 
 };
 

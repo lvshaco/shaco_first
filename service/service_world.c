@@ -43,10 +43,9 @@ world_free(struct world* self) {
 
 static int
 _loadtplt() {
-
 #define TBLFILE(name) "./res/tbl/"#name".tbl"
     struct tplt_desc desc[] = {
-        { TPLT_ROLEDATA, sizeof(struct roledata_tplt), TBLFILE(roledata), TPLT_VIST_VEC32},
+        { TPLT_ROLE, sizeof(struct role_tplt), TBLFILE(role), TPLT_VIST_VEC32},
     };
     return tplt_init(desc, sizeof(desc)/sizeof(desc[0]));
 }
@@ -79,11 +78,13 @@ _onlogin(struct player* p) {
     p->status = PS_GAME;
 
     struct chardata* data = &p->data;
-    const struct tplt_visitor* vist = tplt_get_visitor(TPLT_ROLEDATA);
+    const struct tplt_visitor* vist = tplt_get_visitor(TPLT_ROLE);
+    if (vist == NULL)
+        return;
     if (data->role == 0) {
         data->role = 1;
     }
-    const struct roledata_tplt* role = tplt_visitor_find(vist, data->role);
+    const struct role_tplt* role = tplt_visitor_find(vist, data->role);
     if (role == NULL) {
         host_error("can not found role %d, charid %u", data->role, data->charid);
     } else {

@@ -108,6 +108,10 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.py *.h *.c" {
   worldhelper.h
   player.c
  }
+ game=game{
+  fight.h
+  fight.c
+ }
  message=message{
   cli_message.h
   client_type.h

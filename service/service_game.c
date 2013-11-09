@@ -8,6 +8,10 @@
 #include "gfreeid.h"
 #include "cli_message.h"
 #include "user_message.h"
+#include "fight.h"
+#include "tplt_include.h"
+#include "tplt_struct.h"
+#include "map.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
@@ -15,6 +19,7 @@
 #define ENTER_TIMELEAST (ROOM_LOAD_TIMELEAST*1000)
 #define ENTER_TIMEOUT (5000+ENTER_TIMELEAST)
 #define START_TIMEOUT 1000
+#define DESTROY_TIMEOUT 500
 
 #define RS_CREATE 0
 #define RS_ENTER  1
@@ -30,21 +35,26 @@ struct player {
 struct member {
     bool login;
     bool online;
-    int connid;
+    int connid; 
     struct tmemberdetail detail;
-    uint32_t depth;
+    struct idmap* buffmap;
+    int32_t depth;
+    uint64_t deathtime;
+    int16_t noxygenitem;
+    int16_t nitem;
+    int16_t nbao;
 };
 
 struct room { 
     int id;
     int used;
-    uint64_t createtime; 
-    uint64_t entertime;
     int8_t type;
     uint32_t key;
     int status; // RS_*
+    uint64_t statustime;
     int np;
     struct member p[MEMBER_MAX];
+    struct groundattri gattri;
 };
 
 struct gfroom {
@@ -55,6 +65,11 @@ struct game {
     int pmax;
     struct player* players;
     struct gfroom rooms;
+};
+
+struct buff {
+    const struct item_tplt* item;
+    int time;
 };
 
 struct game*
@@ -73,12 +88,24 @@ game_free(struct game* self) {
     free(self);
 }
 
+static int
+_loadtplt() {
+#define TBLFILE(name) "./res/tbl/"#name".tbl"
+    struct tplt_desc desc[] = {
+        { TPLT_ITEM, sizeof(struct item_tplt), TBLFILE(item), TPLT_VIST_VEC32},
+    };
+    return tplt_init(desc, sizeof(desc)/sizeof(desc[0]));
+}
+
 int
 game_init(struct service* s) {
     struct game* self = SERVICE_SELF;
     int pmax = host_gate_maxclient();
     if (pmax == 0) {
         host_error("maxclient is zero, try load service gate before this");
+        return 1;
+    }
+    if (_loadtplt()) {
         return 1;
     }
     self->pmax = pmax;
@@ -123,10 +150,10 @@ _getroom(struct game* self, int roomid) {
 
 static inline void
 _initmember(struct member* m, struct tmemberdetail* detail) {
+    memset(m, 0, sizeof(*m));
     m->detail = *detail;
-    m->login = false;
-    m->online = false;
     m->connid = -1;
+    m->buffmap = idmap_create(1);
 }
 
 static struct member*
@@ -178,52 +205,55 @@ _multicast_msg(struct room* ro, struct UM_BASE* um, uint32_t except) {
         }
     }
 }
+//////////////////////////////////////////////////////////////////////
+// room logic
+
 static struct room*
-_gamecreate(struct game* self) {
+_create_room(struct game* self) {
     struct room* ro = GFREEID_ALLOC(room, &self->rooms);
     assert(ro);
-    ro->createtime = host_timer_now();
     ro->status = RS_CREATE;
+    ro->statustime = host_timer_now();
     return ro;
 }
 static void
-_gameenter(struct room* ro) {
+_enter_room(struct room* ro) {
     ro->status = RS_ENTER;
-    ro->entertime = host_timer_now();
+    ro->statustime = host_timer_now();
     UM_DEFFIX(UM_GAMEENTER, enter);
     enter->msgsz -= UM_SKIP;
     _multicast_msg(ro, (void*)enter, 0);
 }
 static void
-_gamestart(struct room* ro) {
+_start_room(struct room* ro) {
     ro->status = RS_START;
     UM_DEFFIX(UM_GAMESTART, start);
     start->msgsz -= UM_SKIP;
     _multicast_msg(ro, (void*)start, 0);
 }
 static void
-_gamedestroy(struct game* self, struct room* ro) {
+_destory_room(struct game* self, struct room* ro) {
     GFREEID_FREE(room, &self->rooms, ro);
 }
 static bool
-_try_gameenter(struct game* self, struct room* ro) {
+_check_enter_room(struct game* self, struct room* ro) {
     if (ro->status != RS_CREATE) {
         return false;
     }
-    if (!_elapsed(ro->createtime, ENTER_TIMELEAST)) {
+    if (!_elapsed(ro->statustime, ENTER_TIMELEAST)) {
         return false;
     }
     int n = _count_onlinemember(ro);
     if (n == ro->np) {
-        _gameenter(ro);
+        _enter_room(ro);
         return true;
     } else {
-        if (_elapsed(ro->createtime, ENTER_TIMEOUT)) {
+        if (_elapsed(ro->statustime, ENTER_TIMEOUT)) {
             if (n > 0) {
-                _gameenter(ro);
+                _enter_room(ro);
                 return true;
             } else {
-                _gamedestroy(self, ro);
+                _destory_room(self, ro);
                 return false;
             }
         }
@@ -231,31 +261,90 @@ _try_gameenter(struct game* self, struct room* ro) {
     return false;
 }
 static bool
-_try_gamestart(struct game* self, struct room* ro) {
+_check_start_room(struct game* self, struct room* ro) {
     if (ro->status != RS_ENTER) {
         return false;
     }
-    if (_elapsed(ro->entertime, START_TIMEOUT)) {
-        _gamestart(ro);
+    if (_elapsed(ro->statustime, START_TIMEOUT)) {
+        _start_room(ro);
         return true;
     }
     return false;
 }
-static bool
-_try_gameover(struct game* self, struct room* ro) {
-    if (ro->status != RS_START) {
-        return false;
-    }
+static int 
+_rankcmp(const void* p1, const void* p2) {
+    const struct member* m1 = p1;
+    const struct member* m2 = p2;
+    if (m1->deathtime == 0)
+        return -1;
+    if (m2->deathtime == 0)
+        return 1;
+    return m1->deathtime < m2->deathtime;
+}
+static void
+_check_over_room(struct game* self, struct room* ro) {
     int n = _count_onlinemember(ro);
     if (n == 0) {
-        _gamedestroy(self, ro);
-        return true;
+        // todo: destroy directly
+        _destory_room(self, ro);
+        return;
     }
-    return false;
+    struct member* m;
+    bool isgameover = false;
+    int i;
+    for (i=0; i<ro->np; ++i) {
+        m = &ro->p[i];
+        if (m->online) {
+            if (m->detail.oxygen == 0) {
+                isgameover = true;
+                break;
+            }
+        }
+    }
+    if (!isgameover)
+        return;
+
+    // rank
+    struct member* pmarray[ro->np];
+    for (i=0; i<ro->np; ++i) {
+        pmarray[i] = &ro->p[i];
+    }
+    qsort(pmarray, ro->np, sizeof(pmarray[0]), _rankcmp);
+
+    UM_DEFVAR(UM_GAMEOVER, go);
+    go->nmember = ro->np;
+    for (i=0; i<ro->np; ++i) {
+        m = pmarray[i];
+        go->stats[i].charid = m->detail.charid;
+        go->stats[i].depth = m->depth;
+        go->stats[i].noxygenitem = m->noxygenitem;
+        go->stats[i].nitem = m->nitem;
+        go->stats[i].nbao = m->nbao;
+    }
+    for (i=0; i<ro->np; ++i) {
+        m = &ro->p[i];
+        if (m->online) {
+            UM_SENDTOCLI(m->connid, go, UM_GAMEOVER_size(go));
+        }
+    }
+    ro->status = RS_OVER;
+    ro->statustime = host_timer_now();
 }
+static void
+_check_destory_room(struct game* self, struct room* ro) {
+    if (ro->status != RS_OVER)
+        return;
+    if (!_elapsed(ro->statustime, DESTROY_TIMEOUT)) {
+        return;
+    }
+    _destory_room(self, ro);
+}
+
+//////////////////////////////////////////////////////////////////////
 static void
 _notify_gameinfo(struct gate_client* c, struct room* ro) {
     UM_DEFVAR(UM_GAMEINFO, ri);
+    ri->gattri = ro->gattri;
     ri->nmember = ro->np;
     int i;
     for (i=0; i<ro->np; ++i) {
@@ -295,9 +384,11 @@ _login(struct game* self, struct gate_client* c, struct UM_BASE* um) {
     m->login = 1;
     m->online = 1;
     m->connid = c->connid;
+    
+    role_attri_build(&ro->gattri, &m->detail);
 
     _notify_gameinfo(c, ro);
-    _try_gameenter(self, ro);
+    _check_enter_room(self, ro);
     return;
 }
 static void
@@ -321,30 +412,177 @@ _logout(struct game* self, struct gate_client* c, bool active) {
                 UM_DEFFIX(UM_GAMEUNJOIN, unjoin);
                 unjoin->charid = charid;
                 _multicast_msg(ro, (void*)unjoin, charid);
-                
-                if (active) {
-                    _try_gameover(self, ro);
-                }
             }
         }
     }
 }
+
+static inline int
+_locate_player(struct game* self, struct gate_client* c, 
+               struct player** p, 
+               struct room** ro,
+               struct member** m) {
+    *p = _getonlineplayer(self, c);
+    if (*p == NULL)
+        return 1;
+    *ro = _getroom(self, (*p)->roomid);
+    if (*ro == NULL) 
+        return 1;
+    *m = _getmember(*ro, (*p)->charid);
+    if (*m == NULL)
+        return 1;
+    return 0;
+}
+
 static void
 _sync(struct game* self, struct gate_client* c, struct UM_BASE* um) {
-    struct player* p = _getonlineplayer(self, c);
-    if (p == NULL) {
+    struct player* p;
+    struct room* ro;
+    struct member* m;
+    if (_locate_player(self, c, &p, &ro, &m))
         return;
+    UM_CAST(UM_GAMESYNC, sync, um);
+    m->depth = sync->depth;
+    _multicast_msg(ro, (void*)sync, p->charid);
+}
+
+static void
+_role_press(struct game* self, struct gate_client* c, struct UM_BASE* um) {
+    struct player* p;
+    struct room* ro;
+    struct member* m;
+    if (_locate_player(self, c, &p, &ro, &m))
+        return;
+    UM_CAST(UM_GAMEPRESS, gp, um);
+    _multicast_msg(ro, (void*)gp, p->charid);
+}
+
+// refresh data type, binary bit
+#define REFRESH_ROLE 1
+
+static int
+_item_effectone(struct member* m, int effect, int value) {
+    if (effect == 0 || value == 0)
+        return 0;
+    bool isabs = true;
+    if (effect > ITEM_EFFECT_MAX) {
+        isabs = false;
+        effect -= ITEM_EFFECT_MAX;
     }
-    struct room* ro = _getroom(self, p->roomid);
-    if (ro) {
-        struct member* m = _getmember(ro, p->charid);
-        if (m) {
-            UM_CAST(UM_GAMESYNC, sync, um);
-            m->depth = sync->depth;
-            _multicast_msg(ro, (void*)sync, p->charid);
+    int refresh_flag = 0;
+    struct tmemberdetail* detail = &m->detail;
+    switch (effect) {
+    case ITEM_EFFECT_CREATE_BAO:
+        // todo:
+        break;
+    case ITEM_EFFECT_SPEED:
+        if (isabs)
+            detail->quick += value;
+        else
+            detail->quick += detail->quick * value * 0.01;
+        refresh_flag |= REFRESH_ROLE;
+        break;
+    case ITEM_EFFECT_OXYGEN:
+        if (isabs)
+            detail->oxygen += value; 
+        else
+            detail->oxygen += detail->oxygen * value * 0.01;
+        refresh_flag |= REFRESH_ROLE;
+        break;
+    default:
+        return 0 ;
+    }
+    switch (effect) {
+    case ITEM_EFFECT_CREATE_BAO:
+        m->nbao += 1;
+        break;
+    case ITEM_EFFECT_OXYGEN:
+        m->noxygenitem += 1;
+        break;
+    default:
+        m->nitem += 1;
+        break;
+    }
+    return refresh_flag;
+}
+
+static void
+_item_effect_member(struct game* self, struct room* ro, struct member* m, 
+        const struct item_tplt* item) {
+    int effect_flag = 0;
+    effect_flag |= _item_effectone(m, item->effect1, item->effectvalue1);
+    effect_flag |= _item_effectone(m, item->effect2, item->effectvalue2);
+    effect_flag |= _item_effectone(m, item->effect3, item->effectvalue3);
+    if (effect_flag & REFRESH_ROLE) {
+        role_attri_build(&ro->gattri, &m->detail);
+
+        UM_DEFFIX(UM_ROLEINFO, ri);
+        ri->detail = m->detail;
+        _multicast_msg(ro, (void*)ri, 0);
+    }
+
+    if (item->time > 0) {
+        struct buff* b = idmap_find(m->buffmap, item->id);
+        if (b == NULL) {
+            struct buff* b = malloc(sizeof(*b));
+            idmap_insert(m->buffmap, item->id, b);
         }
+        b->item = item;
+        b->time = host_timer_now()/1000 + item->time;
+    }
+
+    UM_DEFFIX(UM_ITEMEFFECT, ie);
+    ie->charid = m->detail.charid;
+    ie->itemid = item->id;
+    _multicast_msg(ro, (void*)ie, 0);
+}
+
+static void
+_use_item(struct game* self, struct gate_client* c, struct UM_BASE* um) {
+    struct player* p;
+    struct room* ro;
+    struct member* me;
+    if (_locate_player(self, c, &p, &ro, &me))
+        return;
+
+    UM_CAST(UM_USEITEM, useitem, um);
+    const struct tplt_visitor* vist = tplt_get_visitor(TPLT_ITEM);
+    if (vist == NULL)
+        return;
+    const struct item_tplt* item = tplt_visitor_find(vist, useitem->itemid);
+    if (item == NULL)
+        return;
+
+    switch (item->target) {
+    case ITEM_TARGET_SELF:
+        _item_effect_member(self, ro, me, item);
+        break;
+    case ITEM_TARGET_ENEMY: {
+        struct member* m;
+        int i;
+        for (i=0; i<ro->np; ++i) {
+            m = &ro->p[i];
+            if (m->online &&
+                m != me) {
+                _item_effect_member(self, ro, m, item);
+            }
+        }
+        }
+        break;
+    case ITEM_TARGET_ALL: {
+        struct member* m;
+        int i;
+        for (i=0; i<ro->np; ++i) {
+            m = &ro->p[i];
+            if (m->online) {
+                _item_effect_member(self, ro, m, item);
+            }
+        }
+        }
+        break;
     }
 }
+
 void
 game_usermsg(struct service* s, int id, void* msg, int sz) {
     struct game* self = SERVICE_SELF;
@@ -361,14 +599,20 @@ game_usermsg(struct service* s, int id, void* msg, int sz) {
     case IDUM_GAMESYNC:
         _sync(self, gm->c, um);
         break;
+    case IDUM_ROLEPRESS:
+        _role_press(self, gm->c, um);
+        break;
+    case IDUM_USEITEM:
+        _use_item(self, gm->c, um);
+        break;
     }
 }
 
 static void
-_creategame(struct game* self, struct node_message* nm) {
+_handle_creategame(struct game* self, struct node_message* nm) {
     UM_CAST(UM_CREATEROOM, cr, nm->um);
 
-    struct room* ro = _gamecreate(self);
+    struct room* ro = _create_room(self);
     assert(ro);
     ro->type = cr->type;
     ro->key = cr->key;
@@ -377,6 +621,9 @@ _creategame(struct game* self, struct node_message* nm) {
     for (i=0; i<cr->nmember; ++i) {
         _initmember(&ro->p[i], &cr->members[i]);
     }
+    // todo: 
+    ground_attri_build(100, &ro->gattri);
+
     UM_DEFFIX(UM_CREATEROOMRES, res);
     res->ok = 1;
     res->id = cr->id;
@@ -385,21 +632,64 @@ _creategame(struct game* self, struct node_message* nm) {
     UM_SENDTONODE(nm->hn, res, sizeof(*res));
 }
 static void
-_destroyroom(struct game* self, struct UM_BASE* um) {
+_handle_destroyroom(struct game* self, struct UM_BASE* um) {
     UM_CAST(UM_CREATEROOMRES, dr, um);
     struct room* ro = _getroom(self, dr->roomid);
     if (ro && (ro->status == RS_CREATE)) {
-        _gamedestroy(self, ro);
+        _destory_room(self, ro);
     }
 }
+
+struct _update_buffud {
+    struct member* m;
+    int effect_flag;
+};
+static void
+_update_buffcb(uint32_t key, void* value, void* ud) {
+    struct _update_buffud* udata = ud;
+    struct buff* b = value;
+    const struct item_tplt* item = b->item;
+    if (b->time >= host_timer_now()/1000) {
+        b->time = 0;
+        udata->effect_flag |= _item_effectone(udata->m, item->effect1, item->effectvalue1);
+        udata->effect_flag |= _item_effectone(udata->m, item->effect2, item->effectvalue2);
+        udata->effect_flag |= _item_effectone(udata->m, item->effect3, item->effectvalue3);
+    }
+}
+
+static void
+_update_room(struct game* self, struct room* ro) {
+    struct member* m;
+    int i;
+    for (i=0; i<ro->np; ++i) {
+        m = &ro->p[i];
+        if (m->online) {
+            int oxygen = role_oxygen_time_consume(&m->detail);
+            if ((int)m->detail.oxygen > oxygen) {
+                m->detail.oxygen -= oxygen;
+            } else {
+                m->detail.oxygen = 0;
+            }
+            struct _update_buffud udata;
+            idmap_foreach(m->buffmap, _update_buffcb, &udata);
+            if (udata.effect_flag & REFRESH_ROLE) {
+                role_attri_build(&ro->gattri, &m->detail);
+                UM_DEFFIX(UM_ROLEINFO, ri);
+                ri->detail = m->detail;
+                _multicast_msg(ro, (void*)ri, 0);
+            }
+        }
+    }
+}
+
 static void
 _handleworld(struct game* self, struct node_message* nm) {
     switch (nm->um->msgid) {
     case IDUM_CREATEROOM:
-        _creategame(self, nm);
+        _handle_creategame(self, nm);
         break;
     case IDUM_CREATEROOMRES:
-        _destroyroom(self, nm->um);
+        _handle_destroyroom(self, nm->um);
         break;
     }
 }
@@ -437,10 +727,17 @@ game_time(struct service* s) {
         if (ro) {
             switch (ro->status) {
             case RS_CREATE:
-                _try_gameenter(self, ro);
+                _check_enter_room(self, ro);
                 break;
             case RS_ENTER:
-                _try_gamestart(self, ro);
+                _check_start_room(self, ro);
+                break;
+            case RS_START:
+                _update_room(self, ro);
+                _check_over_room(self, ro);
+                break;
+            case RS_OVER:
+                _check_destory_room(self, ro);
                 break;
             }
         }

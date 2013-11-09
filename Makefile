@@ -105,7 +105,6 @@ service_so=\
 	service_cmdctl.so \
 	service_gate.so \
 	service_forward.so \
-	service_game.so \
 	service_load.so
 
 worldservice_so=\
@@ -123,6 +122,7 @@ all: \
 	shaco-cli \
 	service_log.so \
 	$(service_so) \
+	service_game.so \
 	world.so \
 	$(worldservice_so) \
 	service_playerdb.so \
@@ -140,6 +140,10 @@ $(service_so): %.so: $(service_dir)/%.c
 $(worldservice_so): %.so: $(service_dir)/%.c
 	@rm -f $@
 	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Ihost -Inet -Ibase -Imessage -Iworld -Itplt -Idatadefine -Wl,-rpath,. world.so tplt.so
+
+service_game.so: $(service_dir)/service_game.c
+	@rm -f $@
+	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Ihost -Inet -Ibase -Imessage -Igame -Itplt -Idatadefine
 
 service_log.so: $(service_dir)/service_log.c
 	@rm -f $@
