@@ -165,7 +165,6 @@ _read(struct benchmark* self, struct net_message* nm) {
     int n = 0;
     struct UM_BASE* um;
     while ((um = _message_read_one(nm, UM_SKIP)) != NULL) {
-        um->msgsz += UM_SKIP;
         if (um->msgsz > UM_CLIMAX) {
             host_net_close_socket(nm->connid, true);
             nm->type = NETE_SOCKERR;

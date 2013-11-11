@@ -174,12 +174,9 @@ struct UM_OVERROOM {
 } while(0)
 
 #define UM_SENDTOCLI(id, um, sz) do { \
-    (um)->msgsz = sz - UM_SKIP;                         \
-    host_net_send(id, (char*)um + UM_SKIP, (um)->msgsz);\
+    (um)->msgsz = sz; \
+    host_net_send(id, (char*)um + UM_SKIP, (um)->msgsz - UM_SKIP);\
 } while(0)
-
-#define UM_SENDTOCLIDIRECT(id, um) \
-    host_net_send(id, (char*)um + UM_SKIP, (um)->msgsz);
 
 #define UM_SENDTOSVR UM_SENDTOCLI
 

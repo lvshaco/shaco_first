@@ -15,7 +15,7 @@ _message_read_one(struct net_message* nm, int skip) {
     if (base == NULL) {
         goto null;
     }
-    int sz = base->msgsz + skip - sizeof(*base);
+    int sz = base->msgsz - sizeof(*base);
     if (sz != 0) {
         data = host_net_read(id, sz, 0, &e);
         if (data == NULL) {

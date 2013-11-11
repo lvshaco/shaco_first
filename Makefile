@@ -112,6 +112,8 @@ worldservice_so=\
 	service_gamematch.so
 
 all: \
+	t \
+	robot \
 	lur.so \
 	net.so \
 	base.so \
@@ -131,7 +133,7 @@ all: \
 	service_login.so
 
 release: CFLAGS += -O2 -fno-strict-aliasing
-release: all t
+release: all
 
 $(service_so): %.so: $(service_dir)/%.c
 	@rm -f $@

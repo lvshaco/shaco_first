@@ -79,11 +79,11 @@ _input(void* ud) {
         }
         //buf[l-1] = '\0';
         l--;
-        l += 4;
+        l += 6;
         head[0] = l & 0xff;
         head[1] = (l >> 8) & 0xff;
         _write(fd, head, 4);
-        _write(fd, buf, l-4);
+        _write(fd, buf, l-6);
     }
     return NULL;
 }
@@ -99,7 +99,7 @@ _receive(void* ud) {
         _read(fd, &head, 4);
         l = head[0] | (head[1] << 8);
         char buf[l-3];
-        _read(fd, buf, l-4); 
+        _read(fd, buf, l-6); 
         buf[l-4] = '\0';
         printf("%s\n", buf); 
     }

@@ -109,14 +109,17 @@ _query(struct login* self, struct gate_client* c, struct player* p) {
 }
 
 static void
-_logout(struct gate_client* c, struct player* p, int32_t error, bool active) {
+_notify_loginfail(struct gate_client* c, int error) {
+    UM_DEFFIX(UM_LOGINACCOUNTFAIL, fail);
+    fail->error = error;
+    UM_SENDTOCLI(c->connid, fail, fail->msgsz);
+}
+
+static void
+_logout(struct gate_client* c, struct player* p, bool forcedisconn) {
     p->state = STATE_FREE;
-    if (active) {
-        UM_DEFFIX(UM_LOGINACCOUNTFAIL, fail);
-        fail->error = error;
-        UM_SENDTOCLI(c->connid, fail, fail->msgsz);
-        host_gate_disconnclient(c, false);
-    }
+    bool closed = host_gate_disconnclient(c, forcedisconn);
+    host_debug("disconn client: %u, %d", p->accid, (int)closed);
 }
 
 static void
@@ -124,6 +127,7 @@ _login(struct login* self, struct gate_client* c, struct UM_BASE* um) {
     struct player* p = _getplayer(self, c);
     assert(p);
     if (p->state != STATE_FREE) {
+        host_debug("acc %u, state %d", p->accid, p->state);
         //_logout(c, p, SERR_RELOGIN, true); maybe client click login button more then once
         return;
     }
@@ -131,7 +135,8 @@ _login(struct login* self, struct gate_client* c, struct UM_BASE* um) {
     strncpychk(p->account, sizeof(p->account), la->account, sizeof(la->account));
     strncpychk(p->passwd, sizeof(p->passwd), la->passwd, sizeof(la->passwd));
     if (_query(self, c, p)) {
-        _logout(c, p, SERR_NODB, true);
+        _notify_loginfail(c, SERR_NODB);
+        _logout(c, p, false);
         return;
     }
     p->state = STATE_LOGIN;
@@ -234,7 +239,8 @@ _handleredis(struct login* self, struct node_message* nm) {
     p->state = STATE_GATELOAD;
     return; 
 err_out:
-    _logout(c, p, error, true);
+    _notify_loginfail(c, error);
+    _logout(c, p, false);
 }
 
 static void
@@ -258,9 +264,21 @@ _loginres(struct login* self, struct UM_BASE* um) {
             notify->addr = res->addr;
             notify->port = res->port;
             UM_SENDTOCLI(c->connid, notify, notify->msgsz);
-            // todo: disconnect
+/* test socket halfclose
+            char data[60000];
+            memset(data, 0, sizeof(data));
+            struct UM_BASE* base = (struct UM_BASE*)data;
+            base->msgid = 1500;
+            base->msgsz = sizeof(data);
+            int i;
+            for (i=0; i<1000; ++i) {
+                UM_SENDTOCLI(c->connid, base, base->msgsz);
+            }
+*/
+            _logout(c, p, false); 
         } else {
-            _logout(c, p, SERR_REGGATE, true);
+            _notify_loginfail(c, SERR_REGGATE);
+            _logout(c, p, false);
         }
     } else {
         return; // maybe disconnect, then other connected and not gateload 
@@ -314,7 +332,7 @@ login_net(struct service* s, struct gate_message* gm) {
     }
     p = _getonlineplayer(self, gm->c);
     if (p) {
-        _logout(gm->c, p, error, false);
+        _logout(gm->c, p, true);
     }
 }
 
@@ -335,7 +353,7 @@ login_time(struct service* s) {
             now - c[i].create_time > 10*1000) { // short connection mode
             p = _getonlineplayer(self, &c[i]);
             if (p) {
-                _logout(&c[i], p, SERR_TIMEOUT, true);
+                _logout(&c[i], p, true);
             } else {
                 host_gate_disconnclient(&c[i], true);
             }

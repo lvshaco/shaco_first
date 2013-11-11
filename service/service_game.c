@@ -93,12 +93,12 @@ game_free(struct game* self) {
         return;
     free(self->players);
     GFREEID_FINI(room, &self->rooms);
-    free(self);
-
+    
     if (self->tpltdata) {
         tplt_fini(self->tpltdata);
         self->tpltdata = NULL;
     }
+    free(self);
 }
 
 static struct tplt*
@@ -231,7 +231,7 @@ _multicast_msg(struct room* ro, struct UM_BASE* um, uint32_t except) {
         m = &ro->p[i];
         if (m->detail.charid != except &&
             m->online) {
-            UM_SENDTOCLIDIRECT(m->connid, um);
+            UM_SENDTOCLI(m->connid, um, um->msgsz);
         }
     }
 }
@@ -283,14 +283,12 @@ _enter_room(struct room* ro) {
     ro->status = RS_ENTER;
     ro->statustime = host_timer_now();
     UM_DEFFIX(UM_GAMEENTER, enter);
-    enter->msgsz -= UM_SKIP;
     _multicast_msg(ro, (void*)enter, 0);
 }
 static void
 _start_room(struct room* ro) {
     ro->status = RS_START;
     UM_DEFFIX(UM_GAMESTART, start);
-    start->msgsz -= UM_SKIP;
     _multicast_msg(ro, (void*)start, 0);
 }
 static void

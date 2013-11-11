@@ -68,10 +68,12 @@ host_gate_acceptclient(int connid, uint64_t now) {
 
 bool
 host_gate_disconnclient(struct gate_client* c, bool force) {
-    int id = freeid_free(&G->fi, c->connid);
-    assert(id == (c-G->p));
+    if (c->connid == -1)
+        return true;
     bool closed = host_net_close_socket(c->connid, force);
     if (closed) {
+        int id = freeid_free(&G->fi, c->connid);
+        assert(id == (c-G->p));
         c->connid = -1;
         c->create_time = 0;
         c->active_time = 0;

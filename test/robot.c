@@ -134,12 +134,21 @@ static void
 _handleum(int id, int ut, struct UM_BASE* um) {
     printf("handleum: %d\n", um->msgid);
     switch (um->msgid) {
+/*    case 1500: {
+        static int I = 0;
+        I++;
+        if (I > 900)
+            cnet_disconnect(id);
+        }
+        break;
+*/
     case IDUM_LOGINACCOUNTFAIL: {
         UM_CAST(UM_LOGINACCOUNTFAIL, fail, um);
         printf("accout login fail: error#%d\n", fail->error);
         }
         break;
     case IDUM_NOTIFYGATE: {
+        //_login_account(id);
         UM_CAST(UM_NOTIFYGATE, g, um);
         printf("accid %u, gate address: %0x:%u, key: %llu\n", 
                 g->accid, g->addr, g->port, (unsigned long long int)g->key);

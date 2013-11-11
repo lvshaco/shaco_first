@@ -37,11 +37,11 @@ world_free(struct world* self) {
     if (self == NULL)
         return;
     _freeplayers();
-    free(self);
     if (self->tpltdata) {
         tplt_fini(self->tpltdata);
         self->tpltdata = NULL;
     }
+    free(self);
 }
 
 static struct tplt*

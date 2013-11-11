@@ -50,7 +50,7 @@ _readone(struct net_message* nm, int skip) {
     if (base == NULL) {
         goto null;
     }
-    int sz = base->msgsz+skip-sizeof(*base);
+    int sz = base->msgsz-sizeof(*base);
     if (sz != 0) {
         data = net_read(N, id, sz, 0, &e);
         if (data == NULL) {
@@ -72,7 +72,6 @@ _read(struct net_message* nm) {
     int id = nm->connid;
     struct UM_BASE* um;
     while ((um = _readone(nm, UM_SKIP)) != NULL) {
-        um->msgsz += UM_SKIP;
         _handleum(id, nm->ut, um);
         net_dropread(N, id, UM_SKIP);
     }
@@ -134,8 +133,8 @@ int
 cnet_send(int id, void* um, int sz) {
     struct net_message nm;
     UM_CAST(UM_BASE, m, um);
-    m->msgsz = sz-UM_SKIP;
-    int n = net_send(N, id, (char*)m+UM_SKIP, m->msgsz, &nm);
+    m->msgsz = sz;
+    int n = net_send(N, id, (char*)m+UM_SKIP, m->msgsz-UM_SKIP, &nm);
     if (n > 0) {
         _dispatch_one(&nm);
     }
@@ -179,4 +178,7 @@ cnet_fini() {
 }
 int cnet_subscribe(int id, int read) { 
     return net_subscribe(N, id, read); 
+}
+int cnet_disconnect(int id) {
+    return net_close_socket(N, id, true);
 }
