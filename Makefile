@@ -260,7 +260,11 @@ install:
 	cp -r net $(source_dir)	
 	cp -r cnet $(source_dir)
 	cp -r test/robot.c $(source_dir)/cnet
-	cp -r message $(source_dir)
+	#cp -r message $(source_dir)
+	mkdir .message
+	for file in `ls message`; do iconv -f utf-8 -t gbk message/$$file > .message/$$file; done 
+	cp -r .message $(source_dir)/message
+	rm -rf .message
 	cp -r tplt $(source_dir)
 	cp -r tool/concat.py tool/convert_excel.py tool/excelto $(tool_dir)
 
