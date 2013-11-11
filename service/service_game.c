@@ -62,6 +62,7 @@ struct gfroom {
 };
 
 struct game {
+    struct tplt* tpltdata;
     int pmax;
     struct player* players;
     struct gfroom rooms;
@@ -94,11 +95,14 @@ game_free(struct game* self) {
     GFREEID_FINI(room, &self->rooms);
     free(self);
 
-    tplt_fini();
+    if (self->tpltdata) {
+        tplt_fini(self->tpltdata);
+        self->tpltdata = NULL;
+    }
 }
 
-static int
-_loadtplt() {
+static struct tplt*
+_loadtplt(struct game* self) {
 #define TBLFILE(name) "./res/tbl/"#name".tbl"
     struct tplt_desc desc[] = {
         { TPLT_ITEM, sizeof(struct item_tplt), TBLFILE(item), TPLT_VIST_VEC32},
@@ -115,9 +119,10 @@ game_init(struct service* s) {
         host_error("maxclient is zero, try load service gate before this");
         return 1;
     }
-    if (_loadtplt()) {
+    self->tpltdata = _loadtplt(self);
+    if (self->tpltdata == NULL)
         return 1;
-    }
+    
     self->pmax = pmax;
     self->players = malloc(sizeof(struct player) * pmax);
     memset(self->players, 0, sizeof(struct player) * pmax);
@@ -519,9 +524,9 @@ _update_value(int* cur, int* value, int max) {
 
 static int
 _item_effectone(struct member* m, int effect, int value, struct buff_effect* result) {
-    //if (effect == 0 || value == 0)
-        //return 0;
-    host_debug("item effect %d, value %d, to %u", effect, value, m->detail.charid);
+    if (effect == 0 || value == 0)
+        return 0;
+    host_debug("item effect %d, value %d, to char %u", effect, value, m->detail.charid);
     bool isabs = true;
     if (effect > ITEM_EFFECT_MAX) {
         isabs = false;
@@ -626,7 +631,7 @@ _use_item(struct game* self, struct gate_client* c, struct UM_BASE* um) {
         return;
 
     UM_CAST(UM_USEITEM, useitem, um);
-    const struct tplt_visitor* vist = tplt_get_visitor(TPLT_ITEM);
+    const struct tplt_visitor* vist = tplt_get_visitor(self->tpltdata, TPLT_ITEM);
     if (vist == NULL)
         return;
     const struct item_tplt* item = tplt_visitor_find(vist, useitem->itemid);

@@ -20,6 +20,7 @@
 #include <assert.h>
 
 struct world {
+    struct tplt* tpltdata;
     uint32_t dbhandler;
     uint32_t chariditer;
 };
@@ -37,12 +38,14 @@ world_free(struct world* self) {
         return;
     _freeplayers();
     free(self);
-
-    tplt_fini();
+    if (self->tpltdata) {
+        tplt_fini(self->tpltdata);
+        self->tpltdata = NULL;
+    }
 }
 
-static int
-_loadtplt() {
+static struct tplt*
+_loadtplt(struct world* self) {
 #define TBLFILE(name) "./res/tbl/"#name".tbl"
     struct tplt_desc desc[] = {
         { TPLT_ROLE, sizeof(struct role_tplt), TBLFILE(role), TPLT_VIST_VEC32},
@@ -59,9 +62,10 @@ world_init(struct service* s) {
         host_error("lost playerdb service");
         return 1;
     }
-    if (_loadtplt()) {
+    self->tpltdata = _loadtplt(self);
+    if (self->tpltdata == NULL)
         return 1;
-    }
+    
     self->chariditer = 1;
     int cmax = host_getint("world_cmax_pergate", 0);
     int hmax = host_getint("world_hmax_pergate", cmax);
@@ -74,11 +78,11 @@ world_init(struct service* s) {
 }
 
 static void
-_onlogin(struct player* p) {
+_onlogin(struct world* self, struct player* p) {
     p->status = PS_GAME;
 
     struct chardata* data = &p->data;
-    const struct tplt_visitor* vist = tplt_get_visitor(TPLT_ROLE);
+    const struct tplt_visitor* vist = tplt_get_visitor(self->tpltdata, TPLT_ROLE);
     if (vist == NULL)
         return;
     if (data->role == 0) {
@@ -99,13 +103,14 @@ _onlogin(struct player* p) {
 
 void
 world_service(struct service* s, struct service_message* sm) {
+    struct world* self = SERVICE_SELF;
     assert(sm->sz == sizeof(struct playerdbres));
     struct playerdbres* res = sm->msg;
     struct player* p = res->p;
     switch (res->error) {
     case SERR_OK:
         if (p->status == PS_LOGIN) {
-            _onlogin(p);
+            _onlogin(self, p);
         }
         break;
     case SERR_NOCHAR:
