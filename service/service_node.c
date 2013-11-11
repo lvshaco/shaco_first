@@ -101,7 +101,7 @@ _reg(struct service* s, int id, struct UM_BASE* um) {
     node.gport = reg->gport;
     node.connid = id;
     if (host_node_register(&node)) {
-        host_net_close_socket(id);
+        host_net_close_socket(id, true);
         return; // no need response for fail
     }
     struct host_node* me = host_me();
@@ -135,7 +135,7 @@ _regok(struct service* s, int id, struct UM_BASE* um) {
     node.gport = ok->gport;
     node.connid = id;
     if (host_node_register(&node)) {
-        host_net_close_socket(id);
+        host_net_close_socket(id, true);
         return;
     }
     if (!self->iscenter &&

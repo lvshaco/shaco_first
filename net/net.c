@@ -11,7 +11,8 @@
 #define STATUS_LISTENING   1 
 #define STATUS_CONNECTING  2
 #define STATUS_CONNECTED   3
-#define STATUS_SUSPEND     4 
+#define STATUS_HALFCLOSE   4
+#define STATUS_SUSPEND     5
 #define STATUS_OPENED      STATUS_LISTENING
 
 #define LISTEN_BACKLOG 511
@@ -160,6 +161,19 @@ _close_socket(struct net* self, struct socket* s) {
     self->tail_socket = s;
 }
 
+static bool
+_try_close_socket(struct net* self, struct socket* s) {
+    if (s->status == STATUS_INVALID)
+        return true;
+    if (s->head) {
+        s->status = STATUS_HALFCLOSE; // wait for send
+        return false;
+    } else {
+        _close_socket(self, s);
+        return true;
+    }
+}
+
 static inline struct socket*
 _get_socket(struct net* self, int id) {
     if (id >= 0 && id < self->max)
@@ -169,11 +183,16 @@ _get_socket(struct net* self, int id) {
     return NULL;
 }
 
-void 
-net_close_socket(struct net* self, int id) {
+bool
+net_close_socket(struct net* self, int id, bool force) {
     struct socket* s = _get_socket(self, id);
-    if (s) {
+    if (s == NULL)
+        return true;
+    if (force) {
         _close_socket(self, s);
+        return true;
+    } else {
+        return _try_close_socket(self, s);
     }
 }
 
@@ -287,6 +306,29 @@ net_readto(struct net* self, int id, void* buf, int space, int* e) {
     }
 }
 
+static int
+_read_close(struct socket* s) {
+    char buf[1024];
+    for (;;) {
+        int nbyte = _socket_read(s->fd, buf, sizeof(buf));
+        if (nbyte < 0) {
+            int error = _socket_geterror(s->fd);
+            if (error == SEAGAIN) {
+                return 0;
+            } else if (error == SEINTR) {
+                continue;
+            } else {
+                return NETERR(error);
+            }
+        } else if (nbyte == 0) {
+            return NET_ERR_EOF;
+        } else {
+            return 0;
+        }
+    }
+    return 0;
+}
+
 void*
 net_read(struct net* self, int id, int sz, int skip, int* e) {
     *e = 0;
@@ -298,6 +340,16 @@ net_read(struct net* self, int id, int sz, int skip, int* e) {
     if (sz <= 0) {
         _close_socket(self, s);
         *e = NET_ERR_MSG;
+        return NULL;
+    }
+
+    int error = 0;
+
+    if (s->status == STATUS_HALFCLOSE) {
+        *e = _read_close(s);
+        if (*e) {
+            _close_socket(self, s);
+        }
         return NULL;
     }
 
@@ -328,7 +380,6 @@ net_read(struct net* self, int id, int sz, int skip, int* e) {
         return NULL; 
     }
 
-    int error = 0;
     for (;;) {
         int nbyte = _socket_read(s->fd, wptr, space);
         if (nbyte < 0) {
@@ -439,7 +490,9 @@ net_send(struct net* self, int id, void* data, int sz, struct net_message* nm) {
     if (s == NULL) {
         return -1;
     }
-
+    if (s->status == STATUS_HALFCLOSE) {
+        return -1; // do not send
+    }
     if (s->head == NULL) {
         int n = _socket_write(s->fd, data, sz);
         if (n >= sz) {
@@ -706,6 +759,7 @@ net_poll(struct net* self, int timeout) {
             }
             break;
         case STATUS_CONNECTED:
+        case STATUS_HALFCLOSE:
             if (e->write) {
                 oe->error = _send_buffer(self, s);
                 if (oe->error) {
@@ -714,6 +768,16 @@ net_poll(struct net* self, int timeout) {
                     oe->ud = s->ud;
                     oe->ut = s->ut;
                     oe->type = NETE_SOCKERR;
+                    c++;
+                    break;
+                }
+                if (s->status == STATUS_HALFCLOSE &&
+                    s->head == NULL) {
+                    oe->fd = s->fd;
+                    oe->connid = s - self->sockets;
+                    oe->ud = s->ud;
+                    oe->ut = s->ut;
+                    oe->type = NETE_WRIDONECLOSE;
                     c++;
                     break;
                 }

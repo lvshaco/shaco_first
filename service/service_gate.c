@@ -86,7 +86,7 @@ _read(struct gate* self, struct gate_client* c, struct net_message* nm) {
     while ((um = _message_read_one(nm, UM_SKIP)) != NULL) {
         um->msgsz += UM_SKIP;
         if (um->msgsz > UM_CLIMAX) {
-            host_net_close_socket(nm->connid);
+            host_net_close_socket(nm->connid, true);
             nm->type = NETE_SOCKERR;
             nm->error = NET_ERR_MSG;
             service_notify_net(nm->ud, nm);
@@ -114,9 +114,7 @@ gate_net(struct service* s, struct net_message* nm) {
     case NETE_ACCEPT: {
         uint64_t now = host_timer_now();
         c = host_gate_acceptclient(id, now);
-        if (c == NULL) {
-            host_gate_disconnclient(c, true);
-        } else {
+        if (c) {
             struct gate_message gm;
             gm.c = c;
             gm.msg = nm;
@@ -131,7 +129,13 @@ gate_net(struct service* s, struct net_message* nm) {
         gm.c = c;
         gm.msg = nm;
         service_notify_net(self->handler, (void*)&gm);
-        host_gate_disconnclient(c, false);
+        host_gate_disconnclient(c, true);
+        }
+        break;
+    case NETE_WRIDONECLOSE: {
+        c = host_gate_getclient(id);
+        assert(c);
+        host_gate_disconnclient(c, true);
         }
         break;
     }

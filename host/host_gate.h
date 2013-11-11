@@ -20,7 +20,7 @@ int host_gate_init();
 void host_gate_fini();
 int host_gate_prepare(int cmax, int hmax);
 struct gate_client* host_gate_acceptclient(int connid, uint64_t now);
-int host_gate_disconnclient(struct gate_client* c, bool closesocket);
+bool host_gate_disconnclient(struct gate_client* c, bool force);
 struct gate_client* host_gate_getclient(int connid);
 struct gate_client* host_gate_firstclient();
 int host_gate_maxclient();

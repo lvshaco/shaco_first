@@ -185,7 +185,7 @@ _read(struct redisproxy* self, struct net_message* nm) {
     return; 
 errout:
     if (e) {
-        host_net_close_socket(id);
+        host_net_close_socket(id, true);
         nm->type = NETE_SOCKERR;
         nm->error = e;
         service_notify_net(nm->ud, nm);

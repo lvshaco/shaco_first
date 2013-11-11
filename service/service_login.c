@@ -111,13 +111,11 @@ _query(struct login* self, struct gate_client* c, struct player* p) {
 static void
 _logout(struct gate_client* c, struct player* p, int32_t error, bool active) {
     p->state = STATE_FREE;
-    // !!! dangers
     if (active) {
         UM_DEFFIX(UM_LOGINACCOUNTFAIL, fail);
         fail->error = error;
         UM_SENDTOCLI(c->connid, fail, fail->msgsz);
-        // todo disconnect
-        host_gate_disconnclient(c, true);
+        host_gate_disconnclient(c, false);
     }
 }
 

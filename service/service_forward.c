@@ -19,10 +19,12 @@ struct accinfo {
     char account[ACCOUNT_NAME_MAX];
 };
 
-#define STATE_FREE 0
-#define STATE_LOGIN 1
+#define STATUS_FREE 0
+#define STATUS_LOGIN 1
+#define STATUS_REMOTELOGOUT 2
+
 struct player {
-    int state;
+    int status;
 };
 
 struct forward {
@@ -105,24 +107,34 @@ _onaccept() {
 }
 
 static inline void
-_ondisconn(struct forward*self, struct gate_client* c) {
+_logout(struct forward*self, struct gate_client* c, int error, bool isdisconn) {
     struct player* p = _getplayer(self, c);
-    p->state = STATE_FREE;
-    _updateload();
+    if (p->status == STATUS_LOGIN) {
+        UM_DEFFIX(UM_LOGOUT, logout);
+        logout->error = error;
+        _forward_world(c, (struct UM_BASE*)logout);
+        p->status = STATUS_REMOTELOGOUT;
+    }
+    if (p->status != STATUS_FREE) {
+        p->status = STATUS_FREE;
+    }
+    if (isdisconn) {
+        _updateload();
+    }
 }
 
 static int
 _login(struct forward* self, struct gate_client* c, struct UM_BASE* um) {
     struct player* p = _getplayer(self, c);
     assert(p);
-    if (p->state == STATE_LOGIN) {
+    if (p->status != STATUS_FREE) {
         return 1;
     }
     UM_CAST(UM_LOGIN, login, um);
     struct accinfo* acc = idmap_remove(self->regacc, login->accid);
     if (acc == NULL) {
         host_gate_disconnclient(c, true);
-        _ondisconn(self, c);
+        _logout(self, c, 0, true);
         return 1;
     }
     login->account[sizeof(login->account)-1] = '\0';
@@ -133,7 +145,7 @@ _login(struct forward* self, struct gate_client* c, struct UM_BASE* um) {
         acc->clientip == addr &&
         strcmp(acc->account, login->account) == 0) {
         free(acc);
-        p->state = STATE_LOGIN;
+        p->status = STATUS_LOGIN;
         return 0;
     } else {
         free(acc);
@@ -158,7 +170,7 @@ forward_usermsg(struct service* s, int id, void* msg, int sz) {
     } else {
         // todo: just disconnect it ?
         host_gate_disconnclient(c, true); 
-        _ondisconn(self, c);
+        _logout(self, c, SERR_INVALIDMSG, true);
     }
 }
 
@@ -218,8 +230,10 @@ _handledef(struct forward*self, struct node_message* nm) {
         host_debug("Send msg:%u",  m->msgid);
         if (m->msgid == IDUM_LOGOUT) {
             UM_SENDTOCLI(c->connid, m, m->msgsz);
-            host_gate_disconnclient(c, true);
-            _ondisconn(self, c);
+            struct player* p = _getplayer(self, c);
+            p->status = STATUS_REMOTELOGOUT;
+            bool disconn = host_gate_disconnclient(c, false);
+            _logout(self, c, 0, disconn);
         } else {
             UM_SENDTOCLI(c->connid, m, m->msgsz);
         }
@@ -247,20 +261,15 @@ void
 forward_net(struct service* s, struct gate_message* gm) {
     struct forward* self = SERVICE_SELF;
     struct net_message* nm = gm->msg;
-    UM_DEFFIX(UM_LOGOUT, logout);
     switch (nm->type) {
     case NETE_ACCEPT:
         _onaccept();
         break;
     case NETE_SOCKERR:
-        logout->error = SERR_SOCKET;
-        _forward_world(gm->c, (struct UM_BASE*)logout);
-        _ondisconn(self, gm->c);
+        _logout(self, gm->c, SERR_SOCKET, true);
         break;
     case NETE_TIMEOUT:
-        logout->error = SERR_TIMEOUT;
-        _forward_world(gm->c, (struct UM_BASE*)logout);
-        _ondisconn(self, gm->c);
+        _logout(self, gm->c, SERR_TIMEOUT, true);
         break;
     }
 }

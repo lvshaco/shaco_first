@@ -8,6 +8,7 @@
 #define SERR_UNKNOW         1
 #define SERR_TIMEOUT        2
 #define SERR_SOCKET         3
+#define SERR_INVALIDMSG     4
 #define SERR_DBERR          10
 #define SERR_DBREPLY        11
 #define SERR_DBREPLYTYPE    12

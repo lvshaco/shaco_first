@@ -111,8 +111,8 @@ void* host_net_read(int id, int sz, int skip, int* e) {
 void host_net_dropread(int id, int skip) { 
     net_dropread(N, id, skip); 
 }
-void host_net_close_socket(int id) { 
-    net_close_socket(N, id); 
+bool host_net_close_socket(int id, bool force) { 
+    return net_close_socket(N, id, force); 
 }
 const char* host_net_error(int err) { 
     return net_error(N, err); 

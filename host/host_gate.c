@@ -51,8 +51,10 @@ struct gate_client*
 host_gate_acceptclient(int connid, uint64_t now) {
     assert(connid != -1);
     int id = freeid_alloc(&G->fi, connid);
-    if (id == -1)
+    if (id == -1) {
+        host_net_close_socket(connid, true);
         return NULL;
+    }
     assert(id >= 0 && id < G->cmax);
     struct gate_client* c = &G->p[id];
     assert(c->connid == -1);
@@ -64,18 +66,18 @@ host_gate_acceptclient(int connid, uint64_t now) {
     return c;
 }
 
-int
-host_gate_disconnclient(struct gate_client* c, bool closesocket) {
+bool
+host_gate_disconnclient(struct gate_client* c, bool force) {
     int id = freeid_free(&G->fi, c->connid);
     assert(id == (c-G->p));
-    if (closesocket) {
-        host_net_close_socket(c->connid);
+    bool closed = host_net_close_socket(c->connid, force);
+    if (closed) {
+        c->connid = -1;
+        c->create_time = 0;
+        c->active_time = 0;
+        G->used--;
     }
-    c->connid = -1;
-    c->create_time = 0;
-    c->active_time = 0;
-    G->used--;
-    return 0;
+    return closed;
 }
 
 struct gate_client* 
