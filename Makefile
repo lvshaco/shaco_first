@@ -141,7 +141,7 @@ $(worldservice_so): %.so: $(service_dir)/%.c
 	@rm -f $@
 	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Ihost -Inet -Ibase -Imessage -Iworld -Itplt -Idatadefine -Wl,-rpath,. world.so tplt.so
 
-service_game.so: $(service_dir)/service_game.c
+service_game.so: $(service_dir)/service_game.c game/fight.c game/fight.h
 	@rm -f $@
 	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Ihost -Inet -Ibase -Imessage -Igame -Itplt -Idatadefine -Wl,-rpath,. tplt.so
 

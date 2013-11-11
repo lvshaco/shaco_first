@@ -67,8 +67,15 @@ struct game {
     struct gfroom rooms;
 };
 
+struct buff_effect {
+    int32_t effect;
+    int32_t effectvalue;
+};
+
+#define BUFF_EFFECT 3
+
 struct buff {
-    const struct item_tplt* item;
+    struct buff_effect effects[BUFF_EFFECT];
     int time;
 };
 
@@ -498,18 +505,23 @@ _role_press(struct game* self, struct gate_client* c, struct UM_BASE* um) {
 #define REFRESH_ROLE 1
 
 static inline void
-_update_value(int* cur, int value, int max) {
-    *cur += value;
-    if (*cur < 0)
+_update_value(int* cur, int* value, int max) {
+    int old = *cur;
+    *cur += *value;
+    if (*cur < 0) {
         *cur = 0;
-    else if (*cur > max)
+        *value = -old; 
+    } else if (*cur > max) {
         *cur = max;
+        *value = max - old;
+    }
 }
 
 static int
-_item_effectone(struct member* m, int effect, int value) {
-    if (effect == 0 || value == 0)
-        return 0;
+_item_effectone(struct member* m, int effect, int value, struct buff_effect* result) {
+    //if (effect == 0 || value == 0)
+        //return 0;
+    host_debug("item effect %d, value %d, to %u", effect, value, m->detail.charid);
     bool isabs = true;
     if (effect > ITEM_EFFECT_MAX) {
         isabs = false;
@@ -524,18 +536,18 @@ _item_effectone(struct member* m, int effect, int value) {
     case ITEM_EFFECT_SPEED:
         if (!isabs) 
             value = detail->quick * value * 0.01;
-        _update_value(&detail->quickcur, value, detail->quick);
+        _update_value(&detail->quickcur, &value, detail->quick*3);
         refresh_flag |= REFRESH_ROLE;
         break;
     case ITEM_EFFECT_OXYGEN:
         if (!isabs) {
             value = detail->oxygen * value * 0.01;
         }
-        _update_value(&detail->oxygencur, value, detail->oxygen);
+        _update_value(&detail->oxygencur, &value, detail->oxygen);
         refresh_flag |= REFRESH_ROLE;
         break;
     default:
-        return 0 ;
+        break;
     }
     switch (effect) {
     case ITEM_EFFECT_CREATE_BAO:
@@ -548,6 +560,8 @@ _item_effectone(struct member* m, int effect, int value) {
         m->nitem += 1;
         break;
     }
+    result->effect = effect;
+    result->effectvalue = value;
     return refresh_flag;
 }
 
@@ -555,9 +569,26 @@ static void
 _item_effect_member(struct game* self, struct room* ro, struct member* m, 
         const struct item_tplt* item) {
     int effect_flag = 0;
-    effect_flag |= _item_effectone(m, item->effect1, item->effectvalue1);
-    effect_flag |= _item_effectone(m, item->effect2, item->effectvalue2);
-    effect_flag |= _item_effectone(m, item->effect3, item->effectvalue3);
+
+    struct buff_effect effects[BUFF_EFFECT];
+    memset(effects, 0, sizeof(effects));
+    if (0 < BUFF_EFFECT) {
+        effects[0].effect = item->effect1;
+        effects[0].effectvalue = item->effectvalue1;
+    }
+    if (1 < BUFF_EFFECT) {
+        effects[1].effect = item->effect2;
+        effects[1].effectvalue = item->effectvalue2;
+    }
+    if (2 < BUFF_EFFECT) {
+        effects[2].effect = item->effect3;
+        effects[2].effectvalue = item->effectvalue3;
+    }
+
+    int i;
+    for (i=0; i<BUFF_EFFECT; ++i) {
+        effect_flag |= _item_effectone(m, effects[i].effect, effects[i].effectvalue, &effects[i]);
+    }
     if (effect_flag & REFRESH_ROLE) {
         role_attri_build(&ro->gattri, &m->detail);
 
@@ -572,8 +603,12 @@ _item_effect_member(struct game* self, struct room* ro, struct member* m,
             b = malloc(sizeof(*b));
             idmap_insert(m->buffmap, item->id, b);
         }
-        b->item = item;
+        int i;
+        for (i=0; i<BUFF_EFFECT; ++i) {
+            b->effects[i] = effects[i];
+        }
         b->time = host_timer_now()/1000 + item->time;
+        host_debug("insert time: %u, to char %u", b->time, m->detail.charid);
     }
 
     UM_DEFFIX(UM_ITEMEFFECT, ie);
@@ -598,6 +633,7 @@ _use_item(struct game* self, struct gate_client* c, struct UM_BASE* um) {
     if (item == NULL)
         return;
 
+    host_debug("char %u, use item %u", me->detail.charid, useitem->itemid);
     switch (item->target) {
     case ITEM_TARGET_SELF:
         _item_effect_member(self, ro, me, item);
@@ -667,7 +703,7 @@ _handle_creategame(struct game* self, struct node_message* nm) {
         _initmember(&ro->p[i], &cr->members[i]);
     }
     // todo: 
-    ground_attri_build(100, &ro->gattri);
+    ground_attri_build(300, &ro->gattri);
 
     UM_DEFFIX(UM_CREATEROOMRES, res);
     res->ok = 1;
@@ -693,12 +729,18 @@ static void
 _update_buffcb(uint32_t key, void* value, void* ud) {
     struct _update_buffud* udata = ud;
     struct buff* b = value;
-    const struct item_tplt* item = b->item;
-    if (b->time >= host_timer_now()/1000) {
+    if (b->time > 0 &&
+        b->time <= host_timer_now()/1000) {
+        host_debug("timeout : %u, to char %u", b->time, udata->m->detail.charid);
         b->time = 0;
-        udata->effect_flag |= _item_effectone(udata->m, item->effect1, item->effectvalue1);
-        udata->effect_flag |= _item_effectone(udata->m, item->effect2, item->effectvalue2);
-        udata->effect_flag |= _item_effectone(udata->m, item->effect3, item->effectvalue3);
+        struct buff_effect effect;
+        int i;
+        for (i=0; i<BUFF_EFFECT; ++i) {
+            udata->effect_flag |= _item_effectone(udata->m, 
+                    b->effects[i].effect,
+                    -b->effects[i].effectvalue,
+                    &effect);
+        }
     }
 }
 
@@ -709,8 +751,9 @@ _update_room(struct game* self, struct room* ro) {
     for (i=0; i<ro->np; ++i) {
         m = &ro->p[i];
         if (m->online) {
-            int oxygen = role_oxygen_time_consume(&m->detail);
-            _update_value(&m->detail.oxygencur, -oxygen, m->detail.oxygen);
+            int oxygen = -role_oxygen_time_consume(&m->detail);
+            host_debug("char %u, update oxygen %d", m->detail.charid, oxygen);
+            _update_value(&m->detail.oxygencur, &oxygen, m->detail.oxygen);
             
             struct _update_buffud udata;
             udata.m = m;

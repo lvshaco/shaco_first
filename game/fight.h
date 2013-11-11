@@ -6,13 +6,13 @@
 
 static inline void 
 ground_attri_build(int32_t difficulty, struct groundattri* ga) {
-    float factor = difficulty*0.01;
-    if (factor < 1.0)
-        factor = 1.0;
-    else if (factor > 10.0)
-        factor = 10.0;
+    difficulty = difficulty*0.01;
+    if (difficulty < 1.0)
+        difficulty = 1.0;
+    else if (difficulty > 10.0)
+        difficulty = 10.0;
 
-    factor = (1+(factor-5)/10.0);
+    float factor = (1+(difficulty-5)/10.0);
     factor *= factor;
     factor += 0.5;
     ga->difficulty = difficulty;
@@ -35,7 +35,7 @@ role_attri_build(const struct groundattri* ga,
     float bodyfactor = role_body_factor(cdata);
     float factor = 1 - (5-quick)/((quick > 5) ? 10.0 : 20.0);
     
-    cdata->movespeed = ga->cellfallspeed*2/3.0 - factor;
+    cdata->movespeed = ga->cellfallspeed*2/3.0 * factor;
     cdata->charfallspeed = ga->cellfallspeed * ((quick>5) ? factor : 1);
     cdata->jmpspeed = 3 * cdata->movespeed * factor;
     cdata->jmpacctime = 0.25 * ga->shaketime * (2-factor);
