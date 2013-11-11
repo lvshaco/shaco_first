@@ -754,15 +754,20 @@ _update_room(struct game* self, struct room* ro) {
     for (i=0; i<ro->np; ++i) {
         m = &ro->p[i];
         if (m->online) {
+            bool refresh = false;
             int oxygen = -role_oxygen_time_consume(&m->detail);
             host_debug("char %u, update oxygen %d", m->detail.charid, oxygen);
             _update_value(&m->detail.oxygencur, &oxygen, m->detail.oxygen);
-            
+            if (oxygen != 0) {
+                refresh = true;
+            } 
             struct _update_buffud udata;
             udata.m = m;
             udata.effect_flag = 0;
+
             idmap_foreach(m->buffmap, _update_buffcb, &udata);
-            if (udata.effect_flag & REFRESH_ROLE) {
+            refresh |= ((udata.effect_flag & REFRESH_ROLE) != 0);
+            if (refresh) {
                 role_attri_build(&ro->gattri, &m->detail);
                 UM_DEFFIX(UM_ROLEINFO, ri);
                 ri->detail = m->detail;
