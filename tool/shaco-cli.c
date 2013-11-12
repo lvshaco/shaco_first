@@ -98,9 +98,9 @@ _receive(void* ud) {
     for (;;) { 
         _read(fd, &head, 4);
         l = head[0] | (head[1] << 8);
-        char buf[l-3];
+        char buf[l-5];
         _read(fd, buf, l-6); 
-        buf[l-4] = '\0';
+        buf[l-6] = '\0';
         printf("%s\n", buf); 
     }
     return NULL;
