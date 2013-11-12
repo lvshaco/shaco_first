@@ -171,7 +171,7 @@ _initmember(struct member* m, struct tmemberdetail* detail) {
     m->detail.bodycur = m->detail.body;
     m->detail.quickcur = m->detail.quick;
     m->connid = -1;
-    m->buffmap = idmap_create(1);
+    m->buffmap = idmap_create(1); 
 }
 
 static struct member*
@@ -456,9 +456,7 @@ _login(struct game* self, struct gate_client* c, struct UM_BASE* um) {
     p->charid = m->detail.charid;
     m->login = 1;
     m->online = 1;
-    m->connid = c->connid;
-    
-    role_attri_build(&ro->gattri, &m->detail);
+    m->connid = c->connid; 
 
     _notify_gameinfo(c, ro);
     _check_enter_room(self, ro);
@@ -695,19 +693,22 @@ game_usermsg(struct service* s, int id, void* msg, int sz) {
 static void
 _handle_creategame(struct game* self, struct node_message* nm) {
     UM_CAST(UM_CREATEROOM, cr, nm->um);
-
+ 
     struct room* ro = _create_room(self);
     assert(ro);
     ro->type = cr->type;
     ro->key = cr->key;
+   
+    // todo: 
+    ground_attri_build(300, &ro->gattri);
+
     ro->np = cr->nmember;
     int i;
     for (i=0; i<cr->nmember; ++i) {
         _initmember(&ro->p[i], &cr->members[i]);
+        role_attri_build(&ro->gattri, &ro->p[i].detail);
     }
-    // todo: 
-    ground_attri_build(300, &ro->gattri);
-
+    
     UM_DEFFIX(UM_CREATEROOMRES, res);
     res->ok = 1;
     res->id = cr->id;
