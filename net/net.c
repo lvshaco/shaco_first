@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <limits.h>
 
 #define STATUS_INVALID    -1
 #define STATUS_LISTENING   1 
@@ -46,6 +47,8 @@ struct socket {
     struct netbuf_block* rb;
     struct sbuffer* head;
     struct sbuffer* tail; 
+    int wbuffermax;
+    int wbuffersz;
 };
 
 struct net {
@@ -58,7 +61,7 @@ struct net {
     struct socket* sockets;
     struct socket* free_socket;
     struct socket* tail_socket;
-    struct netbuf* rpool; 
+    struct netbuf* rpool;
 };
 
 static int
@@ -101,13 +104,16 @@ _alloc_sockets(int max) {
         s[i].rb = NULL;
         s[i].head = NULL;
         s[i].tail = NULL;
+        s[i].wbuffermax = INT_MAX;
+        s[i].wbuffersz = 0;
     }
     s[max-1].fd = -1;
     return s;
 }
 
 static struct socket*
-_create_socket(struct net* self, socket_t fd, uint32_t addr, uint16_t port, int ud, int ut) {
+_create_socket(struct net* self, socket_t fd, uint32_t addr, uint16_t port, int wbuffermax, 
+        int ud, int ut) {
     if (self->free_socket == NULL)
         return NULL;
     struct socket* s = self->free_socket;
@@ -123,6 +129,10 @@ _create_socket(struct net* self, socket_t fd, uint32_t addr, uint16_t port, int 
     s->addr = addr;
     s->port = port;
     s->rb = netbuf_alloc_block(self->rpool, s-self->sockets);
+    s->wbuffersz = 0;
+    s->wbuffermax = wbuffermax;
+    if (s->wbuffermax <= 0)
+        s->wbuffermax = INT_MAX;
     return s;
 }
 
@@ -149,7 +159,8 @@ _close_socket(struct net* self, struct socket* s) {
         free(p);
     }
     s->tail = NULL;
-
+    s->wbuffersz = 0;
+    s->wbuffermax = INT_MAX;
     if (self->free_socket == NULL) {
         self->free_socket = s;
     } else {
@@ -229,8 +240,8 @@ net_subscribe(struct net* self, int id, bool read) {
 }
 
 struct net*
-net_create(int max, int block_size) {
-    if (max == 0 || block_size == 0)
+net_create(int max, int rbuffer) {
+    if (max == 0 || rbuffer == 0)
         return NULL;
 
     struct net* self = malloc(sizeof(struct net));
@@ -245,7 +256,7 @@ net_create(int max, int block_size) {
     self->sockets = _alloc_sockets(max);
     self->free_socket = &self->sockets[0];
     self->tail_socket = &self->sockets[max-1];
-    self->rpool = netbuf_create(max, block_size);
+    self->rpool = netbuf_create(max, rbuffer);
     return self;
 }
 
@@ -462,9 +473,11 @@ _send_buffer(struct net* self, struct socket* s) {
             } else if (nbyte < p->sz) {
                 p->ptr += nbyte;
                 p->sz -= nbyte;
+                s->wbuffersz -= nbyte;
                 return 0;
             } else {
                 total += nbyte;
+                s->wbuffersz -= nbyte;
                 break;
             }
         }
@@ -493,6 +506,7 @@ net_send(struct net* self, int id, void* data, int sz, struct net_message* nm) {
     if (s->status == STATUS_HALFCLOSE) {
         return -1; // do not send
     }
+    int error;
     if (s->head == NULL) {
         int n = _socket_write(s->fd, data, sz);
         if (n >= sz) {
@@ -501,24 +515,21 @@ net_send(struct net* self, int id, void* data, int sz, struct net_message* nm) {
             data = (char*)data + n;
             sz -= n;
         } else {
-            int error = _socket_geterror(s->fd);
+            error = _socket_geterror(s->fd);
             switch (error) {
             case SEAGAIN:
                 break;
             case SEINTR:
                 break;
-            default: {
-                nm->fd = s->fd;
-                nm->connid = s - self->sockets;
-                nm->type = NETE_SOCKERR;
-                nm->error = NETERR(error);
-                nm->ud = s->ud;
-                nm->ut = s->ut;
-                _close_socket(self, s);
-                return 1;
+            default:
+                goto errout;
             }
-            }
-        } 
+        }
+        s->wbuffersz += sz;
+        if (s->wbuffersz > s->wbuffermax) {
+            error = NET_ERR_WBUFOVER;
+            goto errout;
+        }
         struct sbuffer* p = malloc(sizeof(*p) + sz);
         memcpy(p->data, data, sz);
         p->next = NULL;
@@ -529,6 +540,11 @@ net_send(struct net* self, int id, void* data, int sz, struct net_message* nm) {
         _subscribe(self, s, s->mask|NET_WABLE);
         return 0;
     } else {
+        s->wbuffersz += sz;
+        if (s->wbuffersz > s->wbuffermax) {
+            error = NET_ERR_WBUFOVER;
+            goto errout;
+        }
         struct sbuffer* p = malloc(sizeof(*p) + sz);
         memcpy(p->data, data, sz);
         p->next = NULL;
@@ -540,6 +556,16 @@ net_send(struct net* self, int id, void* data, int sz, struct net_message* nm) {
         s->tail = p;
         return 0;
     }
+errout:
+    nm->fd = s->fd;
+    nm->connid = s - self->sockets;
+    nm->type = NETE_SOCKERR;
+    nm->error = NETERR(error);
+    nm->ud = s->ud;
+    nm->ut = s->ut;
+    _close_socket(self, s);
+    return 1;
+ 
 }
    
 static inline struct socket*
@@ -552,7 +578,8 @@ _accept(struct net* self, struct socket* listens) {
     }
     uint32_t addr = remote_addr.sin_addr.s_addr;
     uint16_t port = ntohs(remote_addr.sin_port);
-    struct socket* s = _create_socket(self, fd, addr, port, listens->ud, listens->ut);
+    struct socket* s = _create_socket(self, fd, addr, port, listens->wbuffermax, 
+            listens->ud, listens->ut);
     if (s == NULL) {
         _socket_close(fd);
         return NULL;
@@ -567,7 +594,7 @@ _accept(struct net* self, struct socket* listens) {
 }
 
 int
-net_listen(struct net* self, uint32_t addr, uint16_t port, int ud, int ut) {
+net_listen(struct net* self, uint32_t addr, uint16_t port, int wbuffermax, int ud, int ut) {
     int error = 0;
     socket_t fd = socket(AF_INET, SOCK_STREAM, 0);
     if (fd < 0) {
@@ -600,7 +627,7 @@ net_listen(struct net* self, uint32_t addr, uint16_t port, int ud, int ut) {
         return NETERR(error);
     }
 
-    struct socket* s = _create_socket(self, fd, addr, port, ud, ut);
+    struct socket* s = _create_socket(self, fd, addr, port, wbuffermax, ud, ut);
     if (s == NULL) {
         error = NET_ERR_CREATESOCK;
         _socket_close(fd);
@@ -637,7 +664,8 @@ _onconnect(struct net* self, struct socket* s) {
 }
 
 int
-net_connect(struct net* self, uint32_t addr, uint16_t port, bool block, int ud, int ut, struct net_message* nm) {
+net_connect(struct net* self, uint32_t addr, uint16_t port, bool block, int wbuffermax, 
+        int ud, int ut, struct net_message* nm) {
     int error;
     socket_t fd = socket(AF_INET, SOCK_STREAM, 0);
     if (fd < 0) {
@@ -680,7 +708,7 @@ net_connect(struct net* self, uint32_t addr, uint16_t port, bool block, int ud, 
             goto err;
         }
 
-    struct socket* s = _create_socket(self, fd, addr, port, ud, ut);
+    struct socket* s = _create_socket(self, fd, addr, port, wbuffermax, ud, ut);
     if (s == NULL) {
         error = NET_ERR_CREATESOCK;
         _socket_close(fd);

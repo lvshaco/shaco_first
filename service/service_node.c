@@ -42,10 +42,11 @@ _mynode(struct host_node* node) {
 
 static int
 _listen(struct service* s) {
-    const char* addr = host_getstr("node_ip", "");
+    const char* addr = host_getstr("node_ip", ""); 
     int port = host_getint("node_port", 0);
-    if (addr[0] != '\0' &&
-        host_net_listen(addr, port, s->serviceid, 0)) {
+    if (addr[0] == '\0')
+        return 1;
+    if (host_net_listen(addr, port, 0, s->serviceid, 0)) {
         host_error("listen node fail");
         return 1;
     }

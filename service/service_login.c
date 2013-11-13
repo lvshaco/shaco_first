@@ -26,6 +26,8 @@
 
 struct player {
     int state;  // see STATE_*
+    int connid;
+    uint64_t create_time;
     uint32_t accid;
     uint64_t key;
     char account[ACCOUNT_NAME_MAX];
@@ -119,14 +121,14 @@ static void
 _logout(struct gate_client* c, struct player* p, bool forcedisconn) {
     p->state = STATE_FREE;
     bool closed = host_gate_disconnclient(c, forcedisconn);
-    host_debug("disconn client: %u, %d", p->accid, (int)closed);
+    host_debug("logout connid %d, acc %s, closed %d", p->connid, p->account, (int)closed);
 }
 
 static void
 _login(struct login* self, struct gate_client* c, struct UM_BASE* um) {
     struct player* p = _getplayer(self, c);
     assert(p);
-    if (p->state != STATE_FREE) {
+    if (p->state != STATE_CONNECTED) {
         host_debug("acc %u, state %d", p->accid, p->state);
         //_logout(c, p, SERR_RELOGIN, true); maybe client click login button more then once
         return;
@@ -140,6 +142,18 @@ _login(struct login* self, struct gate_client* c, struct UM_BASE* um) {
         return;
     }
     p->state = STATE_LOGIN;
+    host_debug("login connid %d, acc %s", c->connid, p->account);
+}
+
+static void
+_onaccept(struct login* self, struct gate_client* c) {
+    struct player* p = _getplayer(self, c);
+    assert(p);
+    assert(p->state == STATE_FREE);
+    p->state = STATE_CONNECTED;
+    p->connid = c->connid;
+    p->create_time = host_timer_now();
+    host_debug("onaccept connid %d", c->connid);
 }
 
 void
@@ -319,20 +333,24 @@ login_net(struct service* s, struct gate_message* gm) {
     struct login* self = SERVICE_SELF;
     struct net_message* nm = gm->msg;
     struct player* p = NULL;
-    int error;
     switch (nm->type) {
+    case NETE_ACCEPT:
+        _onaccept(self, gm->c);
+        break;
     case NETE_SOCKERR:
-        error = SERR_SOCKET;
+        p = _getonlineplayer(self, gm->c);
+        if (p) {
+            _logout(gm->c, p, true);
+        }
         break;
     case NETE_TIMEOUT:
-        error = SERR_TIMEOUT;
+        p = _getonlineplayer(self, gm->c);
+        if (p) {
+            _logout(gm->c, p, true);
+        }
         break;
     default:
         return;
-    }
-    p = _getonlineplayer(self, gm->c);
-    if (p) {
-        _logout(gm->c, p, true);
     }
 }
 
@@ -342,21 +360,19 @@ login_time(struct service* s) {
     uint64_t now = host_timer_now(); 
    
     struct player* p;
-    struct gate_client* c = host_gate_firstclient();
-    int max = host_gate_maxclient();
+    struct gate_client* c;
     int i;
-    for (i=0; i<max; ++i) {
-        if (c[i].connid == -1) {
+    for (i=0; i<self->pmax; ++i) {
+        p = &self->players[i];
+        if (p->state == STATE_FREE) {
             continue;
         }
-        if (now > c[i].create_time &&
-            now - c[i].create_time > 10*1000) { // short connection mode
-            p = _getonlineplayer(self, &c[i]);
-            if (p) {
-                _logout(&c[i], p, true);
-            } else {
-                host_gate_disconnclient(&c[i], true);
-            }
+        if (now > p->create_time &&
+            now - p->create_time > 10*1000) { // short connection mode
+            host_debug("timeout connid %d, acc %s", p->connid, p->account);
+            c = host_gate_getclient(p->connid);
+            assert(c);
+            _logout(c, p, true);
         }
     }
 }

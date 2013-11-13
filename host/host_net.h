@@ -7,7 +7,7 @@
 
 int host_net_init(int max);
 void host_net_fini();
-int host_net_listen(const char* addr, uint16_t port, int serviceid, int ut);
+int host_net_listen(const char* addr, uint16_t port, int wbuffermax, int serviceid, int ut);
 int host_net_connect(const char* addr, uint16_t port, bool block, int serviceid, int ut);
 void host_net_poll(int timeout);
 int host_net_readto(int id, void* buf, int space, int* e);

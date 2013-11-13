@@ -61,9 +61,9 @@ host_net_fini() {
 }
 
 int
-host_net_listen(const char* addr, uint16_t port, int serviceid, int ut) {
+host_net_listen(const char* addr, uint16_t port, int wbuffermax, int serviceid, int ut) {
     uint32_t ip = inet_addr(addr);
-    int err = net_listen(N, ip, port, serviceid, ut);
+    int err = net_listen(N, ip, port, wbuffermax, serviceid, ut);
     if (err) {
         host_error("listen %s:%u fail: %s", addr, port, host_net_error(err)); 
     } else {
@@ -76,7 +76,7 @@ int
 host_net_connect(const char* addr, uint16_t port, bool block, int serviceid, int ut) { 
     uint32_t ip = inet_addr(addr);
     struct net_message nm;
-    int n = net_connect(N, ip, port, block, serviceid, ut, &nm);
+    int n = net_connect(N, ip, port, block, 0, serviceid, ut, &nm);
     if (n > 0) {
         _dispatch_one(&nm);
         return nm.type == NETE_CONNERR;

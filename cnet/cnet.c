@@ -122,7 +122,7 @@ cnet_connect(const char* ip, uint16_t port, int ut) {
 int  
 cnet_connecti(uint32_t addr, uint16_t port, int ut) {
     struct net_message nm;
-    int n = net_connect(N, addr, port, false, 0, ut, &nm);
+    int n = net_connect(N, addr, port, false, 0, 0, ut, &nm);
     if (n > 0) {
         _dispatch_one(&nm); 
         return nm.type == NETE_CONNERR;

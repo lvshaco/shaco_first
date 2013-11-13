@@ -31,11 +31,13 @@ gate_free(struct gate* self) {
 }
 
 static int
-_listen(struct service* s) {
+_listen(struct service* s) { 
     const char* addr = host_getstr("gate_ip", "");
     int port = host_getint("gate_port", 0);
-    if (addr[0] != '\0' &&
-        host_net_listen(addr, port, s->serviceid, CLI_GAME)) {
+    int wbuffermax = host_getint("gate_wbuffermax", 0);
+    if (addr[0] == '\0')
+        return 1;
+    if (host_net_listen(addr, port, wbuffermax, s->serviceid, CLI_GAME)) {
         host_error("listen gate fail");
         return 1;
     }

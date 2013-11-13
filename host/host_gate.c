@@ -59,7 +59,6 @@ host_gate_acceptclient(int connid, uint64_t now) {
     struct gate_client* c = &G->p[id];
     assert(c->connid == -1);
     c->connid = connid;
-    c->create_time = now;
     c->active_time = now;
     host_net_subscribe(connid, true);
     G->used++;
@@ -75,7 +74,6 @@ host_gate_disconnclient(struct gate_client* c, bool force) {
         int id = freeid_free(&G->fi, c->connid);
         assert(id == (c-G->p));
         c->connid = -1;
-        c->create_time = 0;
         c->active_time = 0;
         G->used--;
     }

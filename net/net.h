@@ -10,14 +10,15 @@
 #define NET_ERR_MSG         -2
 #define NET_ERR_NOSOCK      -3
 #define NET_ERR_CREATESOCK  -4
-#define NET_ERR_NOBUF       -5
+#define NET_ERR_WBUFOVER    -5
+#define NET_ERR_NOBUF       -6
 
 struct net;
-struct net* net_create(int max, int block_size);
+struct net* net_create(int max, int rbuffer);
 void net_free(struct net* self);
 
-int net_listen(struct net* self, uint32_t addr, uint16_t port, int ud, int ut);
-int net_connect(struct net* self, uint32_t addr, uint16_t port, bool block, int ud, int ut, struct net_message* nm);
+int net_listen(struct net* self, uint32_t addr, uint16_t port, int wbuffermax, int ud, int ut);
+int net_connect(struct net* self, uint32_t addr, uint16_t port, bool block, int wbuffermax, int ud, int ut, struct net_message* nm);
 int net_poll(struct net* self, int timeout);
 int net_getevents(struct net* self, struct net_message** e);
 int net_subscribe(struct net* self, int id, bool read);
