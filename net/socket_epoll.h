@@ -69,7 +69,9 @@ np_poll(struct np_state* np, struct np_event* e, int max, int timeout) {
     for (i=0; i<n; ++i) {
         e[i].ud    = ev[i].data.ptr;
         e[i].read  = (ev[i].events & EPOLLIN) != 0;
-        e[i].write = (ev[i].events & EPOLLOUT) != 0;
+        e[i].write = ((ev[i].events & EPOLLOUT) != 0) ||
+                     ((ev[i].events & EPOLLERR) != 0) ||
+                     ((ev[i].events & EPOLLHUP) != 0);
     }
     return n;
 }
