@@ -33,15 +33,25 @@ log_init(struct service* s) {
     struct log* self = SERVICE_SELF;
 
     char logfile[PATH_MAX];
+    const char* node = host_getstr("node_type", "");
+    if (node[0] == '\0') {
+        fprintf(stderr, "no config node_type\n");
+        return 1;
+    }
+    printf("node: %s\n", node);
     snprintf(logfile, sizeof(logfile), "%s/log/%s%d.log", 
             getenv("HOME"), 
-            host_getstr("node_type", ""),
+            node,
             host_getint("node_sid", 0));
+    
     struct elog* el = elog_create(logfile);
     if (el == NULL) {
         return 1;
     }
-    elog_set_appender(el, &g_elog_appender_rollfile);
+    if (elog_set_appender(el, &g_elog_appender_rollfile)) {
+        fprintf(stderr, "elog set appender fail\n");
+        return 1;
+    }
     struct elog_rollfile_conf conf;
     conf.file_max_num = 10;
     conf.file_max_size = 1024*1024*1024;

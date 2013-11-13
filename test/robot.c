@@ -248,7 +248,7 @@ _handleum(int id, int ut, struct UM_BASE* um) {
     }
 }
 
-int main(int argc, char* argv[]) {
+int main(int argc, char* argv[]) { 
     const char* ip;
     uint16_t port;
     if (argc > 1) {

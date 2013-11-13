@@ -264,8 +264,8 @@ _loginres(struct login* self, struct UM_BASE* um) {
             notify->addr = res->addr;
             notify->port = res->port;
             UM_SENDTOCLI(c->connid, notify, notify->msgsz);
-/* test socket halfclose
-            char data[60000];
+// test socket halfclose
+/*            char data[60000];
             memset(data, 0, sizeof(data));
             struct UM_BASE* base = (struct UM_BASE*)data;
             base->msgid = 1500;

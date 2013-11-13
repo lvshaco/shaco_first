@@ -10,5 +10,5 @@ echo_port=9999,
 benchmark_client_max=10000, -- active client
 benchmark_query=100000,     -- query times
 --benchmark_query_first=10000,
-benchmark_packet_size=256, -- packet size in bytes
+benchmark_packet_size=128, -- packet size in bytes
 }

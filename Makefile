@@ -249,6 +249,9 @@ tplt.dll: $(tplt_src)
 		-Wl,--output-def,tplt.def,--out-implib,tplt.lib
 	LIB /MACHINE:IX86 /DEF:tplt.def
 
+testclient: test/testclient.c $(tplt_src) datadefine/tplt_struct.h
+	gcc $(CFLAGS) -o $@ $^ -Itplt -Idatadefine
+
 client_dir=D:/wa-client/trunk
 install_dir=$(client_dir)/driller/proj.win32/Debug.win32
 install_dir_rel=$(client_dir)/driller/proj.win32/Release.win32

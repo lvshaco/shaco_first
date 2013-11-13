@@ -164,6 +164,7 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.py *.h *.c" {
   }
  }
  test=test{
+  testclient.c
   robot.c
   test.c
  }
