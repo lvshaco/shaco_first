@@ -18,16 +18,15 @@
 #include <stdio.h>
 
 #define STATE_FREE   0
-#define STATE_CONNECTED 1
-#define STATE_LOGIN     2
-#define STATE_VERIFYED  3
-#define STATE_GATELOAD  4
-#define STATE_DONE      5
+#define STATE_LOGIN     1
+#define STATE_VERIFYED  2
+#define STATE_GATELOAD  3
+#define STATE_DONE      4
 
 struct player {
-    int state;  // see STATE_*
     int connid;
-    uint64_t create_time;
+    int state;  // see STATE_*
+    uint64_t login_time;
     uint32_t accid;
     uint64_t key;
     char account[ACCOUNT_NAME_MAX];
@@ -128,7 +127,7 @@ static void
 _login(struct login* self, struct gate_client* c, struct UM_BASE* um) {
     struct player* p = _getplayer(self, c);
     assert(p);
-    if (p->state != STATE_CONNECTED) {
+    if (p->state != STATE_FREE) {
         host_debug("acc %u, state %d", p->accid, p->state);
         //_logout(c, p, SERR_RELOGIN, true); maybe client click login button more then once
         return;
@@ -141,19 +140,11 @@ _login(struct login* self, struct gate_client* c, struct UM_BASE* um) {
         _logout(c, p, false);
         return;
     }
-    p->state = STATE_LOGIN;
-    host_debug("login connid %d, acc %s", c->connid, p->account);
-}
-
-static void
-_onaccept(struct login* self, struct gate_client* c) {
-    struct player* p = _getplayer(self, c);
-    assert(p);
-    assert(p->state == STATE_FREE);
-    p->state = STATE_CONNECTED;
+    host_gate_loginclient(c);
     p->connid = c->connid;
-    p->create_time = host_timer_now();
-    host_debug("onaccept connid %d", c->connid);
+    p->state = STATE_LOGIN;
+    p->login_time = host_timer_now();
+    host_debug("login connid %d, acc %s", c->connid, p->account);
 }
 
 void
@@ -167,7 +158,6 @@ login_usermsg(struct service* s, int id, void* msg, int sz) {
         _login(self, gm->c, um);
         break;
     }
-
 }
 
 static inline int
@@ -279,7 +269,8 @@ _loginres(struct login* self, struct UM_BASE* um) {
             notify->port = res->port;
             UM_SENDTOCLI(c->connid, notify, notify->msgsz);
 // test socket halfclose
-/*            char data[60000];
+/*
+            char data[60000];
             memset(data, 0, sizeof(data));
             struct UM_BASE* base = (struct UM_BASE*)data;
             base->msgid = 1500;
@@ -334,9 +325,6 @@ login_net(struct service* s, struct gate_message* gm) {
     struct net_message* nm = gm->msg;
     struct player* p = NULL;
     switch (nm->type) {
-    case NETE_ACCEPT:
-        _onaccept(self, gm->c);
-        break;
     case NETE_SOCKERR:
         p = _getonlineplayer(self, gm->c);
         if (p) {
@@ -364,15 +352,14 @@ login_time(struct service* s) {
     int i;
     for (i=0; i<self->pmax; ++i) {
         p = &self->players[i];
-        if (p->state == STATE_FREE) {
-            continue;
-        }
-        if (now > p->create_time &&
-            now - p->create_time > 10*1000) { // short connection mode
-            host_debug("timeout connid %d, acc %s", p->connid, p->account);
-            c = host_gate_getclient(p->connid);
-            assert(c);
-            _logout(c, p, true);
+        if (p->state >= STATE_LOGIN &&
+            p->state <  STATE_DONE) {
+            if (now - p->login_time > 5*1000) { // short connection mode
+                host_debug("timeout connid %d, acc %s", p->connid, p->account);
+                c = host_gate_getclient(p->connid);
+                assert(c);
+                _logout(c, p, true);
+            }
         }
     }
 }

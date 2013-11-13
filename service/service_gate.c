@@ -13,6 +13,11 @@
 #include <stdlib.h>
 #include <assert.h>
 
+/*
+ * control the client connect, login, heartbeat, and logout, 
+ * the handler service only focus on logined client
+ */
+
 struct gate {
     int handler;
     int livetime;
@@ -63,9 +68,7 @@ gate_init(struct service* s) {
 
     int live = host_getint("gate_clientlive", 3);
     self->livetime = live * 1000;
-    if (self->livetime > 0) {
-        host_timer_register(s->serviceid, self->livetime);
-    }
+    host_timer_register(s->serviceid, self->livetime);
     return 0;
 }
 
@@ -100,8 +103,18 @@ _read(struct gate* self, struct gate_client* c, struct net_message* nm) {
         if (++n > 10)
             break;
     }
-
 }
+/*
+static inline void
+_updateload() {
+    const struct host_node* node = host_node_get(HNODE_ID(NODE_LOAD, 0));
+    if (node) {
+        UM_DEFFIX(UM_UPDATELOAD, load);
+        load->value = host_gate_usedclient();
+        UM_SENDTONODE(node, load, load->msgsz);
+    }
+}
+*/
 void
 gate_net(struct service* s, struct net_message* nm) {
     struct gate* self = SERVICE_SELF;
@@ -114,30 +127,27 @@ gate_net(struct service* s, struct net_message* nm) {
         _read(self, c, nm);
         }
         break;
-    case NETE_ACCEPT: {
-        c = host_gate_acceptclient(id);
-        if (c) {
+    case NETE_ACCEPT:
+        // do not forward to handler
+        c = host_gate_acceptclient(id); 
+        break;
+    case NETE_SOCKERR: {
+        c = host_gate_getclient(id);
+        assert(c);
+        if (c->status == GATE_CLIENT_LOGINED) {
             struct gate_message gm;
             gm.c = c;
             gm.msg = nm;
             service_notify_net(self->handler, (void*)&gm);
         }
-        }
-        break;
-    case NETE_SOCKERR: {
-        c = host_gate_getclient(id);
-        assert(c);
-        struct gate_message gm;
-        gm.c = c;
-        gm.msg = nm;
-        service_notify_net(self->handler, (void*)&gm);
         host_gate_disconnclient(c, true);
         }
         break;
     case NETE_WRIDONECLOSE: {
+        // donot forward to handler
         c = host_gate_getclient(id);
         assert(c);
-        host_gate_disconnclient(c, true);
+        host_gate_disconnclient(c, true); 
         }
         break;
     }
@@ -156,12 +166,15 @@ gate_time(struct service* s) {
         c = &p[i];
         switch (c->status) {
         case GATE_CLIENT_CONNECTED:
-            if (now - c->active_time > 5) {
+            if (now - c->active_time > 5*1000) {
+                host_debug("login timeout");
                 host_gate_disconnclient(c, true);
             }
             break;
         case GATE_CLIENT_LOGINED:
-            if (now - c->active_time > self->livetime) {
+            if (self->livetime > 0 &&
+                self->livetime < now - c->active_time) {
+                host_debug("heartbeat timeout");
                 struct gate_message gm;
                 struct net_message nm;
                 nm.type = NETE_TIMEOUT;
@@ -172,7 +185,8 @@ gate_time(struct service* s) {
             }
             break;
         case GATE_CLIENT_LOGOUTED:
-            if (now - c->active_time > 2) {
+            if (now - c->active_time > 2*1000) {
+                host_debug("logout timeout");
                 host_gate_disconnclient(c, true);
             }
             break;

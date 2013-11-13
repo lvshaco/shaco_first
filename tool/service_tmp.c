@@ -39,8 +39,6 @@ tmp_net(struct service* s, struct net_message* nm) {
     switch (nm->type) {
     case NETE_READ:
         break;
-    case NETE_ACCEPT:
-        break;
     case NETE_CONNECT:
         break;
     case NETE_CONNERR:

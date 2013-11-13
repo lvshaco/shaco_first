@@ -19,17 +19,7 @@ struct accinfo {
     char account[ACCOUNT_NAME_MAX];
 };
 
-#define STATUS_FREE 0
-#define STATUS_LOGIN 1
-#define STATUS_REMOTELOGOUT 2
-
-struct player {
-    int status;
-};
-
 struct forward {
-    int pmax;
-    struct player* players;
     struct idmap* regacc;
 };
 
@@ -48,9 +38,6 @@ void
 forward_free(struct forward* self) {
     if (self == NULL)
         return;
-    if (self->players) {
-        free(self->players);
-    }
     if (self->regacc) {
         idmap_foreach(self->regacc, _freecb, NULL);
         idmap_free(self->regacc);
@@ -61,22 +48,11 @@ forward_free(struct forward* self) {
 int
 forward_init(struct service* s) {
     struct forward* self = SERVICE_SELF;
-    int cmax = host_gate_maxclient();
-    self->players = malloc(sizeof(struct player) * cmax);
-    memset(self->players, 0, sizeof(struct player) * cmax);
-    self->pmax = cmax;
-    self->regacc = idmap_create(cmax); // memory
+    self->regacc = idmap_create(1); // memory
 
     SUBSCRIBE_MSG(s->serviceid, IDUM_FORWARD);
     host_timer_register(s->serviceid, 1000);
     return 0;
-}
-
-struct player* 
-_getplayer(struct forward* self, struct gate_client* c) {
-    int id = host_gate_clientid(c);
-    assert(id >= 0 && id < self->pmax);
-    return &self->players[id];
 }
 
 static inline void
@@ -92,50 +68,29 @@ _forward_world(struct gate_client* c, struct UM_BASE* um) {
 }
 
 static inline void
-_updateload() {
-    const struct host_node* node = host_node_get(HNODE_ID(NODE_LOAD, 0));
-    if (node) {
-        UM_DEFFIX(UM_UPDATELOAD, load);
-        load->value = host_gate_usedclient();
-        UM_SENDTONODE(node, load, load->msgsz);
+_logout(struct forward*self, struct gate_client* c, int error, bool forceclose, bool toremote) {
+    if (c->status == GATE_CLIENT_FREE) {
+        return;
     }
-}
-
-static inline void
-_onaccept() {
-    _updateload();
-}
-
-static inline void
-_logout(struct forward*self, struct gate_client* c, int error, bool isdisconn) {
-    struct player* p = _getplayer(self, c);
-    if (p->status != STATUS_FREE) {
-        if (p->status == STATUS_LOGIN) {
-            // logout from remote world, if logined
-            UM_DEFFIX(UM_LOGOUT, logout);
-            logout->error = error;
-            _forward_world(c, (struct UM_BASE*)logout);
-            //p->status = STATUS_REMOTELOGOUT;
-        }
-        p->status = STATUS_FREE;
+    if (toremote &&
+        c->status == GATE_CLIENT_LOGINED) {
+        // logout from remote world
+        UM_DEFFIX(UM_LOGOUT, logout);
+        logout->error = error;
+        _forward_world(c, (struct UM_BASE*)logout);
     }
-    if (isdisconn) {
-        _updateload();
-    }
+    host_gate_disconnclient(c, forceclose);
 }
 
 static int
 _login(struct forward* self, struct gate_client* c, struct UM_BASE* um) {
-    struct player* p = _getplayer(self, c);
-    assert(p);
-    if (p->status != STATUS_FREE) {
+    if (c->status != GATE_CLIENT_CONNECTED) {
         return 1;
     }
     UM_CAST(UM_LOGIN, login, um);
     struct accinfo* acc = idmap_remove(self->regacc, login->accid);
     if (acc == NULL) {
-        host_gate_disconnclient(c, true);
-        _logout(self, c, 0, true);
+        _logout(self, c, 0, true, true);
         return 1;
     }
     login->account[sizeof(login->account)-1] = '\0';
@@ -146,7 +101,7 @@ _login(struct forward* self, struct gate_client* c, struct UM_BASE* um) {
         acc->clientip == addr &&
         strcmp(acc->account, login->account) == 0) {
         free(acc);
-        p->status = STATUS_LOGIN;
+        
         host_gate_loginclient(c);
         return 0;
     } else {
@@ -171,8 +126,7 @@ forward_usermsg(struct service* s, int id, void* msg, int sz) {
         _forward_world(c, um);
     } else {
         // todo: just disconnect it ?
-        host_gate_disconnclient(c, true); 
-        _logout(self, c, SERR_INVALIDMSG, true);
+        _logout(self, c, SERR_INVALIDMSG, true, true);
     }
 }
 
@@ -232,10 +186,7 @@ _handledef(struct forward*self, struct node_message* nm) {
         host_debug("Send msg:%u",  m->msgid);
         if (m->msgid == IDUM_LOGOUT) {
             UM_SENDTOCLI(c->connid, m, m->msgsz);
-            struct player* p = _getplayer(self, c);
-            p->status = STATUS_REMOTELOGOUT;
-            bool disconn = host_gate_disconnclient(c, false);
-            _logout(self, c, 0, disconn);
+            _logout(self, c, 0, false, false);
         } else {
             UM_SENDTOCLI(c->connid, m, m->msgsz);
         }
@@ -264,14 +215,11 @@ forward_net(struct service* s, struct gate_message* gm) {
     struct forward* self = SERVICE_SELF;
     struct net_message* nm = gm->msg;
     switch (nm->type) {
-    case NETE_ACCEPT:
-        _onaccept();
-        break;
     case NETE_SOCKERR:
-        _logout(self, gm->c, SERR_SOCKET, true);
+        _logout(self, gm->c, SERR_SOCKET, true, true);
         break;
     case NETE_TIMEOUT:
-        _logout(self, gm->c, SERR_TIMEOUT, true);
+        _logout(self, gm->c, SERR_TIMEOUT, true, true);
         break;
     }
 }
