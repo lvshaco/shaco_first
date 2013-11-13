@@ -71,7 +71,9 @@ gate_init(struct service* s) {
 
 static inline void
 _handlemsg(struct gate* self, struct gate_client* c, struct UM_BASE* um) {
-    c->active_time = host_timer_now();
+    if (c->status == GATE_CLIENT_LOGINED) {
+        c->active_time = host_timer_now();
+    }
     if (um->msgid != IDUM_HEARTBEAT) {
         host_debug("Receive msg:%u",  um->msgid);
         struct gate_message gm;
@@ -113,8 +115,7 @@ gate_net(struct service* s, struct net_message* nm) {
         }
         break;
     case NETE_ACCEPT: {
-        uint64_t now = host_timer_now();
-        c = host_gate_acceptclient(id, now);
+        c = host_gate_acceptclient(id);
         if (c) {
             struct gate_message gm;
             gm.c = c;
@@ -153,18 +154,30 @@ gate_time(struct service* s) {
     int i;
     for (i=0; i<max; ++i) {
         c = &p[i];
-        if (c->connid == -1) {
-            continue;
-        }
-        if (now > c->active_time &&
-            now - c->active_time > self->livetime) {
-            struct gate_message gm;
-            struct net_message nm;
-            nm.type = NETE_TIMEOUT;
-            gm.c = c;
-            gm.msg = &nm;
-            service_notify_net(self->handler, (void*)&gm);
-            host_gate_disconnclient(c, true);
+        switch (c->status) {
+        case GATE_CLIENT_CONNECTED:
+            if (now - c->active_time > 5) {
+                host_gate_disconnclient(c, true);
+            }
+            break;
+        case GATE_CLIENT_LOGINED:
+            if (now - c->active_time > self->livetime) {
+                struct gate_message gm;
+                struct net_message nm;
+                nm.type = NETE_TIMEOUT;
+                gm.c = c;
+                gm.msg = &nm;
+                service_notify_net(self->handler, (void*)&gm);
+                host_gate_disconnclient(c, true);
+            }
+            break;
+        case GATE_CLIENT_LOGOUTED:
+            if (now - c->active_time > 2) {
+                host_gate_disconnclient(c, true);
+            }
+            break;
+        default:
+            break;
         }
     }
 }

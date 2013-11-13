@@ -80,7 +80,7 @@ dispatcher_net(struct service* s, struct net_message* nm) {
             service_notify_nodemsg(serviceid, nm->connid, um, um->msgsz);
         }
         host_net_dropread(nm->connid, 0);
-        if (++n > 10)
+        if (++n > 1000)
             break;
     }
 }

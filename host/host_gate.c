@@ -1,5 +1,6 @@
 #include "host_gate.h"
 #include "host_net.h"
+#include "host_timer.h"
 #include "freeid.h"
 #include <stdlib.h>
 #include <string.h>
@@ -37,18 +38,14 @@ host_gate_prepare(int cmax, int hmax) {
         cmax = 1;
     G->cmax = cmax;
     struct gate_client* c = malloc(sizeof(struct gate_client) * cmax);
-    int i;
-    for (i=0; i<cmax; ++i) {
-        c[i].connid = -1;
-        c[i].active_time = 0;
-    }
+    memset(c, 0, sizeof(struct gate_client*) * cmax);
     G->p = c;
     freeid_init(&G->fi, cmax, hmax);
     return 0;
 }
 
 struct gate_client*
-host_gate_acceptclient(int connid, uint64_t now) {
+host_gate_acceptclient(int connid) {
     assert(connid != -1);
     int id = freeid_alloc(&G->fi, connid);
     if (id == -1) {
@@ -57,25 +54,39 @@ host_gate_acceptclient(int connid, uint64_t now) {
     }
     assert(id >= 0 && id < G->cmax);
     struct gate_client* c = &G->p[id];
-    assert(c->connid == -1);
+    assert(c->status == GATE_CLIENT_FREE);
     c->connid = connid;
-    c->active_time = now;
+    c->status = GATE_CLIENT_CONNECTED;
+    c->active_time = host_timer_now();
     host_net_subscribe(connid, true);
     G->used++;
     return c;
 }
 
+void 
+host_gate_loginclient(struct gate_client* c) { 
+    if (c->status == GATE_CLIENT_CONNECTED) {
+        c->status = GATE_CLIENT_LOGINED; 
+        c->active_time = host_timer_now();
+    }
+}
+
 bool
 host_gate_disconnclient(struct gate_client* c, bool force) {
-    if (c->connid == -1)
+    if (c->status == GATE_CLIENT_FREE)
         return true;
     bool closed = host_net_close_socket(c->connid, force);
     if (closed) {
         int id = freeid_free(&G->fi, c->connid);
         assert(id == (c-G->p));
-        c->connid = -1;
+        c->status = GATE_CLIENT_FREE;
         c->active_time = 0;
         G->used--;
+    } else {
+        if (c->status != GATE_CLIENT_LOGOUTED) {
+            c->status = GATE_CLIENT_LOGOUTED;
+            c->active_time = host_timer_now();
+        }
     }
     return closed;
 }

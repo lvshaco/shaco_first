@@ -431,26 +431,32 @@ _login(struct game* self, struct gate_client* c, struct UM_BASE* um) {
     struct room* ro = _getroom(self, login->roomid);
     if (ro == NULL) {
         _verifyfail(c, 1);
+        host_gate_disconnclient(c, true);
         return;
     }
     if (login->roomkey != ro->key) {
         _verifyfail(c, 2);
+        host_gate_disconnclient(c, true);
         return;
     }
     struct member* m = _getmember(ro, login->charid);
     if (m == NULL) {
         _verifyfail(c, 3);
+        host_gate_disconnclient(c, true);
         return;
     }
     if (ro->status == RS_OVER) {
         _verifyfail(c, 4);
+        host_gate_disconnclient(c, true);
         return;
     }
     struct player* p = _allocplayer(self, c);
     if (p == NULL) {
         _verifyfail(c, 5);
+        host_gate_disconnclient(c, true);
         return;
     }
+    host_gate_loginclient(c);
     p->login = true;
     p->roomid = GFREEID_ID(ro, &self->rooms);
     p->charid = m->detail.charid;

@@ -109,13 +109,14 @@ _onaccept() {
 static inline void
 _logout(struct forward*self, struct gate_client* c, int error, bool isdisconn) {
     struct player* p = _getplayer(self, c);
-    if (p->status == STATUS_LOGIN) {
-        UM_DEFFIX(UM_LOGOUT, logout);
-        logout->error = error;
-        _forward_world(c, (struct UM_BASE*)logout);
-        p->status = STATUS_REMOTELOGOUT;
-    }
     if (p->status != STATUS_FREE) {
+        if (p->status == STATUS_LOGIN) {
+            // logout from remote world, if logined
+            UM_DEFFIX(UM_LOGOUT, logout);
+            logout->error = error;
+            _forward_world(c, (struct UM_BASE*)logout);
+            //p->status = STATUS_REMOTELOGOUT;
+        }
         p->status = STATUS_FREE;
     }
     if (isdisconn) {
@@ -146,6 +147,7 @@ _login(struct forward* self, struct gate_client* c, struct UM_BASE* um) {
         strcmp(acc->account, login->account) == 0) {
         free(acc);
         p->status = STATUS_LOGIN;
+        host_gate_loginclient(c);
         return 0;
     } else {
         free(acc);

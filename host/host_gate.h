@@ -4,8 +4,14 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#define GATE_CLIENT_FREE        0
+#define GATE_CLIENT_CONNECTED   1
+#define GATE_CLIENT_LOGINED     2
+#define GATE_CLIENT_LOGOUTED    3
+
 struct gate_client {
     int connid;
+    int status;
     uint64_t active_time;
 };
 
@@ -18,7 +24,8 @@ struct gate_message {
 int host_gate_init();
 void host_gate_fini();
 int host_gate_prepare(int cmax, int hmax);
-struct gate_client* host_gate_acceptclient(int connid, uint64_t now);
+struct gate_client* host_gate_acceptclient(int connid);
+void host_gate_loginclient(struct gate_client* c);
 bool host_gate_disconnclient(struct gate_client* c, bool force);
 struct gate_client* host_gate_getclient(int connid);
 struct gate_client* host_gate_firstclient();
