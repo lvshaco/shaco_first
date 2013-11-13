@@ -21,6 +21,7 @@
 struct gate {
     int handler;
     int livetime;
+    bool noneed_verify;
 };
 
 struct gate*
@@ -66,9 +67,10 @@ gate_init(struct service* s) {
     }
     host_info("gate_clientmax = %d", cmax);
 
+    self->noneed_verify = host_getint("gate_noneed_verify", 0);
     int live = host_getint("gate_clientlive", 3);
     self->livetime = live * 1000;
-    host_timer_register(s->serviceid, self->livetime);
+    host_timer_register(s->serviceid, 1000);
     return 0;
 }
 
@@ -130,6 +132,9 @@ gate_net(struct service* s, struct net_message* nm) {
     case NETE_ACCEPT:
         // do not forward to handler
         c = host_gate_acceptclient(id); 
+        if (self->noneed_verify && c) {
+            host_gate_loginclient(c);
+        }
         break;
     case NETE_SOCKERR: {
         c = host_gate_getclient(id);
@@ -167,7 +172,7 @@ gate_time(struct service* s) {
         switch (c->status) {
         case GATE_CLIENT_CONNECTED:
             if (now - c->active_time > 5*1000) {
-                host_debug("login timeout");
+                host_info("login timeout");
                 host_gate_disconnclient(c, true);
             }
             break;
