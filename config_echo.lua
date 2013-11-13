@@ -8,7 +8,7 @@ gate_ip="192.168.1.140",
 --gate_port=10001,
 gate_port=9999,
 gate_clientmax=10000,
-gate_clientlive=50,
+gate_clientlive=3,
 gate_noneed_verify=1,
 gate_handler="echo",
 }

@@ -172,7 +172,7 @@ gate_time(struct service* s) {
         switch (c->status) {
         case GATE_CLIENT_CONNECTED:
             if (now - c->active_time > 5*1000) {
-                host_info("login timeout");
+                host_debug("login timeout");
                 host_gate_disconnclient(c, true);
             }
             break;
