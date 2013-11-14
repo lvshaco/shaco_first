@@ -626,7 +626,7 @@ void test_map() {
     t2 = _elapsed();
     printf("idmap use time: %d\n", (int)(t2-t1));
     
-    idmap_free(idm);
+    //idmap_free(idm);
 
     t1 = _elapsed(); 
     struct strvalue* psv = malloc(sizeof(struct strvalue) * cap);
@@ -656,7 +656,7 @@ void test_map() {
     strmap_foreach(strm, _mapcb, NULL);
     t2 = _elapsed();
     printf("strmap foreach use time: %d\n", (int)(t2-t1));
-    strmap_free(strm);
+    //strmap_free(strm);
 
     struct strhmap* m = strhmap_create(init);
     t1 = _elapsed();

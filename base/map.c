@@ -48,9 +48,21 @@ idmap_create(uint32_t cap) {
 }
 
 void 
-idmap_free(struct idmap* self) {
+idmap_free(struct idmap* self, void (*cb)(void* value)) {
     if (self == NULL)
         return;
+   
+    struct idelement* e, *tmp;
+    uint32_t i;
+    for (i=0; i<self->cap; ++i) {
+        e = self->slots[i];
+        while (e) {
+            tmp = e;
+            e = e->next;
+            cb(tmp->pointer);
+            free(tmp);
+        }
+    }
     free(self->slots);
     free(self);
 }
@@ -174,9 +186,22 @@ strmap_create(uint32_t cap) {
 }
 
 void 
-strmap_free(struct strmap* self) {
+strmap_free(struct strmap* self, void (*cb)(void* value)) {
     if (self == NULL)
         return;
+
+    struct strelement* e, *tmp;
+    uint32_t i;
+    for (i=0; i<self->cap; ++i) {
+        e = self->slots[i];
+        while (e) {
+            tmp = e;
+            e = e->next;
+            cb(tmp->pointer);
+            free(tmp);
+        }
+    }
+
     free(self->slots);
     free(self);
 }

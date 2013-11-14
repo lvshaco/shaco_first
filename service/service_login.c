@@ -49,6 +49,7 @@ login_create() {
 
 void
 login_free(struct login* self) {
+    free(self->players);
     redis_finireply(&self->reply);
     free(self);
 }

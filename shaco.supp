@@ -4,13 +4,6 @@
    fun:calloc
    fun:_dlerror_run
    fun:dlopen@@GLIBC_2.2.5
-   fun:_open
-   fun:dlmodule_load
-   fun:_create
-   fun:service_load
-   fun:host_log_init
-   fun:host_create
-   fun:main
 }
 {
    <dlopen:add_to_global>
@@ -24,7 +17,4 @@
    fun:_dl_catch_error
    fun:_dlerror_run
    fun:dlopen@@GLIBC_2.2.5
-   fun:_open
-   fun:dlmodule_load
-   fun:_create
 }

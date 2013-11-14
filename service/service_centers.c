@@ -35,7 +35,7 @@ _add_subscribe(struct _array* arr, uint16_t tid) {
             cap = 1;
         arr->p = realloc(arr->p, sizeof(arr->p[0]) * cap);
         arr->cap = cap;
-        memset(arr->p + idx, 0, sizeof(arr->p[0] * (cap-idx)));
+        memset(arr->p + idx, 0, sizeof(arr->p[0]) * (cap-idx));
     }
     arr->p[idx] = tid;
     arr->size = idx+1;

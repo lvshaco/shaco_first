@@ -163,6 +163,7 @@ _res(struct server* self, int id, struct UM_BASE* um) {
     memrw_pos(&rw, n);
     size_t sz = res->msgsz - sizeof(*res); 
     memrw_write(&rw, res+1, sz);
+    notify->msgid = 0; // just for avoid valgrind
     notify->msgsz = sizeof(*notify) + RW_CUR(&rw);
     UM_SENDTOCLI(c->connid, notify, notify->msgsz);
 }

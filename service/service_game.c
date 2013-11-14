@@ -87,11 +87,39 @@ game_create() {
     return self;
 }
 
+static void
+_freebuffcb(void* value) {
+    free(value);
+}
+
+static void
+_freemember(struct member* m) {
+    if (m->buffmap) {
+        idmap_free(m->buffmap, _freebuffcb);
+        m->buffmap = NULL;
+    }
+}
+
 void
 game_free(struct game* self) {
     if (self == NULL)
         return;
     free(self->players);
+
+    struct room* ro;
+    struct member* m;
+    int i, n;
+    for (i=0; i<self->rooms.cap; ++i) {
+        ro = &self->rooms.p[i];
+        if (!ro->used)
+            continue;
+        for (n=0; n<ro->np; ++n) {
+            m = &ro->p[n];
+            if (m->online) {
+                _freemember(m);
+            }
+        }
+    }
     GFREEID_FINI(room, &self->rooms);
     
     if (self->tpltdata) {
@@ -199,18 +227,7 @@ _count_onlinemember(struct room* ro) {
     }
     return n;
 }
-static void
-_freebuffcb(uint32_t key, void* value, void* ud) {
-    free(value);
-}
-static void
-_freemember(struct member* m) {
-    if (m->buffmap) {
-        idmap_foreach(m->buffmap, _freebuffcb, NULL);
-        idmap_free(m->buffmap);
-        m->buffmap = NULL;
-    }
-}
+
 static void
 _verifyfail(struct gate_client* c, int8_t error) {
     UM_DEFFIX(UM_GAMELOGINFAIL, fail);
@@ -298,6 +315,7 @@ _destory_room(struct game* self, struct room* ro) {
     for (i=0; i<ro->np; ++i) {
         m = &ro->p[i];
         if (m->online) {
+            _freemember(m);
             struct gate_client* c = host_gate_getclient(m->connid);
             if (c) {
                 _logout(self, c, true, false);

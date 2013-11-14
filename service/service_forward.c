@@ -31,7 +31,7 @@ forward_create() {
 }
 
 static void
-_freecb(uint32_t key, void* value, void* ud) {
+_freecb(void* value) {
     free(value);
 }
 void
@@ -39,8 +39,7 @@ forward_free(struct forward* self) {
     if (self == NULL)
         return;
     if (self->regacc) {
-        idmap_foreach(self->regacc, _freecb, NULL);
-        idmap_free(self->regacc);
+        idmap_free(self->regacc, _freecb);
     }
     free(self);
 }
