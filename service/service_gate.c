@@ -22,7 +22,8 @@
 struct gate {
     int handler;
     int livetime;
-    bool noneed_verify;
+    bool need_verify;
+    bool need_load;
 };
 
 struct gate*
@@ -68,7 +69,8 @@ gate_init(struct service* s) {
     }
     host_info("gate_clientmax = %d", cmax);
 
-    self->noneed_verify = host_getint("gate_noneed_verify", 0);
+    self->need_verify = host_getint("gate_need_verify", 1);
+    self->need_load = host_getint("gate_need_load", 0);
     int live = host_getint("gate_clientlive", 3);
     self->livetime = live * 1000;
     host_timer_register(s->serviceid, 1000);
@@ -121,8 +123,10 @@ _updateload() {
 
 void
 gate_service(struct service* s, struct service_message* sm) {
-    // default update load, if connected to load node
-    _updateload();
+    struct gate* self = SERVICE_SELF;
+    if (self->need_load) {
+        _updateload();
+    }
 }
 
 void
@@ -140,7 +144,7 @@ gate_net(struct service* s, struct net_message* nm) {
     case NETE_ACCEPT:
         // do not forward to handler
         c = host_gate_acceptclient(id); 
-        if (self->noneed_verify && c) {
+        if (!self->need_verify && c) {
             host_gate_loginclient(c);
         }
         break;

@@ -2,20 +2,23 @@
 #include "host_service.h"
 #include "host_log.h"
 
-static int _DISPATCHER = -1;
+static int _DISPATCHER = SERVICE_INVALID;
 
 int 
 host_dispatcher_init() {
-    if (service_load("dispatcher")) {
-        host_warning("load dispatcher service fail");
-    }
     _DISPATCHER = service_query_id("dispatcher");
+    if (_DISPATCHER != SERVICE_INVALID) {
+        if (service_prepare("dispatcher"))
+            return 1;
+    } else {
+        host_warning("lost dispatcher service");
+    }
     return 0;
 }
 
 void 
 host_dispatcher_fini() {
-    _DISPATCHER = -1;
+    _DISPATCHER = SERVICE_INVALID;
 }
 
 int

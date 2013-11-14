@@ -38,6 +38,8 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.py *.h *.c" {
   host_reload.c
   host_service.c
   host_timer.c
+  host_env.h
+  host_env.c
  }
  lur=lur{
   lur.h

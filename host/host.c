@@ -1,5 +1,5 @@
 #include "host.h"
-#include "lur.h"
+#include "host_env.h"
 #include "host_log.h"
 #include "host_timer.h"
 #include "host_net.h"
@@ -18,22 +18,10 @@
 #include <signal.h>
 
 struct host {
-    const char* file;
-    struct lur* cfg;
     bool loop;
 };
 
 static struct host* H = NULL;
-
-int
-host_getint(const char* key, int def) {
-    return lur_getint(H->cfg, key, def);
-}
-
-const char*
-host_getstr(const char* key, const char* def) {
-    return lur_getstr(H->cfg, key, def);
-}
 
 static void 
 _sigtermhandler(int sig) {
@@ -85,50 +73,45 @@ _checksys() {
 }
 
 int 
-host_create(const char* file) {
+host_create() {
+    H = malloc(sizeof(*H));
+    H->loop = true;
+
     _install_sighandler();
     host_timer_init();
     host_reload_init();
     service_init(); 
-    
-    struct lur* L = lur_create(); 
-    const char* err = lur_dofile(L, file, "shaco");
-    if (!LUR_OK(err)) {
-        host_error("%s\n", err);
-        lur_free(L);
-        return 1;
-    }
-    H = malloc(sizeof(*H));
-    H->loop = true;
-    H->file = file;
-    H->cfg = L; 
-    const char* level = host_getstr("host_loglevel", "");
-    if (host_log_init(level)) {
-        goto err;
-    }
-    int max = lur_getint(L, "host_connmax", 0);
-    if (host_net_init(max)) {
-        goto err;
-    } 
-    if (host_dispatcher_init()) {
-        goto err;
-    }
-    if (host_node_init()) {
-        goto err;
-    }
-    if (host_gate_init()) {
-        goto err;
-    } 
+
     const char* service = host_getstr("host_service", "");
     if (service[0] &&
         service_load(service)) {
-        goto err;
+        goto errout;
+    }
+    const char* level = host_getstr("host_loglevel", "");
+    if (host_log_init(level)) {
+        goto errout;
+    }
+    int max = host_getint("host_connmax", 0);
+    if (host_net_init(max)) {
+        goto errout;
+    } 
+    if (host_dispatcher_init()) {
+        goto errout;
+    }
+    if (host_node_init()) {
+        goto errout;
+    }
+    if (host_gate_init()) {
+        goto errout;
+    } 
+    if (service_prepare(NULL)) {
+        goto errout;
     }
     if (_checksys()) {
-        goto err;
+        goto errout;
     }
     return 0;
-err:
+errout:
     host_free();
     return 1;
 }
@@ -146,7 +129,6 @@ host_free() {
     service_fini();
     host_reload_fini();
     host_timer_fini();
-    lur_free(H->cfg);
     free(H);
     H = NULL;
 }

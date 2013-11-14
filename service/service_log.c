@@ -38,23 +38,36 @@ log_init(struct service* s) {
         fprintf(stderr, "no config node_type\n");
         return 1;
     }
-    snprintf(logfile, sizeof(logfile), "%s/log/%s%d.log", 
-            getenv("HOME"), 
-            node,
-            host_getint("node_sid", 0));
-    
-    struct elog* el = elog_create(logfile);
-    if (el == NULL) {
-        return 1;
+    struct elog* el;
+    if (host_getint("host_daemon", 0)) {
+        snprintf(logfile, sizeof(logfile), "%s/log/%s%d.log", 
+                getenv("HOME"), 
+                node,
+                host_getint("node_sid", 0));
+        
+        el = elog_create(logfile);
+        if (el == NULL) {
+            return 1;
+        }
+        if (elog_set_appender(el, &g_elog_appender_rollfile)) {
+            fprintf(stderr, "elog set appender fail\n");
+            return 1;
+        }
+        struct elog_rollfile_conf conf;
+        conf.file_max_num = 10;
+        conf.file_max_size = 1024*1024*1024;
+        elog_appender_rollfile_config(el, &conf);
+    } else {
+        el = elog_create("");
+        if (el == NULL) {
+            return 1;
+        }
+        if (elog_set_appender(el, &g_elog_appender_file)) {
+            fprintf(stderr, "elog set appender fail\n");
+            return 1;
+        }
     }
-    if (elog_set_appender(el, &g_elog_appender_rollfile)) {
-        fprintf(stderr, "elog set appender fail\n");
-        return 1;
-    }
-    struct elog_rollfile_conf conf;
-    conf.file_max_num = 10;
-    conf.file_max_size = 1024*1024*1024;
-    elog_appender_rollfile_config(el, &conf);
+
     self->el = el;
     
     char msg[128];

@@ -64,6 +64,8 @@ host_src=\
 	host/host_main.c \
  	host/host.c \
  	host/host.h \
+	host/host_env.c \
+	host/host_env.h \
  	host/host_net.c \
  	host/host_net.h \
  	host/host_service.c \

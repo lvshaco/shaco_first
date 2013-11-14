@@ -8,7 +8,7 @@
 #include <time.h>
 
 static int _LEVEL = LOG_INFO;
-static int _LOG_SERVICE = -1;
+static int _LOG_SERVICE = SERVICE_INVALID;
 
 static const char* STR_LEVELS[LOG_MAX] = {
     "DEBUG", "INFO", "WARNING", "ERROR",
@@ -51,11 +51,12 @@ host_log_setlevelstr(const char* level) {
 
 int 
 host_log_init(const char* level) {
-    if (service_load("log")) {
-        _LOG_SERVICE = -1;
-        host_warning("load log service fail");
+    _LOG_SERVICE = service_query_id("log");
+    if (_LOG_SERVICE != SERVICE_INVALID) {
+        if (service_prepare("log"))
+            return 1;
     } else {
-        _LOG_SERVICE = service_query_id("log");
+        host_warning("lost log service");
     }
     host_log_setlevelstr(level);
     return 0;
@@ -63,7 +64,7 @@ host_log_init(const char* level) {
 
 void 
 host_log_fini() {
-    _LOG_SERVICE = -1;
+    _LOG_SERVICE = SERVICE_INVALID;
 }
 
 #define _gen_message(level, log, n, fmt) \

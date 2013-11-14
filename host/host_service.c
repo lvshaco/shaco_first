@@ -63,6 +63,18 @@ _create(const char* name) {
 }
 
 static int
+_prepare(struct service* s) {
+    if (s->dl.init && !s->inited) {
+        if (s->dl.init(s)) { 
+            return 1;
+        }
+        s->inited = true;
+        host_info("prepare service %s ok", s->dl.name);
+    }
+    return 0;
+}
+
+static int
 _reload(struct service* s) {
     assert(s->dl.handle);
     if (dlmodule_reload(&s->dl)) {
@@ -105,33 +117,40 @@ service_load(const char* name) {
     if (name[0] == '\0') {
         return 1;
     }
-    int sz = array_size(S->sers);
 
     size_t len = strlen(name);
     char tmp[len+1];
     strcpy(tmp, name);
-
-    char* p = tmp;
-    char* next;
-    while (p) {
-        next = strchr(p, ',');
-        if (next)
-            *next = '\0';
-        if (_create(p)) {
+    
+    char* saveptr;
+    char* one = strtok_r(tmp, ",", &saveptr);
+    while (one) {
+        if (_create(one)) {
             return 1;
-        }  
-        if (next == NULL)
-            break;
-        p = next+1; 
+        } 
+        one = strtok_r(NULL, ",", &saveptr);
     }
+    return 0;
+}
 
-    struct service* s = NULL;
-    int i;
-    for (i=sz; i<array_size(S->sers); ++i) {
-        s = array_get(S->sers, i); 
-        if (s && s->dl.init) {
-            if (s->dl.init(s)) { 
-                return 1;
+int 
+service_prepare(const char* name) {
+    struct service* s;
+    if (name) {
+        s = _find(name);
+        if (s) {
+            return _prepare(s);
+        }
+        return 1;
+        
+    } else {
+        int i;
+        for (i=0; i<array_size(S->sers); ++i) {
+            s = array_get(S->sers, i); 
+            if (s) {
+                if (_prepare(s)) {
+                    return 1;
+                }
             }
         }
     }

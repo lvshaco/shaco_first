@@ -18,7 +18,7 @@ echo_net(struct service* s, struct gate_message* gm) {
     switch (nm->type) {
     case NETE_SOCKERR:
     case NETE_TIMEOUT:
-        host_info("close %d, %d", gm->c->connid, nm->type);
+        host_info("echo_net close %d, %d", gm->c->connid, nm->type);
         break;
     }
 }

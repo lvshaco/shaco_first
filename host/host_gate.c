@@ -3,6 +3,7 @@
 #include "host_timer.h"
 #include "host_service.h"
 #include "host_log.h"
+#include "host_env.h"
 #include "host.h"
 #include "freeid.h"
 #include <stdlib.h>
@@ -23,13 +24,11 @@ int
 host_gate_init() {
     G = malloc(sizeof(*G));
     memset(G, 0, sizeof(*G));
-    G->serviceid = -1;
-
-    char tmp[1024];
-    snprintf(tmp, sizeof(tmp), "gate,%s", host_getstr("gate_handler", ""));
-    if (service_load(tmp) == 0) {
-        G->serviceid = service_query_id("gate");
-    } 
+    G->serviceid = service_query_id("gate"); 
+    if (G->serviceid != SERVICE_INVALID) {
+        if (service_prepare("gate"))
+            return 1;
+    }
     return 0;
 }
 
@@ -50,7 +49,7 @@ host_gate_prepare(int cmax, int hmax) {
         cmax = 1;
     G->cmax = cmax;
     struct gate_client* c = malloc(sizeof(struct gate_client) * cmax);
-    memset(c, 0, sizeof(struct gate_client*) * cmax);
+    memset(c, 0, sizeof(struct gate_client) * cmax);
     G->p = c;
     freeid_init(&G->fi, cmax, hmax);
     return 0;
