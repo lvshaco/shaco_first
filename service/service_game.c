@@ -763,7 +763,7 @@ _update_room(struct game* self, struct room* ro) {
         if (m->online) {
             bool refresh = false;
             int oxygen = -role_oxygen_time_consume(&m->detail);
-            host_debug("char %u, update oxygen %d", m->detail.charid, oxygen);
+            //host_debug("char %u, update oxygen %d", m->detail.charid, oxygen);
             _update_value(&m->detail.oxygencur, &oxygen, m->detail.oxygen);
             if (oxygen != 0) {
                 refresh = true;
