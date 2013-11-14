@@ -121,6 +121,7 @@ _build_memberbrief(const struct player* p, struct tmemberbrief* brief) {
 
 static void
 _build_memberdetail(const struct player* p, struct tmemberdetail* detail) {
+    memset(detail, 0, sizeof(*detail));
     const struct chardata* data = &p->data;
     detail->charid = data->charid;
     strncpychk(detail->name, sizeof(detail->name), data->name, sizeof(data->name));
