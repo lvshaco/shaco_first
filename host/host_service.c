@@ -52,6 +52,7 @@ _create(const char* name) {
         return 0;
     }
     s = malloc(sizeof(*s));
+    memset(s, 0, sizeof(*s));
     if (dlmodule_load(&s->dl, name)) {
         free(s);
         return 1;
@@ -129,7 +130,7 @@ service_load(const char* name) {
     for (i=sz; i<array_size(S->sers); ++i) {
         s = array_get(S->sers, i); 
         if (s && s->dl.init) {
-            if (s->dl.init(s)) {
+            if (s->dl.init(s)) { 
                 return 1;
             }
         }

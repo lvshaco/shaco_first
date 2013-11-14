@@ -1,11 +1,16 @@
 #include "host_gate.h"
 #include "host_net.h"
 #include "host_timer.h"
+#include "host_service.h"
+#include "host_log.h"
+#include "host.h"
 #include "freeid.h"
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 
 struct gate {
+    int serviceid;
     int cmax;
     int used;
     struct freeid fi;
@@ -18,6 +23,13 @@ int
 host_gate_init() {
     G = malloc(sizeof(*G));
     memset(G, 0, sizeof(*G));
+    G->serviceid = -1;
+
+    char tmp[1024];
+    snprintf(tmp, sizeof(tmp), "gate,%s", host_getstr("gate_handler", ""));
+    if (service_load(tmp) == 0) {
+        G->serviceid = service_query_id("gate");
+    } 
     return 0;
 }
 
@@ -44,6 +56,16 @@ host_gate_prepare(int cmax, int hmax) {
     return 0;
 }
 
+static void
+_notify_gate_event(int event) {
+    struct service_message sm;
+    sm.sessionid = event; // reuse for GATE_EVENT
+    sm.source = SERVICE_HOST;
+    sm.sz = 0;
+    sm.msg = NULL;
+    service_notify_service(G->serviceid, &sm);
+}
+
 struct gate_client*
 host_gate_acceptclient(int connid) {
     assert(connid != -1);
@@ -60,6 +82,7 @@ host_gate_acceptclient(int connid) {
     c->active_time = host_timer_now();
     host_net_subscribe(connid, true);
     G->used++;
+    _notify_gate_event(GATE_EVENT_ONACCEPT); 
     return c;
 }
 
@@ -82,6 +105,7 @@ host_gate_disconnclient(struct gate_client* c, bool force) {
         c->status = GATE_CLIENT_FREE;
         c->active_time = 0;
         G->used--;
+        _notify_gate_event(GATE_EVENT_ONDISCONN); 
     } else {
         if (c->status != GATE_CLIENT_LOGOUTED) {
             c->status = GATE_CLIENT_LOGOUTED;

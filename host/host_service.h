@@ -2,6 +2,7 @@
 #define __host_service_h__
 
 #include <stdint.h>
+#include <stdbool.h>
 #include "dlmodule.h"
 
 #define SERVICE_INVALID -1

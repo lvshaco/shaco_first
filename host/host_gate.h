@@ -9,6 +9,9 @@
 #define GATE_CLIENT_LOGINED     2
 #define GATE_CLIENT_LOGOUTED    3
 
+#define GATE_EVENT_ONACCEPT  0
+#define GATE_EVENT_ONDISCONN 1
+
 struct gate_client {
     int connid;
     int status;

@@ -38,7 +38,6 @@ log_init(struct service* s) {
         fprintf(stderr, "no config node_type\n");
         return 1;
     }
-    printf("node: %s\n", node);
     snprintf(logfile, sizeof(logfile), "%s/log/%s%d.log", 
             getenv("HOME"), 
             node,

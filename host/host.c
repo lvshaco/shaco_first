@@ -106,6 +106,10 @@ host_create(const char* file) {
     if (host_log_init(level)) {
         goto err;
     }
+    int max = lur_getint(L, "host_connmax", 0);
+    if (host_net_init(max)) {
+        goto err;
+    } 
     if (host_dispatcher_init()) {
         goto err;
     }
@@ -113,10 +117,6 @@ host_create(const char* file) {
         goto err;
     }
     if (host_gate_init()) {
-        goto err;
-    }
-    int max = lur_getint(L, "host_connmax", 0);
-    if (host_net_init(max)) {
         goto err;
     } 
     const char* service = host_getstr("host_service", "");

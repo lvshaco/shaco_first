@@ -8,6 +8,7 @@
 #include "message_reader.h"
 #include "user_message.h"
 #include "client_type.h"
+#include "node_type.h"
 #include "message.h"
 #include "cli_message.h"
 #include <stdlib.h>
@@ -106,17 +107,24 @@ _read(struct gate* self, struct gate_client* c, struct net_message* nm) {
             break;
     }
 }
-/*
+
 static inline void
 _updateload() {
     const struct host_node* node = host_node_get(HNODE_ID(NODE_LOAD, 0));
     if (node) {
         UM_DEFFIX(UM_UPDATELOAD, load);
         load->value = host_gate_usedclient();
+        host_debug("update load %d", load->value);
         UM_SENDTONODE(node, load, load->msgsz);
     }
 }
-*/
+
+void
+gate_service(struct service* s, struct service_message* sm) {
+    // default update load, if connected to load node
+    _updateload();
+}
+
 void
 gate_net(struct service* s, struct net_message* nm) {
     struct gate* self = SERVICE_SELF;
