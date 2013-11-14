@@ -24,13 +24,13 @@ ground_attri_build(int32_t difficulty, struct groundattri* ga) {
 
 static inline float
 role_body_factor(struct tmemberdetail* cdata) {
-    return (1+(5-cdata->body*0.01)/20.0);
+    return (1+(5-cdata->bodycur*0.01)/20.0);
 }
 
 static inline void 
 role_attri_build(const struct groundattri* ga,
                  struct tmemberdetail* cdata) {
-    float quick = cdata->quick*0.01;
+    float quick = cdata->quickcur*0.01;
    
     float bodyfactor = role_body_factor(cdata);
     float factor = 1 - (5-quick)/((quick > 5) ? 10.0 : 20.0);
