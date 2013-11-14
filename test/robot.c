@@ -229,9 +229,9 @@ _handleum(int id, int ut, struct UM_BASE* um) {
         //UM_CAST(UM_GAMESTART, gs, um);
         printf("game start\n");
         if (CHAR.accid % 2 == 0) {
-        _useitem(2);
+        //_useitem(2);
         _useitem(3);
-        _useitem(4);
+        //_useitem(4);
         }
         }
         break;
@@ -256,9 +256,9 @@ int main(int argc, char* argv[]) {
     } else {
         strncpy(ACCOUNT, "wa_account_1", sizeof(ACCOUNT)-1);
     }
-    if (argc > 4) {
-        ip = argv[3];
-        port = strtoul(argv[4], NULL, 10);
+    if (argc > 3) {
+        ip = argv[2];
+        port = strtoul(argv[3], NULL, 10);
     } else {
         ip = "192.168.1.140";
         port = 18600;
