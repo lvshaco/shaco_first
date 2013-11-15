@@ -70,7 +70,7 @@ struct game {
 
 struct buff_effect {
     int32_t effect;
-    int32_t effectvalue;
+    float effectvalue;
 };
 
 #define BUFF_EFFECT 3
@@ -538,12 +538,25 @@ _update_value(int* cur, int* value, int max) {
         *value = max - old;
     }
 }
+static inline void
+_update_valuef(float* cur, float* value, float max) {
+    float old = *cur;
+    *cur += *value;
+    if (*cur < 0) {
+        *cur = 0;
+        *value = -old; 
+    } else if (*cur > max) {
+        *cur = max;
+        *value = max - old;
+    }
+}
+
 
 static int
-_item_effectone(struct member* m, int effect, int value, struct buff_effect* result) {
+_item_effectone(struct member* m, int effect, float value, struct buff_effect* result) {
     if (effect == 0 || value == 0)
         return 0;
-    host_debug("item effect %d, value %d, to char %u", effect, value, m->detail.charid);
+    host_debug("item effect %d, value %f, to char %u", effect, value, m->detail.charid);
     bool isabs = true;
     if (effect > ITEM_EFFECT_MAX) {
         isabs = false;
@@ -557,16 +570,21 @@ _item_effectone(struct member* m, int effect, int value, struct buff_effect* res
         break;
     case ITEM_EFFECT_SPEED:
         if (!isabs) 
-            value = detail->quick * value * 0.01;
-        _update_value(&detail->quickcur, &value, detail->quick*3);
+            value = detail->movespeed * value * 0.01;
+        host_debug("char %u, speed before %f, value %f", detail->charid, detail->movespeed, value);
+        _update_valuef(&detail->movespeed, &value, detail->movespeed*3);
+        host_debug("char %u, speed after %f, value %f", detail->charid, detail->movespeed, value);
+
         refresh_flag |= REFRESH_ROLE;
         break;
-    case ITEM_EFFECT_OXYGEN:
+    case ITEM_EFFECT_OXYGEN: {
+        int ivalue = value;
         if (!isabs) {
-            value = detail->oxygen * value * 0.01;
+            ivalue = detail->oxygen * ivalue * 0.01;
         }
-        _update_value(&detail->oxygencur, &value, detail->oxygen);
+        _update_value(&detail->oxygencur, &ivalue, detail->oxygen);
         refresh_flag |= REFRESH_ROLE;
+        }
         break;
     default:
         break;
@@ -590,44 +608,59 @@ _item_effectone(struct member* m, int effect, int value, struct buff_effect* res
 static void
 _item_effect_member(struct game* self, struct room* ro, struct member* m, 
         const struct item_tplt* item) {
-    int effect_flag = 0;
 
-    struct buff_effect effects[BUFF_EFFECT];
-    memset(effects, 0, sizeof(effects));
-    if (0 < BUFF_EFFECT) {
-        effects[0].effect = item->effect1;
-        effects[0].effectvalue = item->effectvalue1;
-    }
-    if (1 < BUFF_EFFECT) {
-        effects[1].effect = item->effect2;
-        effects[1].effectvalue = item->effectvalue2;
-    }
-    if (2 < BUFF_EFFECT) {
-        effects[2].effect = item->effect3;
-        effects[2].effectvalue = item->effectvalue3;
-    }
+    struct buff* b = NULL;
 
-    int i;
-    for (i=0; i<BUFF_EFFECT; ++i) {
-        effect_flag |= _item_effectone(m, effects[i].effect, effects[i].effectvalue, &effects[i]);
-    }
-    if (effect_flag & REFRESH_ROLE) {
-        role_attri_build(&ro->gattri, &m->detail);
-        host_debug("char %u, speed %f", m->detail.charid, m->detail.movespeed);
-        UM_DEFFIX(UM_ROLEINFO, ri);
-        ri->detail = m->detail;
-        _multicast_msg(ro, (void*)ri, 0);
-    }
-
-    if (item->time > 0) {
-        struct buff* b = idmap_find(m->buffmap, item->id);
+    bool spell = false;
+    if (item->time == 0) {
+        spell = true;
+    } else {
+        b = idmap_find(m->buffmap, item->id);
         if (b == NULL) {
             b = malloc(sizeof(*b));
             idmap_insert(m->buffmap, item->id, b);
+            spell = true;
+        } else {
+            if (b->time == 0) {
+                spell = true;
+            }
         }
+    }
+    struct buff_effect effects[BUFF_EFFECT];
+    if (spell) {
+        int effect_flag = 0;
+        memset(effects, 0, sizeof(effects));
+        if (0 < BUFF_EFFECT) {
+            effects[0].effect = item->effect1;
+            effects[0].effectvalue = item->effectvalue1;
+        }
+        if (1 < BUFF_EFFECT) {
+            effects[1].effect = item->effect2;
+            effects[1].effectvalue = item->effectvalue2;
+        }
+        if (2 < BUFF_EFFECT) {
+            effects[2].effect = item->effect3;
+            effects[2].effectvalue = item->effectvalue3;
+        }
+
         int i;
         for (i=0; i<BUFF_EFFECT; ++i) {
-            b->effects[i] = effects[i];
+            effect_flag |= _item_effectone(m, effects[i].effect, effects[i].effectvalue, &effects[i]);
+        }
+        if (effect_flag & REFRESH_ROLE) {
+            //role_attri_build(&ro->gattri, &m->detail);
+            host_debug("char %u, speed %f", m->detail.charid, m->detail.movespeed);
+            UM_DEFFIX(UM_ROLEINFO, ri);
+            ri->detail = m->detail;
+            _multicast_msg(ro, (void*)ri, 0);
+        }
+    }
+    if (b) {
+        if (spell) {
+            int i;
+            for (i=0; i<BUFF_EFFECT; ++i) {
+                b->effects[i] = effects[i];
+            }
         }
         b->time = host_timer_now()/1000 + item->time;
         host_debug("insert time: %u, to char %u", b->time, m->detail.charid);
@@ -790,7 +823,7 @@ _update_room(struct game* self, struct room* ro) {
             idmap_foreach(m->buffmap, _update_buffcb, &udata);
             refresh |= ((udata.effect_flag & REFRESH_ROLE) != 0);
             if (refresh) {
-                role_attri_build(&ro->gattri, &m->detail);
+                //role_attri_build(&ro->gattri, &m->detail);
                 UM_DEFFIX(UM_ROLEINFO, ri);
                 ri->detail = m->detail;
                 _multicast_msg(ro, (void*)ri, 0);

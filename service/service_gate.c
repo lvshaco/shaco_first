@@ -143,7 +143,8 @@ gate_net(struct service* s, struct net_message* nm) {
         break;
     case NETE_ACCEPT:
         // do not forward to handler
-        c = host_gate_acceptclient(id); 
+        c = host_gate_acceptclient(id);
+        host_debug("accept %d", id);
         if (!self->need_verify && c) {
             host_gate_loginclient(c);
         }
