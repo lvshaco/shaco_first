@@ -362,14 +362,11 @@ _check_start_room(struct game* self, struct room* ro) {
 }
 static int 
 _rankcmp(const void* p1, const void* p2) {
-    const struct member* m1 = *(const struct member**)p1;
+    const struct member* m1 = *(const struct member**)p1; 
     const struct member* m2 = *(const struct member**)p2;
-    if (m1->deathtime == 0)
-        return -1;
-    if (m2->deathtime == 0)
-        return 1;
-    return m1->deathtime < m2->deathtime;
+    return m1->detail.oxygencur >= m2->detail.oxygencur ? -1 : 1;
 }
+
 static void
 _check_over_room(struct game* self, struct room* ro) {
     if (ro->status != RS_START)
@@ -616,7 +613,7 @@ _item_effect_member(struct game* self, struct room* ro, struct member* m,
     }
     if (effect_flag & REFRESH_ROLE) {
         role_attri_build(&ro->gattri, &m->detail);
-        host_debug("char %u, speed %f", m->detail.charid, m->detail.movespeed); 
+        host_debug("char %u, speed %f", m->detail.charid, m->detail.movespeed);
         UM_DEFFIX(UM_ROLEINFO, ri);
         ri->detail = m->detail;
         _multicast_msg(ro, (void*)ri, 0);
