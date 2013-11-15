@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
+#include <unistd.h>
 
 #define INIT_EVENTS 1
 
@@ -75,6 +76,7 @@ _elapsed_time() {
 int 
 host_timer_init() {
     T = malloc(sizeof(*T));
+    memset(T, 0, sizeof(*T));
     T->dirty = true;
     T->elapsed_time = _elapsed();
     T->start_time = _now() - T->elapsed_time;
