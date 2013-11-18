@@ -184,7 +184,7 @@ gate_time(struct service* s) {
         c = &p[i];
         switch (c->status) {
         case GATE_CLIENT_CONNECTED:
-            if (now - c->active_time > 5*1000) {
+            if (now - c->active_time > 10*1000) {
                 host_debug("login timeout");
                 host_gate_disconnclient(c, true);
             }
@@ -203,7 +203,7 @@ gate_time(struct service* s) {
             }
             break;
         case GATE_CLIENT_LOGOUTED:
-            if (now - c->active_time > 2*1000) {
+            if (now - c->active_time > 10*1000) {
                 host_debug("logout timeout");
                 host_gate_disconnclient(c, true);
             }

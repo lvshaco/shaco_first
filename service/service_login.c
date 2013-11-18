@@ -355,7 +355,7 @@ login_time(struct service* s) {
         p = &self->players[i];
         if (p->state >= STATE_LOGIN &&
             p->state <  STATE_DONE) {
-            if (now - p->login_time > 5*1000) { // short connection mode
+            if (now - p->login_time > 10*1000) { // short connection mode
                 host_debug("timeout connid %d, acc %s, state %d", p->connid, p->account, p->state);
                 c = host_gate_getclient(p->connid);
                 assert(c);

@@ -229,7 +229,7 @@ _acctimecb(uint32_t key, void* value, void* ud) {
     struct accinfo* acc = value;
     uint64_t now = host_timer_now();
     if (now > acc->regtime &&
-        now - acc->regtime > 10*1000) {
+        now - acc->regtime > 20*1000) {
         // todo: optimize
         void* rm = idmap_remove(self->regacc, key);
         free(rm);
