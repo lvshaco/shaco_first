@@ -1,7 +1,7 @@
-#include "host_service.h"
-#include "host_node.h"
-#include "host_timer.h"
-#include "host_dispatcher.h"
+#include "sc_service.h"
+#include "sc_node.h"
+#include "sc_timer.h"
+#include "sc_dispatcher.h"
 #include "player.h"
 #include "worldhelper.h"
 #include "sharetype.h"
@@ -76,7 +76,7 @@ gamematch_init(struct service* s) {
     SUBSCRIBE_MSG(s->serviceid, IDUM_CREATEROOMRES);
     SUBSCRIBE_MSG(s->serviceid, IDUM_OVERROOM);
 
-    host_timer_register(s->serviceid, 1000);
+    sc_timer_register(s->serviceid, 1000);
     return 0;
 }
 
@@ -88,7 +88,7 @@ _notify_playfail(struct player* p, int8_t error) {
 }
 
 static void
-_notify_gameaddr(struct player* p, const struct host_node* hn, struct room* ro) {
+_notify_gameaddr(struct player* p, const struct sc_node* hn, struct room* ro) {
     UM_DEFFORWARD(fw, p->cid, UM_NOTIFYGAME, game);
     game->addr = hn->gaddr;
     game->port = hn->gport;
@@ -192,14 +192,14 @@ _create_tmproom(struct gamematch* self) {
     struct room* ro = GFREEID_ALLOC(room, &self->creating);
     assert(ro);
    
-    ro->createtime = host_timer_now();
+    ro->createtime = sc_timer_now();
     ro->key = _genkey(self);
     return ro;
 }
 
 static int
 _destroy_tmproom(struct gamematch* self, struct room* ro, int ok) {
-    const struct host_node* node;
+    const struct sc_node* node;
     struct playerv pv;
     _get_tmpmembers(ro, &pv);
 
@@ -220,7 +220,7 @@ _destroy_tmproom(struct gamematch* self, struct room* ro, int ok) {
         }
     }
     int nodeid = HNODE_ID(NODE_GAME, ro->sid);
-    node = host_node_get(nodeid);
+    node = sc_node_get(nodeid);
     if (node) {
         if (ok) {
             for (i=0; i<pv.np; ++i) {
@@ -231,7 +231,7 @@ _destroy_tmproom(struct gamematch* self, struct room* ro, int ok) {
             }
         } else {
             int load = _calcload(ro->type);
-            host_node_updateload(node->id, -load);
+            sc_node_updateload(node->id, -load);
         }
     }
     GFREEID_FREE(room, &self->creating, ro);
@@ -240,7 +240,7 @@ _destroy_tmproom(struct gamematch* self, struct room* ro, int ok) {
 
 static void
 _timeout_tmproom(struct gamematch* self) {
-    uint64_t now = host_timer_now();
+    uint64_t now = sc_timer_now();
     struct room* rs = GFREEID_FIRST(&self->creating);
     int i;
     for (i=0; i<GFREEID_CAP(&self->creating); ++i) {
@@ -255,7 +255,7 @@ _timeout_tmproom(struct gamematch* self) {
 
 static int
 _match(struct gamematch* self, struct player* p, struct player* mp, int8_t type) {
-    const struct host_node* hn = host_node_minload(NODE_GAME);
+    const struct sc_node* hn = sc_node_minload(NODE_GAME);
     if (hn == NULL) {
         return 1;
     }
@@ -284,7 +284,7 @@ _match(struct gamematch* self, struct player* p, struct player* mp, int8_t type)
     cr->nmember = ro->mtag.np;
 
     UM_SENDTONODE(hn, cr, UM_CREATEROOM_size(cr));
-    host_node_updateload(hn->id, _calcload(cr->type));
+    sc_node_updateload(hn->id, _calcload(cr->type));
     return 0;
 }
 
@@ -320,7 +320,7 @@ static void
 _onoverroom(struct gamematch* self, struct node_message* nm) {
     UM_CAST(UM_OVERROOM, or, nm->um);
     int load = _calcload(or->type);
-    host_node_updateload(nm->hn->id, -load);
+    sc_node_updateload(nm->hn->id, -load);
 }
 
 static void

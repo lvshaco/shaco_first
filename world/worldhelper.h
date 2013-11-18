@@ -2,7 +2,7 @@
 #define __worldhelper_h__
 
 #include "message.h"
-#include "host_node.h"
+#include "sc_node.h"
 #include "node_type.h"
 #include "user_message.h"
 #include "cli_message.h"
@@ -15,7 +15,7 @@ struct player_message {
 
 static inline void
 _forward_toplayer(struct player* p, struct UM_FORWARD* fw) {
-    const struct host_node* n = host_node_get(HNODE_ID(NODE_GATE, p->gid));
+    const struct sc_node* n = sc_node_get(HNODE_ID(NODE_GATE, p->gid));
     if (n) {
         UM_SENDFORWARD(n->connid, fw);
     }
@@ -36,7 +36,7 @@ _forward_loginfail(struct player* p, int32_t error) {
 }
 
 static inline void
-_forward_connlogout(const struct host_node* node, int cid, int32_t error) {
+_forward_connlogout(const struct sc_node* node, int cid, int32_t error) {
     UM_DEFFORWARD(fw, cid, UM_LOGOUT, lo);
     lo->error = error;
     UM_SENDFORWARD(node->connid, fw);
@@ -44,7 +44,7 @@ _forward_connlogout(const struct host_node* node, int cid, int32_t error) {
 
 static inline int
 _decode_playermessage(struct node_message* nm, struct player_message* pm) {
-    const struct host_node* hn = nm->hn;
+    const struct sc_node* hn = nm->hn;
     UM_CAST(UM_FORWARD, fw, nm->um);
     struct player* p = _getplayer(hn->sid, fw->cid);
     if (p == NULL) {

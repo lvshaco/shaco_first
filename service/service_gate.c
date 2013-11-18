@@ -1,10 +1,11 @@
-#include "host_service.h"
-#include "host_net.h"
-#include "host_log.h"
-#include "host_dispatcher.h"
-#include "host_timer.h"
-#include "host.h"
-#include "host_gate.h"
+#include "sc_service.h"
+#include "sc_env.h"
+#include "sc_net.h"
+#include "sc_log.h"
+#include "sc_dispatcher.h"
+#include "sc_timer.h"
+#include "sc.h"
+#include "sc_gate.h"
 #include "message_reader.h"
 #include "user_message.h"
 #include "client_type.h"
@@ -40,13 +41,13 @@ gate_free(struct gate* self) {
 
 static int
 _listen(struct service* s) { 
-    const char* addr = host_getstr("gate_ip", "");
-    int port = host_getint("gate_port", 0);
-    int wbuffermax = host_getint("gate_wbuffermax", 0);
+    const char* addr = sc_getstr("gate_ip", "");
+    int port = sc_getint("gate_port", 0);
+    int wbuffermax = sc_getint("gate_wbuffermax", 0);
     if (addr[0] == '\0')
         return 1;
-    if (host_net_listen(addr, port, wbuffermax, s->serviceid, CLI_GAME)) {
-        host_error("listen gate fail");
+    if (sc_net_listen(addr, port, wbuffermax, s->serviceid, CLI_GAME)) {
+        sc_error("listen gate fail");
         return 1;
     }
     return 0;
@@ -54,36 +55,36 @@ _listen(struct service* s) {
 int
 gate_init(struct service* s) {
     struct gate* self = SERVICE_SELF;
-    const char* hname = host_getstr("gate_handler", "");
+    const char* hname = sc_getstr("gate_handler", "");
     self->handler = service_query_id(hname);
     if (self->handler == SERVICE_INVALID) {
-        host_error("lost gate handler service");
+        sc_error("lost gate handler service");
         return 1;
     }
     if (_listen(s))
         return 1;
-    int cmax = host_getint("gate_clientmax", 0);
-    int hmax = host_getint("host_connmax", cmax);
-    if (host_gate_prepare(cmax, hmax)) {
+    int cmax = sc_getint("gate_clientmax", 0);
+    int hmax = sc_getint("sc_connmax", cmax);
+    if (sc_gate_prepare(cmax, hmax)) {
         return 1;
     }
-    host_info("gate_clientmax = %d", cmax);
+    sc_info("gate_clientmax = %d", cmax);
 
-    self->need_verify = host_getint("gate_need_verify", 1);
-    self->need_load = host_getint("gate_need_load", 0);
-    int live = host_getint("gate_clientlive", 3);
+    self->need_verify = sc_getint("gate_need_verify", 1);
+    self->need_load = sc_getint("gate_need_load", 0);
+    int live = sc_getint("gate_clientlive", 3);
     self->livetime = live * 1000;
-    host_timer_register(s->serviceid, 1000);
+    sc_timer_register(s->serviceid, 1000);
     return 0;
 }
 
 static inline void
 _handlemsg(struct gate* self, struct gate_client* c, struct UM_BASE* um) {
     if (c->status == GATE_CLIENT_LOGINED) {
-        c->active_time = host_timer_now();
+        c->active_time = sc_timer_now();
     }
     if (um->msgid != IDUM_HEARTBEAT) {
-        host_debug("Receive msg:%u",  um->msgid);
+        sc_debug("Receive msg:%u",  um->msgid);
         struct gate_message gm;
         gm.c = c;
         gm.msg = um;
@@ -97,14 +98,14 @@ _read(struct gate* self, struct gate_client* c, struct net_message* nm) {
     struct UM_BASE* um;
     while ((um = _message_read_one(nm, UM_SKIP)) != NULL) {
         if (um->msgsz > UM_CLIMAX) {
-            host_net_close_socket(nm->connid, true);
+            sc_net_close_socket(nm->connid, true);
             nm->type = NETE_SOCKERR;
             nm->error = NET_ERR_MSG;
             service_notify_net(nm->ud, nm);
             break;
         }
         _handlemsg(self, c, um);
-        host_net_dropread(nm->connid, UM_SKIP);
+        sc_net_dropread(nm->connid, UM_SKIP);
         if (++n > 10)
             break;
     }
@@ -112,11 +113,11 @@ _read(struct gate* self, struct gate_client* c, struct net_message* nm) {
 
 static inline void
 _updateload() {
-    const struct host_node* node = host_node_get(HNODE_ID(NODE_LOAD, 0));
+    const struct sc_node* node = sc_node_get(HNODE_ID(NODE_LOAD, 0));
     if (node) {
         UM_DEFFIX(UM_UPDATELOAD, load);
-        load->value = host_gate_usedclient();
-        host_debug("update load %d", load->value);
+        load->value = sc_gate_usedclient();
+        sc_debug("update load %d", load->value);
         UM_SENDTONODE(node, load, load->msgsz);
     }
 }
@@ -136,21 +137,21 @@ gate_net(struct service* s, struct net_message* nm) {
     int id = nm->connid;
     switch (nm->type) {
     case NETE_READ: {
-        c = host_gate_getclient(id); 
+        c = sc_gate_getclient(id); 
         assert(c);
         _read(self, c, nm);
         }
         break;
     case NETE_ACCEPT:
         // do not forward to handler
-        c = host_gate_acceptclient(id);
-        host_debug("accept %d", id);
+        c = sc_gate_acceptclient(id);
+        sc_debug("accept %d", id);
         if (!self->need_verify && c) {
-            host_gate_loginclient(c);
+            sc_gate_loginclient(c);
         }
         break;
     case NETE_SOCKERR: {
-        c = host_gate_getclient(id);
+        c = sc_gate_getclient(id);
         assert(c);
         if (c->status == GATE_CLIENT_LOGINED) {
             struct gate_message gm;
@@ -158,14 +159,14 @@ gate_net(struct service* s, struct net_message* nm) {
             gm.msg = nm;
             service_notify_net(self->handler, (void*)&gm);
         }
-        host_gate_disconnclient(c, true);
+        sc_gate_disconnclient(c, true);
         }
         break;
     case NETE_WRIDONECLOSE: {
         // donot forward to handler
-        c = host_gate_getclient(id);
+        c = sc_gate_getclient(id);
         assert(c);
-        host_gate_disconnclient(c, true); 
+        sc_gate_disconnclient(c, true); 
         }
         break;
     }
@@ -174,38 +175,38 @@ gate_net(struct service* s, struct net_message* nm) {
 void
 gate_time(struct service* s) {
     struct gate* self = SERVICE_SELF; 
-    uint64_t now = host_timer_now();
+    uint64_t now = sc_timer_now();
     
-    struct gate_client* p = host_gate_firstclient();
+    struct gate_client* p = sc_gate_firstclient();
     struct gate_client* c;
-    int max = host_gate_maxclient();
+    int max = sc_gate_maxclient();
     int i;
     for (i=0; i<max; ++i) {
         c = &p[i];
         switch (c->status) {
         case GATE_CLIENT_CONNECTED:
             if (now - c->active_time > 10*1000) {
-                host_debug("login timeout");
-                host_gate_disconnclient(c, true);
+                sc_debug("login timeout");
+                sc_gate_disconnclient(c, true);
             }
             break;
         case GATE_CLIENT_LOGINED:
             if (self->livetime > 0 &&
                 self->livetime < now - c->active_time) {
-                host_debug("heartbeat timeout");
+                sc_debug("heartbeat timeout");
                 struct gate_message gm;
                 struct net_message nm;
                 nm.type = NETE_TIMEOUT;
                 gm.c = c;
                 gm.msg = &nm;
                 service_notify_net(self->handler, (void*)&gm);
-                host_gate_disconnclient(c, true);
+                sc_gate_disconnclient(c, true);
             }
             break;
         case GATE_CLIENT_LOGOUTED:
             if (now - c->active_time > 10*1000) {
-                host_debug("logout timeout");
-                host_gate_disconnclient(c, true);
+                sc_debug("logout timeout");
+                sc_gate_disconnclient(c, true);
             }
             break;
         default:

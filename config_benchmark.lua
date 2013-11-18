@@ -1,6 +1,6 @@
-host_loglevel="DEBUG"
-host_connmax=11000
-host_service="benchmark"
+sc_loglevel="DEBUG"
+sc_connmax=11000
+sc_service="benchmark"
 
 --echo_ip="127.0.0.1"
 echo_ip="192.168.1.140"

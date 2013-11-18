@@ -1,5 +1,5 @@
-#include "host_service.h"
-#include "host_log.h"
+#include "sc_service.h"
+#include "sc_log.h"
 #include "message_reader.h"
 #include "user_message.h"
 #include "node_type.h"
@@ -26,15 +26,15 @@ _locate_service(struct dispatcher* self, struct UM_BASE* um)  {
     if (msgid >= 0 && msgid < IDUM_MAX) {
         serviceid = self->services[msgid];
         if (serviceid != SERVICE_INVALID) {
-            host_debug("Receive msg:%d, from %s, to service:%s", 
+            sc_debug("Receive msg:%d, from %s, to service:%s", 
                     msgid, 
-                    host_node_typename(HNODE_TID(um->nodeid)), 
+                    sc_node_typename(HNODE_TID(um->nodeid)), 
                     service_query_name(serviceid));
             return serviceid;
         }
     }
-    host_debug("Receive invalid msg:%d, from %s", msgid,
-            host_node_typename(HNODE_TID(um->nodeid)));
+    sc_debug("Receive invalid msg:%d, from %s", msgid,
+            sc_node_typename(HNODE_TID(um->nodeid)));
     return SERVICE_INVALID;
 }
 
@@ -56,13 +56,13 @@ dispatcher_service(struct service* s, struct service_message* sm) {
         if (tmp == SERVICE_INVALID) {
             self->services[msgid] = serviceid; 
         } else {
-            host_error("subscribe repeat (service:%s and %s) msgid:%d", 
+            sc_error("subscribe repeat (service:%s and %s) msgid:%d", 
                     service_query_name(tmp),
                     service_query_name(serviceid), 
                     msgid);
         }
     } else {
-        host_error("subscribe invalid msgid:%d", msgid);
+        sc_error("subscribe invalid msgid:%d", msgid);
     }
 }
 
@@ -79,7 +79,7 @@ dispatcher_net(struct service* s, struct net_message* nm) {
         if (serviceid != SERVICE_INVALID) {
             service_notify_nodemsg(serviceid, nm->connid, um, um->msgsz);
         }
-        host_net_dropread(nm->connid, 0);
+        sc_net_dropread(nm->connid, 0);
         if (++n > 1000)
             break;
     }

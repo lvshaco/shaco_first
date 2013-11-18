@@ -1,7 +1,7 @@
 #ifndef __client_type_h__
 #define __client_type_h__
 
-#include "host_node.h"
+#include "sc_node.h"
 
 // must be > 0, see NETUT_TRUST
 #define CLI_UNTRUST (int)(HNODE_TID_MAX)+1

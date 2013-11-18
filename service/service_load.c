@@ -1,7 +1,7 @@
-#include "host_service.h"
-#include "host.h"
-#include "host_node.h"
-#include "host_dispatcher.h"
+#include "sc_service.h"
+#include "sc_env.h"
+#include "sc_node.h"
+#include "sc_dispatcher.h"
 #include "node_type.h"
 #include "user_message.h"
 #include <stdlib.h>
@@ -32,11 +32,11 @@ load_free(struct load* self) {
 int
 load_init(struct service* s) {
     struct load* self = SERVICE_SELF;
-    self->source = host_node_typeid(host_getstr("load_source", ""));
-    self->dest   = host_node_typeid(host_getstr("load_dest", ""));
+    self->source = sc_node_typeid(sc_getstr("load_source", ""));
+    self->dest   = sc_node_typeid(sc_getstr("load_dest", ""));
     if (self->source == -1 ||
         self->dest == -1) {
-        host_error("unknown load_source or load_dest");
+        sc_error("unknown load_source or load_dest");
         return 1;
     }
     // todo: some other good way todo this ?
@@ -54,17 +54,17 @@ load_nodemsg(struct service* s, int id, void* msg, int sz) {
     struct load* self = SERVICE_SELF;
     UM_CAST(UM_BASE, um, msg);
 
-    const struct host_node* node = host_node_get(um->nodeid);
+    const struct sc_node* node = sc_node_get(um->nodeid);
     if (node == NULL) {
         return;
     }
     if (node->tid == self->source) {
-        const struct host_node* dest = host_node_minload(self->dest);
+        const struct sc_node* dest = sc_node_minload(self->dest);
         if (dest) {
             UM_DEFVAR(UM_FORWARD, fw);
             fw->cid = node->id;
             memcpy(&fw->wrap, um, um->msgsz);
-            fw->wrap.nodeid = host_id();
+            fw->wrap.nodeid = sc_id();
             UM_SENDTONODE(dest, fw, UM_FORWARD_size(fw));
         } else {
             UM_DEFFIX(UM_MINLOADFAIL, fail);
@@ -74,12 +74,12 @@ load_nodemsg(struct service* s, int id, void* msg, int sz) {
         switch (um->msgid) {
         case IDUM_UPDATELOAD: {
             UM_CAST(UM_UPDATELOAD, load, um);
-            host_node_setload(node->id, load->value);
+            sc_node_setload(node->id, load->value);
             }
             break;
         case IDUM_FORWARD: {
             UM_CAST(UM_FORWARD, fw, um);
-            const struct host_node* source = host_node_get(fw->cid);
+            const struct sc_node* source = sc_node_get(fw->cid);
             if (source) {
                 UM_SENDTONODE(source, &fw->wrap, fw->wrap.msgsz);
             }

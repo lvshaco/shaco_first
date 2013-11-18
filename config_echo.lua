@@ -1,6 +1,6 @@
-host_loglevel="INFO"
-host_connmax=11000
-host_service="gate,echo"
+sc_loglevel="INFO"
+sc_connmax=11000
+sc_service="gate,echo"
 
 --gate_ip="127.0.0.1"
 gate_ip="192.168.1.140"

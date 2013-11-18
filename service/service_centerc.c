@@ -1,8 +1,9 @@
-#include "host_service.h"
-#include "host_node.h"
-#include "host_net.h"
-#include "host_log.h"
-#include "host.h"
+#include "sc_service.h"
+#include "sc_env.h"
+#include "sc_node.h"
+#include "sc_net.h"
+#include "sc_log.h"
+#include "sc.h"
 #include "node_type.h"
 #include "user_message.h"
 #include <stdlib.h>
@@ -27,10 +28,10 @@ centerc_free(struct centerc* self) {
 
 static int
 _connect_center(struct service* s) {
-    const char* addr = host_getstr("center_ip", "");
-    int port = host_getint("center_port", 0);
-    host_info("connect to %s:%u ...", addr, port);
-    if (host_net_connect(addr, port, true, s->serviceid, 0)) { 
+    const char* addr = sc_getstr("center_ip", "");
+    int port = sc_getint("center_port", 0);
+    sc_info("connect to %s:%u ...", addr, port);
+    if (sc_net_connect(addr, port, true, s->serviceid, 0)) { 
         return 1;
     }
     return 0;
@@ -38,7 +39,7 @@ _connect_center(struct service* s) {
 
 static int
 _fill_subs(struct centerc* self) {
-    const char* str = host_getstr("node_sub", "");
+    const char* str = sc_getstr("node_sub", "");
     if (str[0] == '\0')
         return 0;
     
@@ -49,9 +50,9 @@ _fill_subs(struct centerc* self) {
     char* saveptr;
     char* one = strtok_r(tmp, ",", &saveptr);
     while (one) {
-        int tid = host_node_typeid(one);
+        int tid = sc_node_typeid(one);
         if (tid == -1) {
-            host_error("subscribe unknown node:%s", one);
+            sc_error("subscribe unknown node:%s", one);
             return 1;
         }
         self->subs[n++] = tid;
@@ -75,7 +76,7 @@ centerc_init(struct service* s) {
 
 static void
 _reg_request(int id) {
-    struct host_node* me = host_me();
+    struct sc_node* me = sc_me();
     UM_DEFFIX(UM_NODEREG, reg);
     reg->addr = me->addr;
     reg->port = me->port;
@@ -106,16 +107,16 @@ void
 centerc_net(struct service* s, struct net_message* nm) {
     switch (nm->type) {
     case NETE_CONNECT:
-        host_info("connect to center ok");
-        host_net_subscribe(nm->connid, true);
+        sc_info("connect to center ok");
+        sc_net_subscribe(nm->connid, true);
         _reg_request(nm->connid);
         break;
     case NETE_CONNERR:
-        host_error("connect to center fail: %s", host_net_error(nm->error));
+        sc_error("connect to center fail: %s", sc_net_error(nm->error));
         break;
     case NETE_SOCKERR:
-        host_error("center disconnect: %s", host_net_error(nm->error));
-        host_node_disconnect(nm->connid);
+        sc_error("center disconnect: %s", sc_net_error(nm->error));
+        sc_node_disconnect(nm->connid);
         break;
     }
 }

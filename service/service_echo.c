@@ -1,6 +1,6 @@
-#include "host_service.h"
-#include "host_gate.h"
-#include "host_log.h"
+#include "sc_service.h"
+#include "sc_gate.h"
+#include "sc_log.h"
 #include "user_message.h"
 #include <assert.h>
 
@@ -18,7 +18,7 @@ echo_net(struct service* s, struct gate_message* gm) {
     switch (nm->type) {
     case NETE_SOCKERR:
     case NETE_TIMEOUT:
-        host_info("echo_net close %d, %d", gm->c->connid, nm->type);
+        sc_info("echo_net close %d, %d", gm->c->connid, nm->type);
         break;
     }
 }

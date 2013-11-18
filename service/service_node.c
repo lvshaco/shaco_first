@@ -1,9 +1,9 @@
-#include "host_service.h"
-#include "host.h"
-#include "host_log.h"
-#include "host_net.h"
-#include "host_dispatcher.h"
-#include "host_node.h"
+#include "sc_service.h"
+#include "sc_env.h"
+#include "sc_log.h"
+#include "sc_net.h"
+#include "sc_dispatcher.h"
+#include "sc_node.h"
 #include "node_type.h"
 #include "user_message.h"
 #include <string.h>
@@ -29,25 +29,25 @@ node_free(struct node* self) {
 }
 
 static void
-_mynode(struct host_node* node) {
-    int tid = host_node_typeid(host_getstr("node_type", ""));
-    int sid = host_getint("node_sid", 0);
+_mynode(struct sc_node* node) {
+    int tid = sc_node_typeid(sc_getstr("node_type", ""));
+    int sid = sc_getint("node_sid", 0);
     node->id   = HNODE_ID(tid, sid);
-    node->addr = inet_addr(host_getstr("node_ip", "0"));
-    node->port = host_getint("node_port", 0);
-    node->gaddr = inet_addr(host_getstr("gate_ip", "0"));
-    node->gport = host_getint("gate_port", 0);
+    node->addr = inet_addr(sc_getstr("node_ip", "0"));
+    node->port = sc_getint("node_port", 0);
+    node->gaddr = inet_addr(sc_getstr("gate_ip", "0"));
+    node->gport = sc_getint("gate_port", 0);
     node->connid = -1;
 }
 
 static int
 _listen(struct service* s) {
-    const char* addr = host_getstr("node_ip", ""); 
-    int port = host_getint("node_port", 0);
+    const char* addr = sc_getstr("node_ip", ""); 
+    int port = sc_getint("node_port", 0);
     if (addr[0] == '\0')
         return 1;
-    if (host_net_listen(addr, port, 0, s->serviceid, 0)) {
-        host_error("listen node fail");
+    if (sc_net_listen(addr, port, 0, s->serviceid, 0)) {
+        sc_error("listen node fail");
         return 1;
     }
     return 0;
@@ -60,11 +60,11 @@ node_init(struct service* s) {
     SUBSCRIBE_MSG(s->serviceid, IDUM_NODEREGOK);
     SUBSCRIBE_MSG(s->serviceid, IDUM_NODENOTIFY);
 
-    if (host_node_register_types(NODE_NAMES, NODE_TYPE_MAX))
+    if (sc_node_register_types(NODE_NAMES, NODE_TYPE_MAX))
         return 1;
-    struct host_node me;
+    struct sc_node me;
     _mynode(&me);
-    if (host_register_me(&me))
+    if (sc_register_me(&me))
         return 1;
     if (_listen(s))
         return 1;
@@ -73,7 +73,7 @@ node_init(struct service* s) {
     const char* tmp = self->iscenter ? "centers" : "centerc";
     self->center_or_cli_service = service_query_id(tmp);
     if (self->center_or_cli_service == -1) {
-        host_error("lost %s service", tmp);
+        sc_error("lost %s service", tmp);
         return 1;
     }
     return 0;
@@ -81,7 +81,7 @@ node_init(struct service* s) {
 
 static void
 _reg_request(int id) {
-    struct host_node* me = host_me();
+    struct sc_node* me = sc_me();
     UM_DEFFIX(UM_NODEREG, reg);
     reg->addr = me->addr;
     reg->port = me->port;
@@ -94,18 +94,18 @@ static void
 _reg(struct service* s, int id, struct UM_BASE* um) {
     struct node* self = SERVICE_SELF;
     UM_CAST(UM_NODEREG, reg, um);
-    struct host_node node;
+    struct sc_node node;
     node.id = reg->nodeid;
     node.addr = reg->addr;
     node.port = reg->port;
     node.gaddr = reg->gaddr;
     node.gport = reg->gport;
     node.connid = id;
-    if (host_node_register(&node)) {
-        host_net_close_socket(id, true);
+    if (sc_node_register(&node)) {
+        sc_net_close_socket(id, true);
         return; // no need response for fail
     }
-    struct host_node* me = host_me();
+    struct sc_node* me = sc_me();
     UM_DEFFIX(UM_NODEREGOK, ok);
     ok->addr = me->addr;
     ok->port = me->port;
@@ -128,15 +128,15 @@ static void
 _regok(struct service* s, int id, struct UM_BASE* um) {
     struct node* self = SERVICE_SELF;
     UM_CAST(UM_NODEREGOK, ok, um);
-    struct host_node node;
+    struct sc_node node;
     node.id = ok->nodeid;
     node.addr = ok->addr;
     node.port = ok->port;
     node.gaddr = ok->gaddr;
     node.gport = ok->gport;
     node.connid = id;
-    if (host_node_register(&node)) {
-        host_net_close_socket(id, true);
+    if (sc_node_register(&node)) {
+        sc_net_close_socket(id, true);
         return;
     }
     if (!self->iscenter &&
@@ -157,10 +157,10 @@ _onnotify(struct service* s, int id, struct UM_BASE* um) {
     struct in_addr in;
     in.s_addr = notify->addr;
     char* saddr = inet_ntoa(in);
-    const struct host_node* node = host_node_get(notify->tnodeid);
+    const struct sc_node* node = sc_node_get(notify->tnodeid);
     if (node == NULL) {
-        host_info("connect to %s:%u ...", saddr, notify->port);
-        host_net_connect(saddr, notify->port, false, s->serviceid, 0);
+        sc_info("connect to %s:%u ...", saddr, notify->port);
+        sc_net_connect(saddr, notify->port, false, s->serviceid, 0);
     } else {
         // todo address update
     }
@@ -185,19 +185,19 @@ void
 node_net(struct service* s, struct net_message* nm) {
     switch (nm->type) {
     case NETE_ACCEPT:
-        host_net_subscribe(nm->connid, true);
+        sc_net_subscribe(nm->connid, true);
         break;
     case NETE_CONNECT:
-        host_info("connect to node ok");
-        host_net_subscribe(nm->connid, true);
+        sc_info("connect to node ok");
+        sc_net_subscribe(nm->connid, true);
         _reg_request(nm->connid);
         break;
     case NETE_CONNERR:
-        host_error("connect to node fail: %s", host_net_error(nm->error));
+        sc_error("connect to node fail: %s", sc_net_error(nm->error));
         break;
     case NETE_SOCKERR:
-        host_error("node disconnect: %s", host_net_error(nm->error));
-        host_node_disconnect(nm->connid);
+        sc_error("node disconnect: %s", sc_net_error(nm->error));
+        sc_node_disconnect(nm->connid);
         break;
     }
 }

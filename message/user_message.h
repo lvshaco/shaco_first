@@ -3,8 +3,8 @@
 
 #include "message.h"
 #include "sharetype.h"
-#include "host_net.h"
-#include "host_node.h"
+#include "sc_net.h"
+#include "sc_node.h"
 
 #define IDUM_NBEGIN 0
 #define IDUM_NEND   999 
@@ -168,14 +168,14 @@ struct UM_OVERROOM {
 #pragma pack()
 
 #define UM_SEND(id, um, sz) do { \
-    (um)->nodeid = host_id();   \
+    (um)->nodeid = sc_id();   \
     (um)->msgsz = sz;           \
-    host_net_send(id, um, sz);  \
+    sc_net_send(id, um, sz);  \
 } while(0)
 
 #define UM_SENDTOCLI(id, um, sz) do { \
     (um)->msgsz = sz; \
-    host_net_send(id, (char*)um + UM_SKIP, (um)->msgsz - UM_SKIP);\
+    sc_net_send(id, (char*)um + UM_SKIP, (um)->msgsz - UM_SKIP);\
 } while(0)
 
 #define UM_SENDTOSVR UM_SENDTOCLI
@@ -185,7 +185,7 @@ struct UM_OVERROOM {
 
 #define UM_SENDTONID(tid, sid, um, sz) do { \
     uint16_t id = HNODE_ID(tid, sid);               \
-    const struct host_node* hn = host_node_get(id); \
+    const struct sc_node* hn = sc_node_get(id); \
     if (hn) {                                       \
         UM_SENDTONODE(hn, um, sz);                  \
     }                                               \

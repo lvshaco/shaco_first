@@ -1,8 +1,8 @@
-#include "host_service.h"
-#include "host_node.h"
-#include "host_timer.h"
-#include "host_dispatcher.h"
-#include "host_gate.h"
+#include "sc_service.h"
+#include "sc_node.h"
+#include "sc_timer.h"
+#include "sc_dispatcher.h"
+#include "sc_gate.h"
 #include "sharetype.h"
 #include "node_type.h"
 #include "gfreeid.h"
@@ -142,9 +142,9 @@ _loadtplt(struct game* self) {
 int
 game_init(struct service* s) {
     struct game* self = SERVICE_SELF;
-    int pmax = host_gate_maxclient();
+    int pmax = sc_gate_maxclient();
     if (pmax == 0) {
-        host_error("maxclient is zero, try load service gate before this");
+        sc_error("maxclient is zero, try load service gate before this");
         return 1;
     }
     self->tpltdata = _loadtplt(self);
@@ -159,13 +159,13 @@ game_init(struct service* s) {
     SUBSCRIBE_MSG(s->serviceid, IDUM_CREATEROOM);
     SUBSCRIBE_MSG(s->serviceid, IDUM_CREATEROOMRES);
 
-    host_timer_register(s->serviceid, 1000);
+    sc_timer_register(s->serviceid, 1000);
     return 0;
 }
 
 static inline struct player*
 _allocplayer(struct game* self, struct gate_client* c) {
-    int id = host_gate_clientid(c);
+    int id = sc_gate_clientid(c);
     assert(id >= 0 && id < self->pmax);
     struct player* p = &self->players[id];
     assert(!p->login);
@@ -174,7 +174,7 @@ _allocplayer(struct game* self, struct gate_client* c) {
 
 static inline struct player*
 _getplayer(struct game* self, struct gate_client* c) {
-    int id = host_gate_clientid(c);
+    int id = sc_gate_clientid(c);
     assert(id >= 0 && id < self->pmax);
     return &self->players[id];
 }
@@ -236,7 +236,7 @@ _verifyfail(struct gate_client* c, int8_t error) {
 }
 static inline bool
 _elapsed(uint64_t t, uint64_t elapse) {
-    uint64_t now = host_timer_now();
+    uint64_t now = sc_timer_now();
     return now > t && (now - t >= elapse);
 }
 
@@ -277,8 +277,8 @@ _logout(struct game* self, struct gate_client* c, bool disconn, bool multicast) 
                 }
                 _freemember(m);
                 if (disconn) {
-                    host_debug("disconnect : %u", m->detail.charid);
-                    host_gate_disconnclient(c, true);
+                    sc_debug("disconnect : %u", m->detail.charid);
+                    sc_gate_disconnclient(c, true);
                 }
             }
         }
@@ -292,13 +292,13 @@ _create_room(struct game* self) {
     struct room* ro = GFREEID_ALLOC(room, &self->rooms);
     assert(ro);
     ro->status = RS_CREATE;
-    ro->statustime = host_timer_now();
+    ro->statustime = sc_timer_now();
     return ro;
 }
 static void
 _enter_room(struct room* ro) {
     ro->status = RS_ENTER;
-    ro->statustime = host_timer_now();
+    ro->statustime = sc_timer_now();
     UM_DEFFIX(UM_GAMEENTER, enter);
     _multicast_msg(ro, (void*)enter, 0);
 }
@@ -316,7 +316,7 @@ _destory_room(struct game* self, struct room* ro) {
         m = &ro->p[i];
         if (m->online) {
             _freemember(m);
-            struct gate_client* c = host_gate_getclient(m->connid);
+            struct gate_client* c = sc_gate_getclient(m->connid);
             if (c) {
                 _logout(self, c, true, false);
             }
@@ -416,7 +416,7 @@ _check_over_room(struct game* self, struct room* ro) {
         }
     }
     ro->status = RS_OVER;
-    ro->statustime = host_timer_now();
+    ro->statustime = sc_timer_now();
 }
 static void
 _check_destory_room(struct game* self, struct room* ro) {
@@ -446,32 +446,32 @@ _login(struct game* self, struct gate_client* c, struct UM_BASE* um) {
     struct room* ro = _getroom(self, login->roomid);
     if (ro == NULL) {
         _verifyfail(c, 1);
-        host_gate_disconnclient(c, true);
+        sc_gate_disconnclient(c, true);
         return;
     }
     if (login->roomkey != ro->key) {
         _verifyfail(c, 2);
-        host_gate_disconnclient(c, true);
+        sc_gate_disconnclient(c, true);
         return;
     }
     struct member* m = _getmember(ro, login->charid);
     if (m == NULL) {
         _verifyfail(c, 3);
-        host_gate_disconnclient(c, true);
+        sc_gate_disconnclient(c, true);
         return;
     }
     if (ro->status == RS_OVER) {
         _verifyfail(c, 4);
-        host_gate_disconnclient(c, true);
+        sc_gate_disconnclient(c, true);
         return;
     }
     struct player* p = _allocplayer(self, c);
     if (p == NULL) {
         _verifyfail(c, 5);
-        host_gate_disconnclient(c, true);
+        sc_gate_disconnclient(c, true);
         return;
     }
-    host_gate_loginclient(c);
+    sc_gate_loginclient(c);
     p->login = true;
     p->roomid = GFREEID_ID(ro, &self->rooms);
     p->charid = m->detail.charid;
@@ -556,7 +556,7 @@ static int
 _item_effectone(struct member* m, int effect, float value, struct buff_effect* result) {
     if (effect == 0 || value == 0)
         return 0;
-    host_debug("item effect %d, value %f, to char %u", effect, value, m->detail.charid);
+    sc_debug("item effect %d, value %f, to char %u", effect, value, m->detail.charid);
     bool isabs = true;
     if (effect > ITEM_EFFECT_MAX) {
         isabs = false;
@@ -571,9 +571,9 @@ _item_effectone(struct member* m, int effect, float value, struct buff_effect* r
     case ITEM_EFFECT_SPEED:
         if (!isabs) 
             value = detail->movespeed * value * 0.01;
-        host_debug("char %u, speed before %f, value %f", detail->charid, detail->movespeed, value);
+        sc_debug("char %u, speed before %f, value %f", detail->charid, detail->movespeed, value);
         _update_valuef(&detail->movespeed, &value, detail->movespeed*3);
-        host_debug("char %u, speed after %f, value %f", detail->charid, detail->movespeed, value);
+        sc_debug("char %u, speed after %f, value %f", detail->charid, detail->movespeed, value);
 
         refresh_flag |= REFRESH_ROLE;
         break;
@@ -649,7 +649,7 @@ _item_effect_member(struct game* self, struct room* ro, struct member* m,
         }
         if (effect_flag & REFRESH_ROLE) {
             //role_attri_build(&ro->gattri, &m->detail);
-            host_debug("char %u, speed %f", m->detail.charid, m->detail.movespeed);
+            sc_debug("char %u, speed %f", m->detail.charid, m->detail.movespeed);
             UM_DEFFIX(UM_ROLEINFO, ri);
             ri->detail = m->detail;
             _multicast_msg(ro, (void*)ri, 0);
@@ -662,8 +662,8 @@ _item_effect_member(struct game* self, struct room* ro, struct member* m,
                 b->effects[i] = effects[i];
             }
         }
-        b->time = host_timer_now()/1000 + item->time;
-        host_debug("insert time: %u, to char %u", b->time, m->detail.charid);
+        b->time = sc_timer_now()/1000 + item->time;
+        sc_debug("insert time: %u, to char %u", b->time, m->detail.charid);
     }
 
     UM_DEFFIX(UM_ITEMEFFECT, ie);
@@ -688,7 +688,7 @@ _use_item(struct game* self, struct gate_client* c, struct UM_BASE* um) {
     if (item == NULL)
         return;
 
-    host_debug("char %u, use item %u", me->detail.charid, useitem->itemid);
+    sc_debug("char %u, use item %u", me->detail.charid, useitem->itemid);
     switch (item->target) {
     case ITEM_TARGET_SELF:
         _item_effect_member(self, ro, me, item);
@@ -788,8 +788,8 @@ _update_buffcb(uint32_t key, void* value, void* ud) {
     struct _update_buffud* udata = ud;
     struct buff* b = value;
     if (b->time > 0 &&
-        b->time <= host_timer_now()/1000) {
-        host_debug("timeout : %u, to char %u", b->time, udata->m->detail.charid);
+        b->time <= sc_timer_now()/1000) {
+        sc_debug("timeout : %u, to char %u", b->time, udata->m->detail.charid);
         b->time = 0;
         struct buff_effect effect;
         int i;
@@ -811,7 +811,7 @@ _update_room(struct game* self, struct room* ro) {
         if (m->online) {
             bool refresh = false;
             int oxygen = -role_oxygen_time_consume(&m->detail);
-            //host_debug("char %u, update oxygen %d", m->detail.charid, oxygen);
+            //sc_debug("char %u, update oxygen %d", m->detail.charid, oxygen);
             _update_value(&m->detail.oxygencur, &oxygen, m->detail.oxygen);
             if (oxygen != 0) {
                 refresh = true;

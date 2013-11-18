@@ -1,10 +1,11 @@
-#include "host_service.h"
-#include "host.h"
-#include "host_dispatcher.h"
-#include "host_log.h"
-#include "host_net.h"
-#include "host_timer.h"
-#include "host_assert.h"
+#include "sc_service.h"
+#include "sc_env.h"
+#include "sc.h"
+#include "sc_dispatcher.h"
+#include "sc_log.h"
+#include "sc_net.h"
+#include "sc_timer.h"
+#include "sc_assert.h"
 #include "redis.h"
 #include "user_message.h"
 #include "node_type.h"
@@ -40,11 +41,11 @@ benchmarkdb_init(struct service* s) {
     redis_initreply(&self->reply, 512, 0);
    
     self->start = self->end = 0;
-    self->query = host_getint("benchmark_query", 0);
+    self->query = sc_getint("benchmark_query", 0);
     self->query_send = 0;
     self->query_done = 0;
     SUBSCRIBE_MSG(s->serviceid, IDUM_REDISREPLY);
-    host_timer_register(s->serviceid, 1000);
+    sc_timer_register(s->serviceid, 1000);
     return 0;
 }
 
@@ -55,7 +56,7 @@ benchmarkdb_service(struct service* s, struct service_message* sm) {
 
 static void
 _sendone(struct benchmarkdb* self) {
-    const struct host_node* redisp = host_node_get(HNODE_ID(NODE_REDISPROXY, 0));
+    const struct sc_node* redisp = sc_node_get(HNODE_ID(NODE_REDISPROXY, 0));
     if (redisp == NULL) {
         return;
     }
@@ -63,7 +64,7 @@ _sendone(struct benchmarkdb* self) {
     size_t len;
     int32_t tag = 1;
     //tmp = "*2\r\n$7\r\nhgetall\r\n$6\r\nuser:1\r\n";
-    //host_net_send(self->connid, tmp, strlen(tmp));
+    //sc_net_send(self->connid, tmp, strlen(tmp));
     //tmp = "PING\r\n";
     tmp="hgetall user:1\r\n";
     len = strlen(tmp);
@@ -94,11 +95,11 @@ _handleredisproxy(struct benchmarkdb* self, struct node_message* nm) {
     //redis_walkreply(&self->reply);
     self->query_done++;
     if (self->query_done == self->query) {
-        self->end = host_timer_now();
+        self->end = sc_timer_now();
         uint64_t elapsed = self->end - self->start;
         if (elapsed == 0) elapsed = 1;
         float qps = self->query_done/(elapsed*0.001f);
-        host_info("query done: %d, use time: %d, qps: %f", 
+        sc_info("query done: %d, use time: %d, qps: %f", 
                 self->query_done, (int)elapsed, qps);
         self->start = self->end;
         self->query_done = 0;
@@ -127,12 +128,12 @@ benchmarkdb_time(struct service* s) {
     if (self->query_send > 0) {
         return;
     }
-    const struct host_node* redisp = host_node_get(HNODE_ID(NODE_REDISPROXY, 0));
+    const struct sc_node* redisp = sc_node_get(HNODE_ID(NODE_REDISPROXY, 0));
     if (redisp == NULL) {
         return;
     }
 
-    self->start = host_timer_now();
+    self->start = sc_timer_now();
     int i;
     for (i=0; i<50; ++i) {
     _sendone(self);

@@ -2,8 +2,8 @@
 #define __node_type_h__
 
 #include "message.h"
-#include "host_node.h"
-#include "host_log.h"
+#include "sc_node.h"
+#include "sc_log.h"
 
 #define NODE_TYPE_MIN 0
 #define NODE_CENTER 0
@@ -29,7 +29,7 @@ const char* NODE_NAMES[NODE_TYPE_MAX] = {
 
 #define _NODEM_header \
     struct UM_BASE* um; \
-    const struct host_node* hn;
+    const struct sc_node* hn;
 
 struct node_message {
     _NODEM_header;
@@ -37,12 +37,12 @@ struct node_message {
 
 static inline int
 _decode_nodemessage(void* msg, int sz, struct node_message* nm) {
-    const struct host_node* hn;
+    const struct sc_node* hn;
     UM_CAST(UM_BASE, um, msg);
 
-    hn = host_node_get(um->nodeid);
+    hn = sc_node_get(um->nodeid);
     if (hn == NULL) {
-        host_error("dismatch node %u, from msg %u", um->nodeid, um->msgid);
+        sc_error("dismatch node %u, from msg %u", um->nodeid, um->msgid);
         return 1;
     }
     nm->hn = hn;

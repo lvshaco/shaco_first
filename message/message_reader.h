@@ -2,8 +2,8 @@
 #define __message_reader_h__
 
 #include "message.h"
-#include "host_net.h"
-#include "host_service.h"
+#include "sc_net.h"
+#include "sc_service.h"
 
 static inline struct UM_BASE*
 _message_read_one(struct net_message* nm, int skip) {
@@ -11,13 +11,13 @@ _message_read_one(struct net_message* nm, int skip) {
     struct UM_BASE* base;
     void* data;
     int e;
-    base = host_net_read(id, sizeof(*base), skip, &e);
+    base = sc_net_read(id, sizeof(*base), skip, &e);
     if (base == NULL) {
         goto null;
     }
     int sz = base->msgsz - sizeof(*base);
     if (sz != 0) {
-        data = host_net_read(id, sz, 0, &e);
+        data = sc_net_read(id, sz, 0, &e);
         if (data == NULL) {
             goto null;
         }

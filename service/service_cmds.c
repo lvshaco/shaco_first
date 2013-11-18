@@ -1,8 +1,8 @@
-#include "host_service.h"
-#include "host.h"
-#include "host_log.h"
-#include "host_dispatcher.h"
-#include "host_gate.h"
+#include "sc_service.h"
+#include "sc.h"
+#include "sc_log.h"
+#include "sc_dispatcher.h"
+#include "sc_gate.h"
 #include "node_type.h"
 #include "user_message.h"
 #include "memrw.h"
@@ -31,7 +31,7 @@ cmds_init(struct service* s) {
     struct server* self = SERVICE_SELF;
     self->ctl_service = service_query_id("cmdctl");
     if (self->ctl_service == SERVICE_INVALID) {
-        host_error("lost cmdctl service");
+        sc_error("lost cmdctl service");
         return 1;
     }
     SUBSCRIBE_MSG(s->serviceid, IDUM_CMDRES);
@@ -46,7 +46,7 @@ _response_error(int id, const char* error) {
 }
 
 static inline int
-_sendto_remote(const struct host_node* node, void* ud) {
+_sendto_remote(const struct sc_node* node, void* ud) {
     struct UM_BASE* um = ud;
     UM_SEND(node->connid, um, um->msgsz);
     return 0;
@@ -54,10 +54,10 @@ _sendto_remote(const struct host_node* node, void* ud) {
 
 static void
 _routeto_node(struct server* self, uint16_t nodeid, struct UM_BASE* um) {
-    if (nodeid == host_id()) {
+    if (nodeid == sc_id()) {
         service_notify_nodemsg(self->ctl_service, -1, um, um->msgsz);
     } else {
-        const struct host_node* node = host_node_get(nodeid);
+        const struct sc_node* node = sc_node_get(nodeid);
         if (node) {
             _sendto_remote(node, um);
         }
@@ -67,16 +67,16 @@ _routeto_node(struct server* self, uint16_t nodeid, struct UM_BASE* um) {
 static void
 _broadcast_type(struct server* self, int tid, struct UM_BASE* um) {
     if (tid == NODE_CENTER) {
-        _routeto_node(self, host_id(), um); 
+        _routeto_node(self, sc_id(), um); 
     } else {
-        host_node_foreach(tid, _sendto_remote, um);
+        sc_node_foreach(tid, _sendto_remote, um);
     }
 }
 
 static void
 _broadcast_all(struct server* self, struct UM_BASE* um) {
     int i;
-    for (i=0; i<host_node_types(); ++i) {
+    for (i=0; i<sc_node_types(); ++i) {
         _broadcast_type(self, i, um);
     } 
 }
@@ -86,7 +86,7 @@ _getnodeid(const char* tidstr, const char* sidstr) {
     if (strcasecmp(tidstr, "all") == 0) {
         return HNODE_ID(HNODE_TID_MAX, HNODE_SID_MAX);
     }
-    int tid = host_node_typeid(tidstr);
+    int tid = sc_node_typeid(tidstr);
     if (tid == -1) {
         return -1;        
     }
@@ -101,7 +101,7 @@ void
 cmds_usermsg(struct service* s, int id, void* msg, int sz) { 
     struct server* self = SERVICE_SELF;
     struct gate_message* gm = msg;
-    struct gate_client* c = host_gate_getclient(id);
+    struct gate_client* c = sc_gate_getclient(id);
     assert(c);
     UM_CAST(UM_BASE, um, gm->msg);
    
@@ -147,11 +147,11 @@ cmds_usermsg(struct service* s, int id, void* msg, int sz) {
 
 static void
 _res(struct server* self, int id, struct UM_BASE* um) {
-    const struct host_node* node = host_node_get(um->nodeid);
+    const struct sc_node* node = sc_node_get(um->nodeid);
     if (node == NULL)
         return;
     UM_CAST(UM_CMDRES, res, um);
-    struct gate_client* c = host_gate_getclient(res->cid);
+    struct gate_client* c = sc_gate_getclient(res->cid);
     if (c == NULL)
         return;
     UM_DEF(notify, UM_MAXSIZE);
@@ -159,7 +159,7 @@ _res(struct server* self, int id, struct UM_BASE* um) {
     memrw_init(&rw, notify+1, UM_MAXSIZE-sizeof(*notify));
     char tmp[HNODESTR_MAX]; 
     int n = snprintf(rw.ptr, RW_SPACE(&rw), "%s:\n", 
-            host_strnode(node, tmp));
+            sc_strnode(node, tmp));
     memrw_pos(&rw, n);
     size_t sz = res->msgsz - sizeof(*res); 
     memrw_write(&rw, res+1, sz);

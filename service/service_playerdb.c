@@ -1,10 +1,10 @@
-#include "host_service.h"
-#include "host.h"
-#include "host_dispatcher.h"
-#include "host_log.h"
-#include "host_net.h"
-#include "host_timer.h"
-#include "host_assert.h"
+#include "sc_service.h"
+#include "sc.h"
+#include "sc_dispatcher.h"
+#include "sc_log.h"
+#include "sc_net.h"
+#include "sc_timer.h"
+#include "sc_assert.h"
 #include "redis.h"
 #include "user_message.h"
 #include "node_type.h"
@@ -40,7 +40,7 @@ playerdb_init(struct service* s) {
     struct playerdb* self = SERVICE_SELF;
     self->requester = service_query_id("world");
     if (self->requester == SERVICE_INVALID) {
-        host_error("lost world service");
+        sc_error("lost world service");
         return 1;
     }
     
@@ -181,7 +181,7 @@ _db(struct player* p, int8_t type) {
         return 1;
     }
 
-    const struct host_node* redisp = host_node_get(HNODE_ID(NODE_REDISPROXY, 0));
+    const struct sc_node* redisp = sc_node_get(HNODE_ID(NODE_REDISPROXY, 0));
     if (redisp == NULL) {
         return 1;
     }

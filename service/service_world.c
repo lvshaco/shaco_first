@@ -1,10 +1,11 @@
-#include "host_service.h"
-#include "host_assert.h"
-#include "host.h"
-#include "host_timer.h"
-#include "host_dispatcher.h"
-#include "host_log.h"
-#include "host_node.h"
+#include "sc_service.h"
+#include "sc_env.h"
+#include "sc_assert.h"
+#include "sc.h"
+#include "sc_timer.h"
+#include "sc_dispatcher.h"
+#include "sc_log.h"
+#include "sc_node.h"
 #include "user_message.h"
 #include "cli_message.h"
 #include "node_type.h"
@@ -59,7 +60,7 @@ world_init(struct service* s) {
 
     self->dbhandler = service_query_id("playerdb");
     if (self->dbhandler == SERVICE_INVALID) {
-        host_error("lost playerdb service");
+        sc_error("lost playerdb service");
         return 1;
     }
     self->tpltdata = _loadtplt(self);
@@ -67,13 +68,13 @@ world_init(struct service* s) {
         return 1;
     
     self->chariditer = 1;
-    int cmax = host_getint("world_cmax_pergate", 0);
-    int hmax = host_getint("world_hmax_pergate", cmax);
-    int gmax = host_getint("world_gmax", 0);
+    int cmax = sc_getint("world_cmax_pergate", 0);
+    int hmax = sc_getint("world_hmax_pergate", cmax);
+    int gmax = sc_getint("world_gmax", 0);
     _allocplayers(cmax, hmax, gmax);
     SUBSCRIBE_MSG(s->serviceid, IDUM_FORWARD); 
 
-    host_timer_register(s->serviceid, 1000);
+    sc_timer_register(s->serviceid, 1000);
     return 0;
 }
 
@@ -90,7 +91,7 @@ _onlogin(struct world* self, struct player* p) {
     }
     const struct role_tplt* role = tplt_visitor_find(vist, data->role);
     if (role == NULL) {
-        host_error("can not found role %d, charid %u", data->role, data->charid);
+        sc_error("can not found role %d, charid %u", data->role, data->charid);
     } else {
         data->oxygen = role->oxygen;
         data->body = role->body;
@@ -142,7 +143,7 @@ _dbcmd(struct world* self, struct player* p, int8_t type) {
 }
 
 static void 
-_login(struct world* self, const struct host_node* node, int cid, struct UM_BASE* um) {
+_login(struct world* self, const struct sc_node* node, int cid, struct UM_BASE* um) {
     UM_CAST(UM_LOGIN, lo, um);
     uint32_t accid = lo->accid;
     struct player* p;
@@ -177,7 +178,7 @@ _login(struct world* self, const struct host_node* node, int cid, struct UM_BASE
 }
 
 static void
-_createchar(struct world* self, const struct host_node* node, int cid, struct UM_BASE* um) {
+_createchar(struct world* self, const struct sc_node* node, int cid, struct UM_BASE* um) {
     UM_CAST(UM_CHARCREATE, cre, um);
 
     struct player* p;
@@ -216,7 +217,7 @@ _handlegate(struct world* self, struct node_message* nm) {
         if (_decode_playermessage(nm, &pm)) {
             return;
         }
-        host_dispatcher_usermsg(&pm, 0);
+        sc_dispatcher_usermsg(&pm, 0);
         switch (pm.um->msgid) {
         case IDUM_LOGOUT:
             _logout(self, pm.p);

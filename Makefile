@@ -60,31 +60,21 @@ base_src=\
 	base/args.c \
 	base/args.h
 
-host_src=\
-	host/host_main.c \
- 	host/host.c \
- 	host/host.h \
-	host/host_env.c \
-	host/host_env.h \
- 	host/host_net.c \
- 	host/host_net.h \
- 	host/host_service.c \
- 	host/host_service.h \
- 	host/host_timer.c \
- 	host/host_timer.h \
- 	host/host_log.c \
- 	host/host_log.h \
-	host/host_reload.c \
-	host/host_reload.h \
-	host/host_dispatcher.c \
-	host/host_dispatcher.h \
-	host/host_node.c \
-	host/host_node.h \
-	host/host_gate.c \
-	host/host_gate.h \
-	host/host_assert.h \
- 	host/dlmodule.c \
- 	host/dlmodule.h
+libshaco_src=\
+	libshaco/sc_init.c \
+	libshaco/sc_start.c \
+	libshaco/sc_sig.c \
+	libshaco/sc_check.c \
+	libshaco/sc_env.c \
+ 	libshaco/sc_net.c \
+ 	libshaco/sc_service.c \
+ 	libshaco/sc_timer.c \
+ 	libshaco/sc_log.c \
+	libshaco/sc_reload.c \
+	libshaco/sc_dispatcher.c \
+	libshaco/sc_node.c \
+	libshaco/sc_gate.c \
+ 	libshaco/dlmodule.c
 
 cli_src=\
 	tool/shaco-cli.c
@@ -94,7 +84,7 @@ world_src=\
 	world/player.h
 
 LDFLAGS=-Wl,-rpath,. \
-		net.so lur.so base.so -llua -lm -ldl -lrt -rdynamic# -Wl,-E
+		shaco.so net.so lur.so base.so -llua -lm -ldl -lrt -rdynamic# -Wl,-E
 
 service_so=\
 	service_benchmark.so \
@@ -114,8 +104,7 @@ worldservice_so=\
 	service_gamematch.so
 
 all: \
-	t \
-	robot \
+	shaco.so \
 	lur.so \
 	net.so \
 	base.so \
@@ -124,6 +113,8 @@ all: \
 	elog.so \
 	shaco \
 	shaco-cli \
+	t \
+	robot \
 	service_log.so \
 	$(service_so) \
 	service_game.so \
@@ -139,36 +130,36 @@ release: all
 
 $(service_so): %.so: $(service_dir)/%.c
 	@rm -f $@
-	gcc $(CFLAGS) $(SHARED) -o $@ $< -Ihost -Inet -Ibase -Imessage
+	gcc $(CFLAGS) $(SHARED) -o $@ $< -Iinclude/libshaco -Inet -Ibase -Imessage
 
 $(worldservice_so): %.so: $(service_dir)/%.c
 	@rm -f $@
-	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Ihost -Inet -Ibase -Imessage -Iworld -Itplt -Idatadefine -Wl,-rpath,. world.so tplt.so
+	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Iinclude/libshaco -Inet -Ibase -Imessage -Iworld -Itplt -Idatadefine -Wl,-rpath,. world.so tplt.so
 
 service_game.so: $(service_dir)/service_game.c game/fight.c game/fight.h
 	@rm -f $@
-	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Ihost -Inet -Ibase -Imessage -Igame -Itplt -Idatadefine -Wl,-rpath,. tplt.so
+	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Iinclude/libshaco -Inet -Ibase -Imessage -Igame -Itplt -Idatadefine -Wl,-rpath,. tplt.so
 
 service_log.so: $(service_dir)/service_log.c
 	@rm -f $@
-	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Ihost -Inet -Ibase -Imessage -Ielog -Wl,-rpath,. elog.so
+	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Iinclude/libshaco -Inet -Ibase -Imessage -Ielog -Wl,-rpath,. elog.so
 
 
 service_playerdb.so: $(service_dir)/service_playerdb.c
 	@rm -f $@
-	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Ihost -Inet -Ibase -Imessage -Iworld -Iredis -Wl,-rpath,. world.so redis.so
+	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Iinclude/libshaco -Inet -Ibase -Imessage -Iworld -Iredis -Wl,-rpath,. world.so redis.so
 
 service_benchmarkdb.so: $(service_dir)/service_benchmarkdb.c
 	@rm -f $@
-	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Ihost -Inet -Ibase -Imessage -Iredis -Wl,-rpath,. redis.so
+	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Iinclude/libshaco -Inet -Ibase -Imessage -Iredis -Wl,-rpath,. redis.so
 
 service_redisproxy.so: $(service_dir)/service_redisproxy.c
 	@rm -f $@
-	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Ihost -Inet -Ibase -Imessage -Iredis -Wl,-rpath,. redis.so
+	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Iinclude/libshaco -Inet -Ibase -Imessage -Iredis -Wl,-rpath,. redis.so
 
 service_login.so: $(service_dir)/service_login.c
 	@rm -f $@
-	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Ihost -Inet -Ibase -Imessage -Iredis -Wl,-rpath,. redis.so
+	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Iinclude/libshaco -Inet -Ibase -Imessage -Iredis -Wl,-rpath,. redis.so
 
 world.so: $(world_src)
 	@rm -f $@
@@ -192,22 +183,25 @@ base.so: $(base_src)
 
 tplt.so: $(tplt_src)
 	@rm -f $@
-	gcc $(CFLAGS) $(SHARED) -o $@ $^ -DUSE_HOSTLOG -Ihost
+	gcc $(CFLAGS) $(SHARED) -o $@ $^ -DUSE_HOSTLOG -Iinclude/libshaco
 
 elog.so: $(elog_src)
 	@rm -f $@
 	gcc $(CFLAGS) $(SHARED) -o $@ $^
 
-shaco: $(host_src)
-	gcc $(CFLAGS) -o $@ $^ -Ihost -Ilur -Inet -Ibase  $(LDFLAGS)
+shaco.so: $(libshaco_src)
+	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Iinclude/libshaco -Ilur -Inet -Ibase
+
+shaco: main/shaco.c
+	gcc $(CFLAGS) -o $@ $^ -Iinclude/libshaco -Ilur -Inet -Ibase  $(LDFLAGS)
 
 shaco-cli: $(cli_src)
 	gcc $(CFLAGS) -o $@ $^ -lpthread
 
-t: test/test.c net.so lur.so base.so redis.so elog.so
-	gcc $(CFLAGS) -o $@ $^ -Ihost -Ilur -Inet -Ibase -Iredis -Ielog $(LDFLAGS) redis.so
+t: main/test.c net.so lur.so base.so redis.so elog.so
+	gcc $(CFLAGS) -o $@ $^ -Iinclude/libshaco -Ilur -Inet -Ibase -Iredis -Ielog $(LDFLAGS) redis.so
 
-robot: test/robot.c cnet/cnet.c cnet/cnet.h net.so
+robot: main/robot.c cnet/cnet.c cnet/cnet.h net.so
 	gcc $(CFLAGS) -o $@ $^ -Ilur -Icnet -Inet -Ibase -Imessage -Wl,-rpath,. net.so
 
 # res
@@ -251,7 +245,7 @@ tplt.dll: $(tplt_src)
 		-Wl,--output-def,tplt.def,--out-implib,tplt.lib
 	LIB /MACHINE:IX86 /DEF:tplt.def
 
-testclient: test/testclient.c $(tplt_src) datadefine/tplt_struct.h
+testclient: main/testclient.c $(tplt_src) datadefine/tplt_struct.h
 	gcc $(CFLAGS) -o $@ $^ -Itplt -Idatadefine
 
 client_dir=D:/wa-client/trunk
@@ -264,7 +258,7 @@ install:
 	cp $(client_bin) $(install_dir_rel)
 	cp -r net $(source_dir)	
 	cp -r cnet $(source_dir)
-	cp -r test/robot.c $(source_dir)/cnet
+	cp -r main/robot.c $(source_dir)/cnet
 	#cp -r message $(source_dir)
 	mkdir .message
 	for file in `ls message`; do iconv -f utf-8 -t gbk message/$$file > .message/$$file; done 

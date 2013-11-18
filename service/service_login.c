@@ -1,11 +1,11 @@
-#include "host_service.h"
-#include "host.h"
-#include "host_node.h"
-#include "host_dispatcher.h"
-#include "host_gate.h"
-#include "host_log.h"
-#include "host_timer.h"
-#include "host_assert.h"
+#include "sc_service.h"
+#include "sc.h"
+#include "sc_node.h"
+#include "sc_dispatcher.h"
+#include "sc_gate.h"
+#include "sc_log.h"
+#include "sc_timer.h"
+#include "sc_assert.h"
 #include "redis.h"
 #include "cli_message.h"
 #include "user_message.h"
@@ -57,9 +57,9 @@ login_free(struct login* self) {
 int
 login_init(struct service* s) {
     struct login* self = SERVICE_SELF;
-    int pmax = host_gate_maxclient();
+    int pmax = sc_gate_maxclient();
     if (pmax == 0) {
-        host_error("maxclient is zero, try load service gate before this");
+        sc_error("maxclient is zero, try load service gate before this");
         return 1;
     }
     self->pmax = pmax;
@@ -71,13 +71,13 @@ login_init(struct service* s) {
     SUBSCRIBE_MSG(s->serviceid, IDUM_MINLOADFAIL);
     SUBSCRIBE_MSG(s->serviceid, IDUM_REDISREPLY);
 
-    host_timer_register(s->serviceid, 1000);
+    sc_timer_register(s->serviceid, 1000);
     return 0;
 }
 
 static inline struct player*
 _getplayer(struct login* self, struct gate_client* c) {
-    int id = host_gate_clientid(c);
+    int id = sc_gate_clientid(c);
     assert(id >= 0 && id < self->pmax);
     return &self->players[id];
 }
@@ -92,7 +92,7 @@ _getonlineplayer(struct login* self, struct gate_client* c) {
 
 static int
 _query(struct login* self, struct gate_client* c, struct player* p) {
-    const struct host_node* redisp = host_node_get(HNODE_ID(NODE_REDISPROXY, 0));
+    const struct sc_node* redisp = sc_node_get(HNODE_ID(NODE_REDISPROXY, 0));
     if (redisp == NULL) {
         return 1;
     }
@@ -120,8 +120,8 @@ _notify_loginfail(struct gate_client* c, int error) {
 static void
 _logout(struct gate_client* c, struct player* p, bool forcedisconn) {
     p->state = STATE_FREE;
-    bool closed = host_gate_disconnclient(c, forcedisconn);
-    host_debug("logout connid %d, acc %s, closed %d", p->connid, p->account, (int)closed);
+    bool closed = sc_gate_disconnclient(c, forcedisconn);
+    sc_debug("logout connid %d, acc %s, closed %d", p->connid, p->account, (int)closed);
 }
 
 static void
@@ -129,7 +129,7 @@ _login(struct login* self, struct gate_client* c, struct UM_BASE* um) {
     struct player* p = _getplayer(self, c);
     assert(p);
     if (p->state != STATE_FREE) {
-        host_debug("acc %u, state %d", p->accid, p->state);
+        sc_debug("acc %u, state %d", p->accid, p->state);
         //_logout(c, p, SERR_RELOGIN, true); maybe client click login button more then once
         return;
     }
@@ -141,11 +141,11 @@ _login(struct login* self, struct gate_client* c, struct UM_BASE* um) {
         _logout(c, p, false);
         return;
     }
-    host_gate_loginclient(c);
+    sc_gate_loginclient(c);
     p->connid = c->connid;
     p->state = STATE_LOGIN;
-    p->login_time = host_timer_now();
-    host_debug("login connid %d, acc %s", c->connid, p->account);
+    p->login_time = sc_timer_now();
+    sc_debug("login connid %d, acc %s", c->connid, p->account);
 }
 
 void
@@ -179,7 +179,7 @@ _handleredis(struct login* self, struct node_message* nm) {
     memrw_init(&rw, rep->data, rep->msgsz - sizeof(*rep));
     int cid = -1;
     memrw_read(&rw, &cid, sizeof(cid));
-    struct gate_client* c = host_gate_getclient(cid);
+    struct gate_client* c = sc_gate_getclient(cid);
     if (c == NULL) {
         return; // maybe disconnect
     }
@@ -195,7 +195,7 @@ _handleredis(struct login* self, struct node_message* nm) {
     
     int error = SERR_UNKNOW;
 
-    const struct host_node* region = host_node_get(HNODE_ID(NODE_LOAD, 0));
+    const struct sc_node* region = sc_node_get(HNODE_ID(NODE_LOAD, 0));
     if (region == NULL) {
         error = SERR_NOREGION;
         goto err_out;
@@ -233,7 +233,7 @@ _handleredis(struct login* self, struct node_message* nm) {
     // todo: add multi region
     uint32_t ip;
     uint16_t port;
-    host_net_socket_address(c->connid, &ip, &port);
+    sc_net_socket_address(c->connid, &ip, &port);
     UM_DEFFIX(UM_ACCOUNTLOGINREG, reg);
     reg->cid = c->connid;
     reg->accid = p->accid;
@@ -251,7 +251,7 @@ err_out:
 static void
 _loginres(struct login* self, struct UM_BASE* um) {
     UM_CAST(UM_ACCOUNTLOGINRES, res, um);
-    struct gate_client* c = host_gate_getclient(res->cid);
+    struct gate_client* c = sc_gate_getclient(res->cid);
     if (c == NULL) {
         return; // maybe disconnect
     }
@@ -346,7 +346,7 @@ login_net(struct service* s, struct gate_message* gm) {
 void
 login_time(struct service* s) {
     struct login* self= SERVICE_SELF; 
-    uint64_t now = host_timer_now(); 
+    uint64_t now = sc_timer_now(); 
    
     struct player* p;
     struct gate_client* c;
@@ -356,8 +356,8 @@ login_time(struct service* s) {
         if (p->state >= STATE_LOGIN &&
             p->state <  STATE_DONE) {
             if (now - p->login_time > 10*1000) { // short connection mode
-                host_debug("timeout connid %d, acc %s, state %d", p->connid, p->account, p->state);
-                c = host_gate_getclient(p->connid);
+                sc_debug("timeout connid %d, acc %s, state %d", p->connid, p->account, p->state);
+                c = sc_gate_getclient(p->connid);
                 assert(c);
                 _logout(c, p, true);
             }

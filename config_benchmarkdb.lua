@@ -1,6 +1,6 @@
-host_loglevel="INFO"
-host_connmax=100
-host_service="log,dispatcher,node,centerc,cmdctl,benchmarkdb"
+sc_loglevel="INFO"
+sc_connmax=100
+sc_service="log,dispatcher,node,centerc,cmdctl,benchmarkdb"
 
 node_type="benchmarkdb"
 node_sid=0

@@ -1,45 +1,48 @@
 shaco=~/shaco CD=. filter="Makefile README.md *.lua *.py *.h *.c" {
  Makefile
  README.md
- config.lua
  config_benchmark.lua
  config_benchmarkdb.lua
  config_center.lua
  config_echo.lua
  config_game.lua
  config_gate.lua
- config_login.lua
  config_gateload.lua
+ config_login.lua
  config_redisproxy.lua
  config_world.lua
- host=host{
-  dlmodule.h
-  host.h
-  host_assert.h
-  host_dispatcher.h
-  host_gate.h
-  host_group.h
-  host_log.h
-  host_message.h
-  host_net.h
-  host_node.h
-  host_reload.h
-  host_service.h
-  host_timer.h
+ libshaco=libshaco{
   dlmodule.c
-  host.c
-  host_dispatcher.c
-  host_gate.c
-  host_group.c
-  host_log.c
-  host_main.c
-  host_net.c
-  host_node.c
-  host_reload.c
-  host_service.c
-  host_timer.c
-  host_env.h
-  host_env.c
+  sc_check.c
+  sc_dispatcher.c
+  sc_env.c
+  sc_gate.c
+  sc_init.c
+  sc_log.c
+  sc_net.c
+  sc_node.c
+  sc_reload.c
+  sc_service.c
+  sc_sig.c
+  sc_start.c
+  sc_timer.c
+ }
+ include=include{
+  libshaco=libshaco{
+   dlmodule.h
+   sc.h
+   sc_assert.h
+   sc_dispatcher.h
+   sc_env.h
+   sc_gate.h
+   sc_init.h
+   sc_log.h
+   sc_net.h
+   sc_node.h
+   sc_reload.h
+   sc_service.h
+   sc_timer.h
+  }
  }
  lur=lur{
   lur.h
@@ -140,11 +143,11 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.py *.h *.c" {
   tplt_visitor_ops_implement.c
  }
  elog=elog{
-  elog_include.h
   elog.h
   elog_appender.h
   elog_appender_file.h
   elog_appender_rollfile.h
+  elog_include.h
   elog_internal.h
   elog.c
   elog_appender_file.c
@@ -165,9 +168,10 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.py *.h *.c" {
    toxml_opt.py
   }
  }
- test=test{
-  testclient.c
+ main=main{
   robot.c
+  shaco.c
   test.c
+  testclient.c
  }
 }

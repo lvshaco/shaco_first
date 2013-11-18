@@ -1,11 +1,11 @@
-#include "host_service.h"
-#include "host.h"
-#include "host_timer.h"
-#include "host_dispatcher.h"
-#include "host_log.h"
-#include "host_node.h"
-#include "host_reload.h"
-#include "host_gate.h"
+#include "sc_service.h"
+#include "sc.h"
+#include "sc_timer.h"
+#include "sc_dispatcher.h"
+#include "sc_log.h"
+#include "sc_node.h"
+#include "sc_reload.h"
+#include "sc_gate.h"
 #include "node_type.h"
 #include "user_message.h"
 #include "args.h"
@@ -39,13 +39,13 @@ _strerror(int error) {
 
 static inline bool
 _iscenter() {
-    return (HNODE_TID(host_id()) == NODE_CENTER);
+    return (HNODE_TID(sc_id()) == NODE_CENTER);
 }
 
 ///////////////////
 static int
 _getloglevel(struct args* A, struct memrw* rw) {
-    int n = snprintf(rw->begin, RW_SPACE(rw), "%s", host_log_levelstr(host_log_level()));
+    int n = snprintf(rw->begin, RW_SPACE(rw), "%s", sc_log_levelstr(sc_log_level()));
     memrw_pos(rw, n);
     return R_OK;
 }
@@ -54,7 +54,7 @@ static int
 _setloglevel(struct args* A, struct memrw* rw) {
     if (A->argc == 1)
         return R_ARGLESS;
-    if (host_log_setlevelstr(A->argv[1]) == -1)
+    if (sc_log_setlevelstr(A->argv[1]) == -1)
         return R_ARGINVALID;
     return R_OK;
 }
@@ -63,15 +63,15 @@ static int
 _reload(struct args* A, struct memrw* rw) {
     if (A->argc == 1)
         return R_ARGLESS;
-    host_reload_prepare(A->argv[1]);
+    sc_reload_prepare(A->argv[1]);
     return R_OK;
 }
 
 static int
-_shownodecb(const struct host_node* node, void* ud) {
+_shownodecb(const struct sc_node* node, void* ud) {
     struct memrw* rw = ud;
     char tmp[HNODESTR_MAX];
-    host_strnode(node, tmp);
+    sc_strnode(node, tmp);
     
     int n = snprintf(rw->ptr, RW_SPACE(rw), "%s\n", tmp);
     memrw_pos(rw, n);
@@ -80,15 +80,15 @@ _shownodecb(const struct host_node* node, void* ud) {
 static int
 _shownode(struct args* A, struct memrw* rw) {
     int i;
-    for (i=0; i<host_node_types(); ++i) {
-        host_node_foreach(i, _shownodecb, rw);
+    for (i=0; i<sc_node_types(); ++i) {
+        sc_node_foreach(i, _shownodecb, rw);
     }
     return R_OK;
 }
 static int
 _stop(struct args* A, struct memrw* rw) {
     if (!_iscenter()) {
-        host_stop();
+        sc_stop();
     }
     return R_OK;
 }
@@ -108,17 +108,17 @@ _startmem(struct args* A, struct memrw* rw) {
 }
 static int
 _time(struct args* A, struct memrw* rw) {
-    uint64_t now = host_timer_now();
+    uint64_t now = sc_timer_now();
     time_t sec = now / 1000;
     int n = strftime(rw->ptr, RW_SPACE(rw), "%y%m%d-%H:%M:%S", localtime(&sec));
     memrw_pos(rw, n);
-    n = snprintf(rw->ptr, RW_SPACE(rw), "[%llu]", (unsigned long long int)host_timer_elapsed());
+    n = snprintf(rw->ptr, RW_SPACE(rw), "[%llu]", (unsigned long long int)sc_timer_elapsed());
     memrw_pos(rw, n);
     return R_OK;
 }
 static int
 _players(struct args* A, struct memrw* rw) {
-    int count = host_gate_usedclient();
+    int count = sc_gate_usedclient();
     int n = snprintf(rw->ptr, RW_SPACE(rw), "[%d]", count);
     memrw_pos(rw, n);
     return R_OK;
@@ -165,10 +165,10 @@ cmdctl_init(struct service* s) {
     struct cmdctl* self = SERVICE_SELF;
     SUBSCRIBE_MSG(s->serviceid, IDUM_CMDREQ);
 
-    if (HNODE_TID(host_id()) == NODE_CENTER) {
+    if (HNODE_TID(sc_id()) == NODE_CENTER) {
         self->cmds_service = service_query_id("cmds");
         if (self->cmds_service == -1) {
-            host_error("lost cmds service");
+            sc_error("lost cmds service");
             return 1;
         }
     } else {
@@ -225,7 +225,7 @@ _cmdreq(struct cmdctl* self, int id, struct UM_BASE* um) {
     if (self->cmds_service == -1) {
         UM_SEND(id, res, res->msgsz);
     } else {
-        res->nodeid = host_id();
+        res->nodeid = sc_id();
         service_notify_nodemsg(self->cmds_service, -1, res, res->msgsz);
     }
 }

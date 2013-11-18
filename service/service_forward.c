@@ -1,8 +1,8 @@
-#include "host_service.h"
-#include "host_timer.h"
-#include "host_gate.h"
-#include "host_node.h"
-#include "host_dispatcher.h"
+#include "sc_service.h"
+#include "sc_timer.h"
+#include "sc_gate.h"
+#include "sc_node.h"
+#include "sc_dispatcher.h"
 #include "user_message.h"
 #include "cli_message.h"
 #include "node_type.h"
@@ -50,7 +50,7 @@ forward_init(struct service* s) {
     self->regacc = idmap_create(1); // memory
 
     SUBSCRIBE_MSG(s->serviceid, IDUM_FORWARD);
-    host_timer_register(s->serviceid, 1000);
+    sc_timer_register(s->serviceid, 1000);
     return 0;
 }
 
@@ -59,8 +59,8 @@ _forward_world(struct gate_client* c, struct UM_BASE* um) {
     UM_DEFVAR(UM_FORWARD, fw);
     fw->cid = c->connid;
     memcpy(&fw->wrap, um, um->msgsz);
-    fw->wrap.nodeid = host_id();
-    const struct host_node* node = host_node_get(HNODE_ID(NODE_WORLD, 0));
+    fw->wrap.nodeid = sc_id();
+    const struct sc_node* node = sc_node_get(HNODE_ID(NODE_WORLD, 0));
     if (node) {
         UM_SEND(node->connid, fw, UM_FORWARD_size(fw));
     }
@@ -78,7 +78,7 @@ _logout(struct forward*self, struct gate_client* c, int error, bool forceclose, 
         logout->error = error;
         _forward_world(c, (struct UM_BASE*)logout);
     }
-    host_gate_disconnclient(c, forceclose);
+    sc_gate_disconnclient(c, forceclose);
 }
 
 static int
@@ -95,13 +95,13 @@ _login(struct forward* self, struct gate_client* c, struct UM_BASE* um) {
     login->account[sizeof(login->account)-1] = '\0';
     uint32_t addr;
     uint16_t port;
-    host_net_socket_address(c->connid, &addr, &port);
+    sc_net_socket_address(c->connid, &addr, &port);
     if (acc->key == login->key &&
         acc->clientip == addr &&
         strcmp(acc->account, login->account) == 0) {
         free(acc);
         
-        host_gate_loginclient(c);
+        sc_gate_loginclient(c);
         return 0;
     } else {
         free(acc);
@@ -130,12 +130,12 @@ forward_usermsg(struct service* s, int id, void* msg, int sz) {
 }
 
 static void
-_accountreg(struct forward* self, int fid, const struct host_node* source, struct UM_BASE* um) {
+_accountreg(struct forward* self, int fid, const struct sc_node* source, struct UM_BASE* um) {
     UM_CAST(UM_ACCOUNTLOGINREG, reg, um);
     struct accinfo* acc = idmap_find(self->regacc, reg->accid);
     if (acc == NULL) {
         acc = malloc(sizeof(*acc));
-        acc->regtime = host_timer_now();
+        acc->regtime = sc_timer_now();
         acc->accid = reg->accid;
         acc->key = reg->key;
         acc->clientip = reg->clientip;
@@ -143,12 +143,12 @@ _accountreg(struct forward* self, int fid, const struct host_node* source, struc
         idmap_insert(self->regacc, reg->accid, acc);
     } else {
         // update (wait for the key timeout is not good!)
-        acc->regtime = host_timer_now();
+        acc->regtime = sc_timer_now();
         acc->key = reg->key;
         acc->clientip = reg->clientip;
         strncpy(acc->account, reg->account, ACCOUNT_NAME_MAX);
     }
-    const struct host_node* me = host_me();
+    const struct sc_node* me = sc_me();
     UM_DEFFORWARD(fw, fid, UM_ACCOUNTLOGINRES, res);
     res->ok = 1;
     res->cid = reg->cid;
@@ -180,9 +180,9 @@ _handledef(struct forward*self, struct node_message* nm) {
     }
     UM_CAST(UM_FORWARD, fw, nm->um);
     struct UM_BASE* m = &fw->wrap;
-    struct gate_client* c = host_gate_getclient(fw->cid);
+    struct gate_client* c = sc_gate_getclient(fw->cid);
     if (c) {
-        host_debug("Send msg:%u",  m->msgid);
+        sc_debug("Send msg:%u",  m->msgid);
         if (m->msgid == IDUM_LOGOUT) {
             UM_SENDTOCLI(c->connid, m, m->msgsz);
             _logout(self, c, 0, false, false);
@@ -227,7 +227,7 @@ static void
 _acctimecb(uint32_t key, void* value, void* ud) {
     struct forward* self = ud;
     struct accinfo* acc = value;
-    uint64_t now = host_timer_now();
+    uint64_t now = sc_timer_now();
     if (now > acc->regtime &&
         now - acc->regtime > 20*1000) {
         // todo: optimize

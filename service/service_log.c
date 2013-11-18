@@ -1,7 +1,8 @@
-#include "host_service.h"
-#include "host_timer.h"
-#include "host_log.h"
-#include "host.h"
+#include "sc_service.h"
+#include "sc_env.h"
+#include "sc_timer.h"
+#include "sc_log.h"
+#include "sc.h"
 #include "elog_include.h"
 #include <stdlib.h>
 #include <limits.h>
@@ -33,17 +34,17 @@ log_init(struct service* s) {
     struct log* self = SERVICE_SELF;
 
     char logfile[PATH_MAX];
-    const char* node = host_getstr("node_type", "");
+    const char* node = sc_getstr("node_type", "");
     if (node[0] == '\0') {
         fprintf(stderr, "no config node_type\n");
         return 1;
     }
     struct elog* el;
-    if (host_getint("host_daemon", 0)) {
+    if (sc_getint("sc_daemon", 0)) {
         snprintf(logfile, sizeof(logfile), "%s/log/%s%d.log", 
                 getenv("HOME"), 
                 node,
-                host_getint("node_sid", 0));
+                sc_getint("node_sid", 0));
         
         el = elog_create(logfile);
         if (el == NULL) {
@@ -71,8 +72,8 @@ log_init(struct service* s) {
     self->el = el;
     
     char msg[128];
-    snprintf(msg, sizeof(msg), ">>> shaco host log level %s\n", 
-            host_getstr("host_loglevel", ""));
+    snprintf(msg, sizeof(msg), ">>> shaco sc log level %s\n", 
+            sc_getstr("sc_loglevel", ""));
     elog_append(self->el, msg, strlen(msg));
     return 0;
 }

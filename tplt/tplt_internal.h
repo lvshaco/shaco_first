@@ -2,9 +2,9 @@
 #define __tplt_internal_h__
 
 #ifdef USE_HOSTLOG
-#include "host_log.h"
-#define TPLT_LOGERR host_error
-#define TPLT_LOGINFO host_info
+#include "sc_log.h"
+#define TPLT_LOGERR sc_error
+#define TPLT_LOGINFO sc_info
 #endif
 #ifndef TPLT_LOGERR
 #include <stdio.h>

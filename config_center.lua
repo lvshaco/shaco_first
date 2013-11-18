@@ -1,6 +1,6 @@
-host_loglevel="DEBUG" 
-host_connmax=11000 
-host_service="log,dispatcher,node,centers,gate,cmds,cmdctl" 
+sc_loglevel="DEBUG" 
+sc_connmax=11000 
+sc_service="log,dispatcher,node,centers,gate,cmds,cmdctl" 
 
 node_type="center" 
 node_sid=0 

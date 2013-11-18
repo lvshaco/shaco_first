@@ -1,4 +1,4 @@
-#include "host_service.h"
+#include "sc_service.h"
 #include <stdlib.h>
 
 struct tmp {

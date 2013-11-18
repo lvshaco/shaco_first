@@ -1,9 +1,10 @@
-#include "host_service.h"
-#include "host.h"
-#include "host_dispatcher.h"
-#include "host_timer.h"
-#include "host_log.h"
-#include "host_net.h"
+#include "sc_service.h"
+#include "sc_env.h"
+#include "sc.h"
+#include "sc_dispatcher.h"
+#include "sc_timer.h"
+#include "sc_log.h"
+#include "sc_net.h"
 #include "user_message.h"
 #include "client_type.h"
 #include "redis.h"
@@ -48,10 +49,10 @@ redisproxy_free(struct redisproxy* self) {
 
 static int
 _connect_redis(struct service* s) {
-    const char* addr = host_getstr("redis_ip", "");
-    int port = host_getint("redis_port", 0);
-    host_info("connect to redis %s:%u ...", addr, port);
-    if (host_net_connect(addr, port, true, s->serviceid, CLI_REDIS)) { 
+    const char* addr = sc_getstr("redis_ip", "");
+    int port = sc_getint("redis_port", 0);
+    sc_info("connect to redis %s:%u ...", addr, port);
+    if (sc_net_connect(addr, port, true, s->serviceid, CLI_REDIS)) { 
         return 1;
     }
     return 0;
@@ -69,7 +70,7 @@ redisproxy_init(struct service* s) {
     FREELIST_INIT(&self->queryq);
 
     SUBSCRIBE_MSG(s->serviceid, IDUM_REDISQUERY);
-    host_timer_register(s->serviceid, 1000);
+    sc_timer_register(s->serviceid, 1000);
     return 0;
 }
 
@@ -109,7 +110,7 @@ _query(struct redisproxy* self, int id, struct UM_BASE* um) {
             memcpy(ql->cb, cbptr, cbsz);
         }
     }
-    host_net_send(self->connid, dataptr, datasz);
+    sc_net_send(self->connid, dataptr, datasz);
 }
 
 void
@@ -132,7 +133,7 @@ _handlereply(struct redisproxy* self) {
     if (ql->needreply == 0) {
         return; // no need reply
     }
-    const struct host_node* node = host_node_get(ql->nodeid);
+    const struct sc_node* node = sc_node_get(ql->nodeid);
     if (node == NULL) {
         return; // the node disconnect
     }
@@ -163,7 +164,7 @@ _read(struct redisproxy* self, struct net_message* nm) {
             e = NET_ERR_NOBUF;
             goto errout;
         }
-        int nread = host_net_readto(id, buf, space, &e);
+        int nread = sc_net_readto(id, buf, space, &e);
         if (nread <= 0) {
             goto errout;
         }
@@ -185,7 +186,7 @@ _read(struct redisproxy* self, struct net_message* nm) {
     return; 
 errout:
     if (e) {
-        host_net_close_socket(id, true);
+        sc_net_close_socket(id, true);
         nm->type = NETE_SOCKERR;
         nm->error = e;
         service_notify_net(nm->ud, nm);
@@ -201,18 +202,18 @@ redisproxy_net(struct service* s, struct net_message* nm) {
         break;
     case NETE_CONNECT:
         self->connid = nm->connid;
-        host_net_subscribe(nm->connid, true);
-        host_info("connect to redis ok");
+        sc_net_subscribe(nm->connid, true);
+        sc_info("connect to redis ok");
         break;
     case NETE_CONNERR:
         self->connid = -1;
         FREELIST_POPALL(querylink, &self->queryq);
-        host_error("connect to redis fail: %s", host_net_error(nm->error));
+        sc_error("connect to redis fail: %s", sc_net_error(nm->error));
         break;
     case NETE_SOCKERR:
         self->connid = -1;
         FREELIST_POPALL(querylink, &self->queryq);
-        host_error("redis disconnect: %s", host_net_error(nm->error));
+        sc_error("redis disconnect: %s", sc_net_error(nm->error));
         break;
     }
 }
@@ -224,9 +225,9 @@ redisproxy_time(struct service* s) {
     if (self->connid >= 0) {
         char* tmp;
         //tmp = "*2\r\n$7\r\nhgetall\r\n$6\r\nuser:1\r\n";
-        //host_net_send(self->connid, tmp, strlen(tmp));
+        //sc_net_send(self->connid, tmp, strlen(tmp));
         tmp = "hgetall user:1\r\n";
-        host_net_send(self->connid, tmp, strlen(tmp));
+        sc_net_send(self->connid, tmp, strlen(tmp));
 
     }
     */
