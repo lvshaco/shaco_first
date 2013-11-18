@@ -754,7 +754,7 @@ _handle_creategame(struct game* self, struct node_message* nm) {
     ro->key = cr->key;
    
     // todo: 
-    ground_attri_build(300, &ro->gattri);
+    ground_attri_build(500, &ro->gattri);
 
     ro->np = cr->nmember;
     int i;
