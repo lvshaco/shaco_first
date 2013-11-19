@@ -5,9 +5,10 @@
 #define LOG_INFO    1
 #define LOG_WARNING 2
 #define LOG_ERROR   3
-#define LOG_EXIT    4
-#define LOG_PANIC   5
-#define LOG_MAX     6 
+#define LOG_REC     4 
+#define LOG_EXIT    5
+#define LOG_PANIC   6
+#define LOG_MAX     7
 
 int sc_log_level();
 
@@ -33,6 +34,12 @@ __attribute__((format(printf, 1, 2)))
 ;
 
 void sc_debug(const char* fmt, ...)
+#ifdef __GNUC__
+__attribute__((format(printf, 1, 2)))
+#endif
+;
+
+void sc_rec(const char* fmt, ...)
 #ifdef __GNUC__
 __attribute__((format(printf, 1, 2)))
 #endif

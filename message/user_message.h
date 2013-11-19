@@ -109,7 +109,8 @@ struct UM_MINLOADFAIL {
 struct UM_REDISQUERY {
     _UM_HEADER;
     uint16_t needreply:1;
-    uint16_t cbsz:15; 
+    uint16_t needrecord:1;
+    uint16_t cbsz:14; 
     char data[];
 };
 

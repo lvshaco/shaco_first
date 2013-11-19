@@ -54,6 +54,8 @@ _db(struct player* p, int8_t type) {
     struct chardata* cdata = &p->data;
 
     UM_DEFVAR(UM_REDISQUERY, rq);
+    rq->needreply = 0;
+    rq->needrecord = 0;
     struct memrw rw;
     memrw_init(&rw, rq->data, rq->msgsz - sizeof(*rq));
     memrw_write(&rw, &type, sizeof(type)); 
@@ -153,6 +155,7 @@ _db(struct player* p, int8_t type) {
         break;
     case PDB_SAVE: {
         rq->needreply = 0;
+        rq->needrecord = 1;
         uint32_t charid = cdata->charid;
         memrw_write(&rw, &charid, sizeof(charid));
         rq->cbsz = RW_CUR(&rw);

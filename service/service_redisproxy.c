@@ -74,6 +74,16 @@ redisproxy_init(struct service* s) {
     return 0;
 }
 
+static inline void
+_query_to_redis(struct redisproxy* self, char* ptr, int sz) {
+    if (self->connid != -1) {
+        sc_net_send(self->connid, ptr, sz);
+    } else {
+        ptr[sz-1] = '\0';
+        sc_rec(ptr);
+    }
+}
+
 static void
 _query(struct redisproxy* self, int id, struct UM_BASE* um) {
     UM_CAST(UM_REDISQUERY, rq, um);
@@ -110,7 +120,14 @@ _query(struct redisproxy* self, int id, struct UM_BASE* um) {
             memcpy(ql->cb, cbptr, cbsz);
         }
     }
-    sc_net_send(self->connid, dataptr, datasz);
+    if (self->connid != -1) {
+        sc_net_send(self->connid, dataptr, datasz);
+    } else {
+        if (rq->needrecord) {
+            dataptr[datasz-1] = '\0';
+            sc_rec(dataptr);
+        }
+    }
 }
 
 void

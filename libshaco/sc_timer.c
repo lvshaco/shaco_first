@@ -86,6 +86,11 @@ sc_timer_elapsed() {
     return T->elapsed_time;
 }
 
+uint64_t 
+sc_timer_elapsed_real() {
+    return _elapsed();
+}
+
 static uint64_t
 _closest_time() {
     struct _event_holder* eh = &T->eh;
