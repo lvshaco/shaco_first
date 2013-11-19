@@ -48,11 +48,11 @@ redisproxy_free(struct redisproxy* self) {
 }
 
 static int
-_connect_redis(struct service* s) {
+_connect_redis(struct service* s, bool block) {
     const char* addr = sc_getstr("redis_ip", "");
     int port = sc_getint("redis_port", 0);
     sc_info("connect to redis %s:%u ...", addr, port);
-    if (sc_net_connect(addr, port, true, s->serviceid, CLI_REDIS)) { 
+    if (sc_net_connect(addr, port, block, s->serviceid, CLI_REDIS)) { 
         return 1;
     }
     return 0;
@@ -63,7 +63,7 @@ redisproxy_init(struct service* s) {
     struct redisproxy* self = SERVICE_SELF;
     self->connid = -1;
     
-    if (_connect_redis(s)) {
+    if (_connect_redis(s, true)) {
         return 1;
     } 
     redis_initreply(&self->reply, 512, 16*1024);
@@ -208,7 +208,7 @@ redisproxy_net(struct service* s, struct net_message* nm) {
     case NETE_CONNERR:
         self->connid = -1;
         FREELIST_POPALL(querylink, &self->queryq);
-        sc_error("connect to redis fail: %s", sc_net_error(nm->error));
+        sc_error("connect to redis fail: %s", sc_net_error(nm->error)); 
         break;
     case NETE_SOCKERR:
         self->connid = -1;
@@ -220,15 +220,8 @@ redisproxy_net(struct service* s, struct net_message* nm) {
 
 void
 redisproxy_time(struct service* s) {
-    /*
-    struct redisproxy* self= SERVICE_SELF;
-    if (self->connid >= 0) {
-        char* tmp;
-        //tmp = "*2\r\n$7\r\nhgetall\r\n$6\r\nuser:1\r\n";
-        //sc_net_send(self->connid, tmp, strlen(tmp));
-        tmp = "hgetall user:1\r\n";
-        sc_net_send(self->connid, tmp, strlen(tmp));
-
+    struct redisproxy* self = SERVICE_SELF;
+    if (self->connid == -1) {
+        _connect_redis(s, false);
     }
-    */
 }

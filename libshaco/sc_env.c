@@ -30,9 +30,10 @@ sc_env_fini() {
 
 const char* 
 sc_getenv(const char* key) {
+    const char* str;
     lua_State* L = E->L;
     lua_getglobal(L, key);
-    const char* str = lua_tostring(L, -1);
+    str = lua_tostring(L, -1);
     lua_pop(L, 1);
     return str;
 }
@@ -46,10 +47,13 @@ sc_setenv(const char* key, const char* value) {
 
 float
 sc_getnum(const char* key, float def) {
+    float f;
     lua_State* L = E->L;
     lua_getglobal(L, key);
     if (lua_isnumber(L, -1)) {
-        return lua_tonumber(L, -1);
+        f = lua_tonumber(L, -1);
+        lua_pop(L, 1);
+        return f;
     } else {
         return def;
     }
@@ -57,10 +61,13 @@ sc_getnum(const char* key, float def) {
 
 const char* 
 sc_getstr(const char* key, const char* def) {
+    const char* str;
     lua_State* L = E->L;
     lua_getglobal(L, key);
     if (lua_isstring(L, -1)) {
-        return lua_tostring(L, -1);
+        str = lua_tostring(L, -1);
+        lua_pop(L, 1);
+        return str;
     } else {
         return def;
     }
