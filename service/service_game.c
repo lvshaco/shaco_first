@@ -18,7 +18,7 @@
 
 #define ENTER_TIMELEAST (ROOM_LOAD_TIMELEAST*1000)
 #define ENTER_TIMEOUT (5000+ENTER_TIMELEAST)
-#define START_TIMEOUT 1000
+#define START_TIMEOUT 3000
 #define DESTROY_TIMEOUT 500
 
 #define RS_CREATE 0
@@ -37,6 +37,7 @@ struct member {
     bool online;
     int connid; 
     struct tmemberdetail detail;
+    struct idmap* delaymap;
     struct idmap* buffmap;
     int32_t depth;
     uint64_t deathtime;
@@ -66,6 +67,12 @@ struct game {
     int pmax;
     struct player* players;
     struct gfroom rooms;
+    int tick;
+};
+
+struct buff_delay {
+    uint64_t effect_time;
+    uint64_t last_time;
 };
 
 struct buff_effect {
@@ -88,14 +95,18 @@ game_create() {
 }
 
 static void
-_freebuffcb(void* value) {
+_freecb(void* value) {
     free(value);
 }
 
 static void
 _freemember(struct member* m) {
+    if (m->delaymap) {
+        idmap_free(m->delaymap, _freecb);
+        m->delaymap = NULL;
+    }
     if (m->buffmap) {
-        idmap_free(m->buffmap, _freebuffcb);
+        idmap_free(m->buffmap, _freecb);
         m->buffmap = NULL;
     }
 }
@@ -129,6 +140,15 @@ game_free(struct game* self) {
     free(self);
 }
 
+static inline struct item_tplt*
+_get_item_tplt(struct game* self, uint32_t itemid) {
+    const struct tplt_visitor* vist = tplt_get_visitor(self->tpltdata, TPLT_ITEM);
+    if (vist) {
+        return tplt_visitor_find(vist, itemid);
+    }
+    return NULL;
+}
+
 static struct tplt*
 _loadtplt(struct game* self) {
 #define TBLFILE(name) "./res/tbl/"#name".tbl"
@@ -159,7 +179,7 @@ game_init(struct service* s) {
     SUBSCRIBE_MSG(s->serviceid, IDUM_CREATEROOM);
     SUBSCRIBE_MSG(s->serviceid, IDUM_CREATEROOMRES);
 
-    sc_timer_register(s->serviceid, 1000);
+    sc_timer_register(s->serviceid, 100);
     return 0;
 }
 
@@ -199,6 +219,7 @@ _initmember(struct member* m, struct tmemberdetail* detail) {
     m->detail.bodycur = m->detail.body;
     m->detail.quickcur = m->detail.quick;
     m->connid = -1;
+    m->delaymap = idmap_create(1);
     m->buffmap = idmap_create(1); 
 }
 
@@ -445,29 +466,29 @@ _login(struct game* self, struct gate_client* c, struct UM_BASE* um) {
     UM_CAST(UM_GAMELOGIN, login, um);
     struct room* ro = _getroom(self, login->roomid);
     if (ro == NULL) {
-        _verifyfail(c, 1);
+        _verifyfail(c, SERR_NOROOM);
         sc_gate_disconnclient(c, true);
         return;
     }
     if (login->roomkey != ro->key) {
-        _verifyfail(c, 2);
+        _verifyfail(c, SERR_ROOMKEY);
         sc_gate_disconnclient(c, true);
         return;
     }
     struct member* m = _getmember(ro, login->charid);
     if (m == NULL) {
-        _verifyfail(c, 3);
+        _verifyfail(c, SERR_NOMEMBER);
         sc_gate_disconnclient(c, true);
         return;
     }
     if (ro->status == RS_OVER) {
-        _verifyfail(c, 4);
+        _verifyfail(c, SERR_ROOMOVER);
         sc_gate_disconnclient(c, true);
         return;
     }
     struct player* p = _allocplayer(self, c);
     if (p == NULL) {
-        _verifyfail(c, 5);
+        _verifyfail(c, SERR_ALLOC);
         sc_gate_disconnclient(c, true);
         return;
     }
@@ -607,7 +628,7 @@ _item_effectone(struct member* m, int effect, float value, struct buff_effect* r
 
 static void
 _item_effect_member(struct game* self, struct room* ro, struct member* m, 
-        const struct item_tplt* item) {
+        const struct item_tplt* item, int addtime) {
 
     struct buff* b = NULL;
 
@@ -662,14 +683,96 @@ _item_effect_member(struct game* self, struct room* ro, struct member* m,
                 b->effects[i] = effects[i];
             }
         }
-        b->time = sc_timer_now()/1000 + item->time;
+        b->time = sc_timer_now()/1000 + item->time + addtime;
         sc_debug("insert time: %u, to char %u", b->time, m->detail.charid);
     }
+}
+
+static inline int 
+_get_effect_members(struct room* ro, 
+                    struct member* me, 
+                    int target, 
+                    struct member* ret[MEMBER_MAX]) {
+    switch (target) {
+    case ITEM_TARGET_SELF:
+        ret[0] = me;
+        return 1;
+    case ITEM_TARGET_ENEMY: {
+        struct member* m;
+        int i, n=0;
+        for (i=0; i<ro->np; ++i) {
+            m = &ro->p[i];
+            if (m->online && m != me) {
+                ret[n++] = m;
+            }
+        }
+        return n;
+        }
+    case ITEM_TARGET_ALL: {
+        struct member* m;
+        int i, n=0;
+        for (i=0; i<ro->np; ++i) {
+            m = &ro->p[i];
+            if (m->online) {
+                ret[n++] = m;
+            }
+        }
+        return n;
+        }
+    default:
+        return 0;
+    }
+}
+
+
+static void
+_item_effect(struct game* self, struct room* ro, struct member* me, 
+        const struct item_tplt* item, int addtime) {
+    sc_debug("char %u, item effect %u", me->detail.charid, item->id);
+
+    struct member* tars[MEMBER_MAX];
+    int ntar = _get_effect_members(ro, me, item->target, tars);
+    if (ntar <= 0) {
+        return;
+    }
+    struct member* onetar;
+    int i;
+    for (i=0; i<ntar; ++i) {
+        onetar = tars[i];
+        _item_effect_member(self, ro, onetar, item, addtime);
+    }
+}
+
+static void
+_item_delay(struct game* self, struct room* ro, struct member* m, const struct item_tplt* item) {
+    sc_debug("char %u, use delay item %u", m->detail.charid, item->id);
+
+    struct member* tars[MEMBER_MAX];
+    int ntar = _get_effect_members(ro, m, item->target, tars);
+    if (ntar <= 0) {
+        return;
+    }
+
+    struct buff_delay* bdelay = idmap_find(m->delaymap, item->id);
+    if (bdelay == NULL) {
+        bdelay = malloc(sizeof(*bdelay));
+        bdelay->effect_time = 0;
+        idmap_insert(m->delaymap, item->id, bdelay);
+    } 
+    if (bdelay->effect_time == 0) {
+        bdelay->effect_time = sc_timer_now() + item->delay;
+    }
+    bdelay->last_time = sc_timer_now();
 
     UM_DEFFIX(UM_ITEMEFFECT, ie);
-    ie->charid = m->detail.charid;
     ie->itemid = item->id;
-    _multicast_msg(ro, (void*)ie, 0);
+    struct member* onetar;
+    int i;
+    for (i=0; i<ntar; ++i) {
+        onetar = tars[i];
+        ie->charid = onetar->detail.charid; 
+        _multicast_msg(ro, (void*)ie, 0);
+    }
 }
 
 static void
@@ -681,41 +784,13 @@ _use_item(struct game* self, struct gate_client* c, struct UM_BASE* um) {
         return;
 
     UM_CAST(UM_USEITEM, useitem, um);
-    const struct tplt_visitor* vist = tplt_get_visitor(self->tpltdata, TPLT_ITEM);
-    if (vist == NULL)
-        return;
-    const struct item_tplt* item = tplt_visitor_find(vist, useitem->itemid);
+    const struct item_tplt* item = _get_item_tplt(self, useitem->itemid);
     if (item == NULL)
         return;
-
-    sc_debug("char %u, use item %u", me->detail.charid, useitem->itemid);
-    switch (item->target) {
-    case ITEM_TARGET_SELF:
-        _item_effect_member(self, ro, me, item);
-        break;
-    case ITEM_TARGET_ENEMY: {
-        struct member* m;
-        int i;
-        for (i=0; i<ro->np; ++i) {
-            m = &ro->p[i];
-            if (m->online &&
-                m != me) {
-                _item_effect_member(self, ro, m, item);
-            }
-        }
-        }
-        break;
-    case ITEM_TARGET_ALL: {
-        struct member* m;
-        int i;
-        for (i=0; i<ro->np; ++i) {
-            m = &ro->p[i];
-            if (m->online) {
-                _item_effect_member(self, ro, m, item);
-            }
-        }
-        }
-        break;
+    if (item->delay > 0) {
+        _item_delay(self, ro, me, item); 
+    } else {
+        _item_effect(self, ro, me, item, 0);
     }
 }
 
@@ -779,6 +854,34 @@ _handle_destroyroom(struct game* self, struct UM_BASE* um) {
     }
 }
 
+struct _update_delayud {
+    struct game* self;
+    struct room* ro;
+    struct member* m;
+};
+static void
+_update_delaycb(uint32_t key, void* value, void* ud) {
+    uint32_t itemid = key;
+    struct _update_delayud* udata = ud;
+    struct game* self = udata->self;
+    struct room* ro = udata->ro;
+    struct member* m = udata->m;
+    struct buff_delay* bdelay = value;
+    if (bdelay->effect_time > 0) {
+        if (bdelay->effect_time <= sc_timer_now()) {
+            struct item_tplt* item = _get_item_tplt(self, itemid);
+            if (item == NULL)
+                return;
+            int diff = bdelay->effect_time > bdelay->last_time ? 
+                bdelay->effect_time - bdelay->last_time : 0;
+            diff = item->delay > diff ? item->delay - diff : 0;
+            _item_effect(self, ro, m, item, diff);
+
+            bdelay->effect_time = 0;
+        }
+    }
+}
+
 struct _update_buffud {
     struct member* m;
     int effect_flag;
@@ -803,6 +906,19 @@ _update_buffcb(uint32_t key, void* value, void* ud) {
 }
 
 static void
+_update_delay(struct game* self, struct room* ro) {
+    struct member* m;
+    int i;
+    for (i=0; i<ro->np; ++i) {
+        m = &ro->p[i];
+        if (m->online) {
+            struct _update_delayud ud1 = {self, ro, m };
+            idmap_foreach(m->delaymap, _update_delaycb, &ud1);
+        }
+    }
+
+}
+static void
 _update_room(struct game* self, struct room* ro) {
     struct member* m;
     int i;
@@ -816,12 +932,11 @@ _update_room(struct game* self, struct room* ro) {
             if (oxygen != 0) {
                 refresh = true;
             } 
-            struct _update_buffud udata;
-            udata.m = m;
-            udata.effect_flag = 0;
 
-            idmap_foreach(m->buffmap, _update_buffcb, &udata);
-            refresh |= ((udata.effect_flag & REFRESH_ROLE) != 0);
+            struct _update_buffud ud2 = {m, 0};
+            idmap_foreach(m->buffmap, _update_buffcb, &ud2);
+
+            refresh |= ((ud2.effect_flag & REFRESH_ROLE) != 0);
             if (refresh) {
                 //role_attri_build(&ro->gattri, &m->detail);
                 UM_DEFFIX(UM_ROLEINFO, ri);
@@ -875,20 +990,27 @@ game_time(struct service* s) {
     for (i=0; i<GFREEID_CAP(&self->rooms); ++i) {
         ro = GFREEID_SLOT(&self->rooms, i);
         if (ro) {
+            if (++self->tick == 10) {
+                switch (ro->status) {
+                case RS_CREATE:
+                    _check_enter_room(self, ro);
+                    break;
+                case RS_ENTER:
+                    _check_start_room(self, ro);
+                    break;
+                case RS_START:
+                    _update_room(self, ro);
+                    _check_over_room(self, ro);
+                    break;
+                case RS_OVER:
+                    _check_destory_room(self, ro);
+                    break;
+                }
+                self->tick = 0;
+            }
             switch (ro->status) {
-            case RS_CREATE:
-                _check_enter_room(self, ro);
-                break;
-            case RS_ENTER:
-                _check_start_room(self, ro);
-                break;
             case RS_START:
-                _update_room(self, ro);
-                _check_over_room(self, ro);
-                break;
-            case RS_OVER:
-                _check_destory_room(self, ro);
-                break;
+                _update_delay(self, ro);
             }
         }
     }

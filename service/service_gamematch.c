@@ -198,12 +198,12 @@ _create_tmproom(struct gamematch* self) {
 }
 
 static int
-_destroy_tmproom(struct gamematch* self, struct room* ro, int ok) {
+_destroy_tmproom(struct gamematch* self, struct room* ro, int err) {
     const struct sc_node* node;
     struct playerv pv;
     _get_tmpmembers(ro, &pv);
 
-    int status = ok ? PS_ROOM : PS_GAME;
+    int status = err == 0 ? PS_ROOM : PS_GAME;
     struct player* p;
     int i;
     for (i=0; i<pv.np; ++i) {
@@ -211,18 +211,18 @@ _destroy_tmproom(struct gamematch* self, struct room* ro, int ok) {
         if (p) 
             p->status = status;
     }
-    if (!ok) {
+    if (err) {
         for (i=0; i<pv.np; ++i) {
             p = pv.p[i];
             if (p) {
-                _notify_playfail(p, 0);
+                _notify_playfail(p, err);
             }
         }
     }
     int nodeid = HNODE_ID(NODE_GAME, ro->sid);
     node = sc_node_get(nodeid);
     if (node) {
-        if (ok) {
+        if (err == 0) {
             for (i=0; i<pv.np; ++i) {
                 p = pv.p[i];
                 if (p) {
@@ -247,7 +247,7 @@ _timeout_tmproom(struct gamematch* self) {
         if (GFREEID_USED(&rs[i])) {
             if (now > rs[i].createtime &&
                 now - rs[i].createtime >= CREATE_TIMEOUT) {
-                _destroy_tmproom(self, &rs[i], 0);
+                _destroy_tmproom(self, &rs[i], SERR_OK);
             }
         }
     }
@@ -332,7 +332,8 @@ _oncreateroom(struct gamematch* self, struct node_message* nm) {
         if (ro->key == res->key &&
             ro->sid == nm->hn->sid) {
             ro->roomid = res->roomid;
-            if (_destroy_tmproom(self, ro, res->ok) == 0)
+            if (_destroy_tmproom(self, ro, 
+                        res->ok ? SERR_OK : SERR_CREATEROOM) == 0)
                 return;
         }
     }

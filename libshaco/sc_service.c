@@ -252,7 +252,9 @@ service_fini() {
 
 static void
 service_prepareall() {
-    service_prepare(NULL);
+    if (service_prepare(NULL)) {
+        sc_exit("service_prepareall fail");
+    }
 }
 
 SC_LIBRARY_INIT_PRIO(service_init, service_fini, 11)

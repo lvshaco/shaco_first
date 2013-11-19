@@ -26,6 +26,13 @@
 #define SERR_NOLOGIN        35
 #define SERR_UNIQUECHARID   36
 #define SERR_CREATECHARMUCHTIMES 37
+#define SERR_MATCHFAIL      40
+#define SERR_CREATEROOM     41
+#define SERR_NOROOM         50
+#define SERR_ROOMKEY        51
+#define SERR_NOMEMBER       52
+#define SERR_ROOMOVER       53
+#define SERR_ALLOC          54
 
 #pragma pack(1)
 
@@ -56,7 +63,7 @@ struct chardata {
 // room type
 #define ROOM_TYPE1 1
 #define ROOM_TYPE2 2
-#define ROOM_LOAD_TIMELEAST 3 
+#define ROOM_LOAD_TIMELEAST 5
 #define MEMBER_MAX 8
 
 // 道具目标类型

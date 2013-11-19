@@ -32,6 +32,7 @@ struct role_tplt {
 struct item_tplt {
     uint32_t id;             // ID
     int32_t target;          // 目标
+    int32_t delay;           // 延迟时间
     int32_t time;            // 持续时间
     int32_t effect1;         // 效果类型1
     int32_t effectvalue1;    // 效果值1
