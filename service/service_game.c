@@ -17,7 +17,7 @@
 #include <stdint.h>
 
 #define ENTER_TIMELEAST (ROOM_LOAD_TIMELEAST*1000)
-#define ENTER_TIMEOUT (5000+ENTER_TIMELEAST)
+#define ENTER_TIMEOUT (2000+ENTER_TIMELEAST)
 #define START_TIMEOUT 3000
 #define DESTROY_TIMEOUT 500
 
@@ -374,7 +374,7 @@ _check_enter_room(struct game* self, struct room* ro) {
         return true;
     } else {
         if (_elapsed(ro->statustime, ENTER_TIMEOUT)) {
-            if (n > 0) {
+            if (_count_onlinemember(ro) > 0) {
                 _enter_room(ro);
                 return true;
             } else {
@@ -1017,10 +1017,14 @@ game_time(struct service* s) {
     struct game* self = SERVICE_SELF;
     struct room* ro;
     int i;
+
+    if (++self->tick == 10) {
+        self->tick = 0;
+    }
     for (i=0; i<GFREEID_CAP(&self->rooms); ++i) {
         ro = GFREEID_SLOT(&self->rooms, i);
         if (ro) {
-            if (++self->tick == 10) {
+            if (self->tick == 0) {
                 switch (ro->status) {
                 case RS_CREATE:
                     _check_enter_room(self, ro);
@@ -1036,7 +1040,6 @@ game_time(struct service* s) {
                     _check_destory_room(self, ro);
                     break;
                 }
-                self->tick = 0;
             }
             switch (ro->status) {
             case RS_START:
