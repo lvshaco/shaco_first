@@ -41,6 +41,7 @@
 #define IDUM_ROLEPRESS      IDUM_CBEGIN+211
 #define IDUM_ROLEINFO       IDUM_CBEGIN+212
 #define IDUM_GAMEOVER       IDUM_CBEGIN+213
+#define IDUM_GAMELOADOK     IDUM_CBEGIN+214
 
 #pragma pack(1)
 ////////////////////////////////////////////////////////////
@@ -165,6 +166,10 @@ struct UM_GAMEENTER {
 };
 
 struct UM_GAMESTART {
+    _UM_HEADER;
+};
+
+struct UM_GAMELOADOK {
     _UM_HEADER;
 };
 

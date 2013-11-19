@@ -35,6 +35,7 @@ struct player {
 struct member {
     bool login;
     bool online;
+    bool loadok;
     int connid; 
     struct tmemberdetail detail;
     struct idmap* delaymap;
@@ -249,6 +250,20 @@ _count_onlinemember(struct room* ro) {
     return n;
 }
 
+static int
+_count_loadokmember(struct room* ro) {
+    struct member* m;
+    int n = 0;
+    int i;
+    for (i=0; i<ro->np; ++i) {
+        m = &ro->p[i];
+        if (m->loadok) {
+            n++;
+        }
+    }
+    return n;
+}
+
 static void
 _verifyfail(struct gate_client* c, int8_t error) {
     UM_DEFFIX(UM_GAMELOGINFAIL, fail);
@@ -353,7 +368,7 @@ _check_enter_room(struct game* self, struct room* ro) {
     if (!_elapsed(ro->statustime, ENTER_TIMELEAST)) {
         return false;
     }
-    int n = _count_onlinemember(ro);
+    int n = _count_loadokmember(ro);
     if (n == ro->np) {
         _enter_room(ro);
         return true;
@@ -519,6 +534,18 @@ _locate_player(struct game* self, struct gate_client* c,
     if (*m == NULL)
         return 1;
     return 0;
+}
+
+static void
+_loadok(struct game* self, struct gate_client* c) {
+    struct player* p;
+    struct room* ro;
+    struct member* m;
+    if (_locate_player(self, c, &p, &ro, &m))
+        return;
+    if (!m->loadok) {
+        m->loadok = true;
+    }
 }
 
 static void
@@ -807,6 +834,9 @@ game_usermsg(struct service* s, int id, void* msg, int sz) {
     case IDUM_GAMELOGOUT:
         _logout(self, gm->c, true, true);
         break;
+    case IDUM_GAMELOADOK:
+        _loadok(self, gm->c);
+        break;
     case IDUM_GAMESYNC:
         _sync(self, gm->c, um);
         break;
@@ -1011,6 +1041,7 @@ game_time(struct service* s) {
             switch (ro->status) {
             case RS_START:
                 _update_delay(self, ro);
+                break;
             }
         }
     }
