@@ -1,14 +1,15 @@
 #include <stdio.h>
 #include <pthread.h>
 #include <string.h>
-#include <errno.h>
 #include <stdlib.h>
 #include <stdint.h>
-#include <unistd.h>
+#include <assert.h>
 #include <fcntl.h>
 #include <sys/types.h>  
 #include <sys/socket.h>
 #include <arpa/inet.h>
+#include <unistd.h>
+#include <errno.h>
 
 struct client {
     int fd;
@@ -63,45 +64,59 @@ err:
     return 1;
 }
 
+#define CHK(fn) if (fn) return 1
+
+static int
+_write_one(int fd, const char* buf, int sz, int8_t mode) {
+    assert(sz > 0);
+    uint8_t head[4];
+
+    int l = sz + 7;
+    head[0] = l & 0xff;
+    head[1] = (l >> 8) & 0xff;
+    head[2] = 0;
+    head[3] = 0;
+    CHK(_write(fd, head, 4));
+    CHK(_write(fd, &mode, 1));
+    CHK(_write(fd, buf, sz));
+    return 0;
+}
+
+static int
+_read_one(int fd) {
+    int l;
+    uint8_t head[4];
+    CHK(_read(fd, &head, 4));
+    l = head[0] | (head[1] << 8);
+    char buf[l-5];
+    CHK(_read(fd, buf, l-6));
+    buf[l-6] = '\0';
+    printf("%s\n", buf); 
+    return 0;
+}
+
 static void*
 _input(void* ud) {
     struct client* c = ud;
     int fd = c->fd;
     char buf[1024];
     int l;
-    uint8_t head[4];
-    head[2] = 0;
-    head[3] = 0;
     while (fgets(buf, sizeof(buf), stdin)) {
         l = strlen(buf);
-        if (l==1) {
+        if (l <= 1) {
             continue;
         }
-        //buf[l-1] = '\0';
-        l--;
-        l += 6;
-        head[0] = l & 0xff;
-        head[1] = (l >> 8) & 0xff;
-        _write(fd, head, 4);
-        _write(fd, buf, l-6);
+        _write_one(fd, buf, l-1, 0);
     }
     return NULL;
 }
-
 
 static void*
 _receive(void* ud) {
     struct client* c = ud;
     int fd = c->fd;
-    int l;
-    uint8_t head[4];
     for (;;) { 
-        _read(fd, &head, 4);
-        l = head[0] | (head[1] << 8);
-        char buf[l-5];
-        _read(fd, buf, l-6); 
-        buf[l-6] = '\0';
-        printf("%s\n", buf); 
+        _read_one(fd);
     }
     return NULL;
 }
@@ -134,29 +149,23 @@ _connect(const char* addr, uint16_t port) {
     return fd;
 }
 
-int main(int argc, char* argv[]) {
-    const char* addr = "127.0.0.1";
-    int port = 18000;
-/*
-    if (argc < 3) {
-        printf("usage: %s ip port\n", argv[0]);
-        return 1;
+static int
+_start_cmdline_mode(int fd, const char* cmdline) {
+    CHK(_write_one(fd, cmdline, strlen(cmdline), 1));
+    int times = 0;
+    for (;;) {
+        CHK(_read_one(fd));
+        if (++times > 100) {
+            usleep(10);
+            times = 0;
+        }
     }
-*/
-    if (argc > 2) {
-        addr = argv[1];
-        port = strtol(argv[2], NULL, 10);
-    }
-        
-    struct client* c;
-    int fd;
-    fd = _connect(addr, port);
-    if (fd == -1) {
-        printf("%s\n", strerror(errno));
-        return 1;
-    }
-    printf("connect to %s:%d\n", addr, port);
+    return 0;
+}
 
+static int
+_start_interactive_mode(int fd) {
+    struct client* c;
     c = malloc(sizeof(*c)); 
     c->fd = fd;
 
@@ -175,5 +184,57 @@ int main(int argc, char* argv[]) {
     pthread_join(pid1, NULL);
     pthread_join(pid2, NULL);
     free(c);
+    return 0;
+}
+
+int main(int argc, char* argv[]) {
+
+    const char* addr = "127.0.0.1";
+    int port = 18000;
+    const char* cmdline = NULL;
+
+    const char* arg;
+    char* split;
+    int i;
+    for (i=1; i<argc; ++i) {
+        arg = argv[i];
+        if (memcmp(arg, "--addr=", 7) == 0) {
+            addr = arg+7;
+            split = strchr(addr, ':');
+            if (split) {
+                *split = '\0';
+                port = strtoul(split+1, NULL, 10);
+            }
+        } else if (memcmp(arg, "--cmd=", 6) == 0) {
+            cmdline = arg+6;
+        } else if (strcmp(arg, "-h") == 0) {
+            printf("usage: %s "
+                    "[-h] "
+                    "[--addr=ip:port] "
+                    "[--cmd=cmdline]"
+                    "\n", argv[0]);
+            return 0;
+        }
+    }
+/*
+    printf("%s:%u\n", addr, port);
+    if (cmdline) {
+        printf("cmdline %s\n", cmdline);
+    }
+*/
+    
+    int fd = _connect(addr, port);
+    if (fd == -1) {
+        printf("%s\n", strerror(errno));
+        return 1;
+    }
+    printf("connect to %s:%d\n", addr, port);
+
+    if (cmdline) {
+        _start_cmdline_mode(fd, cmdline); 
+    } else {
+        _start_interactive_mode(fd);
+    }
+
     return 0;
 }

@@ -9,9 +9,21 @@
 #include "args.h"
 #include <stdio.h>
 #include <assert.h>
+#include <limits.h>
+
+#define MODE_INTERACTIVE 0
+#define MODE_CMDLINE 1
+
+struct client {
+    int8_t mode;
+    int nsend;
+    int nrecv;
+};
 
 struct server {
     int ctl_service;
+    int cmax;
+    struct client* clients;
 };
 
 struct server*
@@ -23,6 +35,9 @@ cmds_create() {
 
 void
 cmds_free(struct server* self) {
+    if (self == NULL)
+        return;
+    free(self->clients);
     free(self);
 }
 
@@ -34,6 +49,15 @@ cmds_init(struct service* s) {
         sc_error("lost cmdctl service");
         return 1;
     }
+    int cmax = sc_gate_maxclient();
+    if (cmax == 0) {
+        sc_error("maxclient is zero, try load service gate before this");
+        return 1;
+    }
+    self->cmax = cmax;
+    self->clients = malloc(sizeof(struct client) * cmax);
+    memset(self->clients, 0, sizeof(struct client) * cmax);
+
     SUBSCRIBE_MSG(s->serviceid, IDUM_CMDRES);
     return 0;
 }
@@ -52,9 +76,9 @@ struct sendud {
 
 static inline int
 _sendto_remote(const struct sc_node* node, void* ud) {
-    struct UM_BASE* um = ud->um;
-    UM_SEND(node->connid, um, um->msgsz);
-    ud->nsend++;
+    struct sendud* sud = ud;
+    UM_SEND(node->connid, sud->um, sud->um->msgsz);
+    sud->nsend++;
     return 0;
 }
 
@@ -78,11 +102,11 @@ _broadcast_type(struct server* self, int tid, struct UM_BASE* um) {
     if (tid == NODE_CENTER) {
         return _routeto_node(self, sc_id(), um); 
     } else {
-        struct sendud;
-        ud.nsend = 0;
-        ud.um = um;
-        sc_node_foreach(tid, _sendto_remote, &sendud);
-        return sendud.nsend;
+        struct sendud sud;
+        sud.nsend = 0;
+        sud.um = um;
+        sc_node_foreach(tid, _sendto_remote, &sud);
+        return sud.nsend;
     }
 }
 
@@ -112,16 +136,40 @@ _getnodeid(const char* tidstr, const char* sidstr) {
     }
 }
 
+static struct client*
+_getclient(struct server* self, int cid) {
+    if (cid >= 0 && cid < self->cmax) {
+        return &self->clients[cid];
+    }
+    return NULL;
+}
+
+static void
+_check_close_client(struct gate_client* c, struct client* cli) {
+    // CMDLINE mode, deal one command, then close
+    if (cli->mode == MODE_CMDLINE) {
+        if (cli->nrecv >= cli->nsend) {
+            sc_gate_disconnclient(c, false);
+        }
+    }
+}
+
 void
 cmds_usermsg(struct service* s, int id, void* msg, int sz) { 
     struct server* self = SERVICE_SELF;
     struct gate_message* gm = msg;
     struct gate_client* c = sc_gate_getclient(id);
     assert(c);
+    struct client* cli = _getclient(self, id);
+    assert(cli);
+    memset(cli, 0, sizeof(*cli));
+
     UM_CAST(UM_BASE, um, gm->msg);
-   
+ 
+    char* rptr = (char*)(um+1);
+    cli->mode = *rptr++;
     struct args A;
-    args_parsestrl(&A, 3, (char*)(um+1), sz-UM_HSIZE);
+    args_parsestrl(&A, 3, rptr, sz-UM_HSIZE);
     if (A.argc < 1) {
         _response_error(id, "usage: [node sid] command [arg1 arg2 .. ]");
         return;
@@ -150,14 +198,17 @@ cmds_usermsg(struct service* s, int id, void* msg, int sz) {
     }
     req->msgsz = sizeof(*req) + RW_CUR(&rw) - 1; // -1 for the last blank
 
-    um = (struct UM_BASE*)req;
+    int nsend = 0;
+    cli->nsend = INT_MAX; // notice this
     if (tid == HNODE_TID_MAX) {
-        _broadcast_all(self, um); 
+        nsend = _broadcast_all(self, (struct UM_BASE*)req); 
     } else if (sid == HNODE_SID_MAX) {
-        _broadcast_type(self, tid, um);
+        nsend = _broadcast_type(self, tid, (struct UM_BASE*)req);
     } else {
-        _routeto_node(self, HNODE_ID(tid, sid), um);
+        nsend = _routeto_node(self, HNODE_ID(tid, sid), (struct UM_BASE*)req);
     }
+    cli->nsend = nsend;
+    _check_close_client(c, cli);
 }
 
 static void
@@ -169,6 +220,9 @@ _res(struct server* self, int id, struct UM_BASE* um) {
     struct gate_client* c = sc_gate_getclient(res->cid);
     if (c == NULL)
         return;
+    struct client* cli = _getclient(self, res->cid);
+    assert(cli);
+
     UM_DEF(notify, UM_MAXSIZE);
     struct memrw rw;
     memrw_init(&rw, notify+1, UM_MAXSIZE-sizeof(*notify));
@@ -181,6 +235,9 @@ _res(struct server* self, int id, struct UM_BASE* um) {
     notify->msgid = 0; // just for avoid valgrind
     notify->msgsz = sizeof(*notify) + RW_CUR(&rw);
     UM_SENDTOCLI(c->connid, notify, notify->msgsz);
+ 
+    cli->nrecv++;
+    _check_close_client(c, cli);
 }
 
 void

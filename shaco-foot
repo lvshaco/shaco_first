@@ -4,6 +4,7 @@ SERVERS="redisproxy world gateload game gate login"
 
 ls() {
     ps -ef |grep shaco |grep config
+    ps -ef |grep commandd |grep lua
 }
 startone() {
     if [ $MEMCHECK -eq 0 ]
@@ -20,6 +21,10 @@ startone() {
         ./shaco config_${1}.lua -d #> $HOME/log/${1}.log 2>&1
     fi
     sleep ${2}
+}
+startcmdd() {
+    cd tool && 2>&1 lua commandd.lua 0.0.0.0 7999 -d > ~/log/commandd.log
+    ps -ef |grep commandd |grep lua
 }
 startall() {
     startone center 2
@@ -42,7 +47,7 @@ stop() {
     fi
 }
 
-USAGE="Usage: shaco-foot [startall] [start [svr .. ]] [stop] [ls] -m"
+USAGE="Usage: shaco-foot [startall] [startcmdd] [start [svr .. ]] [stop] [ls] -m"
 MEMCHECK=0
 CMD=$1
 shift
@@ -69,6 +74,9 @@ start)
     ;;
 stop)
     stop
+    ;;
+startcmdd)
+    startcmdd
     ;;
 ls)
     ls

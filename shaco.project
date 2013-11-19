@@ -154,6 +154,8 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.py *.h *.c" {
   elog_appender_rollfile.c
  }
  tool=tool{
+  commandd.lua
+  pathconfig.lua
   concat.py
   convert_excel.py
   service_tmp.c

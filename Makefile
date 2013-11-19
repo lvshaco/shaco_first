@@ -1,4 +1,4 @@
-.PHONY: all t clean cleanall res
+.PHONY: all t clean cleanall res thirdlib
  #-Wpointer-arith -Winline
 CFLAGS=-g -Wall -Werror 
 SHARED=-fPIC -shared
@@ -220,6 +220,10 @@ res:
 		$(HOME)/.shaco/excel tbl=../res/tbl:c=../res/tplt && \
 		python concat.py ../res/tplt ../datadefine/tplt_struct.h && \
 		rm -rf ../res/tplt
+
+# thirdlib
+thirdlib:
+	@__=`pwd` && cd third && $(MAKE) dist DIST_PATH=$$__/thirdlib
 
 # for client
 client: cnet.dll tplt.dll
