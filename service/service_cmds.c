@@ -45,40 +45,55 @@ _response_error(int id, const char* error) {
     UM_SENDTOCLI(id, um, UM_HSIZE+n);
 }
 
+struct sendud {
+    int nsend;
+    struct UM_BASE* um;
+};
+
 static inline int
 _sendto_remote(const struct sc_node* node, void* ud) {
-    struct UM_BASE* um = ud;
+    struct UM_BASE* um = ud->um;
     UM_SEND(node->connid, um, um->msgsz);
+    ud->nsend++;
     return 0;
 }
 
-static void
+static int
 _routeto_node(struct server* self, uint16_t nodeid, struct UM_BASE* um) {
     if (nodeid == sc_id()) {
         service_notify_nodemsg(self->ctl_service, -1, um, um->msgsz);
+        return 1;
     } else {
         const struct sc_node* node = sc_node_get(nodeid);
         if (node) {
-            _sendto_remote(node, um);
+            UM_SENDTONODE(node, um, um->msgsz);
+            return 1;
         }
     }
+    return 0;
 }
 
-static void
+static int
 _broadcast_type(struct server* self, int tid, struct UM_BASE* um) {
     if (tid == NODE_CENTER) {
-        _routeto_node(self, sc_id(), um); 
+        return _routeto_node(self, sc_id(), um); 
     } else {
-        sc_node_foreach(tid, _sendto_remote, um);
+        struct sendud;
+        ud.nsend = 0;
+        ud.um = um;
+        sc_node_foreach(tid, _sendto_remote, &sendud);
+        return sendud.nsend;
     }
 }
 
-static void
+static int
 _broadcast_all(struct server* self, struct UM_BASE* um) {
+    int nsend = 0;
     int i;
     for (i=0; i<sc_node_types(); ++i) {
-        _broadcast_type(self, i, um);
+        nsend += _broadcast_type(self, i, um);
     } 
+    return nsend;
 }
 
 static int
