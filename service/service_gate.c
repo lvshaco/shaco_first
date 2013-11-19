@@ -204,7 +204,7 @@ gate_time(struct service* s) {
             }
             break;
         case GATE_CLIENT_LOGOUTED:
-            if (now - c->active_time > 10*1000) {
+            if (now - c->active_time > 5*1000) {
                 sc_debug("logout timeout");
                 sc_gate_disconnclient(c, true);
             }
