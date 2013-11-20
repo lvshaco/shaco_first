@@ -46,8 +46,11 @@ stop() {
     else pkill mem
     fi
 }
+stopcmdd() {
+    pkill lua
+}
 
-USAGE="Usage: shaco-foot [startall] [startcmdd] [start [svr .. ]] [stop] [ls] -m"
+USAGE="Usage: shaco-foot [startall] [start [svr .. ]] [stop] [ls] [startcmdd] [stopcmdd] -m"
 MEMCHECK=0
 CMD=$1
 shift
@@ -77,6 +80,9 @@ stop)
     ;;
 startcmdd)
     startcmdd
+    ;;
+stopcmdd)
+    stopcmdd
     ;;
 ls)
     ls
