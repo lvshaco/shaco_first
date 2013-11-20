@@ -1,6 +1,6 @@
 .PHONY: all t clean cleanall res thirdlib
  #-Wpointer-arith -Winline
-CFLAGS=-g -Wall -Werror 
+CFLAGS=-g -O -Wall -Werror 
 SHARED=-fPIC -shared
 
 service_dir=service
@@ -97,7 +97,9 @@ service_so=\
 	service_cmdctl.so \
 	service_gate.so \
 	service_forward.so \
-	service_load.so
+	service_load.so \
+	service_cmdctlworld.so \
+	service_cmdctlgame.so
 
 worldservice_so=\
 	service_world.so \
@@ -123,7 +125,9 @@ all: \
 	service_playerdb.so \
 	service_benchmarkdb.so \
 	service_redisproxy.so \
-	service_login.so
+	service_login.so \
+	service_tpltworld.so \
+	service_tpltgame.so
 
 release: CFLAGS += -O2 -fno-strict-aliasing
 release: all
@@ -160,6 +164,14 @@ service_redisproxy.so: $(service_dir)/service_redisproxy.c
 service_login.so: $(service_dir)/service_login.c
 	@rm -f $@
 	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Iinclude/libshaco -Inet -Ibase -Imessage -Iredis -Wl,-rpath,. redis.so
+
+service_tpltworld.so: $(service_dir)/service_tpltworld.c
+	@rm -f $@
+	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Iinclude/libshaco -Itplt -Idatadefine -Wl,-rpath,. tplt.so
+
+service_tpltgame.so: $(service_dir)/service_tpltgame.c
+	@rm -f $@
+	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Iinclude/libshaco -Itplt -Idatadefine -Wl,-rpath,. tplt.so
 
 world.so: $(world_src)
 	@rm -f $@

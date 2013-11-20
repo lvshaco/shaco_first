@@ -12,9 +12,9 @@ struct tplt_desc {
     const struct tplt_visitor_ops* vist;
 };
 
-struct tplt* tplt_init(const struct tplt_desc* desc, int sz);
-void tplt_fini(struct tplt* self);
-const struct tplt_holder* tplt_get_holder(struct tplt* self, int type);
-const struct tplt_visitor* tplt_get_visitor(struct tplt* self, int type);
+int tplt_init(const struct tplt_desc* desc, int sz);
+void tplt_fini();
+const struct tplt_holder* tplt_get_holder(int type);
+const struct tplt_visitor* tplt_get_visitor(int type);
 
 #endif

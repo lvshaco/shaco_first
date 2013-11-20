@@ -47,7 +47,7 @@ _fill_subs(struct centerc* self) {
     strcpy(tmp, str);
     
     int n = 0;
-    char* saveptr;
+    char* saveptr = NULL;
     char* one = strtok_r(tmp, ",", &saveptr);
     while (one) {
         int tid = sc_node_typeid(one);

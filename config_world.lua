@@ -1,6 +1,9 @@
 sc_loglevel="DEBUG" 
 sc_connmax=1000 
-sc_service="log,dispatcher,node,centerc,cmdctl,world,gamematch,playerdb"
+sc_service="log,dispatcher,node,centerc,cmdctl,cmdctlworld,tpltworld,world,gamematch,playerdb"
+
+cmdctl_handler="cmdctlworld"
+tplt_handler="tpltworld"
 
 node_type="world" 
 node_sid=0 

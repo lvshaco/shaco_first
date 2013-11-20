@@ -1,4 +1,6 @@
 #include "sc_service.h"
+#include "sc_env.h"
+#include "cmdctl.h"
 #include "sc.h"
 #include "sc_timer.h"
 #include "sc_dispatcher.h"
@@ -15,12 +17,13 @@
 #include <stdio.h>
 #include <time.h>
 
+struct cmdctl {
+    int cmds_service;
+    int cmdctl_handler;
+    int tplt_handler;
+};
+
 ///////////////////
-#define R_OK 0
-#define R_NOCOMMAND 1
-#define R_FAIL 2
-#define R_ARGLESS 3
-#define R_ARGINVALID 4
 
 static const char* STRERROR[] = {
     "execute ok",
@@ -28,6 +31,7 @@ static const char* STRERROR[] = {
     "execute fail",
     "execute less arg",
     "execute invalid arg",
+    "execute no service",
 };
 
 static inline const char*
@@ -44,27 +48,27 @@ _iscenter() {
 
 ///////////////////
 static int
-_getloglevel(struct args* A, struct memrw* rw) {
+_getloglevel(struct cmdctl* self, struct args* A, struct memrw* rw) {
     int n = snprintf(rw->begin, RW_SPACE(rw), "%s", sc_log_levelstr(sc_log_level()));
     memrw_pos(rw, n);
-    return R_OK;
+    return CTL_OK;
 }
 
 static int
-_setloglevel(struct args* A, struct memrw* rw) {
+_setloglevel(struct cmdctl* self, struct args* A, struct memrw* rw) {
     if (A->argc == 1)
-        return R_ARGLESS;
+        return CTL_ARGLESS;
     if (sc_log_setlevelstr(A->argv[1]) == -1)
-        return R_ARGINVALID;
-    return R_OK;
+        return CTL_ARGINVALID;
+    return CTL_OK;
 }
 
 static int
-_reload(struct args* A, struct memrw* rw) {
+_reload(struct cmdctl* self, struct args* A, struct memrw* rw) {
     if (A->argc == 1)
-        return R_ARGLESS;
+        return CTL_ARGLESS;
     sc_reload_prepare(A->argv[1]);
-    return R_OK;
+    return CTL_OK;
 }
 
 static int
@@ -75,62 +79,68 @@ _shownodecb(const struct sc_node* node, void* ud) {
     
     int n = snprintf(rw->ptr, RW_SPACE(rw), "%s\n", tmp);
     memrw_pos(rw, n);
-    return R_OK;
+    return 0;
 }
 static int
-_shownode(struct args* A, struct memrw* rw) {
+_shownode(struct cmdctl* self, struct args* A, struct memrw* rw) {
     int i;
     for (i=0; i<sc_node_types(); ++i) {
         sc_node_foreach(i, _shownodecb, rw);
     }
-    return R_OK;
+    return CTL_OK;
 }
 static int
-_stop(struct args* A, struct memrw* rw) {
+_stop(struct cmdctl* self, struct args* A, struct memrw* rw) {
     if (!_iscenter()) {
         sc_stop();
     }
-    return R_OK;
+    return CTL_OK;
 }
 static int
-_start(struct args* A, struct memrw* rw) {
+_start(struct cmdctl* self, struct args* A, struct memrw* rw) {
     if (_iscenter()) {
-        system("./start");
+        system("./shaco-foot startall");
     }
-    return R_OK;
+    return CTL_OK;
 }
 static int
-_startmem(struct args* A, struct memrw* rw) {
+_startmem(struct cmdctl* self, struct args* A, struct memrw* rw) {
     if (_iscenter()) {
-        system("./start-memcheck");
+        system("./shaco-foot startall -m");
     }
-    return R_OK;
+    return CTL_OK;
 }
 static int
-_time(struct args* A, struct memrw* rw) {
+_time(struct cmdctl* self, struct args* A, struct memrw* rw) {
     uint64_t now = sc_timer_now();
     time_t sec = now / 1000;
     int n = strftime(rw->ptr, RW_SPACE(rw), "%y%m%d-%H:%M:%S", localtime(&sec));
     memrw_pos(rw, n);
     n = snprintf(rw->ptr, RW_SPACE(rw), "[%llu]", (unsigned long long int)sc_timer_elapsed());
     memrw_pos(rw, n);
-    return R_OK;
+    return CTL_OK;
 }
 static int
-_players(struct args* A, struct memrw* rw) {
+_players(struct cmdctl* self, struct args* A, struct memrw* rw) {
     int count = sc_gate_usedclient();
     int n = snprintf(rw->ptr, RW_SPACE(rw), "[%d]", count);
     memrw_pos(rw, n);
-    return R_OK;
+    return CTL_OK;
+}
+
+static int
+_reloadres(struct cmdctl* self, struct args* A, struct memrw* rw) {
+    if (self->tplt_handler == SERVICE_INVALID) {
+        return CTL_NOSERVICE;
+    }
+    struct service_message sm = {0, 0, 0, 0, NULL};
+    service_notify_service(self->tplt_handler, &sm);
+    return CTL_OK;
 }
 
 ///////////////////
-struct command {
-    const char* name;
-    int (*fun)(struct args* A, struct memrw* rw);
-};
 
-static struct command COMMAND_MAP[] = {
+static struct ctl_command COMMAND_MAP[] = {
     { "getloglevel", _getloglevel },
     { "setloglevel", _setloglevel },
     { "reload",      _reload },
@@ -140,18 +150,16 @@ static struct command COMMAND_MAP[] = {
     { "startmem",    _startmem },
     { "time",        _time },
     { "players",     _players },
+    { "reloadres",   _reloadres },
     { NULL, NULL },
 };
 
 ///////////////////
-struct cmdctl {
-    int cmds_service;
-};
 
 struct cmdctl*
 cmdctl_create() {
     struct cmdctl* self = malloc(sizeof(*self));
-    self->cmds_service = -1;
+    memset(self, 0, sizeof(*self));
     return self;
 }
 
@@ -167,22 +175,23 @@ cmdctl_init(struct service* s) {
 
     if (HNODE_TID(sc_id()) == NODE_CENTER) {
         self->cmds_service = service_query_id("cmds");
-        if (self->cmds_service == -1) {
+        if (self->cmds_service == SERVICE_INVALID) {
             sc_error("lost cmds service");
             return 1;
         }
     } else {
-        self->cmds_service = -1;
+        self->cmds_service = SERVICE_INVALID;
     }
+    self->cmdctl_handler = service_query_id(sc_getstr("cmdctl_handler", ""));
+    self->tplt_handler   = service_query_id(sc_getstr("tplt_handler", ""));
     return 0;
 }
 
-static struct command*
-_lookupcmd(const char* name) {
-    struct command* c = &COMMAND_MAP[0];
+static const struct ctl_command*
+_lookupcmd(const struct ctl_command* cmdmap, const char* name) {
+    const struct ctl_command* c = cmdmap;
     while (c->name) {
-        if (strcmp(c->name, name) == 0 &&
-            c->fun)
+        if (strcmp(c->name, name) == 0 && c->fun)
             return c;
         c++;
     }
@@ -190,11 +199,23 @@ _lookupcmd(const char* name) {
 }
 
 static int 
-_execute(struct args* A, struct memrw* rw) {
-    struct command* c = _lookupcmd(A->argv[0]);
-    if (c)
-        return c->fun(A, rw);
-    return R_NOCOMMAND;
+_execute(struct cmdctl* self, struct args* A, struct memrw* rw) {
+    const char* name = A->argv[0]; 
+    const struct ctl_command* c = _lookupcmd(COMMAND_MAP, name);
+    if (c == NULL) {
+        if (self->cmdctl_handler != SERVICE_INVALID) {
+            struct service_message sm = {0, 0, 0, 0, NULL};
+            service_notify_service(self->cmdctl_handler, &sm);
+            if (sm.msg != NULL) {
+                struct ctl_command* extramap = sm.msg;
+                c = _lookupcmd(extramap, name);
+            }
+        }
+    }
+    if (c) {
+        return c->fun(self, A, rw);
+    }
+    return CTL_NOCOMMAND;
 }
 
 static void
@@ -214,7 +235,7 @@ _cmdreq(struct cmdctl* self, int id, struct UM_BASE* um) {
     struct memrw rw;
     memrw_init(&rw, res+1, res->msgsz-sizeof(*res));
 
-    int error = _execute(&A, &rw);
+    int error = _execute(self, &A, &rw);
     if (RW_EMPTY(&rw)) {
         int n = snprintf(rw.begin, rw.sz, "[%s] %s", A.argv[0], _strerror(error));
         res->msgsz = sizeof(*res) + n;
@@ -222,7 +243,7 @@ _cmdreq(struct cmdctl* self, int id, struct UM_BASE* um) {
         res->msgsz = sizeof(*res) + RW_CUR(&rw);
     }
     
-    if (self->cmds_service == -1) {
+    if (self->cmds_service == SERVICE_INVALID) {
         UM_SEND(id, res, res->msgsz);
     } else {
         res->nodeid = sc_id();

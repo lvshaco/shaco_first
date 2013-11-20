@@ -64,7 +64,6 @@ struct gfroom {
 };
 
 struct game {
-    struct tplt* tpltdata;
     int pmax;
     struct player* players;
     struct gfroom rooms;
@@ -133,31 +132,16 @@ game_free(struct game* self) {
         }
     }
     GFREEID_FINI(room, &self->rooms);
-    
-    if (self->tpltdata) {
-        tplt_fini(self->tpltdata);
-        self->tpltdata = NULL;
-    }
     free(self);
 }
 
 static inline struct item_tplt*
 _get_item_tplt(struct game* self, uint32_t itemid) {
-    const struct tplt_visitor* vist = tplt_get_visitor(self->tpltdata, TPLT_ITEM);
+    const struct tplt_visitor* vist = tplt_get_visitor(TPLT_ITEM);
     if (vist) {
         return tplt_visitor_find(vist, itemid);
     }
     return NULL;
-}
-
-static struct tplt*
-_loadtplt(struct game* self) {
-#define TBLFILE(name) "./res/tbl/"#name".tbl"
-    struct tplt_desc desc[] = {
-        { TPLT_ITEM, sizeof(struct item_tplt), TBLFILE(item), TPLT_VIST_VEC32},
-    };
-    return tplt_init(desc, sizeof(desc)/sizeof(desc[0]));
-    
 }
 
 int
@@ -168,10 +152,6 @@ game_init(struct service* s) {
         sc_error("maxclient is zero, try load service gate before this");
         return 1;
     }
-    self->tpltdata = _loadtplt(self);
-    if (self->tpltdata == NULL)
-        return 1;
-    
     self->pmax = pmax;
     self->players = malloc(sizeof(struct player) * pmax);
     memset(self->players, 0, sizeof(struct player) * pmax);

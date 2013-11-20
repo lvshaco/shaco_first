@@ -100,7 +100,7 @@ service_load(const char* name) {
     char tmp[len+1];
     strcpy(tmp, name);
     
-    char* saveptr;
+    char* saveptr = NULL;
     char* one = strtok_r(tmp, ",", &saveptr);
     while (one) {
         if (_create(one)) {
@@ -157,6 +157,8 @@ service_reload_byid(int serviceid) {
 
 int
 service_query_id(const char* name) {
+    if (name == NULL || name[0] == '\0')
+        return SERVICE_INVALID;
     struct service* s = _find(name);
     return s ? s->serviceid : SERVICE_INVALID;
 }

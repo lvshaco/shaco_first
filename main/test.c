@@ -1,4 +1,5 @@
 #include "lur.h"
+#include "sc_util.h"
 #include "args.h"
 #include "freeid.h"
 #include "hashid.h"
@@ -918,14 +919,23 @@ static void fini2() {
 SC_LIBRARY_INIT(init1, fini1, 100)
 SC_LIBRARY_INIT(init2, fini2, 101)
 
+
+
 int 
 main(int argc, char* argv[]) {
     int times = 1;
     if (argc > 1)
         times = strtol(argv[1], NULL, 10);
-    
-    sc_library_init();
-    sc_library_fini();
+
+   
+    int32_t r = cs_cstr_to_int32("RES");
+    printf("r = %d\n", r);
+    int ret = cs_cstr_compare_int32("RES", r);
+    printf("ret = %d\n", ret);
+    //printf("%d\n",  memcmp(&r, "RES", 3));
+    //printf("%c\n","RES"[0]);
+    //sc_library_init();
+    //sc_library_fini();
     //ph_static_assert(sizeof(int)==1, intsize_must4);
     //test_lur();
     //test_args();

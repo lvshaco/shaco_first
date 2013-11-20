@@ -17,10 +17,12 @@ struct tplt {
     struct tplt_one* p;
 };
 
-struct tplt*
+static struct tplt* self = NULL;
+
+int
 tplt_init(const struct tplt_desc* desc, int sz) {
     if (sz <= 0)
-        return NULL;
+        return 1;
 
     int maxtype = 0;
     const struct tplt_desc* d;
@@ -33,7 +35,7 @@ tplt_init(const struct tplt_desc* desc, int sz) {
     } 
 
     maxtype += 1;
-    struct tplt* self = malloc(sizeof(*self));
+    self = malloc(sizeof(*self));
     self->sz = maxtype;
     self->p = malloc(sizeof(struct tplt_one) * maxtype);
     memset(self->p, 0, sizeof(struct tplt_one) * maxtype);
@@ -47,24 +49,24 @@ tplt_init(const struct tplt_desc* desc, int sz) {
         TPLT_LOGINFO("load tplt: %s", d->name);
         holder = tplt_holder_load(d->name, d->size);
         if (holder == NULL) {
-            tplt_fini(self);
-            return NULL;
+            tplt_fini();
+            return 1;
         }
         assert(d->vist);
         visitor = tplt_visitor_create(d->vist, holder);
         if (visitor == NULL) {
             free(holder);
-            tplt_fini(self);
-            return NULL;
+            tplt_fini();
+            return 1;
         }
         self->p[d->type].holder = holder;
         self->p[d->type].visitor = visitor;
     }
-    return self;
+    return 0;
 }
 
 void 
-tplt_fini(struct tplt* self) {
+tplt_fini() {
     if (self == NULL)
         return;
     
@@ -86,13 +88,13 @@ tplt_fini(struct tplt* self) {
 }
 
 const struct tplt_holder* 
-tplt_get_holder(struct tplt* self, int type) {
+tplt_get_holder(int type) {
     if (type >= 0 && type < self->sz)
         return self->p[type].holder;
     return NULL;
 }
 const struct tplt_visitor* 
-tplt_get_visitor(struct tplt* self, int type) {
+tplt_get_visitor(int type) {
     if (type >= 0 && type < self->sz)
         return self->p[type].visitor;
     return NULL;

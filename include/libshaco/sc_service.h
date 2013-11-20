@@ -12,8 +12,9 @@
 
 struct service_message {
     uint32_t sessionid;
-    int source;
-    int sz;
+    int32_t source;
+    int32_t type;
+    int32_t sz;
     void* msg;
 };
 

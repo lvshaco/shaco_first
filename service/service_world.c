@@ -21,7 +21,6 @@
 #include <assert.h>
 
 struct world {
-    struct tplt* tpltdata;
     uint32_t dbhandler;
     uint32_t chariditer;
 };
@@ -38,20 +37,7 @@ world_free(struct world* self) {
     if (self == NULL)
         return;
     _freeplayers();
-    if (self->tpltdata) {
-        tplt_fini(self->tpltdata);
-        self->tpltdata = NULL;
-    }
     free(self);
-}
-
-static struct tplt*
-_loadtplt(struct world* self) {
-#define TBLFILE(name) "./res/tbl/"#name".tbl"
-    struct tplt_desc desc[] = {
-        { TPLT_ROLE, sizeof(struct role_tplt), TBLFILE(role), TPLT_VIST_VEC32},
-    };
-    return tplt_init(desc, sizeof(desc)/sizeof(desc[0]));
 }
 
 int
@@ -63,10 +49,6 @@ world_init(struct service* s) {
         sc_error("lost playerdb service");
         return 1;
     }
-    self->tpltdata = _loadtplt(self);
-    if (self->tpltdata == NULL)
-        return 1;
-    
     self->chariditer = 1;
     int cmax = sc_getint("world_cmax_pergate", 0);
     int hmax = sc_getint("world_hmax_pergate", cmax);
@@ -83,7 +65,7 @@ _onlogin(struct world* self, struct player* p) {
     p->status = PS_GAME;
 
     struct chardata* data = &p->data;
-    const struct tplt_visitor* vist = tplt_get_visitor(self->tpltdata, TPLT_ROLE);
+    const struct tplt_visitor* vist = tplt_get_visitor(TPLT_ROLE);
     if (vist == NULL)
         return;
     if (data->role == 0) {
