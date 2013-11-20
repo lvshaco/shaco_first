@@ -3,11 +3,13 @@
 
 #include <stdint.h>
 
+#pragma pack(1)
 struct tplt_holder {
-    int elemsz;
-    int nelem;
+    int32_t nelem;
+    int32_t elemsz;
     char data[];
 };
+#pragma pack()
 
 /* 
  @ visit element sample
