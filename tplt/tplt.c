@@ -29,7 +29,7 @@ tplt_init(const struct tplt_desc* desc, int sz) {
     int i;
     for (i=0; i<sz; ++i) {
         d = &desc[i];
-        assert(d->name);
+        assert(d->stream);
         if (maxtype < d->type)
             maxtype = d->type;
     } 
@@ -44,10 +44,14 @@ tplt_init(const struct tplt_desc* desc, int sz) {
     struct tplt_visitor* visitor;
     for (i=0; i<sz; ++i) {
         d = &desc[i];
-        assert(d->name);
+        assert(d->stream);
         assert(d->type >= 0 && d->type < maxtype);
-        TPLT_LOGINFO("load tplt: %s", d->name);
-        holder = tplt_holder_load(d->name, d->size);
+        if (d->isfromfile) {
+            TPLT_LOGINFO("load tplt: %s", d->stream);
+            holder = tplt_holder_load(d->stream, d->size);
+        } else {
+            holder = tplt_holder_loadfromstream(d->stream, d->streamsz, d->size);
+        }
         if (holder == NULL) {
             tplt_fini();
             return 1;

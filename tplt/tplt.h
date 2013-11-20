@@ -8,7 +8,9 @@ struct tplt_visitor;
 struct tplt_desc {
     int type; // see TPLT_*
     int size; // sizeof(*_tplt)
-    const char* name;
+    int isfromfile;
+    const char* stream; // filename if is fromfile, or streamptr
+    int streamsz;
     const struct tplt_visitor_ops* vist;
 };
 
