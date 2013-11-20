@@ -17,7 +17,7 @@ struct client {
 
 static void
 _onerror(int fd) {
-    printf("!!!%s.\n", strerror(errno));
+    printf("!!!socket close: %s.\n", strerror(errno));
     close(fd);
     exit(1);
 }
