@@ -172,6 +172,7 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.py *.h *.c" {
    toc_opt.py
    tolua_opt.py
    tolualine_opt.py
+   tomap_opt.py
    totbl_opt.py
    toxml_opt.py
   }

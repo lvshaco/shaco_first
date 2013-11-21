@@ -229,7 +229,7 @@ res:
 	@cd tool && \
 		python convert_excel.py \
 		$(HOME)/.shaco/excel/excelmake_server.xml \
-		$(HOME)/.shaco/excel tbl=../res/tbl:c=../res/tplt && \
+		$(HOME)/.shaco/excel tbl=../res/tbl:c=../res/tplt:map=../res/map && \
 		python concat.py ../res/tplt ../datadefine/tplt_struct.h && \
 		rm -rf ../res/tplt
 
