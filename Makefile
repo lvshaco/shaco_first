@@ -140,7 +140,13 @@ $(worldservice_so): %.so: $(service_dir)/%.c
 	@rm -f $@
 	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Iinclude/libshaco -Inet -Ibase -Imessage -Iworld -Itplt -Idatadefine -Wl,-rpath,. world.so tplt.so
 
-service_game.so: $(service_dir)/service_game.c game/fight.c game/fight.h
+service_game.so: $(service_dir)/service_game.c \
+	game/fight.c \
+	game/fight.h \
+	game/roommap.c \
+	game/roommap.h \
+	game/genmap.c \
+	game/genmap.h
 	@rm -f $@
 	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Iinclude/libshaco -Inet -Ibase -Imessage -Igame -Itplt -Idatadefine -Wl,-rpath,. tplt.so
 

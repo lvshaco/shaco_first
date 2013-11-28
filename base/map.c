@@ -59,7 +59,9 @@ idmap_free(struct idmap* self, void (*cb)(void* value)) {
         while (e) {
             tmp = e;
             e = e->next;
-            cb(tmp->pointer);
+            if (cb) {
+                cb(tmp->pointer);
+            }
             free(tmp);
         }
     }
@@ -197,7 +199,9 @@ strmap_free(struct strmap* self, void (*cb)(void* value)) {
         while (e) {
             tmp = e;
             e = e->next;
-            cb(tmp->pointer);
+            if (cb) {
+                cb(tmp->pointer);
+            }
             free(tmp);
         }
     }

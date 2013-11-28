@@ -35,6 +35,8 @@ def _serialize_to_file(cname, sheetname, field_map, outfile):
             fstr = "%s_t %s"%(ftype, fvname);
         elif ftype == "string":
             fstr = "char %s[%d]"%(fvname, flen);
+        elif ftype == "uarray":
+            fstr = "uint16_t n%s;\n    uint32_t %s[%d]"%(fvname, fvname, flen)
         else:
             log.write("\n[error : unknow field type, \
             name#%s, vname#%s, type#%s, len#%s ]\n"%

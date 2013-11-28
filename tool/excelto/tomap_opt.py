@@ -52,22 +52,23 @@ def parse_blocksheet(infile, map_config, outfile):
     table   = ep_parse_raw(sheet)
 
     items = table.items
-    if len(items)-3 < height:
+    row   = len(items)-3
+    col   = len(items[0])-4
+    if row < height:
         log.write("height no enough\n")
         exit(1)
 
-    if len(items[0])-4 < width:
+    if col < width:
         log.write("width no enough\n")
         exit(1)
 
-    # width
-    # height
+    # row
+    # col 
     # typeids [ntype1,ntype2,...,ntypeheight, [1,2,3][1,2,3], ...]
     # cell_tag list
     """
     struct cell_tag {
         uint16_t isassign:1; // or rand typed need rand
-        #uint16_t ctype:3;    // 0 is item, 1 is cell
         uint16_t dummy:15;
         uint8_t  cellrate;   // if 0, then cellid is done
         uint8_t  itemrate;   // if 0, then itemid is done
@@ -75,8 +76,8 @@ def parse_blocksheet(infile, map_config, outfile):
         uint32_t itemid;
     }
     """
-    op.write(struct.pack("H", width))
-    op.write(struct.pack("H", height))
+    op.write(struct.pack("H", row))
+    op.write(struct.pack("H", col))
 
     typeids = map(lambda x: map(lambda y: int(y), x.split(",")), items[1][2].split("|"))
     #print(typeids)
@@ -84,23 +85,24 @@ def parse_blocksheet(infile, map_config, outfile):
         log.write("typeids count no enough\n")
         exit(1)
 
+    curoff = 0
     for i in range(depth):
-        typel = typeids[i]
-        ntype = len(typel)
-        if ntype == 0 or ntype >= TYPEID_MAX:
-            log.write("ntype must 0~%d"%TYPEID_MAX)
+        num = len(typeids[i])
+        if num == 0 or num >= TYPEID_MAX:
+            log.write("num must 0~%d"%TYPEID_MAX)
             exit(1)
-        op.write(struct.pack("B", ntype))
+        op.write(struct.pack("B", curoff))
+        op.write(struct.pack("B", num))
+        curoff += num
 
     for i in range(depth):
-        typel = typeids[i]
-        for typeid in typel:
+        for typeid in typeids[i]:
             op.write(struct.pack("B", typeid))
 
-    for h in range(height):
+    for h in range(row):
         item = items[h+3]
         ch = h+1
-        for w in range(width):
+        for w in range(col):
             cw = w+1
             cell = item[w+4]
             if isinstance(cell, basestring):

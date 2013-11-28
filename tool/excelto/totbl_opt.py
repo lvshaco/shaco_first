@@ -44,6 +44,12 @@ def _serialize_to_file(table, field_map, outfile):
                 op.write(struct.pack("Q", val and long(val) or 0))
             elif ftype == "string":
                 op.write(struct.pack("%ds" % flen, str(val)))
+            elif ftype == "uarray":
+                subv = map(lambda x: int(x), val.split(","))
+                nsub = len(subv)
+                op.write(struct.pack("H", nsub))
+                for vi in range(flen):
+                    op.write(struct.pack("I", subv[vi] if vi < nsub else 0))
             else:
                 log.write("\n[error : unknow field type, \
                 name#%s, vname#%s, type#%s, len#%s ]\n"%

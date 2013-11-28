@@ -122,6 +122,10 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.py *.h *.c" {
  game=game{
   fight.h
   fight.c
+  roommap.h
+  roommap.c
+  genmap.h
+  genmap.c
  }
  message=message{
   cli_message.h
