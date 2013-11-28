@@ -175,9 +175,11 @@ service_tpltworld.so: $(service_dir)/service_tpltworld.c
 	@rm -f $@
 	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Iinclude/libshaco -Itplt -Idatadefine -Wl,-rpath,. tplt.so
 
-service_tpltgame.so: $(service_dir)/service_tpltgame.c
+service_tpltgame.so: $(service_dir)/service_tpltgame.c \
+	game/roommap.c \
+	game/roommap.h
 	@rm -f $@
-	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Iinclude/libshaco -Itplt -Idatadefine -Wl,-rpath,. tplt.so
+	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Iinclude/libshaco -Ibase -Itplt -Idatadefine -Igame -Wl,-rpath,. tplt.so
 
 world.so: $(world_src)
 	@rm -f $@
@@ -281,6 +283,7 @@ install:
 	cp -r net $(source_dir)	
 	cp -r cnet $(source_dir)
 	cp -r main/robot.c $(source_dir)/cnet
+	cp -r game $(source_dir)
 	#cp -r message $(source_dir)
 	mkdir .message
 	for file in `ls message`; do iconv -f utf-8 -t gbk message/$$file > .message/$$file; done 

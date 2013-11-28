@@ -928,9 +928,9 @@ main(int argc, char* argv[]) {
         times = strtol(argv[1], NULL, 10);
 
    
-    int32_t r = cs_cstr_to_int32("RES");
+    int32_t r = sc_cstr_to_int32("RES");
     printf("r = %d\n", r);
-    int ret = cs_cstr_compare_int32("RES", r);
+    int ret = sc_cstr_compare_int32("RES", r);
     printf("ret = %d\n", ret);
     //printf("%d\n",  memcmp(&r, "RES", 3));
     //printf("%c\n","RES"[0]);

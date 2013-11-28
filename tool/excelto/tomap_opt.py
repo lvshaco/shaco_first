@@ -39,7 +39,7 @@ def parse_blocksheet(infile, map_config, outfile):
         log.write("height <= 0 or widht <= 0\n")
         exit(1)
     
-    depth = height/100
+    depth = (height+99)/100
     if depth != len(colortex):
         log.write("colortex count != depth\n")
         exit(1)
@@ -55,15 +55,16 @@ def parse_blocksheet(infile, map_config, outfile):
     row   = len(items)-3
     col   = len(items[0])-4
     if row < height:
-        log.write("height no enough\n")
+        log.write("height too big\n")
         exit(1)
 
     if col < width:
-        log.write("width no enough\n")
+        log.write("width too big\n")
         exit(1)
 
-    # row
-    # col 
+    # map struct ->
+    # height
+    # width
     # typeids [ntype1,ntype2,...,ntypeheight, [1,2,3][1,2,3], ...]
     # cell_tag list
     """
@@ -76,8 +77,8 @@ def parse_blocksheet(infile, map_config, outfile):
         uint32_t itemid;
     }
     """
-    op.write(struct.pack("H", row))
-    op.write(struct.pack("H", col))
+    op.write(struct.pack("H", width))
+    op.write(struct.pack("H", height))
 
     typeids = map(lambda x: map(lambda y: int(y), x.split(",")), items[1][2].split("|"))
     #print(typeids)
@@ -99,10 +100,10 @@ def parse_blocksheet(infile, map_config, outfile):
         for typeid in typeids[i]:
             op.write(struct.pack("B", typeid))
 
-    for h in range(row):
+    for h in range(height):
         item = items[h+3]
         ch = h+1
-        for w in range(col):
+        for w in range(width):
             cw = w+1
             cell = item[w+4]
             if isinstance(cell, basestring):
@@ -138,21 +139,24 @@ def parse_blocksheet(infile, map_config, outfile):
                 itemid   = 0
                 itemrate = 0
 
-            if cellrate < 0 or cellrate > 99:
-                log.write("cellrate must 0~99, in (%d,%d)\n"%(cw,ch))
-                exit(1)
-            if itemrate <0 or itemrate > 99:
-                log.write("itemrate must 0~99, in (%d,%d)\n"%(cw,ch))
-                exit(1)
             if ctype == CTYPE_CELL:
-                texid = 0#colortex[h/100]
+                texid = colortex[h/100]
                 cellid = 1000 + typeid*100 + texid
             else:
                 cellid = 0
             if cellid == 0 and itemid == 0:
                 log.write("null cell(%d, %d)\n"%(cw,ch))
                 exit(1)
-
+            if cellrate < 0 or cellrate > 99:
+                log.write("cellrate must 0~99, in (%d,%d)\n"%(cw,ch))
+                exit(1)
+            if itemrate <0 or itemrate > 99:
+                log.write("itemrate must 0~99, in (%d,%d)\n"%(cw,ch))
+                exit(1)
+            if cellid > 0 and cellrate == 0:
+                cellrate = 100
+            if itemid > 0 and itemrate == 0:
+                itemrate = 100
             flag = isassign
             op.write(struct.pack("H", flag))
             op.write(struct.pack("B", cellrate))

@@ -1,4 +1,5 @@
 #include "sc_service.h"
+#include "sc_util.h"
 #include "sc_node.h"
 #include "sc_timer.h"
 #include "sc_dispatcher.h"
@@ -12,6 +13,8 @@
 #include "tplt_include.h"
 #include "tplt_struct.h"
 #include "map.h"
+#include "roommap.h"
+#include "genmap.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
@@ -57,6 +60,7 @@ struct room {
     int np;
     struct member p[MEMBER_MAX];
     struct groundattri gattri;
+    struct genmap* map;
 };
 
 struct gfroom {
@@ -64,6 +68,7 @@ struct gfroom {
 };
 
 struct game {
+    int tplt_handler;
     int pmax;
     struct player* players;
     struct gfroom rooms;
@@ -147,6 +152,11 @@ _get_item_tplt(struct game* self, uint32_t itemid) {
 int
 game_init(struct service* s) {
     struct game* self = SERVICE_SELF;
+    self->tplt_handler = service_query_id("tpltgame");
+    if (self->tplt_handler == SERVICE_INVALID) {
+        sc_error("lost tpltgame service");
+        return 1;
+    }
     int pmax = sc_gate_maxclient();
     if (pmax == 0) {
         sc_error("maxclient is zero, try load service gate before this");
@@ -337,7 +347,11 @@ _destory_room(struct game* self, struct room* ro) {
                 _logout(self, c, true, false);
             }
         }
-    } 
+    }
+    if (ro->map) {
+        genmap_free(ro->map);
+        ro->map = NULL;
+    }
     GFREEID_FREE(room, &self->rooms, ro);
 }
 static bool
@@ -829,15 +843,55 @@ game_usermsg(struct service* s, int id, void* msg, int sz) {
     }
 }
 
+static inline const struct map_tplt*
+_maptplt(uint32_t mapid) {
+    const struct tplt_visitor* visitor = tplt_get_visitor(TPLT_MAP);
+    if (visitor) 
+        return tplt_visitor_find(visitor, mapid);
+    return NULL; 
+}
+
+static struct genmap*
+_create_map(struct game* self, const struct map_tplt* tplt, uint32_t seed) {
+    struct service_message sm = { tplt->id, 0, sc_cstr_to_int32("GMAP"), 0, NULL };
+    service_notify_service(self->tplt_handler, &sm);
+    struct roommap* m = sm.result;
+    if (m == NULL) {
+        return NULL;
+    }
+    return genmap_create(tplt, m, seed);
+}
+
+static void
+_notify_createroomres(const struct sc_node* node, 
+        int error, int id, uint32_t key, int roomid) {
+    UM_DEFFIX(UM_CREATEROOMRES, res);
+    res->error = error;
+    res->id = id;
+    res->key = key;
+    res->roomid = roomid;
+    UM_SENDTONODE(node, res, sizeof(*res));
+}
+
 static void
 _handle_creategame(struct game* self, struct node_message* nm) {
     UM_CAST(UM_CREATEROOM, cr, nm->um);
- 
+
+    const struct map_tplt* tplt = _maptplt(cr->mapid); 
+    if (tplt == NULL) {
+        _notify_createroomres(nm->hn, SERR_CRENOTPLT, cr->id, cr->key, 0);
+        return;
+    }
+    struct genmap* m = _create_map(self, tplt, cr->key);
+    if (m == NULL) {
+        _notify_createroomres(nm->hn, SERR_CRENOMAP, cr->id, cr->key, 0);
+        return;
+    }
     struct room* ro = _create_room(self);
     assert(ro);
     ro->type = cr->type;
     ro->key = cr->key;
-   
+    ro->map = m; 
     // todo: 
     ground_attri_build(500, &ro->gattri);
 
@@ -847,14 +901,10 @@ _handle_creategame(struct game* self, struct node_message* nm) {
         _initmember(&ro->p[i], &cr->members[i]);
         role_attri_build(&ro->gattri, &ro->p[i].detail);
     }
-    
-    UM_DEFFIX(UM_CREATEROOMRES, res);
-    res->ok = 1;
-    res->id = cr->id;
-    res->key = cr->key;
-    res->roomid = GFREEID_ID(ro, &self->rooms);
-    UM_SENDTONODE(nm->hn, res, sizeof(*res));
+    int roomid = GFREEID_ID(ro, &self->rooms);
+    _notify_createroomres(nm->hn, SERR_OK, cr->id, cr->key, roomid);
 }
+
 static void
 _handle_destroyroom(struct game* self, struct UM_BASE* um) {
     UM_CAST(UM_CREATEROOMRES, dr, um);

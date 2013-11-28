@@ -22,7 +22,7 @@ struct genmap {
 struct map_tplt;
 struct roommap;
 
-struct genmap* genmap_create(struct map_tplt* tplt, struct roommap* m, uint32_t randseed);
+struct genmap* genmap_create(const struct map_tplt* tplt, struct roommap* m, uint32_t randseed);
 void genmap_free(struct genmap* self);
 
 #endif

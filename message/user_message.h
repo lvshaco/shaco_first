@@ -143,6 +143,7 @@ struct UM_ACCOUNTLOGINRES {
 struct UM_CREATEROOM {
     _UM_HEADER; 
     int8_t type;  // see ROOM_TYPE*
+    uint32_t mapid;
     int id;
     uint32_t key; // key of room
     int8_t nmember;
@@ -155,10 +156,10 @@ UM_CREATEROOM_size(struct UM_CREATEROOM* cr) {
 
 struct UM_CREATEROOMRES {
     _UM_HEADER;
-    int8_t ok;
-    int id;
+    int32_t error;
+    int32_t id;
     uint32_t key;
-    int roomid;
+    int32_t roomid;
 };
 
 struct UM_OVERROOM {

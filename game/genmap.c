@@ -2,7 +2,6 @@
 #include "roommap.h"
 #include "tplt_struct.h"
 #include <stdint.h>
-#include <stdbool.h>
 #include <stdlib.h>
 
 static uint64_t next = 1;
@@ -18,16 +17,16 @@ _srand(uint32_t seed) {
     next = seed;
 }
 
-static inline bool
+static inline int
 _randhit(int base, int rate) {
-    if (rate > 0)
+    if (rate >= base)
         return _rand() % base < rate;
     else
-        return true;
+        return 1;
 }
 
 static inline uint32_t
-_spectex(struct map_tplt* tplt, int typeid) {
+_spectex(const struct map_tplt* tplt, int typeid) {
     int index = typeid - CELL_SPEC;
     if (index >= 0 && index < tplt->nspectex) {
         return tplt->spectex[index];
@@ -37,40 +36,43 @@ _spectex(struct map_tplt* tplt, int typeid) {
 }
 
 static inline uint32_t
-_colortex(struct map_tplt* tplt, int index) {
+_colortex(const struct map_tplt* tplt, int index) {
     return (index >= 0 && index < tplt->ncolortex) ? tplt->colortex[index] : 0;
 }
 
 static uint32_t
-_randcell(struct map_tplt* tplt, struct roommap* m, int height) {
+_randcell(const struct map_tplt* tplt, struct roommap* m, uint16_t h) {
     int typeid, texid;
-    int index = height/100;
-    if (_randhit(10000, height)) {
+    if (_randhit(10000, h-1)) {
         typeid = CELL_SHI;
         texid  = _spectex(tplt, typeid);
     } else {
+        int index = (h-1)/100;
         struct roommap_typeidlist tilist = roommap_typeidlist(m, index);
-        typeid = tilist.num > 0 ? tilist.first[_rand() % tilist.num].id : 0;
+        if (tilist.first && tilist.num > 0)
+            typeid = tilist.first[_rand() % tilist.num].id;
+        else
+            typeid = 0;
         texid = _colortex(tplt, index);
     }
     return 1000 + typeid*100 + texid;
 }
 
 static void
-_gencell(struct map_tplt* tplt, struct roommap* m, int height, 
+_gencell(const struct map_tplt* tplt, struct roommap* m, uint16_t h, 
          struct roommap_cell* in, struct genmap_cell* out) {
     if (in->isassign) {
         if (_randhit(100, in->cellrate)) {
-            out->cellid = in->cellid; 
+            out->cellid = in->cellid;
         } else {
-            out->cellid = _randcell(tplt, m, height);
+            out->cellid = _randcell(tplt, m, h);
         }
         if (in->cellid == 0) {
             if (_randhit(100, in->itemrate)) {
                 out->itemid = in->itemid;
             } else {
                 out->itemid = 0;
-                out->cellid = _randcell(tplt, m, height);
+                out->cellid = _randcell(tplt, m, h);
             }
         } else {
             if (_randhit(100, in->itemrate)) {
@@ -80,19 +82,19 @@ _gencell(struct map_tplt* tplt, struct roommap* m, int height,
             }
         }
     } else {
-        out->cellid = _randcell(tplt, m, height);
+        out->cellid = _randcell(tplt, m, h);
         out->itemid = 0;
     }
 }
 
 struct genmap* 
-genmap_create(struct map_tplt* tplt, struct roommap* m, uint32_t randseed) {
+genmap_create(const struct map_tplt* tplt, struct roommap* m, uint32_t randseed) {
     _srand(randseed);
 
     uint16_t w = tplt->width;
     uint16_t h = tplt->height;
 
-    if (m->header.row < h || m->header.col < w)
+    if (m->header.height < h || m->header.width < w)
         return NULL;
 
     struct genmap* self = (struct genmap*)malloc(sizeof(*self) + 
@@ -104,7 +106,7 @@ genmap_create(struct map_tplt* tplt, struct roommap* m, uint32_t randseed) {
     struct roommap_cell* pin = ROOMMAP_CELL_ENTRY(m);
     uint32_t i;
     for (i=0; i<h*w; ++i) {
-        _gencell(tplt, m, i/h+1, &pin[i], &pout[i]);
+        _gencell(tplt, m, i/w+1, &pin[i], &pout[i]);
     }
     return self;
 }

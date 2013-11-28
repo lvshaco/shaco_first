@@ -28,6 +28,8 @@
 #define SERR_CREATECHARMUCHTIMES 37
 #define SERR_MATCHFAIL      40
 #define SERR_CREATEROOM     41
+#define SERR_CRENOTPLT      42
+#define SERR_CRENOMAP       43
 #define SERR_NOROOM         50
 #define SERR_ROOMKEY        51
 #define SERR_NOMEMBER       52

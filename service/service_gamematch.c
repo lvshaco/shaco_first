@@ -203,7 +203,7 @@ _destroy_tmproom(struct gamematch* self, struct room* ro, int err) {
     struct playerv pv;
     _get_tmpmembers(ro, &pv);
 
-    int status = err == 0 ? PS_ROOM : PS_GAME;
+    int status = err == SERR_OK ? PS_ROOM : PS_GAME;
     struct player* p;
     int i;
     for (i=0; i<pv.np; ++i) {
@@ -211,7 +211,7 @@ _destroy_tmproom(struct gamematch* self, struct room* ro, int err) {
         if (p) 
             p->status = status;
     }
-    if (err) {
+    if (err != SERR_OK) {
         for (i=0; i<pv.np; ++i) {
             p = pv.p[i];
             if (p) {
@@ -222,7 +222,7 @@ _destroy_tmproom(struct gamematch* self, struct room* ro, int err) {
     int nodeid = HNODE_ID(NODE_GAME, ro->sid);
     node = sc_node_get(nodeid);
     if (node) {
-        if (err == 0) {
+        if (err == SERR_OK) {
             for (i=0; i<pv.np; ++i) {
                 p = pv.p[i];
                 if (p) {
@@ -277,6 +277,7 @@ _match(struct gamematch* self, struct player* p, struct player* mp, int8_t type)
 
     UM_DEFVAR(UM_CREATEROOM, cr);
     cr->type = type;
+    cr->mapid = 1; // todo
     cr->id = GFREEID_ID(ro, &self->creating);
     cr->key = ro->key;
     _build_memberdetail(p, &cr->members[0]);
@@ -332,15 +333,14 @@ _oncreateroom(struct gamematch* self, struct node_message* nm) {
         if (ro->key == res->key &&
             ro->sid == nm->hn->sid) {
             ro->roomid = res->roomid;
-            if (_destroy_tmproom(self, ro, 
-                        res->ok ? SERR_OK : SERR_CREATEROOM) == 0)
+            if (_destroy_tmproom(self, ro, res->error) == 0)
                 return;
         }
     }
-    if (res->ok) {
-        res->ok = 0;
-        UM_SENDTONODE(nm->hn, res, res->msgsz);
-    }
+    //if (res->error) {
+        //res->ok = 0;
+        //UM_SENDTONODE(nm->hn, res, res->msgsz);
+    //}
 }
 
 static void

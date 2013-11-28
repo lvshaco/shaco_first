@@ -16,6 +16,7 @@ struct service_message {
     int32_t type;
     int32_t sz;
     void* msg;
+    void* result;
 };
 
 struct service {
