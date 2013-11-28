@@ -27,6 +27,9 @@ def _serialize_to_file(table, field_map, outfile):
     rowlen = 0
     for i in range(field_map_size(field_map)):
         flen = field_map_get_flen(field_map, i)
+        ftype = field_map_get_ftype(field_map, i)
+        if ftype == "uarray":
+            flen = 2 + flen * 4
         rowlen += flen
     op.write(struct.pack("I", rowlen))
     for row in range(len(items)): 
