@@ -145,7 +145,7 @@ def parse_blocksheet(infile, map_config, outfile):
                 log.write("itemrate must 0~99, in (%d,%d)\n"%(cw,ch))
                 exit(1)
             if ctype == CTYPE_CELL:
-                texid = colortex[h/100]
+                texid = 0#colortex[h/100]
                 cellid = 1000 + typeid*100 + texid
             else:
                 cellid = 0
