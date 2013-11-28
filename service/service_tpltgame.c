@@ -28,25 +28,23 @@ _loadtplt() {
 }
 
 static void
-_freemapcb(uint32_t key, void* value, void* ud) {
+_freemapcb(void* value) {
     struct roommap* m = value;
     roommap_free(m);
-}
-static void
-_freemap(struct idmap* m) {
-    if (m == NULL) return;
-    idmap_foreach(m, _freemapcb, NULL);
 }
 
 static int
 _loadmap(struct tpltgame* self) {
     const struct tplt_holder* holder = tplt_get_holder(TPLT_MAP);
+    if (holder == NULL)
+        return 1;
+    
     int sz = TPLT_HOLDER_NELEM(holder);
     if (self->maps) {
-        _freemap(self->maps);
-    } else {
-        self->maps = idmap_create(sz);
-    }
+        idmap_free(self->maps, _freemapcb);
+        self->maps = NULL;
+    } 
+    self->maps = idmap_create(sz);
    
     char fname[PATH_MAX];
     const struct map_tplt* tplt = TPLT_HOLDER_FIRSTELEM(map_tplt, holder);
@@ -74,7 +72,10 @@ tpltgame_create() {
 void
 tpltgame_free(struct tpltgame* self) {
     tplt_fini();
-    _freemap(self->maps);
+    if (self->maps) {
+        idmap_free(self->maps, _freemapcb);
+        self->maps = NULL;
+    }
 }
 
 int

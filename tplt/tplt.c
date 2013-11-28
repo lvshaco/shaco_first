@@ -89,17 +89,18 @@ tplt_fini() {
     self->p = NULL;
     self->sz = 0;
     free(self);
+    self = NULL;
 }
 
 const struct tplt_holder* 
 tplt_get_holder(int type) {
-    if (type >= 0 && type < self->sz)
+    if (self && type >= 0 && type < self->sz)
         return self->p[type].holder;
     return NULL;
 }
 const struct tplt_visitor* 
 tplt_get_visitor(int type) {
-    if (type >= 0 && type < self->sz)
+    if (self && type >= 0 && type < self->sz)
         return self->p[type].visitor;
     return NULL;
 }

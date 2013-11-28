@@ -275,6 +275,7 @@ int main(int argc, char* argv[]) {
             _onconnerr, 
             _onsockerr, 
             _handleum);
+    printf("connect to %s:%u\n", ip, port);
     if (cnet_connect(ip, port, TLOGIN) < 0) {
         printf("connect gate fail\n");
         return 1;
