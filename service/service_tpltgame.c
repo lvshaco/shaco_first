@@ -4,11 +4,11 @@
 #include <stdio.h>
 #include <assert.h>
 #include <stdlib.h>
-
+/*
 struct tpltgame {
     struct idmap* maps;
 };
-
+*/
 static int
 _loadtplt() {
     tplt_fini();
@@ -19,7 +19,7 @@ _loadtplt() {
     };
     return tplt_init(desc, sizeof(desc)/sizeof(desc[0]));
 }
-
+/*
 static void
 _freemapcb(uint32_t key, void* value, void* ud) {
     struct roommap* m = value;
@@ -54,11 +54,11 @@ _loadmap(struct tpltgame* self) {
     }
     return 0;
 }
-
+*/
 void
 tpltgame_free(void* pnull) {
     tplt_fini();
-    _freemap(self);
+    //_freemap(self);
 }
 
 int
@@ -66,14 +66,14 @@ tpltgame_init(struct service* s) {
     if (_loadtplt()) {
         return 1;
     }
-    if (_loadmap(self)) {
-        return 1;
-    }
+    //if (_loadmap(self)) {
+        //return 1;
+    //}
     return 0;
 }
 
 void
 tpltgame_service(struct service* s, struct service_message* sm) {
     _loadtplt();
-    _loadmap();
+    //_loadmap();
 }
