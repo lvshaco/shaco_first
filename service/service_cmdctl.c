@@ -134,7 +134,7 @@ _reloadres(struct cmdctl* self, struct args* A, struct memrw* rw) {
     if (self->tplt_handler == SERVICE_INVALID) {
         return CTL_NOSERVICE;
     }
-    struct service_message sm = {0, 0, cs_cstr_to_int32("TPLT"), 0, NULL};
+    struct service_message sm = {0, 0, sc_cstr_to_int32("TPLT"), 0, NULL};
     service_notify_service(self->tplt_handler, &sm);
     return CTL_OK;
 }
