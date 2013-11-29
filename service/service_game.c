@@ -837,7 +837,11 @@ _rand_fightitem(struct game* self, const struct map_tplt* tmap) {
 static inline const struct item_tplt*
 _rand_trapitem(struct game* self, const struct map_tplt* tmap) {
     uint32_t randid = tmap->trapitem[rand()%tmap->ntrapitem];
-    return _get_item_tplt(self, randid);
+    const struct item_tplt* titem = _get_item_tplt(self, randid);
+    if (titem == NULL) {
+        sc_debug("not found rand item %u", randid);
+    }
+    return titem;
 }
 
 static void
@@ -851,7 +855,7 @@ _use_item(struct game* self, struct gate_client* c, struct UM_BASE* um) {
     UM_CAST(UM_USEITEM, useitem, um);
     const struct item_tplt* titem = _get_item_tplt(self, useitem->itemid);
     if (titem == NULL) {
-        sc_debug("not found use item: %u", titem->id);
+        sc_debug("not found use item: %u", useitem->itemid);
         return;
     }
     const struct map_tplt* tmap = _maptplt(ro->mapid); 
@@ -867,7 +871,6 @@ _use_item(struct game* self, struct gate_client* c, struct UM_BASE* um) {
         if (titem->subtype == 0) {
             titem = _rand_fightitem(self, tmap);
             if (titem == NULL) {
-                sc_debug("not found rand item: %u", titem->id);
                 return;
             }
             me->nitem += 1;
@@ -877,7 +880,6 @@ _use_item(struct game* self, struct gate_client* c, struct UM_BASE* um) {
         if (titem->subtype == 0) {
             titem = _rand_trapitem(self, tmap);
             if (titem == NULL) {
-                sc_debug("not found rand item: %u", titem->id);
                 return;
             }
         }

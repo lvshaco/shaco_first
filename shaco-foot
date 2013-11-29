@@ -72,7 +72,6 @@ startall)
     startall
     ;;
 start)
-    shift
     start "$@"
     ;;
 stop)
