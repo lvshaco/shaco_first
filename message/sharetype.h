@@ -82,7 +82,7 @@ struct chardata {
 #define ITEM_TARGET_ALL 2
 
 // 道具效果类型
-#define ITEM_EFFECT_CREATE_BAO  1
+//#define ITEM_EFFECT_CREATE_BAO  1
 #define ITEM_EFFECT_SPEED 2
 #define ITEM_EFFECT_OXYGEN 3
 #define ITEM_EFFECT_MAX 100 // > 100 为按百分比计算

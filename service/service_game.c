@@ -633,9 +633,6 @@ _item_effectone(struct member* m, int effect, float value, struct buff_effect* r
     int refresh_flag = 0;
     struct tmemberdetail* detail = &m->detail;
     switch (effect) {
-    case ITEM_EFFECT_CREATE_BAO:
-        // todo:
-        break;
     case ITEM_EFFECT_SPEED:
         if (!isabs) 
             value = detail->movespeed * value * 0.01;
@@ -655,17 +652,6 @@ _item_effectone(struct member* m, int effect, float value, struct buff_effect* r
         }
         break;
     default:
-        break;
-    }
-    switch (effect) {
-    case ITEM_EFFECT_CREATE_BAO:
-        m->nbao += 1;
-        break;
-    case ITEM_EFFECT_OXYGEN:
-        m->noxygenitem += 1;
-        break;
-    default:
-        m->nitem += 1;
         break;
     }
     result->effect = effect;
@@ -874,23 +860,35 @@ _use_item(struct game* self, struct gate_client* c, struct UM_BASE* um) {
     }
 
     switch (titem->type) {
+    case ITEM_T_OXYGEN:
+        me->noxygenitem += 1;
+        break;
     case ITEM_T_FIGHT:
         if (titem->subtype == 0) {
             titem = _rand_fightitem(self, tmap);
+            if (titem == NULL) {
+                sc_debug("not found rand item: %u", titem->id);
+                return;
+            }
+            me->nitem += 1;
         }
         break;
     case ITEM_T_TRAP:
         if (titem->subtype == 0) {
             titem = _rand_trapitem(self, tmap);
+            if (titem == NULL) {
+                sc_debug("not found rand item: %u", titem->id);
+                return;
+            }
         }
         break;
-    case ITEM_T_BAO:
-        _rand_baoitem(self, titem, tmap);
+    case ITEM_T_BAO: {
+        uint32_t baoid = _rand_baoitem(self, titem, tmap);
+        if (baoid > 0) {
+            me->nbao += 1;
+        }
+        }
         break;
-    }
-    if (titem == NULL) {
-        sc_debug("not found rand item: %u", titem->id);
-        return;
     }
     if (titem->delay > 0) {
         _item_delay(self, ro, me, titem); 
@@ -942,12 +940,12 @@ static void
 _handle_creategame(struct game* self, struct node_message* nm) {
     UM_CAST(UM_CREATEROOM, cr, nm->um);
 
-    const struct map_tplt* tplt = _maptplt(cr->mapid); 
-    if (tplt == NULL) {
+    const struct map_tplt* tmap = _maptplt(cr->mapid); 
+    if (tmap == NULL) {
         _notify_createroomres(nm->hn, SERR_CRENOTPLT, cr->id, cr->key, 0);
         return;
     }
-    struct genmap* m = _create_map(self, tplt, cr->key);
+    struct genmap* m = _create_map(self, tmap, cr->key);
     if (m == NULL) {
         _notify_createroomres(nm->hn, SERR_CRENOMAP, cr->id, cr->key, 0);
         return;
@@ -959,7 +957,7 @@ _handle_creategame(struct game* self, struct node_message* nm) {
     ro->mapid = cr->mapid;
     ro->map = m; 
     // todo: 
-    ground_attri_build(500, &ro->gattri);
+    ground_attri_build(tmap->difficulty, &ro->gattri);
 
     ro->np = cr->nmember;
     int i;
