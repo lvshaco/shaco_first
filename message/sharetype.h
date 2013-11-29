@@ -89,6 +89,8 @@ struct chardata {
 
 // 关卡信息
 struct groundattri {
+    uint32_t randseed;
+    uint32_t mapid;        // 地图ID
     int32_t difficulty;    // 难度
     int32_t shaketime;     // 欲坠时间
     float   cellfallspeed; // 坠落速度

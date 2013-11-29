@@ -61,7 +61,6 @@ struct room {
     int np;
     struct member p[MEMBER_MAX];
     struct groundattri gattri;
-    uint32_t mapid;
     struct genmap* map;
 };
 
@@ -858,7 +857,7 @@ _use_item(struct game* self, struct gate_client* c, struct UM_BASE* um) {
         sc_debug("not found use item: %u", useitem->itemid);
         return;
     }
-    const struct map_tplt* tmap = _maptplt(ro->mapid); 
+    const struct map_tplt* tmap = _maptplt(ro->gattri.mapid); 
     if (tmap == NULL) {
         return;
     }
@@ -956,9 +955,9 @@ _handle_creategame(struct game* self, struct node_message* nm) {
     assert(ro);
     ro->type = cr->type;
     ro->key = cr->key;
-    ro->mapid = cr->mapid;
     ro->map = m; 
-    // todo: 
+    ro->gattri.randseed = cr->key; // just easy
+    ro->gattri.mapid = cr->mapid;
     ground_attri_build(tmap->difficulty, &ro->gattri);
 
     ro->np = cr->nmember;
