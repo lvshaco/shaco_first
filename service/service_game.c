@@ -18,6 +18,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
+#include <time.h>
 
 #define ENTER_TIMELEAST (ROOM_LOAD_TIMELEAST*1000)
 #define ENTER_TIMEOUT (5000+ENTER_TIMELEAST)
@@ -60,6 +61,7 @@ struct room {
     int np;
     struct member p[MEMBER_MAX];
     struct groundattri gattri;
+    uint32_t mapid;
     struct genmap* map;
 };
 
@@ -73,6 +75,7 @@ struct game {
     struct player* players;
     struct gfroom rooms;
     int tick;
+    uint32_t randseed;
 };
 
 struct buff_delay {
@@ -167,6 +170,9 @@ game_init(struct service* s) {
     memset(self->players, 0, sizeof(struct player) * pmax);
     // todo test this
     GFREEID_INIT(room, &self->rooms, 1);
+
+    self->randseed = time(NULL);
+
     SUBSCRIBE_MSG(s->serviceid, IDUM_CREATEROOM);
     SUBSCRIBE_MSG(s->serviceid, IDUM_CREATEROOMRES);
 
@@ -458,6 +464,26 @@ _check_destory_room(struct game* self, struct room* ro) {
     _destory_room(self, ro);
 }
 
+static inline const struct map_tplt*
+_maptplt(uint32_t mapid) {
+    const struct tplt_visitor* visitor = tplt_get_visitor(TPLT_MAP);
+    if (visitor) 
+        return tplt_visitor_find(visitor, mapid);
+    return NULL; 
+}
+
+static struct genmap*
+_create_map(struct game* self, const struct map_tplt* tplt, uint32_t seed) {
+    struct service_message sm = { tplt->id, 0, sc_cstr_to_int32("GMAP"), 0, NULL };
+    service_notify_service(self->tplt_handler, &sm);
+    struct roommap* m = sm.result;
+    if (m == NULL) {
+        return NULL;
+    }
+    return genmap_create(tplt, m, seed);
+}
+
+
 //////////////////////////////////////////////////////////////////////
 static void
 _notify_gameinfo(struct gate_client* c, struct room* ro) {
@@ -598,7 +624,7 @@ static int
 _item_effectone(struct member* m, int effect, float value, struct buff_effect* result) {
     if (effect == 0 || value == 0)
         return 0;
-    sc_debug("item effect %d, value %f, to char %u", effect, value, m->detail.charid);
+    sc_debug("titem effect %d, value %f, to char %u", effect, value, m->detail.charid);
     bool isabs = true;
     if (effect > ITEM_EFFECT_MAX) {
         isabs = false;
@@ -649,18 +675,18 @@ _item_effectone(struct member* m, int effect, float value, struct buff_effect* r
 
 static void
 _item_effect_member(struct game* self, struct room* ro, struct member* m, 
-        const struct item_tplt* item, int addtime) {
+        const struct item_tplt* titem, int addtime) {
 
     struct buff* b = NULL;
 
     bool spell = false;
-    if (item->time == 0) {
+    if (titem->time == 0) {
         spell = true;
     } else {
-        b = idmap_find(m->buffmap, item->id);
+        b = idmap_find(m->buffmap, titem->id);
         if (b == NULL) {
             b = malloc(sizeof(*b));
-            idmap_insert(m->buffmap, item->id, b);
+            idmap_insert(m->buffmap, titem->id, b);
             spell = true;
         } else {
             if (b->time == 0) {
@@ -673,16 +699,16 @@ _item_effect_member(struct game* self, struct room* ro, struct member* m,
         int effect_flag = 0;
         memset(effects, 0, sizeof(effects));
         if (0 < BUFF_EFFECT) {
-            effects[0].effect = item->effect1;
-            effects[0].effectvalue = item->effectvalue1;
+            effects[0].effect = titem->effect1;
+            effects[0].effectvalue = titem->effectvalue1;
         }
         if (1 < BUFF_EFFECT) {
-            effects[1].effect = item->effect2;
-            effects[1].effectvalue = item->effectvalue2;
+            effects[1].effect = titem->effect2;
+            effects[1].effectvalue = titem->effectvalue2;
         }
         if (2 < BUFF_EFFECT) {
-            effects[2].effect = item->effect3;
-            effects[2].effectvalue = item->effectvalue3;
+            effects[2].effect = titem->effect3;
+            effects[2].effectvalue = titem->effectvalue3;
         }
 
         int i;
@@ -704,7 +730,7 @@ _item_effect_member(struct game* self, struct room* ro, struct member* m,
                 b->effects[i] = effects[i];
             }
         }
-        b->time = sc_timer_now()/1000 + item->time + addtime;
+        b->time = sc_timer_now()/1000 + titem->time + addtime;
         sc_debug("insert time: %u, to char %u", b->time, m->detail.charid);
     }
 }
@@ -748,11 +774,11 @@ _get_effect_members(struct room* ro,
 
 static void
 _item_effect(struct game* self, struct room* ro, struct member* me, 
-        const struct item_tplt* item, int addtime) {
-    sc_debug("char %u, item effect %u", me->detail.charid, item->id);
+        const struct item_tplt* titem, int addtime) {
+    sc_debug("char %u, titem effect %u", me->detail.charid, titem->id);
 
     struct member* tars[MEMBER_MAX];
-    int ntar = _get_effect_members(ro, me, item->target, tars);
+    int ntar = _get_effect_members(ro, me, titem->target, tars);
     if (ntar <= 0) {
         return;
     }
@@ -760,33 +786,33 @@ _item_effect(struct game* self, struct room* ro, struct member* me,
     int i;
     for (i=0; i<ntar; ++i) {
         onetar = tars[i];
-        _item_effect_member(self, ro, onetar, item, addtime);
+        _item_effect_member(self, ro, onetar, titem, addtime);
     }
 }
 
 static void
-_item_delay(struct game* self, struct room* ro, struct member* m, const struct item_tplt* item) {
-    sc_debug("char %u, use delay item %u", m->detail.charid, item->id);
+_item_delay(struct game* self, struct room* ro, struct member* m, const struct item_tplt* titem) {
+    sc_debug("char %u, use delay titem %u", m->detail.charid, titem->id);
 
     struct member* tars[MEMBER_MAX];
-    int ntar = _get_effect_members(ro, m, item->target, tars);
+    int ntar = _get_effect_members(ro, m, titem->target, tars);
     if (ntar <= 0) {
         return;
     }
 
-    struct buff_delay* bdelay = idmap_find(m->delaymap, item->id);
+    struct buff_delay* bdelay = idmap_find(m->delaymap, titem->id);
     if (bdelay == NULL) {
         bdelay = malloc(sizeof(*bdelay));
         bdelay->effect_time = 0;
-        idmap_insert(m->delaymap, item->id, bdelay);
+        idmap_insert(m->delaymap, titem->id, bdelay);
     } 
     if (bdelay->effect_time == 0) {
-        bdelay->effect_time = sc_timer_now() + item->delay;
+        bdelay->effect_time = sc_timer_now() + titem->delay;
     }
     bdelay->last_time = sc_timer_now();
 
     UM_DEFFIX(UM_ITEMEFFECT, ie);
-    ie->itemid = item->id;
+    ie->itemid = titem->id;
     struct member* onetar;
     int i;
     for (i=0; i<ntar; ++i) {
@@ -794,6 +820,38 @@ _item_delay(struct game* self, struct room* ro, struct member* m, const struct i
         ie->charid = onetar->detail.charid; 
         _multicast_msg(ro, (void*)ie, 0);
     }
+}
+
+static uint32_t
+_rand_baoitem(struct game* self, const struct item_tplt* titem, const struct map_tplt* tmap) {
+#define CASE_BAO(n) case n: \
+    return tmap->baoitem ## n[sc_rand(self->randseed)%tmap->nbaoitem ## n] \
+
+    switch (titem->subtype) {
+    CASE_BAO(1);
+    CASE_BAO(2);
+    CASE_BAO(3);
+    CASE_BAO(4);
+    CASE_BAO(5);
+    CASE_BAO(6);
+    CASE_BAO(7);
+    CASE_BAO(8);
+    CASE_BAO(9);
+    CASE_BAO(10);
+    }
+    return 0;
+}
+
+static inline const struct item_tplt*
+_rand_fightitem(struct game* self, const struct map_tplt* tmap) {
+    uint32_t randid = tmap->fightitem[rand()%tmap->nfightitem];
+    return _get_item_tplt(self, randid);
+}
+
+static inline const struct item_tplt*
+_rand_trapitem(struct game* self, const struct map_tplt* tmap) {
+    uint32_t randid = tmap->trapitem[rand()%tmap->ntrapitem];
+    return _get_item_tplt(self, randid);
 }
 
 static void
@@ -805,13 +863,39 @@ _use_item(struct game* self, struct gate_client* c, struct UM_BASE* um) {
         return;
 
     UM_CAST(UM_USEITEM, useitem, um);
-    const struct item_tplt* item = _get_item_tplt(self, useitem->itemid);
-    if (item == NULL)
+    const struct item_tplt* titem = _get_item_tplt(self, useitem->itemid);
+    if (titem == NULL) {
+        sc_debug("not found use item: %u", titem->id);
         return;
-    if (item->delay > 0) {
-        _item_delay(self, ro, me, item); 
+    }
+    const struct map_tplt* tmap = _maptplt(ro->mapid); 
+    if (tmap == NULL) {
+        return;
+    }
+
+    switch (titem->type) {
+    case ITEM_T_FIGHT:
+        if (titem->subtype == 0) {
+            titem = _rand_fightitem(self, tmap);
+        }
+        break;
+    case ITEM_T_TRAP:
+        if (titem->subtype == 0) {
+            titem = _rand_trapitem(self, tmap);
+        }
+        break;
+    case ITEM_T_BAO:
+        _rand_baoitem(self, titem, tmap);
+        break;
+    }
+    if (titem == NULL) {
+        sc_debug("not found rand item: %u", titem->id);
+        return;
+    }
+    if (titem->delay > 0) {
+        _item_delay(self, ro, me, titem); 
     } else {
-        _item_effect(self, ro, me, item, 0);
+        _item_effect(self, ro, me, titem, 0);
     }
 }
 
@@ -843,25 +927,6 @@ game_usermsg(struct service* s, int id, void* msg, int sz) {
     }
 }
 
-static inline const struct map_tplt*
-_maptplt(uint32_t mapid) {
-    const struct tplt_visitor* visitor = tplt_get_visitor(TPLT_MAP);
-    if (visitor) 
-        return tplt_visitor_find(visitor, mapid);
-    return NULL; 
-}
-
-static struct genmap*
-_create_map(struct game* self, const struct map_tplt* tplt, uint32_t seed) {
-    struct service_message sm = { tplt->id, 0, sc_cstr_to_int32("GMAP"), 0, NULL };
-    service_notify_service(self->tplt_handler, &sm);
-    struct roommap* m = sm.result;
-    if (m == NULL) {
-        return NULL;
-    }
-    return genmap_create(tplt, m, seed);
-}
-
 static void
 _notify_createroomres(const struct sc_node* node, 
         int error, int id, uint32_t key, int roomid) {
@@ -891,6 +956,7 @@ _handle_creategame(struct game* self, struct node_message* nm) {
     assert(ro);
     ro->type = cr->type;
     ro->key = cr->key;
+    ro->mapid = cr->mapid;
     ro->map = m; 
     // todo: 
     ground_attri_build(500, &ro->gattri);
@@ -929,13 +995,13 @@ _update_delaycb(uint32_t key, void* value, void* ud) {
     struct buff_delay* bdelay = value;
     if (bdelay->effect_time > 0) {
         if (bdelay->effect_time <= sc_timer_now()) {
-            struct item_tplt* item = _get_item_tplt(self, itemid);
-            if (item == NULL)
+            struct item_tplt* titem = _get_item_tplt(self, itemid);
+            if (titem == NULL)
                 return;
             int diff = bdelay->effect_time > bdelay->last_time ? 
                 bdelay->effect_time - bdelay->last_time : 0;
-            diff = item->delay > diff ? item->delay - diff : 0;
-            _item_effect(self, ro, m, item, diff);
+            diff = titem->delay > diff ? titem->delay - diff : 0;
+            _item_effect(self, ro, m, titem, diff);
 
             bdelay->effect_time = 0;
         }

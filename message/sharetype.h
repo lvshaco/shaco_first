@@ -68,6 +68,14 @@ struct chardata {
 #define ROOM_LOAD_TIMELEAST 5
 #define MEMBER_MAX 8
 
+// 道具类型
+#define ITEM_T_OXYGEN 1 // 氧气
+#define ITEM_T_FIGHT  2 // 战斗
+#define ITEM_T_TRAP   3 // 机关
+#define ITEM_T_BAO    4 // 秘石
+#define ITEM_T_RES    5 // 资源
+#define ITEM_T_EQUIP  6 // 装备
+
 // 道具目标类型
 #define ITEM_TARGET_SELF  0
 #define ITEM_TARGET_ENEMY 1
