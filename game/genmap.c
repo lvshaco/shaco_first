@@ -19,7 +19,7 @@ _srand(uint32_t seed) {
 
 static inline int
 _randhit(int base, int rate) {
-    if (rate >= base)
+    if (rate < base)
         return _rand() % base < rate;
     else
         return 1;
@@ -62,7 +62,9 @@ static void
 _gencell(const struct map_tplt* tplt, struct roommap* m, uint16_t h, 
          struct roommap_cell* in, struct genmap_cell* out) {
     if (in->isassign) {
-        if (_randhit(100, in->cellrate)) {
+        if (in->cellrate == 0) {
+            out->cellid = 0;
+        } else if (_randhit(100, in->cellrate)) {
             out->cellid = in->cellid;
         } else {
             out->cellid = _randcell(tplt, m, h);
@@ -75,7 +77,9 @@ _gencell(const struct map_tplt* tplt, struct roommap* m, uint16_t h,
                 out->cellid = _randcell(tplt, m, h);
             }
         } else {
-            if (_randhit(100, in->itemrate)) {
+            if (in->itemrate == 0) {
+                out->itemid = 0;
+            } else if (_randhit(100, in->itemrate)) {
                 out->itemid = in->itemid;
             } else {
                 out->itemid = 300501; // 机关盒
