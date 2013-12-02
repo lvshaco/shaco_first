@@ -166,9 +166,9 @@ def parse_blocksheet(infile, map_config, outfile):
             op.write(struct.pack("B", itemrate))
             op.write(struct.pack("I", cellid))
             op.write(struct.pack("I", itemid))
-            log.write("isassign %d, ctype %d, cellrate %d, itemrate %d, cellid %d, \
-                    itemid %d, in(%d,%d)\n"%
-                    (isassign, ctype, cellrate, itemrate, cellid, itemid, cw,ch))
+            #log.write("isassign %d, ctype %d, cellrate %d, itemrate %d, cellid %d, \
+                    #itemid %d, in(%d,%d)\n"%
+                    #(isassign, ctype, cellrate, itemrate, cellid, itemid, cw,ch))
     op.close()
     log.write(outfile)
 
