@@ -26,8 +26,8 @@ _randhit(int base, int rate) {
 }
 
 static inline uint32_t
-_spectex(const struct map_tplt* tplt, int typeid) {
-    int index = typeid - CELL_SPEC;
+_spectex(const struct map_tplt* tplt, int type) {
+    int index = type - CELL_SPEC;
     if (index >= 0 && index < tplt->nspectex) {
         return tplt->spectex[index];
     } else {
@@ -42,20 +42,20 @@ _colortex(const struct map_tplt* tplt, int index) {
 
 static uint32_t
 _randcell(const struct map_tplt* tplt, struct roommap* m, uint16_t h) {
-    int typeid, texid;
+    int type, texid;
     if (_randhit(10000, h-1)) {
-        typeid = CELL_SHI;
-        texid  = _spectex(tplt, typeid);
+        type = CELL_SHI;
+        texid  = _spectex(tplt, type);
     } else {
         int index = (h-1)/100;
-        struct roommap_typeidlist tilist = roommap_typeidlist(m, index);
+        struct roommap_typeidlist tilist = roommap_gettypeidlist(m, index);
         if (tilist.first && tilist.num > 0)
-            typeid = tilist.first[_rand() % tilist.num].id;
+            type = tilist.first[_rand() % tilist.num].id;
         else
-            typeid = 0;
+            type = 0;
         texid = _colortex(tplt, index);
     }
-    return 1000 + typeid*100 + texid;
+    return 1000 + type*100 + texid;
 }
 
 static void

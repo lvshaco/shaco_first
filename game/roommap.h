@@ -50,7 +50,7 @@ struct roommap {
 #define ROOMMAP_NCELL(m)        ((m)->header.height*(m)->header.width)
 
 static inline struct roommap_typeidlist 
-roommap_typeidlist(struct roommap* self, uint16_t index) {
+roommap_gettypeidlist(struct roommap* self, uint16_t index) {
     struct roommap_typeidlist tilist;
     if (index < ROOMMAP_DEPTH(self)) {
         struct roommap_typeid_header* th = ROOMMAP_TID_HEADER(self);

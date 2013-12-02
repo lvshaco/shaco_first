@@ -31,8 +31,11 @@ _rp_read(struct readptr* rp, void* value, int sz) {
 
 static int 
 _check(struct roommap* self, int sz) {
-    int ncell = ROOMMAP_NCELL(self);
     int depth = ROOMMAP_DEPTH(self);
+    if (depth <= 0)
+        return 1;
+
+    int ncell = ROOMMAP_NCELL(self);
     int i;
     struct roommap_typeid_header th;
     uint8_t curoff = 0;
@@ -67,11 +70,14 @@ _check(struct roommap* self, int sz) {
 
 static int
 _build(struct roommap* self) {
-    struct roommap_typeid_header* th = (struct roommap_typeid_header*)self->data;
     uint16_t depth = ROOMMAP_DEPTH(self);
+    if (depth <= 0)
+        return 1;
+
+    struct roommap_typeid_header* th = (struct roommap_typeid_header*)self->data; 
     struct roommap_typeid* ti = (struct roommap_typeid*)(th + depth);
     self->typeid_entry = ti;
-    self->cell_entry = (struct roommap_cell*)(ti + th[depth].offset + th[depth].num);
+    self->cell_entry = (struct roommap_cell*)(ti + th[depth-1].offset + th[depth-1].num);
     return 0;
 }
 
