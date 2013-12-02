@@ -140,7 +140,10 @@ def parse_blocksheet(infile, map_config, outfile):
                 itemrate = 0
 
             if ctype == CTYPE_CELL:
-                texid = colortex[h/100]
+                if typeid >= 7:
+                    texid = spectex[typeid-7]
+                else:
+                    texid = colortex[h/100]
                 cellid = 1000 + typeid*100 + texid
             else:
                 cellid = 0
@@ -163,9 +166,9 @@ def parse_blocksheet(infile, map_config, outfile):
             op.write(struct.pack("B", itemrate))
             op.write(struct.pack("I", cellid))
             op.write(struct.pack("I", itemid))
-            #log.write("isassign %d, ctype %d, cellrate %d, itemrate %d, cellid %d, \
-                    #itemid %d, in(%d,%d)\n"%
-                    #(isassign, ctype, cellrate, itemrate, cellid, itemid, cw,ch))
+            log.write("isassign %d, ctype %d, cellrate %d, itemrate %d, cellid %d, \
+                    itemid %d, in(%d,%d)\n"%
+                    (isassign, ctype, cellrate, itemrate, cellid, itemid, cw,ch))
     op.close()
     log.write(outfile)
 
