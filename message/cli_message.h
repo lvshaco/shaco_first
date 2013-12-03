@@ -191,6 +191,8 @@ struct UM_USEITEM {
 
 struct UM_ITEMEFFECT {
     _UM_HEADER;
+    uint32_t spellid;
+    uint32_t oriitem;
     uint32_t charid;
     uint32_t itemid;
 };

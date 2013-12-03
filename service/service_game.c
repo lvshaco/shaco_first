@@ -779,12 +779,6 @@ static void
 _item_delay(struct game* self, struct room* ro, struct member* m, const struct item_tplt* titem) {
     sc_debug("char %u, use delay titem %u", m->detail.charid, titem->id);
 
-    struct member* tars[MEMBER_MAX];
-    int ntar = _get_effect_members(ro, m, titem->target, tars);
-    if (ntar <= 0) {
-        return;
-    }
-
     struct buff_delay* bdelay = idmap_find(m->delaymap, titem->id);
     if (bdelay == NULL) {
         bdelay = malloc(sizeof(*bdelay));
@@ -795,16 +789,6 @@ _item_delay(struct game* self, struct room* ro, struct member* m, const struct i
         bdelay->effect_time = sc_timer_now() + titem->delay;
     }
     bdelay->last_time = sc_timer_now();
-
-    UM_DEFFIX(UM_ITEMEFFECT, ie);
-    ie->itemid = titem->id;
-    struct member* onetar;
-    int i;
-    for (i=0; i<ntar; ++i) {
-        onetar = tars[i];
-        ie->charid = onetar->detail.charid; 
-        _multicast_msg(ro, (void*)ie, 0);
-    }
 }
 
 static uint32_t
@@ -857,6 +841,7 @@ _use_item(struct game* self, struct gate_client* c, struct UM_BASE* um) {
         sc_debug("not found use item: %u", useitem->itemid);
         return;
     }
+    const struct item_tplt* oriitem = titem;
     const struct map_tplt* tmap = _maptplt(ro->gattri.mapid); 
     if (tmap == NULL) {
         return;
@@ -891,10 +876,34 @@ _use_item(struct game* self, struct gate_client* c, struct UM_BASE* um) {
         }
         break;
     }
+
+    struct member* tars[MEMBER_MAX];
+    int ntar = _get_effect_members(ro, me, titem->target, tars);
+    if (ntar <= 0) {
+        return;
+    }
+
     if (titem->delay > 0) {
         _item_delay(self, ro, me, titem); 
     } else {
-        _item_effect(self, ro, me, titem, 0);
+        struct member* onetar;
+        int i;
+        for (i=0; i<ntar; ++i) {
+            onetar = tars[i];
+            _item_effect_member(self, ro, onetar, titem, 0);
+        }
+    }
+
+    UM_DEFFIX(UM_ITEMEFFECT, ie);
+    ie->spellid = me->detail.charid;
+    ie->oriitem = oriitem->id;
+    ie->itemid = titem->id;
+    struct member* onetar;
+    int i;
+    for (i=0; i<ntar; ++i) {
+        onetar = tars[i];
+        ie->charid = onetar->detail.charid; 
+        _multicast_msg(ro, (void*)ie, 0);
     }
 }
 
