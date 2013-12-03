@@ -8,6 +8,9 @@
 #include <limits.h>
 #include <stdio.h>
 #include <string.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <errno.h>
 
 struct log {
     struct elog* el;
@@ -32,20 +35,26 @@ log_free(struct log* self) {
 int
 log_init(struct service* s) {
     struct log* self = SERVICE_SELF;
-
-    char logfile[PATH_MAX];
+    
     const char* node = sc_getstr("node_type", "");
     if (node[0] == '\0') {
         fprintf(stderr, "no config node_type\n");
         return 1;
     }
     struct elog* el;
-    if (sc_getint("sc_daemon", 0)) {
-        snprintf(logfile, sizeof(logfile), "%s/log/%s%d.log", 
-                getenv("HOME"), 
+    if (sc_getint("sc_daemon", 0)) { 
+        const char* logdir = sc_getstr("log_dir", "");
+        if (logdir[0] == '\0') {
+            fprintf(stderr, "no specify log dir\n");
+            return 1;
+        }
+        mkdir(logdir, 0744);
+        char logfile[PATH_MAX];
+        snprintf(logfile, sizeof(logfile), "%s/%s%d.log",
+                logdir,
                 node,
                 sc_getint("node_sid", 0));
-        
+
         el = elog_create(logfile);
         if (el == NULL) {
             return 1;

@@ -2,6 +2,8 @@ sc_loglevel="DEBUG"
 sc_connmax=11000 
 sc_service="log,dispatcher,node,centerc,cmdctl,gate,login"
 
+log_dir="/home/lvxiaojun/log"
+
 node_type="login" 
 node_sid=0 
 node_ip="127.0.0.1" 

@@ -2,6 +2,8 @@ sc_loglevel="DEBUG"
 sc_connmax=1000 
 sc_service="log,dispatcher,node,centerc,cmdctl,cmdctlworld,tpltworld,world,gamematch,playerdb"
 
+log_dir="/home/lvxiaojun/log"
+
 cmdctl_handler="cmdctlworld"
 tplt_handler="tpltworld"
 

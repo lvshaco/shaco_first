@@ -2,6 +2,8 @@ sc_loglevel="INFO"
 sc_connmax=1000 
 sc_service="log,dispatcher,node,centerc,cmdctl,redisproxy"
 
+log_dir="/home/lvxiaojun/log"
+
 node_type="redisproxy" 
 node_sid=0 
 node_ip="127.0.0.1" 
