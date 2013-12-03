@@ -16,6 +16,7 @@
 struct benchmarkdb {
     uint64_t start;
     uint64_t end;
+    int query_init;
     int query;
     int query_send;
     int query_done;
@@ -41,7 +42,8 @@ benchmarkdb_init(struct service* s) {
     redis_initreply(&self->reply, 512, 0);
    
     self->start = self->end = 0;
-    self->query = sc_getint("benchmark_query", 0);
+    self->query_init = sc_getint("benchmark_query_init", 50);
+    self->query = sc_getint("benchmark_query", 10000);
     self->query_send = 0;
     self->query_done = 0;
     SUBSCRIBE_MSG(s->serviceid, IDUM_REDISREPLY);
@@ -58,21 +60,22 @@ static void
 _sendone(struct benchmarkdb* self) {
     const struct sc_node* redisp = sc_node_get(HNODE_ID(NODE_REDISPROXY, 0));
     if (redisp == NULL) {
+        sc_error("no redisproxy");
         return;
     }
     char* tmp;
     size_t len;
-    int32_t tag = 1;
     //tmp = "*2\r\n$7\r\nhgetall\r\n$6\r\nuser:1\r\n";
     //sc_net_send(self->connid, tmp, strlen(tmp));
     //tmp = "PING\r\n";
     tmp="hgetall user:1\r\n";
     len = strlen(tmp);
     UM_DEFVAR(UM_REDISQUERY, rq);
-    
+    rq->needreply = 1; 
+    rq->needrecord = 0;
+    rq->cbsz = 0;
     struct memrw rw;
     memrw_init(&rw, rq->data, rq->msgsz - sizeof(*rq));
-    memrw_write(&rw, &tag, sizeof(tag));
     memrw_write(&rw, tmp, len);
     rq->msgsz = sizeof(*rq) + RW_CUR(&rw);
     UM_SENDTONODE(redisp, rq, rq->msgsz);
@@ -82,13 +85,9 @@ _sendone(struct benchmarkdb* self) {
 static void
 _handleredisproxy(struct benchmarkdb* self, struct node_message* nm) {
     hassertlog(nm->um->msgid == IDUM_REDISREPLY);
-
-    int tag;
-
     UM_CAST(UM_REDISREPLY, rep, nm->um);
     struct memrw rw;
     memrw_init(&rw, rep->data, rep->msgsz - sizeof(*rep));
-    memrw_read(&rw, &tag, sizeof(tag));
 
     redis_resetreplybuf(&self->reply, rw.ptr, RW_SPACE(&rw));
     hassertlog(redis_getreply(&self->reply) == REDIS_SUCCEED);
@@ -135,7 +134,7 @@ benchmarkdb_time(struct service* s) {
 
     self->start = sc_timer_now();
     int i;
-    for (i=0; i<50; ++i) {
-    _sendone(self);
+    for (i=0; i<self->query_init; ++i) {
+        _sendone(self);
     }
 }

@@ -189,6 +189,7 @@ sc_log_init() {
     _LOG_SERVICE = service_query_id("log");
     if (_LOG_SERVICE != SERVICE_INVALID) {
         if (service_prepare("log")) {
+            _LOG_SERVICE = SERVICE_INVALID;
             sc_exit("log init fail");
         }
     } else {

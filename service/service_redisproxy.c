@@ -29,6 +29,7 @@ struct queryqueue {
 
 struct redisproxy {
     int connid;
+    bool authed;
     struct redis_reply reply;
     struct queryqueue queryq;
 };
@@ -160,7 +161,9 @@ _handlereply(struct redisproxy* self) {
     struct redis_reader* reader = &self->reply.reader;
     struct memrw rw;
     memrw_init(&rw, rep->data, rep->msgsz - sizeof(*rep));
-    memrw_write(&rw, ql->cb, ql->cbsz);
+    if (ql->cbsz) {
+        memrw_write(&rw, ql->cb, ql->cbsz);
+    }
     memrw_write(&rw, reader->buf, reader->pos);
     rep->msgsz = RW_CUR(&rw) + sizeof(*rep);
     UM_SENDTONODE(node, rep, rep->msgsz);
@@ -209,6 +212,11 @@ errout:
         service_notify_net(nm->ud, nm);
     }
 }
+
+//static int
+//_auth(struct redisproxy* self) {
+    //return 1;    
+//}
 
 void
 redisproxy_net(struct service* s, struct net_message* nm) {

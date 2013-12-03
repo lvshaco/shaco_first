@@ -919,8 +919,6 @@ static void fini2() {
 SC_LIBRARY_INIT(init1, fini1, 100)
 SC_LIBRARY_INIT(init2, fini2, 101)
 
-
-
 int 
 main(int argc, char* argv[]) {
     int times = 1;
@@ -928,10 +926,10 @@ main(int argc, char* argv[]) {
         times = strtol(argv[1], NULL, 10);
 
    
-    int32_t r = sc_cstr_to_int32("RES");
-    printf("r = %d\n", r);
-    int ret = sc_cstr_compare_int32("RES", r);
-    printf("ret = %d\n", ret);
+    //int32_t r = sc_cstr_to_int32("RES");
+    //printf("r = %d\n", r);
+    //int ret = sc_cstr_compare_int32("RES", r);
+    //printf("ret = %d\n", ret);
     //printf("%d\n",  memcmp(&r, "RES", 3));
     //printf("%c\n","RES"[0]);
     //sc_library_init();
@@ -948,5 +946,6 @@ main(int argc, char* argv[]) {
     //test_elog2();
     //test_log(times);
     //test_elog4(times);
+    test_redis();
     return 0;
 }

@@ -98,6 +98,7 @@ _query(struct login* self, struct gate_client* c, struct player* p) {
     }
     UM_DEFVAR(UM_REDISQUERY, rq);
     rq->needreply = 1;
+    rq->needrecord = 0;
     struct memrw rw;
     memrw_init(&rw, rq->data, rq->msgsz - sizeof(*rq));
     memrw_write(&rw, (int*)&c->connid, sizeof(int));
