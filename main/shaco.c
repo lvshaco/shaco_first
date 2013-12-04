@@ -47,23 +47,40 @@ sc_env_load(const char* file) {
     lua_close(L);
 }
 
+static void
+usage(const char* app) {
+    fprintf(stderr, "usage: %s config [--key value]\n", app);
+}
+
 int 
 main(int argc, char* argv[]) {
     const char* file = "config.lua";
     if (argc > 1) {
         file = argv[1];
     }
-    bool isdaemon = false;
-    if (argc > 2) {
-        if (strcmp(argv[2], "-d") == 0) {
-            daemon(1, 1);
-            isdaemon = true;
-        }
-    }
+    
     sc_env_init();
     sc_env_load(file);
-    sc_setnumenv("sc_daemon", isdaemon);
 
+    int lastarg;
+    int i;
+    for (i=2; i<argc; ++i) {
+        lastarg = i==argc-1;
+        if (!strncmp(argv[i], "--", 2) && 
+             argv[i][2] != '\0' &&
+            !lastarg) {
+            sc_setenv(&(argv[i][2]), argv[i+1]);
+            i++;
+        } else {
+            usage(argv[0]);
+            return 1;
+        }
+    }
+
+    if (sc_getint("sc_daemon", 0)) {
+        daemon(1, 1);
+    }
+    
     sc_init();
     sc_start();
     sc_env_fini();

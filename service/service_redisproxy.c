@@ -200,6 +200,7 @@ _read(struct redisproxy* self, struct net_message* nm) {
             result = redis_getreply(reply);
             K++;
         }
+        redis_resetreply(reply);
         if (K > 0) {
             self->times++;
             self->allcount+=K;

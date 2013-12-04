@@ -29,7 +29,7 @@ end
 
 local function reload_res(client, args)
     do_shell_command(client, strfmt(
-    'cd %s && 2>&1 ./shaco-cli --cmd="all all reloadres"', do_shell_path))
+    'cd %s && 2>&1 ./shaco-cli --cmd "all all reloadres"', do_shell_path))
 end
 
 local command_map = {

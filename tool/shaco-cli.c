@@ -187,42 +187,38 @@ _start_interactive_mode(int fd) {
     return 0;
 }
 
+static void
+usage(const char* app) {
+    printf("usage: %s [-h] [--help] [--addr ip:port] [--cmd cmdline]\n", app);
+}
+
 int main(int argc, char* argv[]) {
 
     const char* addr = "127.0.0.1";
     int port = 18000;
     const char* cmdline = NULL;
 
-    const char* arg;
-    char* split;
+    const char* app = argv[0];
+    char* c;
+    int lastarg;
     int i;
     for (i=1; i<argc; ++i) {
-        arg = argv[i];
-        if (memcmp(arg, "--addr=", 7) == 0) {
-            addr = arg+7;
-            split = strchr(addr, ':');
-            if (split) {
-                *split = '\0';
-                port = strtoul(split+1, NULL, 10);
+        lastarg = i==argc-1;
+        if (!strcmp(argv[i], "--addr") && !lastarg) {
+            addr = argv[++i];
+            c = strchr(addr, ':');
+            if (c) {
+                *c = '\0';
+                port = strtoul(c+1, NULL, 10);
             }
-        } else if (memcmp(arg, "--cmd=", 6) == 0) {
-            cmdline = arg+6;
-        } else if (strcmp(arg, "-h") == 0) {
-            printf("usage: %s "
-                    "[-h] "
-                    "[--addr=ip:port] "
-                    "[--cmd=cmdline]"
-                    "\n", argv[0]);
-            return 0;
+        } else if (!strcmp(argv[i], "--cmd") && !lastarg) {
+            cmdline = argv[++i];
+        } else {
+            usage(app);
+            return 1;
         }
     }
-/*
-    printf("%s:%u\n", addr, port);
-    if (cmdline) {
-        printf("cmdline %s\n", cmdline);
-    }
-*/
-    
+   
     int fd = _connect(addr, port);
     if (fd == -1) {
         printf("%s\n", strerror(errno));
