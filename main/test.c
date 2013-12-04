@@ -531,17 +531,27 @@ void test_redisnew(int times) {
     int sz;
     int r;
     int i;
+    int off = 0;
     // 1
-    tmp = "*0\r\n";
+    //tmp = "*0\r\n";
+    tmp = "$6\r\nfoobar\r\n";
     sz = strlen(tmp);
 
     uint64_t t1 = _elapsed();
     int n;
     for (n=0; n<times; ++n) {
+        if (off > 0) {
+            strncpy(&reader->buf[reader->sz], tmp+off, 10);
+            reader->sz += 10;
+        }
         for (i=0; i<400; ++i) {
             strncpy(&reader->buf[reader->sz], tmp, sz);
             reader->sz += sz;
         }
+        off = sz-10;
+        strncpy(&reader->buf[reader->sz], tmp, off);
+        reader->sz += off;
+
         r = redis_getreply(&reply);
         while (r == REDIS_SUCCEED) {
             //redis_walkreply(&reply);
@@ -951,6 +961,28 @@ static void fini2() {
 SC_LIBRARY_INIT(init1, fini1, 100)
 SC_LIBRARY_INIT(init2, fini2, 101)
 
+void
+test_copy(int times) {
+    char src[4*1024];
+    char dest[4*1024];
+    int i;
+    uint64_t t1,t2;
+    t1 = _elapsed();
+    for (i=0; i<times; ++i) {
+        memcpy(dest, src, sizeof(src));
+    }
+    t2 = _elapsed();
+    printf("memcpy use time: %d\n", (int)(t2-t1));
+    
+    t1 = _elapsed();
+    for (i=0; i<times; ++i) {
+        memmove(dest, src, sizeof(src));
+    }
+    t2 = _elapsed();
+    printf("memmove use time: %d\n", (int)(t2-t1));
+
+}
+
 int 
 main(int argc, char* argv[]) {
     int times = 1;
@@ -979,5 +1011,6 @@ main(int argc, char* argv[]) {
     //test_log(times);
     //test_elog4(times);
     test_redisnew(times);
+    //test_copy(times);
     return 0;
 }
