@@ -530,39 +530,55 @@ void test_redisnew(int times) {
     const char* tmp;
     int sz;
     int r;
-    int i;
+    //int i;
     int off = 0;
     // 1
     //tmp = "*0\r\n";
     tmp = "$6\r\nfoobar\r\n";
     sz = strlen(tmp);
 
+    int allcount = REDIS_REPLYSPACE(&reply)/sz * times;
+    int curcount = 0;
+
     uint64_t t1 = _elapsed();
     int n;
     for (n=0; n<times; ++n) {
-        if (off > 0) {
-            strncpy(&reader->buf[reader->sz], tmp+off, 10);
-            reader->sz += 10;
-        }
-        for (i=0; i<400; ++i) {
+        int space = REDIS_REPLYSPACE(&reply);
+        assert(space >= sz);
+        //printf("%d, space %d pos %d sz %d off %d\n", n, space, reader->pos, reader->sz, off);
+        strncpy(&reader->buf[reader->sz], tmp+off, sz-off);
+        reader->sz += sz-off;
+        space -= sz-off;
+
+        while (space >= sz) {
             strncpy(&reader->buf[reader->sz], tmp, sz);
             reader->sz += sz;
+            space -= sz;
         }
-        off = sz-10;
-        strncpy(&reader->buf[reader->sz], tmp, off);
-        reader->sz += off;
-
+        off = space;
+        if (off) {
+            strncpy(&reader->buf[reader->sz], tmp, off);
+            reader->sz += off;
+        }
+          
         r = redis_getreply(&reply);
         while (r == REDIS_SUCCEED) {
+            curcount ++;
             //redis_walkreply(&reply);
             redis_resetreply(&reply);;
             r = redis_getreply(&reply);
+        }
+        assert(r != REDIS_ERROR);
+        if (r == REDIS_NEXTTIME) {
+            //printf("nexttime: %d, %d\n", reply.reader.pos, reply.reader.pos_last);
         }
         redis_resetreply(&reply);
     } 
     uint64_t t2 = _elapsed();
     redis_finireply(&reply);
-    printf("test redis new, use time: %d\n", (int)(t2-t1));
+    printf("test redis new, replycount %d, mustcount %d, use time: %d\n", 
+            curcount, allcount, (int)(t2-t1));
+    assert(curcount == allcount);
 }
 
 struct fldata {
