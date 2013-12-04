@@ -523,6 +523,38 @@ void test_redis() {
     redis_finireply(&reply);
 }
 
+void test_redisnew(int times) {
+    struct redis_reply reply;
+    redis_initreply(&reply, 512, 16*1024);
+    struct redis_reader* reader = &reply.reader;
+    const char* tmp;
+    int sz;
+    int r;
+    int i;
+    // 1
+    tmp = "hgetall user:1\r\n";
+    sz = strlen(tmp);
+
+    uint64_t t1 = _elapsed();
+    int n;
+    for (n=0; n<times; ++n) {
+        for (i=0; i<400; ++i) {
+            strncpy(&reader->buf[reader->sz], tmp, sz);
+            reader->sz += sz;
+        }
+        r = redis_getreply(&reply);
+        while (r == REDIS_SUCCEED) {
+            redis_walkreply(&reply);
+            redis_resetreply(&reply);;
+            r = redis_getreply(&reply);
+        }
+        redis_resetreply(&reply);
+    } 
+    uint64_t t2 = _elapsed();
+    redis_finireply(&reply);
+    printf("test redis new, use time: %d\n", (int)(t2-t1));
+}
+
 struct fldata {
     int tag;
 };
@@ -946,6 +978,6 @@ main(int argc, char* argv[]) {
     //test_elog2();
     //test_log(times);
     //test_elog4(times);
-    test_redis();
+    test_redisnew(times);
     return 0;
 }
