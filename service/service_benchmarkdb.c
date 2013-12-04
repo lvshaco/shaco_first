@@ -19,6 +19,7 @@ struct benchmarkdb {
     int query_init;
     int query;
     int query_send;
+    int query_recv;
     int query_done;
     struct redis_reply reply;
 };
@@ -45,6 +46,7 @@ benchmarkdb_init(struct service* s) {
     self->query_init = sc_getint("benchmark_query_init", 50);
     self->query = sc_getint("benchmark_query", 10000);
     self->query_send = 0;
+    self->query_recv = 0;
     self->query_done = 0;
     SUBSCRIBE_MSG(s->serviceid, IDUM_REDISREPLY);
     sc_timer_register(s->serviceid, 1000);
@@ -93,13 +95,14 @@ _handleredisproxy(struct benchmarkdb* self, struct node_message* nm) {
     hassertlog(redis_getreply(&self->reply) == REDIS_SUCCEED);
     //redis_walkreply(&self->reply);
     self->query_done++;
+    self->query_recv++;
     if (self->query_done == self->query) {
         self->end = sc_timer_now();
         uint64_t elapsed = self->end - self->start;
         if (elapsed == 0) elapsed = 1;
         float qps = self->query_done/(elapsed*0.001f);
-        sc_info("query done: %d, use time: %d, qps: %f", 
-                self->query_done, (int)elapsed, qps);
+        sc_info("query done: %d, query_send: %d, query_recv: %d, use time: %d, qps: %f", 
+                self->query_done, self->query_send, self->query_recv, (int)elapsed, qps);
         self->start = self->end;
         self->query_done = 0;
 
