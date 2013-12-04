@@ -776,7 +776,7 @@ _item_effect(struct game* self, struct room* ro, struct member* me,
 }
 
 static void
-_item_delay(struct game* self, struct room* ro, struct member* m, const struct item_tplt* titem) {
+_item_delay(struct game* self, struct room* ro, struct member* m, const struct item_tplt* titem, int delay) {
     sc_debug("char %u, use delay titem %u", m->detail.charid, titem->id);
 
     struct buff_delay* bdelay = idmap_find(m->delaymap, titem->id);
@@ -784,11 +784,11 @@ _item_delay(struct game* self, struct room* ro, struct member* m, const struct i
         bdelay = malloc(sizeof(*bdelay));
         bdelay->effect_time = 0;
         idmap_insert(m->delaymap, titem->id, bdelay);
-    } 
-    if (bdelay->effect_time == 0) {
-        bdelay->effect_time = sc_timer_now() + titem->delay;
     }
-    bdelay->last_time = sc_timer_now();
+    bdelay->last_time = sc_timer_now() + delay;
+    if (bdelay->effect_time == 0) {
+        bdelay->effect_time = bdelay->last_time;
+    }
 }
 
 static uint32_t
@@ -883,8 +883,12 @@ _use_item(struct game* self, struct gate_client* c, struct UM_BASE* um) {
         return;
     }
 
-    if (titem->delay > 0) {
-        _item_delay(self, ro, me, titem); 
+    int delay = titem->delay;
+    if (delay > 0 && oriitem != titem) {
+        delay += oriitem->delay;
+    }
+    if (delay > 0) {
+        _item_delay(self, ro, me, titem, delay); 
     } else {
         struct member* onetar;
         int i;
@@ -1006,9 +1010,8 @@ _update_delaycb(uint32_t key, void* value, void* ud) {
             struct item_tplt* titem = _get_item_tplt(self, itemid);
             if (titem == NULL)
                 return;
-            int diff = bdelay->effect_time > bdelay->last_time ? 
-                bdelay->effect_time - bdelay->last_time : 0;
-            diff = titem->delay > diff ? titem->delay - diff : 0;
+            int diff = bdelay->last_time > bdelay->effect_time ?
+                bdelay->last_time - bdelay->effect_time : 0;
             _item_effect(self, ro, m, titem, diff);
 
             bdelay->effect_time = 0;

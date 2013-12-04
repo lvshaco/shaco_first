@@ -1,4 +1,4 @@
-sc_loglevel="DEBUG" 
+sc_loglevel="INFO" 
 sc_connmax=1100 
 sc_service="log,dispatcher,node,centers,gate,cmds,cmdctl" 
 

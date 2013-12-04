@@ -32,6 +32,9 @@ struct redisproxy {
     bool authed;
     struct redis_reply reply;
     struct queryqueue queryq;
+    int maxcount;
+    int allcount;
+    int times;
 };
 
 struct redisproxy*
@@ -190,10 +193,18 @@ _read(struct redisproxy* self, struct net_message* nm) {
         }
         reply->reader.sz += nread;
         int result = redis_getreply(reply);
+        int K = 0;
         while (result == REDIS_SUCCEED) {
             _handlereply(self);
             redis_resetreply(reply); 
             result = redis_getreply(reply);
+            K++;
+        }
+        if (K > 0) {
+            self->times++;
+            self->allcount+=K;
+            if (self->maxcount < K)
+                self->maxcount = K;
         }
         if (result == REDIS_ERROR) {
             e = NETE_REDISREPLY;
@@ -248,5 +259,8 @@ redisproxy_time(struct service* s) {
     struct redisproxy* self = SERVICE_SELF;
     if (self->connid == -1) {
         _connect_redis(s, false);
+    }
+    if (self->times > 0) {
+        sc_info("maxcount = %d, agvcount = %d", self->maxcount, self->allcount/self->times);
     }
 }
