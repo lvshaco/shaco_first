@@ -532,7 +532,7 @@ void test_redisnew(int times) {
     int r;
     int i;
     // 1
-    tmp = "hgetall user:1\r\n";
+    tmp = "*0\r\n";
     sz = strlen(tmp);
 
     uint64_t t1 = _elapsed();
@@ -544,7 +544,7 @@ void test_redisnew(int times) {
         }
         r = redis_getreply(&reply);
         while (r == REDIS_SUCCEED) {
-            redis_walkreply(&reply);
+            //redis_walkreply(&reply);
             redis_resetreply(&reply);;
             r = redis_getreply(&reply);
         }
