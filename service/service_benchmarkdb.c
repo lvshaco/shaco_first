@@ -1,4 +1,5 @@
 #include "sc_service.h"
+#include "sc_util.h"
 #include "sc_env.h"
 #include "sc.h"
 #include "sc_dispatcher.h"
@@ -12,8 +13,16 @@
 #include "memrw.h"
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
+
+#define MODE_TEST  0
+#define MODE_ACCA  1
+#define MODE_ACCD  2
 
 struct benchmarkdb {
+    int mode;
+    int startid;
+    int curid;
     uint64_t start;
     uint64_t end;
     int query_init;
@@ -41,7 +50,10 @@ int
 benchmarkdb_init(struct service* s) {
     struct benchmarkdb* self = SERVICE_SELF;
     redis_initreply(&self->reply, 512, 0);
-   
+  
+    self->mode = MODE_TEST;
+    self->startid = 0;
+    self->curid = self->startid;
     self->start = self->end = 0;
     self->query_init = sc_getint("benchmark_query_init", 50);
     self->query = sc_getint("benchmark_query", 10000);
@@ -53,35 +65,76 @@ benchmarkdb_init(struct service* s) {
     return 0;
 }
 
-void
-benchmarkdb_service(struct service* s, struct service_message* sm) {
-    //struct benchmarkdb* self = SERVICE_SELF;
-}
-
 static void
-_sendone(struct benchmarkdb* self) {
+_sendcmd(struct benchmarkdb* self, const char* cmd) {
     const struct sc_node* redisp = sc_node_get(HNODE_ID(NODE_REDISPROXY, 0));
     if (redisp == NULL) {
         sc_error("no redisproxy");
         return;
     }
-    char* tmp;
-    size_t len;
-    //tmp = "*2\r\n$7\r\nhgetall\r\n$6\r\nuser:1\r\n";
-    //sc_net_send(self->connid, tmp, strlen(tmp));
-    //tmp = "PING\r\n";
-    tmp="hgetall user:1\r\n";
-    len = strlen(tmp);
+    size_t len = strlen(cmd);
     UM_DEFVAR(UM_REDISQUERY, rq);
     rq->needreply = 1; 
     rq->needrecord = 0;
     rq->cbsz = 0;
     struct memrw rw;
     memrw_init(&rw, rq->data, rq->msgsz - sizeof(*rq));
-    memrw_write(&rw, tmp, len);
+    memrw_write(&rw, cmd, len);
     rq->msgsz = sizeof(*rq) + RW_CUR(&rw);
     UM_SENDTONODE(redisp, rq, rq->msgsz);
     self->query_send++;
+}
+
+static void
+_sendtest(struct benchmarkdb* self) {
+    if (self->curid - self->startid >= self->query)
+        self->curid = self->startid;
+    int id = self->curid++;
+    char cmd[1024];
+    switch (self->mode) {
+    case MODE_TEST:
+        _sendcmd(self, "hgetall user:1\r\n");
+        break;
+    case MODE_ACCA:
+        snprintf(cmd, sizeof(cmd), "hmset user:wa_account_%d id %d passwd 123456\r\n", id, id);
+        _sendcmd(self, cmd);
+        break;
+    case MODE_ACCD:
+        snprintf(cmd, sizeof(cmd), "del user:wa_account_%d\r\n", id);
+        _sendcmd(self, cmd);
+        break;
+    }
+}
+
+void
+benchmarkdb_service(struct service* s, struct service_message* sm) {
+    struct benchmarkdb* self = SERVICE_SELF;
+    const char* type = sm->msg;
+    if (!strcmp(type, "acca")) {
+        self->mode = MODE_ACCA;
+    } else if (!strcmp(type, "accd")) {
+        self->mode = MODE_ACCD;
+    } else {
+        return;
+    }
+    
+    self->start = sc_timer_now();
+    self->startid = sm->sessionid;
+    self->curid = self->startid;
+
+    int count = sm->type;
+    int init  = sm->sz;
+    if (init <= 0)
+        init =  1;
+    self->query_init = min(count, init);
+    self->query = count;
+    self->query_send = 0;
+    self->query_recv = 0;
+    self->query_done = 0;
+    int i;
+    for (i=1; i<=count; ++i) {
+        _sendtest(self);
+    }
 }
 
 static void
@@ -107,7 +160,7 @@ _handleredisproxy(struct benchmarkdb* self, struct node_message* nm) {
         self->query_done = 0;
 
     }
-    _sendone(self);
+    _sendtest(self);
 }
 
 void
@@ -127,17 +180,16 @@ benchmarkdb_nodemsg(struct service* s, int id, void* msg, int sz) {
 void
 benchmarkdb_time(struct service* s) {
     struct benchmarkdb* self= SERVICE_SELF;
-    if (self->query_send > 0) {
+    if (self->mode != MODE_TEST)
         return;
-    }
+    if (self->query_send > 0)
+        return;
     const struct sc_node* redisp = sc_node_get(HNODE_ID(NODE_REDISPROXY, 0));
-    if (redisp == NULL) {
+    if (redisp == NULL)
         return;
-    }
-
     self->start = sc_timer_now();
     int i;
     for (i=0; i<self->query_init; ++i) {
-        _sendone(self);
+        _sendtest(self);
     }
 }

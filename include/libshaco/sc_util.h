@@ -22,4 +22,11 @@
 // rand
 #define sc_rand(x) rand_r(&(x))
 
+#ifndef min
+#define min(x, y) ((x) < (y) ? (x) : (y))
+#endif
+#ifndef max
+#define max(x, y) ((x) > (y) ? (x) : (y))
+#endif
+
 #endif

@@ -57,7 +57,7 @@ _getloglevel(struct cmdctl* self, struct args* A, struct memrw* rw) {
 
 static int
 _setloglevel(struct cmdctl* self, struct args* A, struct memrw* rw) {
-    if (A->argc == 1)
+    if (A->argc <= 1)
         return CTL_ARGLESS;
     if (sc_log_setlevelstr(A->argv[1]) == -1)
         return CTL_ARGINVALID;
@@ -66,7 +66,7 @@ _setloglevel(struct cmdctl* self, struct args* A, struct memrw* rw) {
 
 static int
 _reload(struct cmdctl* self, struct args* A, struct memrw* rw) {
-    if (A->argc == 1)
+    if (A->argc <= 1)
         return CTL_ARGLESS;
     sc_reload_prepare(A->argv[1]);
     return CTL_OK;
@@ -139,6 +139,24 @@ _reloadres(struct cmdctl* self, struct args* A, struct memrw* rw) {
     return CTL_OK;
 }
 
+static int
+_db(struct cmdctl* self, struct args* A, struct memrw* rw) {
+    int handler = service_query_id("benchmarkdb");
+    if (handler == SERVICE_INVALID) {
+        return CTL_NOSERVICE;
+    }
+    if (A->argc <= 4) {
+        return CTL_ARGLESS;
+    }
+    char* type = A->argv[1];
+    int start = strtol(A->argv[2], NULL, 10);
+    int count = strtol(A->argv[3], NULL, 10);
+    int init  = strtol(A->argv[4], NULL, 10);
+    struct service_message sm = {start, 0, count, init, type};
+    service_notify_service(handler, &sm);
+    return CTL_OK;
+}
+
 ///////////////////
 
 static struct ctl_command COMMAND_MAP[] = {
@@ -152,6 +170,7 @@ static struct ctl_command COMMAND_MAP[] = {
     { "time",        _time },
     { "players",     _players },
     { "reloadres",   _reloadres },
+    { "db",          _db },
     { NULL, NULL },
 };
 
@@ -226,7 +245,7 @@ _cmdreq(struct cmdctl* self, int id, struct UM_BASE* um) {
     char* cmd = (char*)(req+1);
     size_t cl = req->msgsz - sizeof(*req);
     struct args A;
-    args_parsestrl(&A, 2, cmd, cl);
+    args_parsestrl(&A, 0, cmd, cl);
     if (A.argc == 0) {
         return; // null
     }

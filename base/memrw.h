@@ -21,7 +21,7 @@ memrw_init(struct memrw* rw, void* data, size_t sz) {
 };
 
 static inline int
-memrw_write(struct memrw* rw, void* data, size_t sz) {
+memrw_write(struct memrw* rw, const void* data, size_t sz) {
     int space = rw->sz - (rw->ptr - rw->begin);
     if (space >= (int)sz) {
         memcpy(rw->ptr, data, sz);
