@@ -283,40 +283,6 @@ net_free(struct net* self) {
     free(self);
 }
 
-int
-net_readto(struct net* self, int id, void* buf, int space, int* e) {
-    assert(space > 0);
-    *e = 0;
-    struct socket* s = _get_socket(self, id);
-    if (s == NULL) {
-        return -1;
-    } 
-    int error = 0;
-    for (;;) {
-        int nbyte = _socket_read(s->fd, buf, space);
-        if (nbyte < 0) {
-            error = _socket_geterror(s->fd);
-            if (error == SEAGAIN) {
-                return 0;
-            } else if (error == SEINTR) {
-                continue;
-            } else {
-                _close_socket(self, s);
-                *e = NETERR(error);
-                return -1;
-            }
-        } else if (nbyte == 0) {
-            error = _socket_geterror(s->fd); // errno == 0
-            _close_socket(self, s);
-            *e = NETERR(error);
-            return -1;
-        } else {
-            return nbyte;
-        } 
-        
-    }
-}
-
 static int
 _read_close(struct socket* s) {
     char buf[1024];
@@ -334,119 +300,111 @@ _read_close(struct socket* s) {
         } else if (nbyte == 0) {
             return NET_ERR_EOF;
         } else {
+            // if nbyte == sieof(buf) no need read more
+            // next time read check, or write check 
             return 0;
         }
     }
     return 0;
 }
 
-void*
-net_read(struct net* self, int id, int sz, int skip, int* e) {
-    *e = 0;
-    struct socket* s = _get_socket(self, id);
-    if (s == NULL) {
-        return NULL;
-    }
-
-    if (sz <= 0) {
-        _close_socket(self, s);
-        *e = NET_ERR_MSG;
-        return NULL;
-    }
-
-    int error = 0;
-
+static int
+_readto(struct net* self, struct socket* s, void* buf, int space, int* e) {
+    int error;
+    int nbyte;
+    assert(space > 0);
     if (s->status == STATUS_HALFCLOSE) {
         *e = _read_close(s);
         if (*e) {
             _close_socket(self, s);
         }
-        return NULL;
+        return -1;
     }
-
-    struct netbuf_block* rb = s->rb;
-    void* begin = rb + 1;
-
-    char* rptr = begin + rb->rptr;
-    if (rb->wptr - rb->rptr >= sz) {
-        rb->rptr += sz;
-        return rptr; // has read
-    }
-
-    if (rb->sz - rb->rptr < sz) {
-        _close_socket(self, s);
-        *e = NET_ERR_MSG;
-        return NULL;
-
-    }
-    if (rb->wptr == 0) {
-        rb->wptr += skip;
-        assert(rb->wptr <= rb->sz);
-    }
-    char* wptr = begin + rb->wptr;
-    int space = rb->sz - rb->wptr;
-    if (space <= 0) {
-        _close_socket(self, s);
-        *e = NET_ERR_NOBUF;
-        return NULL; 
-    }
-
     for (;;) {
-        int nbyte = _socket_read(s->fd, wptr, space);
+        nbyte = _socket_read(s->fd, buf, space);
         if (nbyte < 0) {
             error = _socket_geterror(s->fd);
             if (error == SEAGAIN) {
-                rb->rptr = 0;
-                return NULL;
+                *e = 0;
+                return 0;
             } else if (error == SEINTR) {
-                error = 0;
                 continue;
             } else {
                 _close_socket(self, s);
                 *e = NETERR(error);
-                return NULL;
+                return -1;
             }
         } else if (nbyte == 0) {
-            // error = _socket_geterror(s->fd); man not point errno if nbyte == 0
+            // error = _socket_geterror(s->fd); 
+            // man not point errno if nbyte == 0
             _close_socket(self, s);
             *e = NET_ERR_EOF;
-            return NULL;
+            return -1;
         } else {
-            rb->wptr += nbyte;
-            if (rb->wptr - rb->rptr >= sz) {
-                rb->rptr += sz;
-                return rptr;
-            } else {
-                rb->rptr = 0;
-                return NULL;
-            }
+            *e = 0;
+            return nbyte;
         } 
-        
     }
-    return NULL;
+}
+
+int
+net_readto(struct net* self, int id, void* buf, int space, int* e) {
+    struct socket* s = _get_socket(self, id);
+    if (s) {
+        return _readto(self, s, buf, space, e);
+    } 
+    return -1; 
+}
+
+int
+net_read(struct net* self, int id, bool force, struct mread_buffer* buf, int* e) {
+    struct socket* s = _get_socket(self, id);
+    if (s) {
+        struct netbuf_block* rb = s->rb;
+        if (!force) {
+            int nread = RB_NREAD(rb);
+            if (nread > 0) {
+                buf->ptr = RB_RPTR(rb);
+                buf->sz  = nread;
+                return buf->sz;
+            }
+        }
+        void* wptr = RB_WPTR(rb);
+        int space  = RB_SPACE(rb);
+        //assert(space > 0);
+        int nread = _readto(self, s, wptr, space, e);
+        if (nread >= 0) {
+            rb->wptr += nread;
+            buf->ptr = RB_RPTR(rb);
+            buf->sz = RB_NREAD(rb);
+            return buf->sz;
+        }
+    }
+    return -1;
 }
 
 void
-net_dropread(struct net* self, int id, int skip) {
+net_dropread(struct net* self, int id, int sz) {
     struct socket* s = _get_socket(self, id);
-    if (s == NULL)
+    if (s == NULL) {
         return;
+    }
     struct netbuf_block* rb = s->rb;
-    assert(rb->rptr >= 0);
-    if (rb->rptr == 0)
-        return;
+    rb->rptr += sz;
     
-    int sz = rb->wptr - rb->rptr;
-    if (sz == 0) {
-        rb->wptr = skip;
-        assert(rb->wptr <= rb->sz);
-        rb->rptr = 0; 
-    } else if (sz > 0) {
-        assert(skip < rb->rptr);
-        void* begin = rb + 1; 
-        memmove(begin+skip, begin + rb->rptr, sz);
-        rb->wptr = sz+skip;
-        rb->rptr = 0;
+    if (rb->wptr == rb->sz) {
+        if (rb->rptr < rb->wptr) {
+            void* begin = rb+1;
+            int off = rb->wptr - rb->rptr;
+            memmove(begin, begin + rb->rptr, off);
+            rb->rptr = 0;
+            rb->wptr= off;
+        } else if (rb->rptr == rb->wptr) {
+            rb->rptr = 0;
+            rb->wptr = 0;
+        } else {
+            assert(0);
+        }
     }
 }
 

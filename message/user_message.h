@@ -85,9 +85,9 @@ struct UM_FORWARD {
 };
 static inline uint16_t
 UM_FORWARD_size(struct UM_FORWARD* um) {
-    return sizeof(*um) + um->wrap.msgsz - UM_HSIZE;
+    return sizeof(*um) + um->wrap.msgsz - UM_BASE_SZ;
 }
-#define UM_CLIMAX (UM_MAXSIZE-sizeof(struct UM_FORWARD)+UM_HSIZE)
+//#define UM_CLI_MAXSZ (UM_MAXSZ-sizeof(struct UM_FORWARD)+UM_BASE_SZ)
 #define UM_DEFFORWARD(fw, fid, type, name) \
     UM_DEFVAR(UM_FORWARD, fw); \
     fw->cid = fid; \
@@ -177,7 +177,7 @@ struct UM_OVERROOM {
 
 #define UM_SENDTOCLI(id, um, sz) do { \
     (um)->msgsz = sz; \
-    sc_net_send(id, (char*)um + UM_SKIP, (um)->msgsz - UM_SKIP);\
+    sc_net_send(id, (char*)um + UM_CLI_OFF, (um)->msgsz - UM_CLI_OFF); \
 } while(0)
 
 #define UM_SENDTOSVR UM_SENDTOCLI

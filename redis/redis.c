@@ -64,6 +64,7 @@ _reader_setbuf(struct redis_reader* reader, char* buf, int bufcap) {
     }
     reader->sz = 0;
     reader->pos = 0;
+    reader->pos_last = 0;
     reader->cap = bufcap;
     if (bufcap > 0) {
         if (buf) {
@@ -89,6 +90,7 @@ static void
 _reader_fini(struct redis_reader* reader) {
     reader->sz = 0;
     reader->pos = 0;
+    reader->pos_last = 0;
     if (reader->my) {
         free(reader->buf);
     }
@@ -335,19 +337,39 @@ redis_finireply(struct redis_reply* reply) {
 
 void
 redis_resetreply(struct redis_reply* reply) {
-    if (reply->result == REDIS_NEXTTIME) {
+    struct redis_reader* reader = &reply->reader;
+    if (reader->pos == 0) {
         return;
     }
-    struct redis_reader* reader = &reply->reader;
-    int sz = reader->sz - reader->pos;
-    if (sz <= 0 || 
-        reply->result == REDIS_ERROR) {
+    switch (reply->result) {
+    case REDIS_ERROR:
         reader->sz = 0;
-    } else if (sz > 0) {
-        memmove(reader->buf, READ_PTR(reader), sz);
-        reader->sz = sz;
-    } 
-    reader->pos = 0;
+        reader->pos = 0;
+        reader->pos_last = 0;
+        break;
+    case REDIS_SUCCEED:
+        if (reader->pos >= reader->sz) {
+            reader->sz = 0;
+            reader->pos = 0;
+            reader->pos_last = 0;
+        } else {
+            reader->pos_last = reader->pos;
+        }
+        break;
+    case REDIS_NEXTTIME:
+        // if pos_last == 0, then reader buf is no enough for one reply
+        assert(reader->pos_last > 0);
+        assert(reader->pos_last <= reader->sz);
+        reader->sz = reader->sz - reader->pos_last;
+        if (reader->sz > 0) {
+            memmove(reader->buf, 
+                    reader->buf + reader->pos_last, 
+                    reader->sz);
+        }
+        reader->pos = 0;
+        reader->pos_last = 0;
+        break;
+    }
     _replyitempool_free(&reply->pool);
     memset(reply->stack, 0, sizeof(reply->stack));
     struct redis_replyitem* root = _replyitempool_alloc(&reply->pool, 1);

@@ -9,8 +9,8 @@ int sc_net_listen(const char* addr, uint16_t port, int wbuffermax, int serviceid
 int sc_net_connect(const char* addr, uint16_t port, bool block, int serviceid, int ut);
 void sc_net_poll(int timeout);
 int sc_net_readto(int id, void* buf, int space, int* e);
-void* sc_net_read(int id, int sz, int skip, int* e);
-void sc_net_dropread(int id, int skip);
+int sc_net_read(int id, bool force, struct mread_buffer* buf, int* e);
+void sc_net_dropread(int id, int sz);
 int sc_net_send(int id, void* data, int sz);
 bool sc_net_close_socket(int id, bool force);
 int sc_net_max_socket();

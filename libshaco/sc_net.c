@@ -90,15 +90,19 @@ sc_net_send(int id, void* data, int sz) {
     }
     return n;
 }
+
 int 
 sc_net_readto(int id, void* buf, int space, int* e) {
     return net_readto(N, id, buf, space, e); 
 }
-void* sc_net_read(int id, int sz, int skip, int* e) { 
-    return net_read(N, id, sz, skip, e); 
+
+int
+sc_net_read(int id, bool force, struct mread_buffer* buf, int* e) { 
+    return net_read(N, id, force, buf, e); 
 }
-void sc_net_dropread(int id, int skip) { 
-    net_dropread(N, id, skip); 
+
+void sc_net_dropread(int id, int sz) { 
+    net_dropread(N, id, sz); 
 }
 bool sc_net_close_socket(int id, bool force) { 
     return net_close_socket(N, id, force); 

@@ -8,6 +8,7 @@
 #include "hashid.h"
 #include "freeid.h"
 #include "message_reader.h"
+#include "message_helper.h"
 #include "user_message.h"
 #include "client_type.h"
 #include <stdlib.h>
@@ -27,6 +28,7 @@ struct benchmark {
     int query;
     int query_first;
     int query_send;
+    int query_recv;
     int query_done;
     int packetsz;
     uint64_t start;
@@ -91,7 +93,6 @@ _start(struct benchmark* self) {
                 for (n=0; n<self->query_first; ++n) {
                     _send_one(self, c->connid);
                 }
-                sc_info("start send %d", n);
             } else {
                 _send_one(self, c->connid);
             }
@@ -106,6 +107,7 @@ benchmark_init(struct service* s) {
     self->query = sc_getint("benchmark_query", 0); 
     self->query_first = sc_getint("benchmark_query_first", 0);
     self->query_send = 0;
+    self->query_recv = 0;
     self->query_done = 0;
     int sz = sc_getint("benchmark_packet_size", 10);
     if (sz < sizeof(struct UM_BASE))
@@ -144,13 +146,14 @@ _getclient(struct benchmark* self, int id) {
 static inline void
 _handlemsg(struct benchmark* self, struct client* c, struct UM_BASE* um) {
     self->query_done++;
+    self->query_recv++;
     if (self->query_done == self->query) {
         self->end = sc_timer_now();
         uint64_t elapsed = self->end - self->start;
         if (elapsed == 0) elapsed = 1;
         float qps = self->query_done/(elapsed*0.001f);
-        sc_info("clients: %d, packetsz: %d, query done: %d, use time: %d, qps: %f", 
-        self->connected, self->packetsz, self->query_done, (int)elapsed, qps);
+        sc_info("clients: %d, packetsz: %d, query send: %d, recv: %d, done: %d, use time: %d, qps: %f", 
+        self->connected, self->packetsz, self->query_send, self->query_recv, self->query_done, (int)elapsed, qps);
         self->start = self->end;
         self->query_done = 0;
     }
@@ -163,22 +166,37 @@ _read(struct benchmark* self, struct net_message* nm) {
     struct client* c = _getclient(self, id);
     assert(c);
     assert(c->connid == id);
-    int n = 0;
-    struct UM_BASE* um;
-    while ((um = _message_read_one(nm, UM_SKIP)) != NULL) {
-        if (um->msgsz > UM_CLIMAX) {
-            sc_net_close_socket(nm->connid, true);
-            nm->type = NETE_SOCKERR;
-            nm->error = -2;
-            service_notify_net(nm->ud, nm);
-            break;
-        }
-        _handlemsg(self, c, um);
-        sc_net_dropread(nm->connid, UM_SKIP);
-        if (++n > 10)
-            break;
-    }
 
+    int step = 0;
+    int drop = 1;
+    for (;;) {
+        int error = 0;
+        struct mread_buffer buf;
+        int nread = sc_net_read(id, drop==0, &buf, &error);
+        if (nread <= 0) {
+            mread_throwerr(nm, error);
+            return;
+        }
+        struct UM_CLI_BASE* one;
+        while ((one = mread_cli_one(&buf, &error))) {
+            // copy to stack buffer, besafer
+            UM_DEF(msg, UM_CLI_MAXSZ); 
+            msg->nodeid = 0;
+            memcpy(&msg->cli_base, one, UM_CLI_SZ(one));
+            _handlemsg(self, c, msg);
+            if (++step > 10) {
+                sc_net_dropread(id, nread-buf.sz);
+                return;
+            }
+        }
+        if (error) {
+            sc_net_close_socket(id, true);
+            mread_throwerr(nm, error);
+            return;
+        }
+        drop = nread - buf.sz;
+        sc_net_dropread(id, drop);       
+    }
 }
 
 static void

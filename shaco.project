@@ -131,6 +131,7 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.py *.h *.c" {
   cli_message.h
   client_type.h
   message.h
+  message_helper.h
   message_reader.h
   node_type.h
   sharetype.h

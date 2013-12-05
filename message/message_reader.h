@@ -2,35 +2,77 @@
 #define __message_reader_h__
 
 #include "message.h"
-#include "sc_net.h"
-#include "sc_service.h"
+#include "net.h"
 
 static inline struct UM_BASE*
-_message_read_one(struct net_message* nm, int skip) {
-    int id = nm->connid; 
-    struct UM_BASE* base;
-    void* data;
-    int e;
-    base = sc_net_read(id, sizeof(*base), skip, &e);
-    if (base == NULL) {
-        goto null;
-    }
-    int sz = base->msgsz - sizeof(*base);
-    if (sz != 0) {
-        data = sc_net_read(id, sz, 0, &e);
-        if (data == NULL) {
-            goto null;
+mread_one(struct mread_buffer* buf, int* e) {
+    *e = 0;
+    struct UM_BASE* base = buf->ptr;
+    int sz = buf->sz;
+    int body;
+    if (sz >= sizeof(*base)) {
+        sz -= sizeof(*base);
+        if (base->msgsz >= sizeof(*base)) {
+            body = base->msgsz - sizeof(*base);
+            if (body > 0) {
+                if (body <= sz) {
+                    goto ok;
+                } else {
+                    return NULL;
+                }
+            } else if (body < 0) {
+                return NULL;
+            } else {
+                goto ok;
+            }
+        } else {
+            *e = NET_ERR_MSG;
+            return NULL;
         }
+    } else {
+        return NULL;
     }
+ok:
+    buf->ptr += base->msgsz;
+    buf->sz  -= base->msgsz;
     return base;
-null:
-    if (e) {
-        // error occur, route to net service
-        nm->type = NETE_SOCKERR;
-        nm->error = e;
-        service_notify_net(nm->ud, nm);
+}
+
+static inline struct UM_CLI_BASE*
+mread_cli_one(struct mread_buffer* buf, int* e) {
+    *e = 0;
+    struct UM_CLI_BASE* base = buf->ptr;
+    int sz = buf->sz;
+    int body;
+    uint16_t msgsz;
+    if (sz >= sizeof(*base)) {
+        if (base->msgsz >= UM_BASE_SZ &&
+            base->msgsz <  UM_CLI_MAXSZ) {
+            sz -= sizeof(*base);
+            msgsz = base->msgsz - UM_CLI_OFF;
+            body = msgsz - sizeof(*base);
+            if (body > 0) {
+                if (body <= sz) {
+                    goto ok;
+                } else {
+                    return NULL;
+                }
+            } else if (body < 0) {
+                return NULL;
+            } else {
+                goto ok;
+            }
+        } else {
+            *e = NET_ERR_MSG;
+            return NULL;
+        }
+    } else {
+        return NULL;
     }
-    return NULL;
+ok:
+    buf->ptr += msgsz;
+    buf->sz  -= msgsz;
+    return base;
 }
 
 #endif

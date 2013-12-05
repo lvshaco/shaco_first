@@ -65,8 +65,8 @@ cmds_init(struct service* s) {
 static void
 _response_error(int id, const char* error) {
     UM_DEF(um, 1024);
-    int n = snprintf((char*)(um+1), 1024-UM_HSIZE, "%s", error);
-    UM_SENDTOCLI(id, um, UM_HSIZE+n);
+    int n = snprintf((char*)(um+1), 1024-UM_BASE_SZ, "%s", error);
+    UM_SENDTOCLI(id, um, UM_BASE_SZ+n);
 }
 
 struct sendud {
@@ -169,7 +169,7 @@ cmds_usermsg(struct service* s, int id, void* msg, int sz) {
     char* rptr = (char*)(um+1);
     cli->mode = *rptr++;
     struct args A;
-    args_parsestrl(&A, 3, rptr, sz-UM_HSIZE);
+    args_parsestrl(&A, 3, rptr, sz-UM_BASE_SZ);
     if (A.argc < 1) {
         _response_error(id, "usage: [node sid] command [arg1 arg2 .. ]");
         _check_close_client(c, cli);
@@ -224,9 +224,9 @@ _res(struct server* self, int id, struct UM_BASE* um) {
     struct client* cli = _getclient(self, res->cid);
     assert(cli);
 
-    UM_DEF(notify, UM_MAXSIZE);
+    UM_DEF(notify, UM_MAXSZ);
     struct memrw rw;
-    memrw_init(&rw, notify+1, UM_MAXSIZE-sizeof(*notify));
+    memrw_init(&rw, notify+1, UM_MAXSZ-sizeof(*notify));
     char tmp[HNODESTR_MAX]; 
     int n = snprintf(rw.ptr, RW_SPACE(&rw), "%s:\n", 
             sc_strnode(node, tmp));

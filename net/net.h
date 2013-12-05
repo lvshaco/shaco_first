@@ -13,6 +13,11 @@
 #define NET_ERR_WBUFOVER    -5
 #define NET_ERR_NOBUF       -6
 
+struct mread_buffer {
+    void* ptr;
+    int sz;
+};
+
 struct net;
 struct net* net_create(int max, int rbuffer);
 void net_free(struct net* self);
@@ -24,8 +29,9 @@ int net_getevents(struct net* self, struct net_message** e);
 int net_subscribe(struct net* self, int id, bool read);
 
 int net_readto(struct net* self, int id, void* buf, int space, int* e);
-void* net_read(struct net* self, int id, int size, int skip, int* e);
-void net_dropread(struct net* self, int id, int skip);
+int net_read(struct net* self, int id, bool force, struct mread_buffer* buf, int* e);
+void net_dropread(struct net* self, int id, int sz);
+
 int net_send(struct net* self, int id, void* data, int sz, struct net_message* nm);
 bool net_close_socket(struct net* self, int id, bool force);
 const char* net_error(struct net* self, int err);

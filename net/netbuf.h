@@ -9,6 +9,11 @@ struct netbuf_block {
     int wptr;
 };
 
+#define RB_RPTR(rb) ((char*)((rb)+1) + (rb)->rptr)
+#define RB_WPTR(rb) ((char*)((rb)+1) + (rb)->wptr)
+#define RB_SPACE(rb) ((rb)->sz   - (rb)->wptr)
+#define RB_NREAD(rb) ((rb)->wptr - (rb)->rptr)
+
 struct netbuf;
 
 struct netbuf_block* netbuf_alloc_block(struct netbuf* self, int id);

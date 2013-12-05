@@ -1,6 +1,8 @@
 #include "cnet.h"
 #include "net.h"
+#include "message_reader.h"
 #include <stdio.h>
+#include <string.h>
 #ifndef WIN32
 #include <arpa/inet.h>
 #include <signal.h>
@@ -40,40 +42,47 @@ static void
 _handleumdef(int id, int ut, struct UM_BASE* um) {
 }
 
-static inline struct UM_BASE*
-_readone(struct net_message* nm, int skip) {
-    struct UM_BASE* base;
-    void* data;
-    int id = nm->connid; 
-    int e;
-    base = net_read(N, id, sizeof(*base), skip, &e);
-    if (base == NULL) {
-        goto null;
-    }
-    int sz = base->msgsz-sizeof(*base);
-    if (sz != 0) {
-        data = net_read(N, id, sz, 0, &e);
-        if (data == NULL) {
-            goto null;
-        }
-    }
-    return base;
-null:
+static inline void
+mread_throwerr(struct net_message* nm, int e) {
     if (e) {
         nm->type = NETE_SOCKERR;
         nm->error = e;
         _onsockerr(nm);
     }
-    return NULL;
 }
 
 static void
 _read(struct net_message* nm) {
     int id = nm->connid;
-    struct UM_BASE* um;
-    while ((um = _readone(nm, UM_SKIP)) != NULL) {
-        _handleum(id, nm->ut, um);
-        net_dropread(N, id, UM_SKIP);
+    int step = 0;
+    int drop = 1;
+    for (;;) {
+        int e = 0;
+        struct mread_buffer buf;
+        int nread = net_read(N, id, drop==0, &buf, &e);
+        if (nread <= 0) {
+            mread_throwerr(nm, e);
+            return;
+        }
+        struct UM_CLI_BASE* one;
+        while ((one = mread_cli_one(&buf, &e))) {
+            UM_DEF(msg, UM_CLI_MAXSZ); 
+            msg->nodeid = 0;
+            memcpy(&msg->cli_base, one, UM_CLI_SZ(one));
+
+            _handleum(id, nm->ut, msg);
+            if (++step > 10) {
+                net_dropread(N, id, nread-buf.sz);
+                return;
+            }
+        }
+        if (e) {
+            net_close_socket(N, id, true);
+            mread_throwerr(nm, e);
+            return;
+        }
+        drop = nread - buf.sz;
+        net_dropread(N, id, drop);       
     }
 }
 
@@ -134,7 +143,7 @@ cnet_send(int id, void* um, int sz) {
     struct net_message nm;
     UM_CAST(UM_BASE, m, um);
     m->msgsz = sz;
-    int n = net_send(N, id, (char*)m+UM_SKIP, m->msgsz-UM_SKIP, &nm);
+    int n = net_send(N, id, (char*)m+UM_CLI_OFF, m->msgsz-UM_CLI_OFF, &nm);
     if (n > 0) {
         _dispatch_one(&nm);
     }

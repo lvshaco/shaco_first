@@ -47,9 +47,10 @@ struct redis_replyitempool {
 };
 
 struct redis_reader {
-    int sz;
+    int cap;
+    int sz; 
     int pos;
-    int cap; 
+    int pos_last;
     char* buf;
     bool my;
 };

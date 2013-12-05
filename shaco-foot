@@ -49,6 +49,10 @@ stop() {
 stopcmdd() {
     pkill lua
 }
+restartall() {
+    stop
+    startall
+}
 
 USAGE="Usage: shaco-foot [startall] [start [svr .. ]] [stop] [ls] [startcmdd] [stopcmdd] -m"
 MEMCHECK=0
@@ -68,6 +72,9 @@ do
 done
 
 case "$CMD" in
+restartall)
+    restartall
+    ;;
 startall)
     startall
     ;;

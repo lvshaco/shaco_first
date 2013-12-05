@@ -7,6 +7,7 @@
 #include "sc.h"
 #include "sc_gate.h"
 #include "message_reader.h"
+#include "message_helper.h"
 #include "user_message.h"
 #include "client_type.h"
 #include "node_type.h"
@@ -14,6 +15,7 @@
 #include "cli_message.h"
 #include <stdlib.h>
 #include <assert.h>
+#include <string.h>
 
 /*
  * control the client connect, login, heartbeat, and logout, 
@@ -94,20 +96,36 @@ _handlemsg(struct gate* self, struct gate_client* c, struct UM_BASE* um) {
 
 static void
 _read(struct gate* self, struct gate_client* c, struct net_message* nm) {
-    int n = 0;
-    struct UM_BASE* um;
-    while ((um = _message_read_one(nm, UM_SKIP)) != NULL) {
-        if (um->msgsz > UM_CLIMAX) {
-            sc_net_close_socket(nm->connid, true);
-            nm->type = NETE_SOCKERR;
-            nm->error = NET_ERR_MSG;
-            service_notify_net(nm->ud, nm);
-            break;
+    int id = nm->connid;
+    int step = 0;
+    int drop = 1;
+    for (;;) {
+        int error = 0;
+        struct mread_buffer buf;
+        int nread = sc_net_read(id, drop==0, &buf, &error);
+        if (nread <= 0) {
+            mread_throwerr(nm, error);
+            return;
         }
-        _handlemsg(self, c, um);
-        sc_net_dropread(nm->connid, UM_SKIP);
-        if (++n > 10)
-            break;
+        struct UM_CLI_BASE* one;
+        while ((one = mread_cli_one(&buf, &error))) {
+            // copy to stack buffer, besafer
+            UM_DEF(msg, UM_CLI_MAXSZ); 
+            msg->nodeid = 0;
+            memcpy(&msg->cli_base, one, UM_CLI_SZ(one));
+            _handlemsg(self, c, msg);
+            if (++step > 10) {
+                sc_net_dropread(id, nread-buf.sz);
+                return;
+            }
+        }
+        if (error) {
+            sc_net_close_socket(id, true);
+            mread_throwerr(nm, error);
+            return;
+        }
+        drop = nread - buf.sz;
+        sc_net_dropread(id, drop);       
     }
 }
 
