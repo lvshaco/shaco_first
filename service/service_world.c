@@ -160,6 +160,7 @@ _createchar(struct world* self, const struct sc_node* node, int cid, struct UM_B
 
 static void
 _logout(struct world* self, struct player* p) {
+    player_send_dbcmd(self->dbhandler, p, PDB_SAVE);
     _freeplayer(p);
 }
 

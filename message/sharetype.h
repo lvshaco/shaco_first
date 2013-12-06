@@ -43,7 +43,7 @@
 #define ACCOUNT_PASSWD_MAX 40
 #define CHAR_NAME_MAX 32
 #define ROLE_MAX 8
-#define ROLE_CLOTHES_MAX 8
+#define ROLE_CLOTHES_MAX 7
 #define ROLE_TYPEID(roleid) ((roleid)/10-1)
 #define ROLE_CLOTHID(roleid) ((roleid)%10)
 
@@ -60,7 +60,7 @@ struct chardata {
     uint16_t package; // 包裹容量
 
     uint32_t role;    // 使用的角色
-    uint32_t skin;    // 使用的服装
+    uint32_t skin;    // 使用的服装 (废弃)
     uint32_t oxygen;  // 氧气
     uint32_t body;    // 体能
     uint32_t quick;   // 敏捷

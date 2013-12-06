@@ -1,4 +1,5 @@
 #include "sc_service.h"
+#include "sc_util.h"
 #include "sc.h"
 #include "sc_dispatcher.h"
 #include "sc_log.h"
@@ -47,6 +48,27 @@ playerdb_init(struct service* s) {
     redis_initreply(&self->reply, 512, 0);
     SUBSCRIBE_MSG(s->serviceid, IDUM_REDISREPLY);
     return 0;
+}
+
+static void
+_bytes_to_str(const uint8_t* bytes, char* str, int n) {
+    int i;
+    for (i=0; i<n; ++i) {
+        str[i] = bytes[i]+(uint8_t)1;
+    }
+    str[i] = '\0';
+}
+
+static void
+_str_to_bytes(const char* str, int sz, uint8_t* bytes, int nbyte) {
+    int n = min(sz, nbyte);
+    int i;
+    for (i=0; i<n; ++i) {
+        bytes[i] = (uint8_t)str[i]-(uint8_t)1;
+    }
+    for (i=n; i<nbyte; ++i) {
+        bytes[i] = 0;
+    }
 }
 
 static int
@@ -159,6 +181,9 @@ _db(struct player* p, int8_t type) {
         uint32_t charid = cdata->charid;
         memrw_write(&rw, &charid, sizeof(charid));
         rq->cbsz = RW_CUR(&rw);
+
+        char strownrole[sizeof(cdata->ownrole)+1];
+        _bytes_to_str(cdata->ownrole, strownrole, sizeof(cdata->ownrole));
         int len = snprintf(rw.ptr, RW_SPACE(&rw), "hmset user:%u"
                 " name %s"
                 " level %u"
@@ -168,6 +193,7 @@ _db(struct player* p, int8_t type) {
                 " package %u"
                 " role %u"
                 " skin %u"
+                " ownrole %s"
                 "\r\n", charid,
                 cdata->name,
                 cdata->level, 
@@ -176,7 +202,8 @@ _db(struct player* p, int8_t type) {
                 cdata->diamond, 
                 cdata->package,
                 cdata->role,
-                cdata->skin);
+                cdata->skin,
+                strownrole);
         memrw_pos(&rw, len);
         }
         break;
@@ -195,22 +222,27 @@ _db(struct player* p, int8_t type) {
 
 static int
 _loadpdb(struct player* p, struct redis_replyitem* item) {
-    if (item->value.i != 8)
-        return SERR_DBDATAERR;
+#define CHECK(x) if (si < end) {x; } else { return SERR_OK; }
+    
     struct chardata* cdata = &p->data;
     struct redis_replyitem* si = item->child;
-    
+    struct redis_replyitem* end = si + item->value.i; 
+    CHECK(
     if (strncpychk(cdata->name, sizeof(cdata->name), si->value.p, si->value.len)) {
         return SERR_DBDATAERR; // maybe no char, this is a empty item, all value is "-1"
     }
     si++;
-    cdata->level = redis_bulkitem_toul(si++);
-    cdata->exp = redis_bulkitem_toul(si++);
-    cdata->coin = redis_bulkitem_toul(si++);
-    cdata->diamond = redis_bulkitem_toul(si++);
-    cdata->package = redis_bulkitem_toul(si++);
-    cdata->role = redis_bulkitem_toul(si++);
-    cdata->skin = redis_bulkitem_toul(si++);
+    )
+    CHECK(cdata->level = redis_bulkitem_toul(si++));
+    CHECK(cdata->exp = redis_bulkitem_toul(si++));
+    CHECK(cdata->coin = redis_bulkitem_toul(si++));
+    CHECK(cdata->diamond = redis_bulkitem_toul(si++));
+    CHECK(cdata->package = redis_bulkitem_toul(si++));
+    CHECK(cdata->role = redis_bulkitem_toul(si++));
+    CHECK(cdata->skin = redis_bulkitem_toul(si++));
+    CHECK(
+    _str_to_bytes(si->value.p, si->value.len, cdata->ownrole, sizeof(cdata->ownrole)); 
+    si++;)
     return SERR_OK;
 }
 
