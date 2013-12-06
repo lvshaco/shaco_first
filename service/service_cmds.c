@@ -169,7 +169,7 @@ cmds_usermsg(struct service* s, int id, void* msg, int sz) {
     char* rptr = (char*)(um+1);
     cli->mode = *rptr++;
     struct args A;
-    args_parsestrl(&A, 3, rptr, sz-UM_BASE_SZ);
+    args_parsestrl(&A, 3, rptr, um->msgsz - (rptr-(char*)um));
     if (A.argc < 1) {
         _response_error(id, "usage: [node sid] command [arg1 arg2 .. ]");
         _check_close_client(c, cli);
