@@ -18,6 +18,8 @@
 #include <string.h>
 #include <stdint.h>
 
+#define ROLE_DEF 10 // 默认给予ID
+
 struct rolelogic {
     int dbhandler;
 };
@@ -199,11 +201,21 @@ rolelogic_usermsg(struct service* s, int id, void* msg, int sz) {
 static void
 _onlogin(struct player* p) {
     struct chardata* cdata = &p->data;
+    const struct role_tplt* tplt;
     if (cdata->role == 0) {
-        cdata->role = 10; // 默认给予ID
+        tplt = NULL;
+    } else {
+        tplt = _roletplt(cdata->role);
     }
-    const struct role_tplt* tplt = _roletplt(cdata->role);
+    if (tplt == NULL && 
+        cdata->role != ROLE_DEF) {
+        cdata->role = ROLE_DEF;
+        tplt = _roletplt(cdata->role);
+    }
     if (tplt) {
+        if (!_hasrole(cdata, ROLE_DEF)) {
+            _addrole(cdata, ROLE_DEF);
+        }
         _userole(cdata, tplt);
     } else {
         sc_error("can not found role %d, charid %u", cdata->role, cdata->charid);
