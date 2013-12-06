@@ -104,7 +104,7 @@ _query(struct login* self, struct gate_client* c, struct player* p) {
     memrw_write(&rw, (int*)&c->connid, sizeof(int));
     memrw_write(&rw, p->account, sizeof(p->account));
     rq->cbsz = RW_CUR(&rw);
-    int len = snprintf(rw.ptr, RW_SPACE(&rw), "hmget user:%s id passwd\r\n", p->account);
+    int len = snprintf(rw.ptr, RW_SPACE(&rw), "hmget acc:%s id passwd\r\n", p->account);
     memrw_pos(&rw, len);
     rq->msgsz = sizeof(*rq) + RW_CUR(&rw);
     UM_SENDTONODE(redisp, rq, rq->msgsz);

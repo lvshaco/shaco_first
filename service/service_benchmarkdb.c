@@ -97,11 +97,11 @@ _sendtest(struct benchmarkdb* self) {
         _sendcmd(self, "get test\r\n");
         break;
     case MODE_ACCA:
-        snprintf(cmd, sizeof(cmd), "hmset user:wa_account_%d id %d passwd 123456\r\n", id, id);
+        snprintf(cmd, sizeof(cmd), "hmset acc:wa_account_%d id %d passwd 123456\r\n", id, id);
         _sendcmd(self, cmd);
         break;
     case MODE_ACCD:
-        snprintf(cmd, sizeof(cmd), "del user:wa_account_%d\r\n", id);
+        snprintf(cmd, sizeof(cmd), "del acc:wa_account_%d\r\n", id);
         _sendcmd(self, cmd);
         break;
     }
