@@ -1,6 +1,6 @@
 .PHONY: all t clean cleanall res thirdlib
  #-Wpointer-arith -Winline
-CFLAGS=-g -O -Wall -Werror 
+CFLAGS=-g -Wall -Werror 
 SHARED=-fPIC -shared
 
 service_dir=service
@@ -103,7 +103,8 @@ service_so=\
 
 worldservice_so=\
 	service_world.so \
-	service_gamematch.so
+	service_gamematch.so \
+	service_rolelogic.so
 
 all: \
 	shaco.so \

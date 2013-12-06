@@ -12,6 +12,7 @@
 #include "player.h"
 #include "playerdb.h"
 #include "worldhelper.h"
+#include "worldevent.h"
 #include "util.h"
 #include "tplt_include.h"
 #include "tplt_struct.h"
@@ -22,6 +23,7 @@
 
 struct world {
     uint32_t dbhandler;
+    uint32_t rolehandler;
     uint32_t chariditer;
 };
 
@@ -49,6 +51,12 @@ world_init(struct service* s) {
         sc_error("lost playerdb service");
         return 1;
     }
+    self->rolehandler = service_query_id("rolelogic");
+    if (self->rolehandler == SERVICE_INVALID) {
+        sc_error("lost rolelogic service");
+        return 1;
+    }
+
     self->chariditer = 1;
     int cmax = sc_getint("world_cmax_pergate", 0);
     int hmax = sc_getint("world_hmax_pergate", cmax);
@@ -64,23 +72,13 @@ static void
 _onlogin(struct world* self, struct player* p) {
     p->status = PS_GAME;
 
-    struct chardata* data = &p->data;
-    const struct tplt_visitor* vist = tplt_get_visitor(TPLT_ROLE);
-    if (vist == NULL)
-        return;
-    if (data->role == 0) {
-        data->role = 1;
-    }
-    const struct role_tplt* role = tplt_visitor_find(vist, data->role);
-    if (role == NULL) {
-        sc_error("can not found role %d, charid %u", data->role, data->charid);
-    } else {
-        data->oxygen = role->oxygen;
-        data->body = role->body;
-        data->quick = role->quick;
-    }
+    struct chardata* cdata = &p->data;
+   
+    struct service_message sm = { 0, 0, WE_LOGIN, sizeof(p), p };
+    service_notify_service(self->rolehandler, &sm);
+
     UM_DEFFORWARD(fw, p->cid, UM_CHARINFO, ci);
-    ci->data = p->data;
+    ci->data = *cdata;
     _forward_toplayer(p, fw);
 }
 
@@ -105,23 +103,6 @@ world_service(struct service* s, struct service_message* sm) {
         _freeplayer(p);
         break;
     }
-}
-
-
-static int
-_dbcmd(struct world* self, struct player* p, int8_t type) {
-    struct service_message sm;
-    sm.sessionid = 0;
-    sm.source = 0;
-   
-    struct playerdbcmd cmd;
-    cmd.type = type;
-    cmd.p = p;
-    cmd.err = 1;
-    sm.msg = &cmd;
-    sm.sz = sizeof(struct playerdbcmd);
-    service_notify_service(self->dbhandler, &sm);
-    return cmd.err;
 }
 
 static void 
@@ -152,7 +133,7 @@ _login(struct world* self, const struct sc_node* node, int cid, struct UM_BASE* 
         _freeplayer(p);
         return;
     }
-    if (_dbcmd(self, p, PDB_QUERY)) {
+    if (player_send_dbcmd(self->dbhandler, p, PDB_QUERY)) {
         _forward_connlogout(node, cid, SERR_NODB);
         _freeplayer(p);
         return;
@@ -170,7 +151,7 @@ _createchar(struct world* self, const struct sc_node* node, int cid, struct UM_B
     }
     if (p->status == PS_WAITCREATECHAR) {
         strncpychk(p->data.name, sizeof(p->data.name), cre->name, sizeof(cre->name));
-        if (_dbcmd(self, p, PDB_CHECKNAME)) {
+        if (player_send_dbcmd(self->dbhandler, p, PDB_CHECKNAME)) {
             _forward_logout(p, SERR_NODB);
             _freeplayer(p);
         }

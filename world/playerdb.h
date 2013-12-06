@@ -25,4 +25,20 @@ struct playerdbres {
     int error;
 };
 
+static inline int
+player_send_dbcmd(int dbhandler, struct player* p, int8_t type) {
+    struct service_message sm;
+    sm.sessionid = 0;
+    sm.source = 0;
+   
+    struct playerdbcmd cmd;
+    cmd.type = type;
+    cmd.p = p;
+    cmd.err = 1;
+    sm.msg = &cmd;
+    sm.sz = sizeof(struct playerdbcmd);
+    service_notify_service(dbhandler, &sm);
+    return cmd.err;
+}
+
 #endif

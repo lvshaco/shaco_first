@@ -93,7 +93,8 @@ _sendtest(struct benchmarkdb* self) {
     char cmd[1024];
     switch (self->mode) {
     case MODE_TEST:
-        _sendcmd(self, "hgetall user:1\r\n");
+        //_sendcmd(self, "hgetall user:1\r\n");
+        _sendcmd(self, "get test\r\n");
         break;
     case MODE_ACCA:
         snprintf(cmd, sizeof(cmd), "hmset user:wa_account_%d id %d passwd 123456\r\n", id, id);

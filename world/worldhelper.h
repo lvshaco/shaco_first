@@ -1,6 +1,7 @@
 #ifndef __worldhelper_h__
 #define __worldhelper_h__
 
+#include "player.h"
 #include "message.h"
 #include "sc_node.h"
 #include "node_type.h"

@@ -89,15 +89,13 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.py *.h *.c" {
  }
  service=service{
   cmdctl.h
-  service_tpltworld.c
-  service_tpltgame.c
-  service_cmdctlworld.c
-  service_cmdctlgame.c
   service_benchmark.c
   service_benchmarkdb.c
   service_centerc.c
   service_centers.c
   service_cmdctl.c
+  service_cmdctlgame.c
+  service_cmdctlworld.c
   service_cmds.c
   service_dispatcher.c
   service_echo.c
@@ -111,12 +109,16 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.py *.h *.c" {
   service_node.c
   service_playerdb.c
   service_redisproxy.c
+  service_rolelogic.c
+  service_tpltgame.c
+  service_tpltworld.c
   service_world.c
  }
  world=world{
   player.h
   playerdb.h
   worldhelper.h
+  worldevent.h
   player.c
  }
  game=game{

@@ -18,6 +18,11 @@
 #define IDUM_LOGINACCOUNTFAIL IDUM_CBEGIN+11
 #define IDUM_NOTIFYGATE IDUM_CBEGIN+12
 
+#define IDUM_USEROLE        IDUM_CBEGIN+20
+#define IDUM_BUYROLE        IDUM_CBEGIN+21
+#define IDUM_ADDROLE        IDUM_CBEGIN+22
+#define IDUM_SYNCMONEY      IDUM_CBEGIN+23
+
 #define IDUM_PLAY           IDUM_CBEGIN+100
 #define IDUM_PLAYFAIL       IDUM_CBEGIN+101
 #define IDUM_PLAYWAIT       IDUM_CBEGIN+102
@@ -106,6 +111,27 @@ struct UM_CHARCREATE {
 struct UM_CHARINFO {
     _UM_HEADER;
     struct chardata data;
+};
+
+struct UM_USEROLE {
+    _UM_HEADER;
+    uint32_t roleid;
+};
+
+struct UM_BUYROLE {
+    _UM_HEADER;
+    uint32_t roleid;
+};
+
+struct UM_ADDROLE {
+    _UM_HEADER;
+    uint32_t roleid;
+};
+
+struct UM_SYNCMONEY {
+    _UM_HEADER;
+    uint32_t coin;
+    uint32_t diamond;
 };
 
 //////////////////////////////////////////////////////////////

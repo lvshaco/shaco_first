@@ -1,6 +1,6 @@
 sc_loglevel="INFO" 
 sc_connmax=1000 
-sc_service="log,dispatcher,node,centerc,cmdctl,cmdctlworld,tpltworld,world,gamematch,playerdb"
+sc_service="log,dispatcher,node,centerc,cmdctl,cmdctlworld,tpltworld,world,rolelogic,gamematch,playerdb"
 
 log_dir="/home/lvxiaojun/log"
 

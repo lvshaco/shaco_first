@@ -35,7 +35,8 @@ struct UM_CLI_BASE {
 struct UM_BASE {
     union {
         struct { _UM_HEADER; };
-        struct { _NODE_HEADER;
+        struct { 
+            struct NODE_HEADER nod_head;
             struct UM_CLI_BASE cli_base;
         };
     };
