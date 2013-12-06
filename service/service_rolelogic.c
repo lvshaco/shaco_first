@@ -200,7 +200,7 @@ static void
 _onlogin(struct player* p) {
     struct chardata* cdata = &p->data;
     if (cdata->role == 0) {
-        cdata->role = 1;
+        cdata->role = 10; // 默认给予ID
     }
     const struct role_tplt* tplt = _roletplt(cdata->role);
     if (tplt) {
