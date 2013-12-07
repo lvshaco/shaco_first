@@ -31,6 +31,7 @@ struct benchmark {
     int query_recv;
     int query_done;
     int packetsz;
+    int packetsplit;
     uint64_t start;
     uint64_t end; 
 };
@@ -71,12 +72,31 @@ _connect(struct service* s) {
 static void
 _send_one(struct benchmark* self, int id) {
     int sz = self->packetsz;
+    int split = self->packetsplit;
+
+    sc_net_subscribe(id, true);
     UM_DEF(um, sz);
     memset(um, 0, sz);
     um->msgid = 100;
+    um->msgsz = sz;
     //memcpy(tm.data, "ping pong!", sizeof(tm.data));
-    sc_net_subscribe(id, true);
-    UM_SENDTOSVR(id, um, sz);
+    if (split == 0) {
+        UM_SENDTOSVR(id, um, sz);
+    } else {
+        sz -= UM_CLI_OFF;
+        int i;
+        int step = sz/split;
+        if (step <= 0) step = 1;
+        char* ptr = (char*)um + UM_CLI_OFF;
+        for (i=0; i<sz; i+=step) {
+            if (i+step > sz) {
+                step = sz - i;
+            }
+            sc_net_send(id, ptr+i, step); 
+            usleep(10000);
+            //sc_error("send i %d", i);
+        }
+    }
     self->query_send++;
 }
 
@@ -113,6 +133,7 @@ benchmark_init(struct service* s) {
     if (sz < sizeof(struct UM_BASE))
         sz = sizeof(struct UM_BASE);
     self->packetsz = sz;
+    self->packetsplit = sc_getint("benchmark_packet_split", 0);
     int hmax = sc_getint("sc_connmax", 0);
     int cmax = sc_getint("benchmark_client_max", 0); 
     

@@ -10,3 +10,4 @@ benchmark_client_max=1000 -- active client
 benchmark_query=100000     -- query times
 --benchmark_query_first=10000
 benchmark_packet_size=16 -- packet size in bytes
+benchmark_packet_split=2 -- packet split to count, then send one after another by interval 10ms
