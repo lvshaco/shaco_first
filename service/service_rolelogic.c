@@ -7,16 +7,9 @@
 #include "worldevent.h"
 #include "player.h"
 #include "playerdb.h"
-#include "sharetype.h"
-#include "util.h"
-#include "node_type.h"
-#include "cli_message.h"
-#include "user_message.h"
 #include "tplt_include.h"
 #include "tplt_struct.h"
-#include <stdlib.h>
 #include <string.h>
-#include <stdint.h>
 
 #define ROLE_DEF 10 // 默认给予ID
 

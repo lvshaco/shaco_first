@@ -996,7 +996,41 @@ test_copy(int times) {
     }
     t2 = _elapsed();
     printf("memmove use time: %d\n", (int)(t2-t1));
+}
 
+void
+dump_str(const char* str) {
+    //printf("dump_str: %s\n", str);
+    while (*str) {
+        printf("\\0x%0x", *str);
+        str++;
+    }
+    printf("\n");
+}
+
+void
+_encode(const uint8_t* bytes, int nbyte) {
+    char str[sc_bytestr_encode_leastn(nbyte)];
+    sc_bytestr_encode(bytes, nbyte, str, sizeof(str));
+    dump_str(str);
+    uint8_t byt[nbyte];
+    sc_bytestr_decode(str, sizeof(str)-1, byt, sizeof(byt));
+    int i;
+    for (i=0; i<nbyte; ++i) {
+        printf("%d ", byt[i]);
+    }
+    printf("\n");
+    assert(memcmp(bytes, byt, sizeof(byt)) == 0);
+}
+
+void
+test_encode() {
+    uint8_t bytes[256];
+    int i;
+    for (i=0; i<sizeof(bytes); ++i) {
+        bytes[i] = i;
+        _encode(bytes, i+1);
+    }    
 }
 
 int 
@@ -1004,7 +1038,6 @@ main(int argc, char* argv[]) {
     int times = 1;
     if (argc > 1)
         times = strtol(argv[1], NULL, 10);
-
    
     //int32_t r = sc_cstr_to_int32("RES");
     //printf("r = %d\n", r);
@@ -1026,7 +1059,8 @@ main(int argc, char* argv[]) {
     //test_elog2();
     //test_log(times);
     //test_elog4(times);
-    test_redisnew(times);
+    //test_redisnew(times);
     //test_copy(times);
+    test_encode();
     return 0;
 }

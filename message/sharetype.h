@@ -47,6 +47,32 @@
 #define ROLE_TYPEID(roleid) ((roleid)/10-1)
 #define ROLE_CLOTHID(roleid) ((roleid)%10)
 
+// 戒指
+#define RING_STACK 99
+#define RING_MAX 100
+#define RING_PAGE_MAX 7
+#define RING_PAGE_SLOT 10
+#define RING_PAGE_NAME 24
+#define RING_PAGE_PRICE 1
+
+struct ringobj {
+    uint32_t ringid;
+    uint8_t  stack;
+};
+
+struct ringpage {
+    char name[RING_PAGE_NAME];
+    uint32_t slots[RING_PAGE_SLOT];
+};
+
+struct ringdata {
+    uint8_t npage;
+    struct ringpage pages[RING_PAGE_MAX];
+    uint8_t nring;
+    struct ringobj  rings[RING_MAX];
+};
+
+
 // 玩家信息
 struct chardata {
     uint32_t charid;
@@ -66,6 +92,7 @@ struct chardata {
     uint32_t quick;   // 敏捷
 
     uint8_t  ownrole[ROLE_MAX]; // 拥有的角色
+    struct   ringdata ringdata; // 戒指信息
 };
 
 // room type

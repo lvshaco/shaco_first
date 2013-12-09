@@ -74,6 +74,7 @@ _str_to_bytes(const char* str, int sz, uint8_t* bytes, int nbyte) {
 static int
 _db(struct player* p, int8_t type) {
     struct chardata* cdata = &p->data;
+    struct ringdata* rdata = &cdata->ringdata;
 
     UM_DEFVAR(UM_REDISQUERY, rq);
     rq->needreply = 0;
@@ -134,6 +135,11 @@ _db(struct player* p, int8_t type) {
                 " package"
                 " role"
                 " skin"
+                " ownrole"
+                " npage"
+                " pages"
+                " nring"
+                " rings"
                 "\r\n", charid);
         memrw_pos(&rw, len);
         }
@@ -184,6 +190,12 @@ _db(struct player* p, int8_t type) {
 
         char strownrole[sizeof(cdata->ownrole)+1];
         _bytes_to_str(cdata->ownrole, strownrole, sizeof(cdata->ownrole));
+        char strpages[sc_bytestr_encode_leastn(sizeof(rdata->pages))];
+        sc_bytestr_encode((uint8_t*)rdata->pages, sizeof(rdata->pages), 
+                          strpages, sizeof(strpages));
+        char strrings[sc_bytestr_encode_leastn(sizeof(rdata->rings))];
+        sc_bytestr_encode((uint8_t*)rdata->rings, sizeof(rdata->rings), 
+                          strrings, sizeof(strrings));
         int len = snprintf(rw.ptr, RW_SPACE(&rw), "hmset user:%u"
                 " name %s"
                 " level %u"
@@ -194,6 +206,10 @@ _db(struct player* p, int8_t type) {
                 " role %u"
                 " skin %u"
                 " ownrole %s"
+                " npage %u"
+                " pages %s"
+                " nring %u"
+                " rings %s"
                 "\r\n", charid,
                 cdata->name,
                 cdata->level, 
@@ -203,7 +219,12 @@ _db(struct player* p, int8_t type) {
                 cdata->package,
                 cdata->role,
                 cdata->skin,
-                strownrole);
+                strownrole,
+                cdata->ringdata.npage,
+                strpages,
+                cdata->ringdata.nring,
+                strrings
+                );
         memrw_pos(&rw, len);
         }
         break;
@@ -225,6 +246,8 @@ _loadpdb(struct player* p, struct redis_replyitem* item) {
 #define CHECK(x) if (si < end) {x; } else { return SERR_OK; }
     
     struct chardata* cdata = &p->data;
+    memset(cdata, 0, sizeof(*cdata));
+    struct ringdata* rdata = &cdata->ringdata;
     struct redis_replyitem* si = item->child;
     struct redis_replyitem* end = si + item->value.i; 
     CHECK(
@@ -243,6 +266,16 @@ _loadpdb(struct player* p, struct redis_replyitem* item) {
     CHECK(
     _str_to_bytes(si->value.p, si->value.len, cdata->ownrole, sizeof(cdata->ownrole)); 
     si++;)
+    CHECK(rdata->npage = redis_bulkitem_toul(si++));
+    CHECK(
+    sc_bytestr_decode(si->value.p, si->value.len, (uint8_t*)rdata->pages, sizeof(rdata->pages));
+    si++;
+    );
+    CHECK(rdata->nring = redis_bulkitem_toul(si++));
+    CHECK(
+    sc_bytestr_decode(si->value.p, si->value.len, (uint8_t*)rdata->rings, sizeof(rdata->rings));
+    si++;
+    );
     return SERR_OK;
 }
 

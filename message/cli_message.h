@@ -18,11 +18,21 @@
 #define IDUM_LOGINACCOUNTFAIL IDUM_CBEGIN+11
 #define IDUM_NOTIFYGATE IDUM_CBEGIN+12
 
+// role
 #define IDUM_USEROLE        IDUM_CBEGIN+20
 #define IDUM_BUYROLE        IDUM_CBEGIN+21
 #define IDUM_ADDROLE        IDUM_CBEGIN+22
 #define IDUM_SYNCMONEY      IDUM_CBEGIN+23
 
+// ring
+#define IDUM_RINGPAGEBUY    IDUM_CBEGIN+30
+#define IDUM_RINGPAGERENAME   IDUM_CBEGIN+31
+#define IDUM_RINGEQUIP      IDUM_CBEGIN+32
+#define IDUM_RINGSALE       IDUM_CBEGIN+33
+#define IDUM_RINGPAGESYNC   IDUM_CBEGIN+34
+#define IDUM_RINGSTACK      IDUM_CBEGIN+35
+
+// play
 #define IDUM_PLAY           IDUM_CBEGIN+100
 #define IDUM_PLAYFAIL       IDUM_CBEGIN+101
 #define IDUM_PLAYWAIT       IDUM_CBEGIN+102
@@ -32,6 +42,7 @@
 #define IDUM_PLAYUNJOIN     IDUM_CBEGIN+106
 #define IDUM_PLAYDONE       IDUM_CBEGIN+107
 
+// game
 #define IDUM_NOTIFYGAME     IDUM_CBEGIN+200
 #define IDUM_GAMELOGIN      IDUM_CBEGIN+201
 #define IDUM_GAMELOGINFAIL  IDUM_CBEGIN+202
@@ -113,6 +124,7 @@ struct UM_CHARINFO {
     struct chardata data;
 };
 
+// role
 struct UM_USEROLE {
     _UM_HEADER;
     uint32_t roleid;
@@ -132,6 +144,40 @@ struct UM_SYNCMONEY {
     _UM_HEADER;
     uint32_t coin;
     uint32_t diamond;
+};
+
+// ring
+struct UM_RINGPAGEBUY { // C -> S
+    _UM_HEADER;
+};
+
+struct UM_RINGPAGESYNC { // S -> C
+    _UM_HEADER;
+    uint8_t curpage; // 当前拥有的页数
+};
+
+struct UM_RINGPAGERENAME { // C -> S
+    _UM_HEADER;
+    uint8_t index;
+    char name[RING_PAGE_NAME];
+};
+
+struct UM_RINGEQUIP { // C -> S 
+    _UM_HEADER;
+    uint8_t index;
+    uint32_t rings[RING_PAGE_SLOT]; // 整个记录页装备的戒指
+};
+
+struct UM_RINGSALE { // C -> S 
+    _UM_HEADER;
+    uint32_t ringid;
+    uint8_t  count;
+};
+
+struct UM_RINGSTACK { // S -> C 
+    _UM_HEADER;
+    uint32_t ringid;
+    uint8_t stack; // 当前堆叠
 };
 
 //////////////////////////////////////////////////////////////

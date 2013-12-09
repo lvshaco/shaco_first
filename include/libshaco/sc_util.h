@@ -2,6 +2,7 @@
 #define __sc_util_h__
 
 #include <stdlib.h>
+#include <stdint.h>
 
 // const cstring to int32, eg: "GMAP"
 #define sc_cstr_to_int32(cstr) ({ \
@@ -28,5 +29,11 @@
 #ifndef max
 #define max(x, y) ((x) > (y) ? (x) : (y))
 #endif
+
+// encode
+#define sc_bytestr_encode_leastn(n) ((n)*8 / 7 + 2)
+#define sc_bytestr_decode_leastn(n) ((n)*7 / 8 + 1)
+int sc_bytestr_encode(const uint8_t* bytes, int nbyte, char* str, int n);
+int sc_bytestr_decode(const char* str, int len, uint8_t* bytes, int nbyte);
 
 #endif

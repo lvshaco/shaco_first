@@ -26,6 +26,7 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.py *.h *.c" {
   sc_sig.c
   sc_start.c
   sc_timer.c
+  sc_util.c
  }
  include=include{
   libshaco=libshaco{
@@ -109,6 +110,7 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.py *.h *.c" {
   service_node.c
   service_playerdb.c
   service_redisproxy.c
+  service_ringlogic.c
   service_rolelogic.c
   service_tpltgame.c
   service_tpltworld.c

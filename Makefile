@@ -74,7 +74,8 @@ libshaco_src=\
 	libshaco/sc_dispatcher.c \
 	libshaco/sc_node.c \
 	libshaco/sc_gate.c \
- 	libshaco/dlmodule.c
+ 	libshaco/dlmodule.c \
+	libshaco/sc_util.c
 
 cli_src=\
 	tool/shaco-cli.c
@@ -104,7 +105,8 @@ service_so=\
 worldservice_so=\
 	service_world.so \
 	service_gamematch.so \
-	service_rolelogic.so
+	service_rolelogic.so \
+	service_ringlogic.so
 
 all: \
 	shaco.so \
