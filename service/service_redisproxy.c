@@ -262,6 +262,6 @@ redisproxy_time(struct service* s) {
         _connect_redis(s, false);
     }
     if (self->times > 0) {
-        sc_info("maxcount = %d, agvcount = %d", self->maxcount, self->allcount/self->times);
+        //sc_info("maxcount = %d, agvcount = %d", self->maxcount, self->allcount/self->times);
     }
 }

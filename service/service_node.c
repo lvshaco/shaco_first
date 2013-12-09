@@ -188,7 +188,7 @@ node_net(struct service* s, struct net_message* nm) {
         sc_net_subscribe(nm->connid, true);
         break;
     case NETE_CONNECT:
-        sc_info("connect to node ok");
+        sc_info("connect to node ok, %d", nm->connid);
         sc_net_subscribe(nm->connid, true);
         _reg_request(nm->connid);
         break;
@@ -196,7 +196,7 @@ node_net(struct service* s, struct net_message* nm) {
         sc_error("connect to node fail: %s", sc_net_error(nm->error));
         break;
     case NETE_SOCKERR:
-        sc_error("node disconnect: %s", sc_net_error(nm->error));
+        sc_error("node disconnect: %s, %d", sc_net_error(nm->error), nm->connid);
         sc_node_disconnect(nm->connid);
         break;
     }

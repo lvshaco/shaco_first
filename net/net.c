@@ -410,21 +410,19 @@ net_dropread(struct net* self, int id, int sz) {
 
 int
 _send_buffer(struct net* self, struct socket* s) {
-    int error = 0;
     int total = 0;
     while (s->head) {
         struct sbuffer* p = s->head;
         for (;;) {
             int nbyte = _socket_write(s->fd, p->ptr, p->sz);
             if (nbyte < 0) {
-                error = _socket_geterror(s->fd);
+                int error = _socket_geterror(s->fd);
                 if (error == SEAGAIN)
                     return 0;
                 else if (error == SEINTR) {
-                    error = 0;
                     continue;
                 } else {
-                    goto err;
+                    return error;
                 }
             } else if (nbyte == 0) {
                 return 0;
@@ -447,9 +445,6 @@ _send_buffer(struct net* self, struct socket* s) {
         _subscribe(self, s, s->mask & (~NET_WABLE));
     }
     return 0;
-err:
-    _close_socket(self, s);
-    return error;
 }
 
 int 
@@ -753,8 +748,9 @@ net_poll(struct net* self, int timeout) {
                     oe->connid = s - self->sockets;
                     oe->ud = s->ud;
                     oe->ut = s->ut;
-                    oe->type = NETE_SOCKERR;
+                    oe->type = NETE_SOCKERR; 
                     c++;
+                    _close_socket(self, s);
                     break;
                 }
                 if (s->status == STATUS_HALFCLOSE &&
@@ -765,6 +761,7 @@ net_poll(struct net* self, int timeout) {
                     oe->ut = s->ut;
                     oe->type = NETE_WRIDONECLOSE;
                     c++;
+                    _close_socket(self, s);
                     break;
                 }
             }

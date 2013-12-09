@@ -95,6 +95,7 @@ _sendtest(struct benchmarkdb* self) {
     case MODE_TEST:
         //_sendcmd(self, "hgetall user:1\r\n");
         _sendcmd(self, "get test\r\n");
+        //_sendcmd(self, "zrange rank_score 0 -1 withscores\r\n");
         break;
     case MODE_ACCA:
         snprintf(cmd, sizeof(cmd), "hmset acc:wa_account_%d id %d passwd 123456\r\n", id, id);
@@ -147,7 +148,7 @@ _handleredisproxy(struct benchmarkdb* self, struct node_message* nm) {
 
     redis_resetreplybuf(&self->reply, rw.ptr, RW_SPACE(&rw));
     hassertlog(redis_getreply(&self->reply) == REDIS_SUCCEED);
-    //redis_walkreply(&self->reply);
+    redis_walkreply(&self->reply);
     self->query_done++;
     self->query_recv++;
     if (self->query_done == self->query) {
