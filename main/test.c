@@ -1025,7 +1025,7 @@ _encode(const uint8_t* bytes, int nbyte) {
 
 void
 test_encode() {
-    uint8_t bytes[256];
+    uint8_t bytes[512];
     int i;
     for (i=0; i<sizeof(bytes); ++i) {
         bytes[i] = i;
