@@ -133,6 +133,7 @@ _db(struct player* p, int8_t type) {
                 " role"
                 " skin"
                 " ownrole"
+                " usepage"
                 " npage"
                 " pages"
                 " nring"
@@ -203,6 +204,7 @@ _db(struct player* p, int8_t type) {
                 " role %u"
                 " skin %u"
                 " ownrole %s"
+                " usepage %u"
                 " npage %u"
                 " pages %s"
                 " nring %u"
@@ -217,9 +219,10 @@ _db(struct player* p, int8_t type) {
                 cdata->role,
                 cdata->skin,
                 strownrole,
-                cdata->ringdata.npage,
+                rdata->usepage,
+                rdata->npage,
                 strpages,
-                cdata->ringdata.nring,
+                rdata->nring,
                 strrings
                 );
         memrw_pos(&rw, len);
@@ -262,6 +265,7 @@ _loadpdb(struct player* p, struct redis_replyitem* item) {
     CHECK(
     _str_to_bytes(si->value.p, si->value.len, cdata->ownrole, sizeof(cdata->ownrole)); 
     si++;)
+    CHECK(rdata->usepage = redis_bulkitem_toul(si++));
     CHECK(rdata->npage = redis_bulkitem_toul(si++));
     CHECK(
     sc_bytestr_decode(si->value.p, si->value.len, (uint8_t*)rdata->pages, sizeof(rdata->pages));

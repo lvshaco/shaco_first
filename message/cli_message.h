@@ -31,6 +31,7 @@
 #define IDUM_RINGSALE       IDUM_CBEGIN+33
 #define IDUM_RINGPAGESYNC   IDUM_CBEGIN+34
 #define IDUM_RINGSTACK      IDUM_CBEGIN+35
+#define IDUM_RINGPAGEUSE    IDUM_CBEGIN+36
 
 // play
 #define IDUM_PLAY           IDUM_CBEGIN+100
@@ -147,6 +148,11 @@ struct UM_SYNCMONEY {
 };
 
 // ring
+struct UM_RINGPAGEUSE { // C -> S
+    _UM_HEADER;
+    uint8_t index;
+};
+
 struct UM_RINGPAGEBUY { // C -> S
     _UM_HEADER;
 };

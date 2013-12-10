@@ -66,6 +66,7 @@ struct ringpage {
 };
 
 struct ringdata {
+    uint8_t usepage;
     uint8_t npage;
     struct ringpage pages[RING_PAGE_MAX];
     uint8_t nring;

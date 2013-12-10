@@ -12,6 +12,8 @@
 #include "tplt_struct.h"
 #include <string.h>
 
+#define RING_NPAGE_INIT 1
+
 struct ringlogic {
     int dbhandler;
 };
@@ -37,6 +39,7 @@ ringlogic_init(struct service* s) {
     SUBSCRIBE_MSG(s->serviceid, IDUM_RINGPAGERENAME);
     SUBSCRIBE_MSG(s->serviceid, IDUM_RINGEQUIP);
     SUBSCRIBE_MSG(s->serviceid, IDUM_RINGSALE);
+    SUBSCRIBE_MSG(s->serviceid, IDUM_RINGPAGEUSE);
     return 0;
 }
 
@@ -208,6 +211,26 @@ _handle_buyringpage(struct ringlogic* self, struct player_message* pm) {
     return;
 }
 
+static void
+_handle_useringpage(struct ringlogic* self, struct player_message* pm) {
+    UM_CAST(UM_RINGPAGEUSE, um, pm->um);
+
+    struct player* p = pm->p;
+    struct chardata* cdata = &p->data;
+    struct ringdata* rdata = &cdata->ringdata;
+
+    if (um->index >= rdata->npage) {
+        return;
+    }
+    if (!_hasdb()) {
+        return; // NO DB
+    }
+    // do logic
+    rdata->usepage = um->index;
+    player_send_dbcmd(self->dbhandler, p, PDB_SAVE);
+    return;
+}
+
 void
 ringlogic_usermsg(struct service* s, int id, void* msg, int sz) {
     struct ringlogic* self = SERVICE_SELF;
@@ -218,6 +241,9 @@ ringlogic_usermsg(struct service* s, int id, void* msg, int sz) {
         break;
     case IDUM_RINGPAGERENAME:
         _handle_renameringpage(self, pm);
+        break;
+    case IDUM_RINGPAGEUSE:
+        _handle_useringpage(self, pm);
         break;
     case IDUM_RINGEQUIP:
         _handle_equipring(self, pm);
@@ -232,8 +258,12 @@ static void
 _onlogin(struct player* p) {
     struct chardata* cdata = &p->data;
     struct ringdata* rdata = &cdata->ringdata;
-    if (rdata->npage > RING_PAGE_MAX)
+    if (rdata->npage < RING_NPAGE_INIT)
+        rdata->npage = RING_NPAGE_INIT;
+    else if (rdata->npage > RING_PAGE_MAX)
         rdata->npage = RING_PAGE_MAX;
+    if (rdata->usepage >= rdata->npage)
+        rdata->usepage = 0;
     if (rdata->nring > RING_MAX)
         rdata->nring = RING_MAX;
 }
