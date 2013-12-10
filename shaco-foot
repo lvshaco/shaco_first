@@ -51,6 +51,7 @@ stopcmdd() {
 }
 restartall() {
     stop
+    sleep 1
     startall
 }
 
