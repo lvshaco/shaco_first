@@ -14,5 +14,5 @@ center_port=8000
 benchmark_query=100000
 benchmark_query_init=1000
 
---./shaco config_benchmark --benchmark_query_init 0
---./shaco-cli --cmd="all all db acca 1 1000000"
+--./shaco config_benchmarkdb.lua --benchmark_query_init 0
+--./shaco-cli --cmd "all all db acca 1 1000000 1000"
