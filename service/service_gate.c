@@ -58,11 +58,8 @@ int
 gate_init(struct service* s) {
     struct gate* self = SERVICE_SELF;
     const char* hname = sc_getstr("gate_handler", "");
-    self->handler = service_query_id(hname);
-    if (self->handler == SERVICE_INVALID) {
-        sc_error("lost gate handler service");
+    if (sc_handler(hname, &self->handler))
         return 1;
-    }
     if (_listen(s))
         return 1;
     int cmax = sc_getint("gate_clientmax", 0);

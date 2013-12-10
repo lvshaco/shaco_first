@@ -31,11 +31,8 @@ ringlogic_free(struct ringlogic* self) {
 int
 ringlogic_init(struct service* s) {
     struct ringlogic* self = SERVICE_SELF;
-    self->dbhandler = service_query_id("playerdb");
-    if (self->dbhandler == SERVICE_INVALID) {
-        sc_error("lost playerdb service");
+    if (sc_handler("playerdb", &self->dbhandler))
         return 1;
-    }
     SUBSCRIBE_MSG(s->serviceid, IDUM_RINGPAGEBUY);
     SUBSCRIBE_MSG(s->serviceid, IDUM_RINGPAGERENAME);
     SUBSCRIBE_MSG(s->serviceid, IDUM_RINGEQUIP);
@@ -233,7 +230,12 @@ ringlogic_usermsg(struct service* s, int id, void* msg, int sz) {
 
 static void
 _onlogin(struct player* p) {
-    //struct chardata* cdata = &p->data;
+    struct chardata* cdata = &p->data;
+    struct ringdata* rdata = &cdata->ringdata;
+    if (rdata->npage > RING_PAGE_MAX)
+        rdata->npage = RING_PAGE_MAX;
+    if (rdata->nring > RING_MAX)
+        rdata->nring = RING_MAX;
 }
 
 void

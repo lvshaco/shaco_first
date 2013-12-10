@@ -1,4 +1,5 @@
 #include "sc_service.h"
+#include "sc.h"
 #include "sc_log.h"
 #include "sc_node.h"
 #include "sc_timer.h"
@@ -32,11 +33,8 @@ rolelogic_free(struct rolelogic* self) {
 int
 rolelogic_init(struct service* s) {
     struct rolelogic* self = SERVICE_SELF;
-    self->dbhandler = service_query_id("playerdb");
-    if (self->dbhandler == SERVICE_INVALID) {
-        sc_error("lost playerdb service");
+    if (sc_handler("playerdb", &self->dbhandler))
         return 1;
-    }
     SUBSCRIBE_MSG(s->serviceid, IDUM_USEROLE);
     SUBSCRIBE_MSG(s->serviceid, IDUM_BUYROLE);
     return 0;

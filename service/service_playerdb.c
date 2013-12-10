@@ -19,7 +19,7 @@
 #include <stdio.h>
 
 struct playerdb {
-    uint32_t requester;
+    int requester;
     struct redis_reply reply;
 };
 
@@ -39,11 +39,8 @@ playerdb_free(struct playerdb* self) {
 int
 playerdb_init(struct service* s) {
     struct playerdb* self = SERVICE_SELF;
-    self->requester = service_query_id("world");
-    if (self->requester == SERVICE_INVALID) {
-        sc_error("lost world service");
+    if (sc_handler("world", &self->requester))
         return 1;
-    }
     
     redis_initreply(&self->reply, 512, 0);
     SUBSCRIBE_MSG(s->serviceid, IDUM_REDISREPLY);
@@ -90,7 +87,7 @@ _db(struct player* p, int8_t type) {
         uint32_t accid = cdata->accid;
         memrw_write(&rw, &accid, sizeof(accid));
         rq->cbsz = RW_CUR(&rw);
-        int len = snprintf(rw.ptr, RW_SPACE(&rw), "get user:%u:accid\r\n", accid);
+        int len = snprintf(rw.ptr, RW_SPACE(&rw), "get acc:%u:user\r\n", accid);
         memrw_pos(&rw, len);
         }
         break;
@@ -176,7 +173,7 @@ _db(struct player* p, int8_t type) {
         uint32_t charid = cdata->charid;
         memrw_write(&rw, &charid, sizeof(charid));
         rq->cbsz = RW_CUR(&rw);
-        int len = snprintf(rw.ptr, RW_SPACE(&rw), "set user:%u:accid %u\r\n",
+        int len = snprintf(rw.ptr, RW_SPACE(&rw), "set acc:%u:user %u\r\n",
                 accid, charid);
         memrw_pos(&rw, len);
         }
@@ -191,10 +188,10 @@ _db(struct player* p, int8_t type) {
         char strownrole[sizeof(cdata->ownrole)+1];
         _bytes_to_str(cdata->ownrole, strownrole, sizeof(cdata->ownrole));
         char strpages[sc_bytestr_encode_leastn(sizeof(rdata->pages))];
-        sc_bytestr_encode((uint8_t*)rdata->pages, sizeof(rdata->pages), 
+        sc_bytestr_encode((uint8_t*)rdata->pages, min(rdata->npage, sizeof(rdata->pages)), 
                           strpages, sizeof(strpages));
         char strrings[sc_bytestr_encode_leastn(sizeof(rdata->rings))];
-        sc_bytestr_encode((uint8_t*)rdata->rings, sizeof(rdata->rings), 
+        sc_bytestr_encode((uint8_t*)rdata->rings, min(rdata->nring, sizeof(rdata->rings)), 
                           strrings, sizeof(strrings));
         int len = snprintf(rw.ptr, RW_SPACE(&rw), "hmset user:%u"
                 " name %s"
@@ -246,7 +243,6 @@ _loadpdb(struct player* p, struct redis_replyitem* item) {
 #define CHECK(x) if (si < end) {x; } else { return SERR_OK; }
     
     struct chardata* cdata = &p->data;
-    memset(cdata, 0, sizeof(*cdata));
     struct ringdata* rdata = &cdata->ringdata;
     struct redis_replyitem* si = item->child;
     struct redis_replyitem* end = si + item->value.i; 

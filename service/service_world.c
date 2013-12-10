@@ -22,8 +22,9 @@
 #include <assert.h>
 
 struct world {
-    uint32_t dbhandler;
-    uint32_t rolehandler;
+    int dbhandler;
+    int rolehandler;
+    int ringhandler;
     uint32_t chariditer;
 };
 
@@ -46,17 +47,12 @@ int
 world_init(struct service* s) {
     struct world* self = SERVICE_SELF;
 
-    self->dbhandler = service_query_id("playerdb");
-    if (self->dbhandler == SERVICE_INVALID) {
-        sc_error("lost playerdb service");
+    if (sc_handler("rolelogic", &self->rolehandler) ||
+        sc_handler("ringlogic", &self->ringhandler) ||
+        sc_handler("playerdb", &self->dbhandler)) {
         return 1;
     }
-    self->rolehandler = service_query_id("rolelogic");
-    if (self->rolehandler == SERVICE_INVALID) {
-        sc_error("lost rolelogic service");
-        return 1;
-    }
-
+        
     self->chariditer = 1;
     int cmax = sc_getint("world_cmax_pergate", 0);
     int hmax = sc_getint("world_hmax_pergate", cmax);
@@ -76,6 +72,7 @@ _onlogin(struct world* self, struct player* p) {
    
     struct service_message sm = { 0, 0, WE_LOGIN, sizeof(p), p };
     service_notify_service(self->rolehandler, &sm);
+    service_notify_service(self->ringhandler, &sm);
 
     UM_DEFFORWARD(fw, p->cid, UM_CHARINFO, ci);
     ci->data = *cdata;

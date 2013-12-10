@@ -38,4 +38,5 @@ int service_notify_time(int serviceid);
 int service_notify_nodemsg(int serviceid, int id, void* msg, int sz);
 int service_notify_usermsg(int serviceid, int id, void* msg, int sz);
 
+int sc_handler(const char* name, int* handler);
 #endif

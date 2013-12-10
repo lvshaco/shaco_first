@@ -1,4 +1,5 @@
 #include "sc_service.h"
+#include "sc.h"
 #include "sc_util.h"
 #include "sc_node.h"
 #include "sc_timer.h"
@@ -154,11 +155,8 @@ _get_item_tplt(struct game* self, uint32_t itemid) {
 int
 game_init(struct service* s) {
     struct game* self = SERVICE_SELF;
-    self->tplt_handler = service_query_id("tpltgame");
-    if (self->tplt_handler == SERVICE_INVALID) {
-        sc_error("lost tpltgame service");
+    if (sc_handler("tpltgame", &self->tplt_handler))
         return 1;
-    }
     int pmax = sc_gate_maxclient();
     if (pmax == 0) {
         sc_error("maxclient is zero, try load service gate before this");

@@ -1,4 +1,5 @@
 #include "sc_service.h"
+#include "sc.h"
 #include "sc_env.h"
 #include "sc_log.h"
 #include "sc_net.h"
@@ -71,11 +72,8 @@ node_init(struct service* s) {
 
     self->iscenter = HNODE_TID(me.id) == NODE_CENTER;
     const char* tmp = self->iscenter ? "centers" : "centerc";
-    self->center_or_cli_service = service_query_id(tmp);
-    if (self->center_or_cli_service == -1) {
-        sc_error("lost %s service", tmp);
+    if (sc_handler(tmp, &self->center_or_cli_service))
         return 1;
-    }
     return 0;
 }
 

@@ -44,11 +44,8 @@ cmds_free(struct server* self) {
 int
 cmds_init(struct service* s) {
     struct server* self = SERVICE_SELF;
-    self->ctl_service = service_query_id("cmdctl");
-    if (self->ctl_service == SERVICE_INVALID) {
-        sc_error("lost cmdctl service");
+    if (sc_handler("cmdctl", &self->ctl_service))
         return 1;
-    }
     int cmax = sc_gate_maxclient();
     if (cmax == 0) {
         sc_error("maxclient is zero, try load service gate before this");

@@ -194,11 +194,8 @@ cmdctl_init(struct service* s) {
     SUBSCRIBE_MSG(s->serviceid, IDUM_CMDREQ);
 
     if (HNODE_TID(sc_id()) == NODE_CENTER) {
-        self->cmds_service = service_query_id("cmds");
-        if (self->cmds_service == SERVICE_INVALID) {
-            sc_error("lost cmds service");
+        if (sc_handler("cmds", &self->cmds_service))
             return 1;
-        }
     } else {
         self->cmds_service = SERVICE_INVALID;
     }

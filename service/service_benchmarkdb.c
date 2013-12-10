@@ -148,7 +148,7 @@ _handleredisproxy(struct benchmarkdb* self, struct node_message* nm) {
 
     redis_resetreplybuf(&self->reply, rw.ptr, RW_SPACE(&rw));
     hassertlog(redis_getreply(&self->reply) == REDIS_SUCCEED);
-    redis_walkreply(&self->reply);
+    //redis_walkreply(&self->reply);
     self->query_done++;
     self->query_recv++;
     if (self->query_done == self->query) {
