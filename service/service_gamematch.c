@@ -114,9 +114,9 @@ _build_memberbrief(const struct player* p, struct tmemberbrief* brief) {
     strncpychk(brief->name, sizeof(brief->name), data->name, sizeof(data->name));
     brief->role = data->role;
     brief->skin = data->skin;
-    brief->oxygen = data->oxygen;
-    brief->body = data->body;
-    brief->quick = data->quick;
+    brief->oxygen = data->attri.oxygen;
+    brief->body = data->attri.body;
+    brief->quick = data->attri.quick;
 }
 
 static void
@@ -127,9 +127,7 @@ _build_memberdetail(const struct player* p, struct tmemberdetail* detail) {
     strncpychk(detail->name, sizeof(detail->name), data->name, sizeof(data->name));
     detail->role = data->role;
     detail->skin = data->skin;
-    detail->oxygen = data->oxygen;
-    detail->body = data->body;
-    detail->quick = data->quick;
+    detail->attri = data->attri;
 }
 
 static inline void

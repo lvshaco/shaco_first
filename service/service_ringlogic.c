@@ -16,6 +16,7 @@
 
 struct ringlogic {
     int dbhandler;
+    int attrihandler;
 };
 
 struct ringlogic*
@@ -33,7 +34,8 @@ ringlogic_free(struct ringlogic* self) {
 int
 ringlogic_init(struct service* s) {
     struct ringlogic* self = SERVICE_SELF;
-    if (sc_handler("playerdb", &self->dbhandler))
+    if (sc_handler("attribute", &self->attrihandler) ||
+        sc_handler("playerdb", &self->dbhandler))
         return 1;
     SUBSCRIBE_MSG(s->serviceid, IDUM_RINGPAGEBUY);
     SUBSCRIBE_MSG(s->serviceid, IDUM_RINGPAGERENAME);
@@ -48,15 +50,6 @@ ringlogic_init(struct service* s) {
 static inline bool
 _hasdb() {
     return sc_node_get(HNODE_ID(NODE_REDISPROXY, 0)) != NULL;
-}
-
-static inline const struct ring_tplt* 
-_ringtplt(uint32_t ringid) {
-    const struct tplt_visitor* vist = tplt_get_visitor(TPLT_RING);
-    if (vist) {
-        return tplt_visitor_find(vist, ringid);
-    }
-    return NULL;
 }
 
 static void
@@ -147,9 +140,11 @@ _handle_equipring(struct ringlogic* self, struct player_message* pm) {
                 return; 
         } 
     }
-   
     if (!_hasdb()) {
         return; // NO DB
+    }
+    if (!memcmp(page->slots, um->rings, sizeof(page->slots))) {
+        return;
     }
     // do logic
     memcpy(page->slots, um->rings, sizeof(page->slots));
@@ -179,8 +174,11 @@ _handle_renameringpage(struct ringlogic* self, struct player_message* pm) {
     if (!_hasdb()) {
         return; // NO DB
     }
-    // do logic
     struct ringpage* page = &rdata->pages[um->index];
+    if (!strncmp(page->name, um->name, sizeof(page->name))) {
+        return;
+    }
+    // do logic
     strncpy(page->name, um->name, sizeof(page->name));
     
     player_send_dbcmd(self->dbhandler, p, PDB_SAVE);
@@ -219,6 +217,8 @@ _handle_useringpage(struct ringlogic* self, struct player_message* pm) {
     struct chardata* cdata = &p->data;
     struct ringdata* rdata = &cdata->ringdata;
 
+    if (um->index == rdata->usepage)
+        return;
     if (um->index >= rdata->npage) {
         return;
     }
@@ -227,6 +227,11 @@ _handle_useringpage(struct ringlogic* self, struct player_message* pm) {
     }
     // do logic
     rdata->usepage = um->index;
+
+    // refresh attribute
+    struct service_message sm = { 0, 0, 0, sizeof(p), p };
+    service_notify_service(self->attrihandler, &sm);
+
     player_send_dbcmd(self->dbhandler, p, PDB_SAVE);
     return;
 }

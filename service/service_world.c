@@ -25,6 +25,7 @@ struct world {
     int dbhandler;
     int rolehandler;
     int ringhandler;
+    int attrihandler;
     uint32_t chariditer;
 };
 
@@ -49,6 +50,7 @@ world_init(struct service* s) {
 
     if (sc_handler("rolelogic", &self->rolehandler) ||
         sc_handler("ringlogic", &self->ringhandler) ||
+        sc_handler("attribute", &self->attrihandler) ||
         sc_handler("playerdb", &self->dbhandler)) {
         return 1;
     }
@@ -74,6 +76,10 @@ _onlogin(struct world* self, struct player* p) {
     service_notify_service(self->rolehandler, &sm);
     service_notify_service(self->ringhandler, &sm);
 
+    // refresh attribute
+    struct service_message sm2 = { 0, 0, 0, sizeof(p), p };
+    service_notify_service(self->attrihandler, &sm2);
+    
     UM_DEFFORWARD(fw, p->cid, UM_CHARINFO, ci);
     ci->data = *cdata;
     _forward_toplayer(p, fw);

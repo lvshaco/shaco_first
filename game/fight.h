@@ -23,29 +23,37 @@ ground_attri_build(int32_t difficulty, struct groundattri* ga) {
 }
 
 static inline float
-role_body_factor(struct tmemberdetail* cdata) {
-    return (1+(5-cdata->bodycur*0.01)/20.0);
+role_body_factor(struct char_attribute* cattri) {
+    return (1+(5-cattri->body*0.01)/20.0);
 }
 
 static inline void 
 role_attri_build(const struct groundattri* ga,
-                 struct tmemberdetail* cdata) {
-    float quick = cdata->quickcur*0.01;
+                 struct char_attribute* cattri) {
+    float quick = cattri->quick*0.01;
    
-    float bodyfactor = role_body_factor(cdata);
+    float bodyfactor = role_body_factor(cattri);
     float factor = 1 - (5-quick)/((quick > 5) ? 10.0 : 20.0);
     
-    cdata->movespeed = ga->cellfallspeed*2/3.0 * factor;
-    cdata->charfallspeed = ga->cellfallspeed * ((quick>5) ? factor : 1);
-    cdata->jmpspeed = 3 * cdata->movespeed * factor;
-    cdata->jmpacctime = 0.25 * ga->shaketime * (2-factor);
-    cdata->rebirthtime = 2200 * (1-(ga->difficulty-1)/20.0) * (2-factor)*(2-bodyfactor);
-    cdata->dodgedistance = (factor * factor * 5 + 10)/60.0;
+    cattri->movespeed = ga->cellfallspeed*2/3.0 * factor;
+    cattri->movespeed += cattri->movespeed * cattri->movespeedadd;
+
+    cattri->charfallspeed = ga->cellfallspeed * ((quick>5) ? factor : 1);
+    cattri->charfallspeed += cattri->charfallspeed * cattri->charfallspeedadd;
+    
+    cattri->jmpspeed = 3 * cattri->movespeed * factor;
+    cattri->jmpacctime = 0.25 * ga->shaketime * (2-factor);
+
+    cattri->rebirthtime = 2200 * (1-(ga->difficulty-1)/20.0) * (2-factor)*(2-bodyfactor);
+    cattri->rebirthtime += cattri->rebirthtime * cattri->rebirthtimeadd;
+
+    cattri->dodgedistance = (factor * factor * 5 + 10)/60.0;
+    cattri->dodgedistance += cattri->dodgedistance * cattri->dodgedistanceadd;
 }
 
 static inline float
-role_oxygen_time_consume(struct tmemberdetail* cdata) {
-    float bodyfactor = role_body_factor(cdata);
+role_oxygen_time_consume(struct char_attribute* cattri) {
+    float bodyfactor = role_body_factor(cattri);
     return 10* (2-bodyfactor);
 }
 

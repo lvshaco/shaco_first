@@ -16,6 +16,7 @@
 
 struct rolelogic {
     int dbhandler;
+    int attrihandler;
 };
 
 struct rolelogic*
@@ -33,7 +34,8 @@ rolelogic_free(struct rolelogic* self) {
 int
 rolelogic_init(struct service* s) {
     struct rolelogic* self = SERVICE_SELF;
-    if (sc_handler("playerdb", &self->dbhandler))
+    if (sc_handler("attribute", &self->attrihandler) ||
+        sc_handler("playerdb", &self->dbhandler))
         return 1;
     SUBSCRIBE_MSG(s->serviceid, IDUM_USEROLE);
     SUBSCRIBE_MSG(s->serviceid, IDUM_BUYROLE);
@@ -45,15 +47,6 @@ rolelogic_init(struct service* s) {
 static inline bool
 _hasdb() {
     return sc_node_get(HNODE_ID(NODE_REDISPROXY, 0)) != NULL;
-}
-
-static inline const struct role_tplt* 
-_roletplt(uint32_t roleid) {
-    const struct tplt_visitor* vist = tplt_get_visitor(TPLT_ROLE);
-    if (vist) {
-        return tplt_visitor_find(vist, roleid);
-    }
-    return NULL;
 }
 
 static bool
@@ -106,10 +99,6 @@ _sync_addrole(struct player* p, uint32_t roleid) {
 static void
 _userole(struct chardata* cdata, const struct role_tplt* tplt) {
     cdata->role = tplt->id;
-    
-    cdata->oxygen = tplt->oxygen;
-    cdata->body = tplt->body;
-    cdata->quick = tplt->quick;
 }
 
 static void
@@ -120,7 +109,10 @@ _handle_userole(struct rolelogic* self, struct player_message* pm) {
     struct chardata* cdata = &p->data;
     uint32_t roleid  = um->roleid;
 
-    const struct role_tplt* tplt = _roletplt(roleid);
+    if (roleid == cdata->role) {
+        return;
+    }
+    const struct role_tplt* tplt = tplt_find(TPLT_ROLE, roleid);
     if (tplt == NULL) {
         return;
     }
@@ -132,7 +124,12 @@ _handle_userole(struct rolelogic* self, struct player_message* pm) {
     }
     // do logic
     _userole(cdata, tplt);
-    _sync_role(p);
+   
+    // refresh attribute
+    struct service_message sm = { 0, 0, 0, sizeof(p), p };
+    service_notify_service(self->attrihandler, &sm);
+
+    _sync_role(p); 
     player_send_dbcmd(self->dbhandler, p, PDB_SAVE);
 }
 
@@ -147,7 +144,7 @@ _handle_buyrole(struct rolelogic* self, struct player_message* pm) {
     if (_hasrole(cdata, roleid)) {
         return; // 已经拥有
     }
-    const struct role_tplt* tplt = _roletplt(roleid);
+    const struct role_tplt* tplt = tplt_find(TPLT_ROLE, roleid);
     if (tplt == NULL) {
         return;
     }
@@ -196,12 +193,12 @@ _onlogin(struct player* p) {
     if (cdata->role == 0) {
         tplt = NULL;
     } else {
-        tplt = _roletplt(cdata->role);
+        tplt = tplt_find(TPLT_ROLE, cdata->role);
     }
     if (tplt == NULL && 
         cdata->role != ROLE_DEF) {
         cdata->role = ROLE_DEF;
-        tplt = _roletplt(cdata->role);
+        tplt = tplt_find(TPLT_ROLE, cdata->role);
     }
     if (tplt) {
         if (!_hasrole(cdata, ROLE_DEF)) {

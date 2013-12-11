@@ -98,9 +98,19 @@ tplt_get_holder(int type) {
         return self->p[type].holder;
     return NULL;
 }
+
 const struct tplt_visitor* 
 tplt_get_visitor(int type) {
     if (self && type >= 0 && type < self->sz)
         return self->p[type].visitor;
+    return NULL;
+}
+
+void* 
+tplt_find(int type, uint32_t key) {
+    const struct tplt_visitor* vist = tplt_get_visitor(type);
+    if (vist) {
+        return tplt_visitor_find(vist, key);
+    }
     return NULL;
 }

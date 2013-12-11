@@ -1,6 +1,8 @@
 #ifndef __tplt_h__
 #define __tplt_h__
 
+#include <stdint.h>
+
 struct tplt;
 struct tplt_holder;
 struct tplt_visitor;
@@ -18,5 +20,6 @@ int tplt_init(const struct tplt_desc* desc, int sz);
 void tplt_fini();
 const struct tplt_holder* tplt_get_holder(int type);
 const struct tplt_visitor* tplt_get_visitor(int type);
+void* tplt_find(int type, uint32_t key);
 
 #endif

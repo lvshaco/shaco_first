@@ -73,6 +73,75 @@ struct ringdata {
     struct ringobj  rings[RING_MAX];
 };
 
+#define EFFECT_INVALID  0
+#define EFFECT_OXYGEN           1
+#define EFFECT_BODY             2
+#define EFFECT_QUICK            3
+#define EFFECT_COIN_PROFIT      4
+#define EFFECT_MOVE_SPEED       5
+#define EFFECT_FALL_SPEED       6
+#define EFFECT_ATTACK_DISTANCE  7
+#define EFFECT_ATTACK_RANGE     8
+#define EFFECT_ATTACK_POWER     9
+#define EFFECT_LUCK             10
+#define EFFECT_ATTACK_SPEED     11
+#define EFFECT_DODGE_DISTANCE   12
+#define EFFECT_REBIRTH_TIME     13
+#define EFFECT_JUMP_RANGE       14
+#define EFFECT_SENCE_RANGE      15
+#define EFFECT_WINCOIN_PROFIT   16
+#define EFFECT_EXP_PROFIT       17
+#define EFFECT_ITEM_TIME        18
+#define EFFECT_ITEM_OXYGEN      19
+#define EFFECT_PRICES           20
+#define EFFECT_SKILL_ACTIVE     21
+#define EFFECT_SKILL_PASSIVE    22
+#define EFFECT_VIEW_RANGE       23
+#define EFFECT_SCORE_PROFIT     24
+#define EFFECT_WINSCORE_PROFIT  25
+
+#define EFFECT_PROTECT          51
+#define EFFECT_SPECEFFECT       52
+#define EFFECT_CHANGE_CELL      53
+#define EFFECT_DESTORY_CELL     54
+#define EFFECT_REBIRTH          55
+#define EFFECT_REVERSE          56
+#define EFFECT_SEX              57
+
+struct char_attribute {
+    int32_t oxygen;     // 氧气
+    int32_t body;       // 体能
+    int32_t quick;      // 敏捷
+    
+    float movespeed;     // 移动速度
+    float movespeedadd;
+    float charfallspeed; // 坠落速度
+    float charfallspeedadd;
+    float jmpspeed;      // 跳跃速度--
+    int32_t jmpacctime;  // 跳跃准备时间--
+    int32_t rebirthtime; // 复活时间
+    float rebirthtimeadd;
+    float dodgedistance; // 闪避距离
+    float dodgedistanceadd;
+    int32_t jump_range;  // 跳跃高度
+    int32_t sence_range; // 感知范围
+    int32_t view_range;  // 视野范围
+   
+    int32_t attack_power;   // 攻击力, 攻击一下扣除的地块耐久度
+    int32_t attack_distance;// 攻击距离, 离地块的最大长度
+    int32_t attack_range;   // 攻击范围，攻击的格子范围
+    int32_t attack_speed;   // 攻击速度毫秒
+
+    float   coin_profit;    // 金币收益
+    float   wincoin_profit; // 胜利金币收益
+    float   score_profit;   // 积分收益
+    float   winscore_profit;// 胜利积分收益
+    float   exp_profit;     // 经验收益
+    float   item_timeadd;   // 物品时长加成
+    float   item_oxygenadd; // 物品氧气效果加成
+    int32_t lucky;          // 幸运
+    int32_t prices;         // 身价
+};
 
 // 玩家信息
 struct chardata {
@@ -88,10 +157,8 @@ struct chardata {
 
     uint32_t role;    // 使用的角色
     uint32_t skin;    // 使用的服装 (废弃)
-    uint32_t oxygen;  // 氧气
-    uint32_t body;    // 体能
-    uint32_t quick;   // 敏捷
 
+    struct   char_attribute attri;
     uint8_t  ownrole[ROLE_MAX]; // 拥有的角色
     struct   ringdata ringdata; // 戒指信息
 };
@@ -115,13 +182,6 @@ struct chardata {
 #define ITEM_TARGET_ENEMY 1
 #define ITEM_TARGET_ALL 2
 
-// 道具效果类型
-//#define ITEM_EFFECT_CREATE_BAO  1
-#define ITEM_EFFECT_SPEED 2
-#define ITEM_EFFECT_OXYGEN 3
-#define ITEM_EFFECT_PROTECT 4
-#define ITEM_EFFECT_MAX 100 // > 100 为按百分比计算
-
 // 关卡信息
 struct groundattri {
     uint32_t randseed;
@@ -140,20 +200,7 @@ struct tmemberdetail {
 
     uint32_t role;
     uint32_t skin;
-    int32_t oxygen;
-    int32_t oxygencur; 
-    int32_t body;
-    int32_t bodycur;
-    int32_t quick;
-    int32_t quickcur;
-
-    float movespeed;     // 移动速度
-    float charfallspeed; // 坠落速度
-    float jmpspeed;      // 跳跃速度
-    int32_t jmpacctime;  // 跳跃准备时间
-    int32_t rebirthtime; // 复活时间
-    float dodgedistance; // 闪避距离
-
+    struct char_attribute attri;
 };
 
 // team member brief info
@@ -163,9 +210,9 @@ struct tmemberbrief {
 
     uint32_t role;
     uint32_t skin;
-    uint32_t oxygen; 
-    uint32_t body;
-    uint32_t quick;
+    int32_t oxygen; 
+    int32_t body;
+    int32_t quick;
 };
 
 struct tmemberstat {
