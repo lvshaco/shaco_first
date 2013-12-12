@@ -18,9 +18,10 @@
 #define MODE_TEST  0
 #define MODE_ACCA  1
 #define MODE_ACCD  2
+#define MODE_COIN  3
 
 struct benchmarkdb {
-    int mode;
+    char mode[16];
     int startid;
     int curid;
     uint64_t start;
@@ -50,8 +51,8 @@ int
 benchmarkdb_init(struct service* s) {
     struct benchmarkdb* self = SERVICE_SELF;
     redis_initreply(&self->reply, 512, 0);
-  
-    self->mode = MODE_TEST;
+ 
+    strncpy(self->mode, "test", sizeof(self->mode)-1);
     self->startid = 0;
     self->curid = self->startid;
     self->start = self->end = 0;
@@ -91,20 +92,19 @@ _sendtest(struct benchmarkdb* self) {
         self->curid = self->startid;
     int id = self->curid++;
     char cmd[1024];
-    switch (self->mode) {
-    case MODE_TEST:
+    if (!strcmp(self->mode, "test")) {
         //_sendcmd(self, "hgetall user:1\r\n");
         _sendcmd(self, "get test\r\n");
         //_sendcmd(self, "zrange rank_score 0 -1 withscores\r\n");
-        break;
-    case MODE_ACCA:
+    } else if (!strcmp(self->mode, "acca")) {
         snprintf(cmd, sizeof(cmd), "hmset acc:wa_account_%d id %d passwd 123456\r\n", id, id);
         _sendcmd(self, cmd);
-        break;
-    case MODE_ACCD:
+    } else if (!strcmp(self->mode, "accd")) {
         snprintf(cmd, sizeof(cmd), "del acc:wa_account_%d\r\n", id);
         _sendcmd(self, cmd);
-        break;
+    } else if (!strcmp(self->mode, "coin")) {
+        snprintf(cmd, sizeof(cmd), "hmset user:%d coin 1000000 diamond 100000\r\n", id);
+        _sendcmd(self, cmd);
     }
 }
 
@@ -112,14 +112,9 @@ void
 benchmarkdb_service(struct service* s, struct service_message* sm) {
     struct benchmarkdb* self = SERVICE_SELF;
     const char* type = sm->msg;
-    if (!strcmp(type, "acca")) {
-        self->mode = MODE_ACCA;
-    } else if (!strcmp(type, "accd")) {
-        self->mode = MODE_ACCD;
-    } else {
-        return;
-    }
-    
+
+    strncpy(self->mode, type, sizeof(self->mode)-1);
+
     self->start = sc_timer_now();
     self->startid = sm->sessionid;
     self->curid = self->startid;
