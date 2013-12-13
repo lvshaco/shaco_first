@@ -105,7 +105,7 @@ _sendtest(struct benchmarkdb* self) {
     } else if (!strcmp(self->mode, "coin")) {
         snprintf(cmd, sizeof(cmd), "hmset user:%d coin 1000000 diamond 100000\r\n", id);
         _sendcmd(self, cmd);
-    }
+    } 
 }
 
 void

@@ -116,6 +116,10 @@ _createchar() {
 
 static void
 _play(int type) {
+    UM_DEFFIX(UM_BUYROLE, buy);
+    buy->roleid = 11;
+    _server_send(TGATE, buy, sizeof(*buy));
+
     UM_DEFFIX(UM_PLAY, play);
     play->type = type;
     _server_send(TGATE, play, sizeof(*play));

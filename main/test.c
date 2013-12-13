@@ -1011,15 +1011,21 @@ dump_str(const char* str) {
 void
 _encode(const uint8_t* bytes, int nbyte) {
     char str[sc_bytestr_encode_leastn(nbyte)];
-    sc_bytestr_encode(bytes, nbyte, str, sizeof(str));
-    dump_str(str);
+    assert(sc_bytestr_encode(bytes, nbyte, str, sizeof(str)) == nbyte);
+    //dump_str(str);
+    int len = strlen(str);
+    printf("encode: %s, len: %d, size: %d\n", str, len, (int)sizeof(str)-1);
     uint8_t byt[nbyte];
-    sc_bytestr_decode(str, sizeof(str)-1, byt, sizeof(byt));
+    
+    int delen = sc_bytestr_decode(str, len, byt, sizeof(byt));
+    printf("decode: len %d, ", delen);
+    assert(delen == len);
     int i;
     for (i=0; i<nbyte; ++i) {
         printf("%d ", byt[i]);
     }
     printf("\n");
+    fflush(stdout);
     assert(memcmp(bytes, byt, sizeof(byt)) == 0);
 }
 

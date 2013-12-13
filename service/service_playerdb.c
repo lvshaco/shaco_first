@@ -46,7 +46,7 @@ playerdb_init(struct service* s) {
     SUBSCRIBE_MSG(s->serviceid, IDUM_REDISREPLY);
     return 0;
 }
-
+/*
 static void
 _bytes_to_str(const uint8_t* bytes, char* str, int n) {
     int i;
@@ -67,7 +67,7 @@ _str_to_bytes(const char* str, int sz, uint8_t* bytes, int nbyte) {
         bytes[i] = 0;
     }
 }
-
+*/
 static int
 _db(struct player* p, int8_t type) {
     struct chardata* cdata = &p->data;
@@ -186,8 +186,9 @@ _db(struct player* p, int8_t type) {
         memrw_write(&rw, &charid, sizeof(charid));
         rq->cbsz = RW_CUR(&rw);
 
-        char strownrole[sizeof(cdata->ownrole)+1];
-        _bytes_to_str(cdata->ownrole, strownrole, sizeof(cdata->ownrole));
+        char strownrole[sc_bytestr_encode_leastn(sizeof(cdata->ownrole))];
+        sc_bytestr_encode((uint8_t*)cdata->ownrole, sizeof(cdata->ownrole), 
+                          strownrole, sizeof(strownrole));
         char strpages[sc_bytestr_encode_leastn(sizeof(rdata->pages))];
         sc_bytestr_encode((uint8_t*)rdata->pages, min(rdata->npage, sizeof(rdata->pages)), 
                           strpages, sizeof(strpages));
@@ -223,7 +224,7 @@ _db(struct player* p, int8_t type) {
                 rdata->npage,
                 strpages,
                 rdata->nring,
-                strrings
+                "strrings" // todo
                 );
         memrw_pos(&rw, len);
         }
@@ -246,6 +247,12 @@ _loadpdb(struct player* p, struct redis_replyitem* item) {
 #define CHECK(x) if (si < end) {x; } else { return SERR_OK; }
     
     struct chardata* cdata = &p->data;
+    uint32_t charid = cdata->charid;
+    uint32_t accid  = cdata->accid;
+    memset(cdata, 0, sizeof(*cdata));
+    cdata->charid = charid;
+    cdata->accid = accid;
+
     struct ringdata* rdata = &cdata->ringdata;
     struct redis_replyitem* si = item->child;
     struct redis_replyitem* end = si + item->value.i; 
@@ -263,7 +270,7 @@ _loadpdb(struct player* p, struct redis_replyitem* item) {
     CHECK(cdata->role = redis_bulkitem_toul(si++));
     CHECK(cdata->skin = redis_bulkitem_toul(si++));
     CHECK(
-    _str_to_bytes(si->value.p, si->value.len, cdata->ownrole, sizeof(cdata->ownrole)); 
+    sc_bytestr_decode(si->value.p, si->value.len, (uint8_t*)cdata->ownrole, sizeof(cdata->ownrole));
     si++;)
     CHECK(rdata->usepage = redis_bulkitem_toul(si++));
     CHECK(rdata->npage = redis_bulkitem_toul(si++));

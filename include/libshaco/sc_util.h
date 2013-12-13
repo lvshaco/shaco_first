@@ -31,6 +31,8 @@
 #endif
 
 // encode
+//#define sc_bytestr_encode_leastn(n) ((n)*8 / 6 + 2)
+//#define sc_bytestr_decode_leastn(n) ((n)*6 / 8 + 1)
 #define sc_bytestr_encode_leastn(n) ((n)*8 / 7 + 2)
 #define sc_bytestr_decode_leastn(n) ((n)*7 / 8 + 1)
 int sc_bytestr_encode(const uint8_t* bytes, int nbyte, char* str, int n);
