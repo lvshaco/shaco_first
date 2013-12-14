@@ -172,7 +172,7 @@ _checkvalue(struct redis_replyitem* f, const char* value) {
 }
 
 static void
-_handleredis(struct login* self, struct node_message* nm) {
+_handle_redis(struct login* self, struct node_message* nm) {
     hassertlog(nm->um->msgid == IDUM_REDISREPLY);
 
     UM_CAST(UM_REDISREPLY, rep, nm->um);
@@ -313,7 +313,7 @@ login_nodemsg(struct service* s, int id, void* msg, int sz) {
     }
     switch (nm.hn->tid) {
     case NODE_REDISPROXY:
-        _handleredis(self, &nm);
+        _handle_redis(self, &nm);
         break;
     case NODE_LOAD:
         _handleload(self, &nm);

@@ -308,7 +308,7 @@ _dbresponse(struct playerdb* self, struct player* p, int error) {
 };
 
 static void
-_handleredis(struct playerdb* self, struct node_message* nm) { 
+_handle_redis(struct playerdb* self, struct node_message* nm) { 
     hassertlog(nm->um->msgid == IDUM_REDISREPLY);
     UM_CAST(UM_REDISREPLY, rep, nm->um);
         
@@ -526,7 +526,7 @@ playerdb_nodemsg(struct service* s, int id, void* msg, int sz) {
     }
     switch (nm.hn->tid) {
     case NODE_REDISPROXY:
-        _handleredis(self, &nm);
+        _handle_redis(self, &nm);
         break;
     }
 }

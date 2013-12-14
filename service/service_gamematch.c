@@ -1,4 +1,5 @@
 #include "sc_service.h"
+#include "sc_util.h"
 #include "sc_node.h"
 #include "sc_timer.h"
 #include "sc_dispatcher.h"
@@ -10,6 +11,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
+#include <time.h>
 
 #define CREATE_TIMEOUT 5000
 
@@ -45,6 +47,7 @@ struct gfroom {
 };
 
 struct gamematch {
+    uint32_t randseed;
     uint32_t key;
     struct matchtag mtag;
     struct gfroom creating;
@@ -68,6 +71,8 @@ gamematch_free(struct gamematch* self) {
 int
 gamematch_init(struct service* s) {
     struct gamematch* self = SERVICE_SELF;
+    self->randseed = time(NULL);
+
     // todo test this
     GFREEID_INIT(room, &self->creating, 1);
 
@@ -275,7 +280,7 @@ _match(struct gamematch* self, struct player* p, struct player* mp, int8_t type)
 
     UM_DEFVAR(UM_CREATEROOM, cr);
     cr->type = type;
-    cr->mapid = 1; // todo
+    cr->mapid = sc_rand(self->randseed) % 2 + 1; // 1,2 todo
     cr->id = GFREEID_ID(ro, &self->creating);
     cr->key = ro->key;
     _build_memberdetail(p, &cr->members[0]);

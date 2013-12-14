@@ -30,6 +30,11 @@
 #define max(x, y) ((x) > (y) ? (x) : (y))
 #endif
 
+// time
+#define sc_day_offsecs(tmt) ((tmt).tm_hour * 3600 + (tmt).tm_min * 60 + (tmt).tm_sec)
+#define sc_day_base(now, tmnow) ((now) - sc_day_offsecs(tmnow))
+#define SC_DAY_SECS (24*3600)
+
 // encode
 //#define sc_bytestr_encode_leastn(n) ((n)*8 / 6 + 2)
 //#define sc_bytestr_decode_leastn(n) ((n)*6 / 8 + 1)
