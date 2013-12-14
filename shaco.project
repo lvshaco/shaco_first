@@ -117,12 +117,15 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.py *.h *.c" {
   service_world.c
   service_attribute.c
   service_effect.c
+  service_rankdb.c
  }
  world=world{
   player.h
   playerdb.h
+  rankdb.h
   worldhelper.h
   worldevent.h
+  rankevent.h
   player.c
  }
  game=game{
