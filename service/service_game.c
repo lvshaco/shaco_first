@@ -420,7 +420,49 @@ static int
 _rankcmp(const void* p1, const void* p2) {
     const struct member* m1 = *(const struct member**)p1; 
     const struct member* m2 = *(const struct member**)p2;
-    return m1->detail.attri.oxygen >= m2->detail.attri.oxygen ? -1 : 1;
+    return m2->detail.attri.oxygen - m1->detail.attri.oxygen;
+}
+
+static int 
+_rankcmp2(const void* p1, const void* p2) {
+    const struct member* m1 = *(const struct member**)p1; 
+    const struct member* m2 = *(const struct member**)p2;
+    return m2->depth - m1->depth;
+}
+
+static void
+_gameover(struct game* self, struct room* ro, bool death) {
+    // rank
+    struct member* m;
+    struct member* pmarray[ro->np];
+    int i;
+    for (i=0; i<ro->np; ++i) {
+        pmarray[i] = &ro->p[i];
+    }
+    if (death) {
+        qsort(pmarray, ro->np, sizeof(pmarray[0]), _rankcmp);
+    } else {
+        qsort(pmarray, ro->np, sizeof(pmarray[0]), _rankcmp2);
+    }
+
+    UM_DEFVAR(UM_GAMEOVER, go);
+    go->nmember = ro->np;
+    for (i=0; i<ro->np; ++i) {
+        m = pmarray[i];
+        go->stats[i].charid = m->detail.charid;
+        go->stats[i].depth = m->depth;
+        go->stats[i].noxygenitem = m->noxygenitem;
+        go->stats[i].nitem = m->nitem;
+        go->stats[i].nbao = m->nbao;
+    }
+    for (i=0; i<ro->np; ++i) {
+        m = &ro->p[i];
+        if (m->online) {
+            UM_SENDTOCLI(m->connid, go, UM_GAMEOVER_size(go));
+        }
+    }
+    ro->status = RS_OVER;
+    ro->statustime = sc_timer_now();
 }
 
 static void
@@ -448,32 +490,9 @@ _check_over_room(struct game* self, struct room* ro) {
     if (!isgameover)
         return;
 
-    // rank
-    struct member* pmarray[ro->np];
-    for (i=0; i<ro->np; ++i) {
-        pmarray[i] = &ro->p[i];
-    }
-    qsort(pmarray, ro->np, sizeof(pmarray[0]), _rankcmp);
-
-    UM_DEFVAR(UM_GAMEOVER, go);
-    go->nmember = ro->np;
-    for (i=0; i<ro->np; ++i) {
-        m = pmarray[i];
-        go->stats[i].charid = m->detail.charid;
-        go->stats[i].depth = m->depth;
-        go->stats[i].noxygenitem = m->noxygenitem;
-        go->stats[i].nitem = m->nitem;
-        go->stats[i].nbao = m->nbao;
-    }
-    for (i=0; i<ro->np; ++i) {
-        m = &ro->p[i];
-        if (m->online) {
-            UM_SENDTOCLI(m->connid, go, UM_GAMEOVER_size(go));
-        }
-    }
-    ro->status = RS_OVER;
-    ro->statustime = sc_timer_now();
+    _gameover(self, ro, true);
 }
+
 static void
 _check_destory_room(struct game* self, struct room* ro) {
     if (ro->status != RS_OVER)
@@ -598,6 +617,10 @@ _sync(struct game* self, struct gate_client* c, struct UM_BASE* um) {
     UM_CAST(UM_GAMESYNC, sync, um);
     m->depth = sync->depth;
     _multicast_msg(ro, (void*)sync, p->charid);
+
+    if (m->depth >= ro->map->height) {
+        _gameover(self, ro, false);
+    }
 }
 
 static void
