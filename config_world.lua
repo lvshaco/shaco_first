@@ -2,7 +2,7 @@ sc_loglevel="INFO"
 sc_connmax=1000 
 sc_service="log,dispatcher,node,centerc,cmdctl,cmdctlworld,tpltworld,world,gamematch,playerdb,rolelogic,ringlogic,attribute"
 
-log_dir="/home/lvxiaojun/log"
+log_dir="/home/game/log"
 
 cmdctl_handler="cmdctlworld"
 tplt_handler="tpltworld"

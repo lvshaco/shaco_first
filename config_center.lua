@@ -2,7 +2,7 @@ sc_loglevel="INFO"
 sc_connmax=1100 
 sc_service="log,dispatcher,node,centers,gate,cmds,cmdctl" 
 
-log_dir="/home/lvxiaojun/log"
+log_dir="/home/game/log"
 
 node_type="center" 
 node_sid=0 

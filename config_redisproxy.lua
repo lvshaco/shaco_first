@@ -2,7 +2,7 @@ sc_loglevel="INFO"
 sc_connmax=1000 
 sc_service="log,dispatcher,node,centerc,cmdctl,redisproxy"
 
-log_dir="/home/lvxiaojun/log"
+log_dir="/home/game/log"
 
 node_type="redisproxy" 
 node_sid=0 
