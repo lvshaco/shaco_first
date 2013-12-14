@@ -620,43 +620,79 @@ _effect(struct member* m, struct char_attribute* cattri, const struct char_attri
         (R) += (isper) ? (B)*(V)*0.001 : (V); \
         if (R < min) R = min; \
         float diff = R - old; \
-        if (diff > 0) m->refresh_flag |= flag; \
+        if (diff != 0) m->refresh_flag |= flag; \
         return diff; \
     }
     switch (type) {
     CASE(EFFECT_OXYGEN, cattri->oxygen, base->oxygen, value, isper, 0, REFRESH_ATTRI);
     CASE(EFFECT_BODY, cattri->body, base->body, value, isper, 0, REFRESH_ATTRI|REFRESH_SPEED);
     CASE(EFFECT_QUICK, cattri->quick, base->quick, value, isper, 0, REFRESH_ATTRI|REFRESH_SPEED);
-    //CASE(EFFECT_COIN_PROFIT, cattri->coin_profit, 1, value, 1, REFRESH_ATTRI);
-    CASE(EFFECT_MOVE_SPEED, cattri->movespeedadd, 1, value, 1, -1, REFRESH_ATTRI|REFRESH_SPEED);
-    CASE(EFFECT_FALL_SPEED, cattri->charfallspeedadd, 1, value, 1, -1, REFRESH_ATTRI|REFRESH_SPEED);
+    //CASE(EFFECT_COIN_PROFIT, cattri->coin_profit, 1, value, isper, REFRESH_ATTRI);
+    CASE(EFFECT_MOVE_SPEED, cattri->movespeedadd, 1, value, isper, -1, REFRESH_ATTRI|REFRESH_SPEED);
+    CASE(EFFECT_FALL_SPEED, cattri->charfallspeedadd, 1, value, isper, -1, REFRESH_ATTRI|REFRESH_SPEED);
     CASE(EFFECT_ATTACK_DISTANCE, cattri->attack_distance, base->attack_distance, value, isper, 0, REFRESH_ATTRI);
     CASE(EFFECT_ATTACK_RANGE, cattri->attack_range, base->attack_range, value, isper, 0, REFRESH_ATTRI);
     CASE(EFFECT_ATTACK_POWER, cattri->attack_power, base->attack_power, value, isper, 0, REFRESH_ATTRI);
     CASE(EFFECT_LUCK, cattri->lucky, base->lucky, value, isper, 0, REFRESH_ATTRI);
     CASE(EFFECT_ATTACK_SPEED, cattri->attack_speed, base->attack_speed, value, isper, 0, REFRESH_ATTRI);
-    CASE(EFFECT_DODGE_DISTANCE, cattri->dodgedistanceadd, 1, value, 1, -1, REFRESH_ATTRI|REFRESH_SPEED);  
-    CASE(EFFECT_REBIRTH_TIME, cattri->rebirthtimeadd, 1, value, 1, -1, REFRESH_ATTRI|REFRESH_SPEED);
+    CASE(EFFECT_DODGE_DISTANCE, cattri->dodgedistanceadd, 1, value, isper, -1, REFRESH_ATTRI|REFRESH_SPEED);  
+    CASE(EFFECT_REBIRTH_TIME, cattri->rebirthtimeadd, 1, value, isper, -1, REFRESH_ATTRI|REFRESH_SPEED);
     CASE(EFFECT_JUMP_RANGE, cattri->jump_range, base->jump_range, value, isper, 0, REFRESH_ATTRI); 
     CASE(EFFECT_SENCE_RANGE, cattri->sence_range, base->sence_range, value, isper, 0, REFRESH_ATTRI);
-    //CASE(EFFECT_WINCOIN_PROFIT, cattri->wincoin_profit, 1, value, 1, REFRESH_ATTRI);
-    //CASE(EFFECT_EXP_PROFIT, cattri->exp_profit, 1, value, 1, REFRESH_ATTRI);
-    CASE(EFFECT_ITEM_TIME, cattri->item_timeadd, 1, value, 1, -1, REFRESH_ATTRI);
-    CASE(EFFECT_ITEM_OXYGEN, cattri->item_oxygenadd, 1, value, 1, -1, REFRESH_ATTRI);
+    //CASE(EFFECT_WINCOIN_PROFIT, cattri->wincoin_profit, 1, value, isper, REFRESH_ATTRI);
+    //CASE(EFFECT_EXP_PROFIT, cattri->exp_profit, 1, value, isper, REFRESH_ATTRI);
+    CASE(EFFECT_ITEM_TIME, cattri->item_timeadd, 1, value, isper, -1, REFRESH_ATTRI);
+    CASE(EFFECT_ITEM_OXYGEN, cattri->item_oxygenadd, 1, value, isper, -1, REFRESH_ATTRI);
     CASE(EFFECT_VIEW_RANGE, cattri->view_range, base->view_range, value, isper, 0, REFRESH_ATTRI);
-    //CASE(EFFECT_SCORE_PROFIT, cattri->score_profit, 1, value, 1, REFRESH_ATTRI);
-    //CASE(EFFECT_WINSCORE_PROFIT, cattri->winscore_profit, 1, value, 1, REFRESH_ATTRI);
+    //CASE(EFFECT_SCORE_PROFIT, cattri->score_profit, 1, value, isper, REFRESH_ATTRI);
+    //CASE(EFFECT_WINSCORE_PROFIT, cattri->winscore_profit, 1, value, isper, REFRESH_ATTRI);
     default:return 0.0f;
     }
 } 
 
 static float
 _item_effectone(struct member* m, struct buff_effect* effect) {
-    if (effect->type > 0 && effect->value > 0) {
+    if (effect->type > 0 && effect->value != 0) {
         return _effect(m, &m->detail.attri, &m->base, 
                 effect->type, effect->value, effect->isper);
     }
     return 0;
+}
+
+static void dump(uint32_t charid, const char* name, struct char_attribute* attri) {
+    sc_rec("char: id %u, name %s", charid, name);
+    sc_rec("oxygen: %d", attri->oxygen);     // 氧气
+    sc_rec("body: %d", attri->body);       // 体能
+    sc_rec("quick: %d", attri->quick);      // 敏捷
+    
+    sc_rec("movespeed: %f", attri->movespeed);     // 移动速度
+    sc_rec("movespeedadd: %f", attri->movespeedadd);
+    sc_rec("charfallspeed: %f", attri->charfallspeed); // 坠落速度
+    sc_rec("charfallspeedadd: %f", attri->charfallspeedadd);
+    sc_rec("jmpspeed: %f", attri->jmpspeed);      // 跳跃速度--
+    sc_rec("jmpacctime: %d", attri->jmpacctime);  // 跳跃准备时间--
+    sc_rec("rebirthtime: %d", attri->rebirthtime); // 复活时间
+    sc_rec("rebirthtimeadd: %f", attri->rebirthtimeadd);
+    sc_rec("dodgedistance: %f", attri->dodgedistance); // 闪避距离
+    sc_rec("dodgedistanceadd: %f", attri->dodgedistanceadd);
+    sc_rec("jump_range: %d", attri->jump_range);  // 跳跃高度
+    sc_rec("sence_range: %d", attri->sence_range); // 感知范围
+    sc_rec("view_range: %d", attri->view_range);  // 视野范围
+   
+    sc_rec("attack_power: %d", attri->attack_power);
+    sc_rec("attack_distance: %d", attri->attack_distance);
+    sc_rec("attack_range: %d", attri->attack_range);
+    sc_rec("attack_speed: %d", attri->attack_speed);
+
+    sc_rec("coin_profit: %f", attri->coin_profit);
+    sc_rec("wincoin_profit: %f", attri->wincoin_profit);
+    sc_rec("score_profit: %f", attri->score_profit);
+    sc_rec("winscore_profit: %f", attri->winscore_profit);
+    sc_rec("exp_profit: %f", attri->exp_profit);
+    sc_rec("item_timeadd: %f", attri->item_timeadd);
+    sc_rec("item_oxygenadd: %f", attri->item_oxygenadd);
+    sc_rec("lucky: %d", attri->lucky);
+    sc_rec("prices: %d", attri->prices);
 }
 
 static void
@@ -713,8 +749,13 @@ _item_effect_member(struct game* self, struct room* ro, struct member* m,
         int i;
         for (i=0; i<BUFF_EFFECT; ++i) {
             effectptr[i].value = _item_effectone(m, &effectptr[i]);
+            effectptr[i].isper = false;
         }
+
         _on_refresh_attri(m, ro);
+//dump(m->detail.charid, m->detail.name, &m->base);
+dump(m->detail.charid, m->detail.name, &m->detail.attri);
+
     }
 }
 
@@ -880,10 +921,7 @@ _use_item(struct game* self, struct gate_client* c, struct UM_BASE* um) {
         return;
     }
 
-    int delay = titem->delay;
-    if (delay > 0 && oriitem != titem) {
-        delay += oriitem->delay;
-    }
+    int delay = titem->delay + titem->uptime;
     if (delay > 0) {
         _item_delay(self, ro, me, titem, delay); 
     } else {
@@ -975,6 +1013,10 @@ _handle_creategame(struct game* self, struct node_message* nm) {
     for (i=0; i<cr->nmember; ++i) {
         _initmember(&ro->p[i], &cr->members[i]);
         role_attri_build(&ro->gattri, &ro->p[i].detail.attri);
+struct member* m = &ro->p[i];
+dump(m->detail.charid, m->detail.name, &m->base);
+dump(m->detail.charid, m->detail.name, &m->detail.attri);
+
     }
     int roomid = GFREEID_ID(ro, &self->rooms);
     _notify_createroomres(nm->hn, SERR_OK, cr->id, cr->key, roomid);
@@ -1057,7 +1099,13 @@ _update_room(struct game* self, struct room* ro) {
                 m->refresh_flag |= REFRESH_ATTRI;
             }
             idmap_foreach(m->buffmap, _update_buffcb, m);
+            bool d = m->refresh_flag & REFRESH_SPEED;
             _on_refresh_attri(m, ro);
+            if (d) {
+//dump(m->detail.charid, m->detail.name, &m->base);
+dump(m->detail.charid, m->detail.name, &m->detail.attri);
+
+            }
         }
     }
 }

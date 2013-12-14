@@ -1,4 +1,5 @@
 #include "sc_service.h"
+#include "sc_log.h"
 #include "sharetype.h"
 #include "player.h"
 #include "tplt_include.h"
@@ -47,6 +48,44 @@ _effect(struct char_attribute* cattri, const struct role_tplt* base,
         _effect(cattri, base, type, value, isper); \
     }
 
+static void dump(struct chardata* cdata) {
+    sc_rec("char: accid%u, id %u, name %s", cdata->accid, cdata->charid, cdata->name);
+    struct char_attribute* attri = &cdata->attri;
+    sc_rec("role: %d", cdata->role);
+    sc_rec("oxygen: %d", attri->oxygen);     // 氧气
+    sc_rec("body: %d", attri->body);       // 体能
+    sc_rec("quick: %d", attri->quick);      // 敏捷
+    
+    sc_rec("movespeed: %f", attri->movespeed);     // 移动速度
+    sc_rec("movespeedadd: %f", attri->movespeedadd);
+    sc_rec("charfallspeed: %f", attri->charfallspeed); // 坠落速度
+    sc_rec("charfallspeedadd: %f", attri->charfallspeedadd);
+    sc_rec("jmpspeed: %f", attri->jmpspeed);      // 跳跃速度--
+    sc_rec("jmpacctime: %d", attri->jmpacctime);  // 跳跃准备时间--
+    sc_rec("rebirthtime: %d", attri->rebirthtime); // 复活时间
+    sc_rec("rebirthtimeadd: %f", attri->rebirthtimeadd);
+    sc_rec("dodgedistance: %f", attri->dodgedistance); // 闪避距离
+    sc_rec("dodgedistanceadd: %f", attri->dodgedistanceadd);
+    sc_rec("jump_range: %d", attri->jump_range);  // 跳跃高度
+    sc_rec("sence_range: %d", attri->sence_range); // 感知范围
+    sc_rec("view_range: %d", attri->view_range);  // 视野范围
+   
+    sc_rec("attack_power: %d", attri->attack_power);
+    sc_rec("attack_distance: %d", attri->attack_distance);
+    sc_rec("attack_range: %d", attri->attack_range);
+    sc_rec("attack_speed: %d", attri->attack_speed);
+
+    sc_rec("coin_profit: %f", attri->coin_profit);
+    sc_rec("wincoin_profit: %f", attri->wincoin_profit);
+    sc_rec("score_profit: %f", attri->score_profit);
+    sc_rec("winscore_profit: %f", attri->winscore_profit);
+    sc_rec("exp_profit: %f", attri->exp_profit);
+    sc_rec("item_timeadd: %f", attri->item_timeadd);
+    sc_rec("item_oxygenadd: %f", attri->item_oxygenadd);
+    sc_rec("lucky: %d", attri->lucky);
+    sc_rec("prices: %d", attri->prices);
+}
+
 void
 attribute_service(struct service* s, struct service_message* sm) {
     struct player* p = sm->msg;
@@ -93,4 +132,5 @@ attribute_service(struct service* s, struct service_message* sm) {
     cattri->sence_range += base->sence_range;
     cattri->view_range += base->view_range;
     cattri->coin_profit += base->coin_profit*0.01f;
+    dump(cdata);
 }

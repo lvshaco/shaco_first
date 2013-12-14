@@ -280,7 +280,7 @@ _match(struct gamematch* self, struct player* p, struct player* mp, int8_t type)
 
     UM_DEFVAR(UM_CREATEROOM, cr);
     cr->type = type;
-    cr->mapid = sc_rand(self->randseed) % 2 + 1; // 1,2 todo
+    cr->mapid = 1;//sc_rand(self->randseed) % 2 + 1; // 1,2 todo
     cr->id = GFREEID_ID(ro, &self->creating);
     cr->key = ro->key;
     _build_memberdetail(p, &cr->members[0]);
