@@ -92,7 +92,7 @@ _getonlineplayer(struct login* self, struct gate_client* c) {
 
 static int
 _query(struct login* self, struct gate_client* c, struct player* p) {
-    const struct sc_node* redisp = sc_node_get(HNODE_ID(NODE_REDISPROXY, 0));
+    const struct sc_node* redisp = sc_node_get(HNODE_ID(NODE_RPUSER, 0));
     if (redisp == NULL) {
         return 1;
     }
@@ -196,7 +196,7 @@ _handle_redis(struct login* self, struct node_message* nm) {
     
     int error = SERR_UNKNOW;
 
-    const struct sc_node* region = sc_node_get(HNODE_ID(NODE_LOAD, 0));
+    const struct sc_node* region = sc_node_get(HNODE_ID(NODE_GATELOAD, 0));
     if (region == NULL) {
         error = SERR_NOREGION;
         goto err_out;
@@ -312,10 +312,10 @@ login_nodemsg(struct service* s, int id, void* msg, int sz) {
         return;
     }
     switch (nm.hn->tid) {
-    case NODE_REDISPROXY:
+    case NODE_RPUSER:
         _handle_redis(self, &nm);
         break;
-    case NODE_LOAD:
+    case NODE_GATELOAD:
         _handleload(self, &nm);
         break;
     }

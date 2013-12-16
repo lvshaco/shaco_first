@@ -69,8 +69,8 @@ gate_init(struct service* s) {
     }
     sc_info("gate_clientmax = %d", cmax);
 
-    self->need_verify = sc_getint("gate_need_verify", 1);
-    self->need_load = sc_getint("gate_need_load", 0);
+    self->need_verify = sc_getint("gate_verify", 1);
+    self->need_load = sc_getint("gate_load", 0);
     int live = sc_getint("gate_clientlive", 3);
     self->livetime = live * 1000;
     sc_timer_register(s->serviceid, 1000);
@@ -128,7 +128,7 @@ _read(struct gate* self, struct gate_client* c, struct net_message* nm) {
 
 static inline void
 _updateload() {
-    const struct sc_node* node = sc_node_get(HNODE_ID(NODE_LOAD, 0));
+    const struct sc_node* node = sc_node_get(HNODE_ID(NODE_GATELOAD, 0));
     if (node) {
         UM_DEFFIX(UM_UPDATELOAD, load);
         load->value = sc_gate_usedclient();

@@ -1,17 +1,2 @@
-sc_loglevel="INFO" 
-sc_connmax=1100 
-sc_service="log,dispatcher,node,centers,gate,cmds,cmdctl" 
-
-log_dir="/home/game/log"
-
-node_type="center" 
-node_sid=0 
-node_ip="127.0.0.1" 
-node_port=8000 
-
-gate_ip="127.0.0.1" 
-gate_port=18000 
-gate_clientmax=100 
-gate_clientlive=3600 
-gate_need_verify=0
-gate_handler="cmds" 
+require "config_base"
+def_node("center", 0)

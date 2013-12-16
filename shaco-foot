@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SERVERS="redisproxy world gateload game gate login"
+SERVERS="rpacc rpuser rprank world gateload game gate login"
 
 ls() {
     ps -ef |grep shaco |grep config

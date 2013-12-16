@@ -68,7 +68,7 @@ benchmarkdb_init(struct service* s) {
 
 static void
 _sendcmd(struct benchmarkdb* self, const char* cmd) {
-    const struct sc_node* redisp = sc_node_get(HNODE_ID(NODE_REDISPROXY, 0));
+    const struct sc_node* redisp = sc_node_get(HNODE_ID(NODE_RPUSER, 0));
     if (redisp == NULL) {
         sc_error("no redisproxy");
         return;
@@ -168,7 +168,7 @@ benchmarkdb_nodemsg(struct service* s, int id, void* msg, int sz) {
         return;
     }
     switch (nm.hn->tid) {
-    case NODE_REDISPROXY:
+    case NODE_RPUSER:
         _handleredisproxy(self, &nm);
         break;
     }
@@ -181,7 +181,7 @@ benchmarkdb_time(struct service* s) {
         return;
     if (self->query_send > 0)
         return;
-    const struct sc_node* redisp = sc_node_get(HNODE_ID(NODE_REDISPROXY, 0));
+    const struct sc_node* redisp = sc_node_get(HNODE_ID(NODE_RPUSER, 0));
     if (redisp == NULL)
         return;
     self->start = sc_timer_now();

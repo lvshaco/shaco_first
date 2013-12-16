@@ -1,18 +1,10 @@
-sc_loglevel="INFO" 
-sc_connmax=1000 
-sc_service="log,dispatcher,node,centerc,cmdctl,cmdctlworld,tpltworld,world,gamematch,playerdb,rolelogic,ringlogic,attribute"
+require "config_base"
+def_node("world", 0)
 
-log_dir="/home/game/log"
+sc_service=sc_service..",cmdctlworld,tpltworld,world,gamematch,playerdb,rolelogic,ringlogic,attribute"
 
 cmdctl_handler="cmdctlworld"
 tplt_handler="tpltworld"
-
-node_type="world" 
-node_sid=0 
-node_ip="127.0.0.1" 
-node_port=8300 
-center_ip="127.0.0.1" 
-center_port=8000 
 
 world_gmax=10 
 world_cmax_pergate=10000 

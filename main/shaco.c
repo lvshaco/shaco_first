@@ -19,6 +19,10 @@ _init_env(lua_State *L) {
 			exit(1);
 		}
         const char* key = lua_tostring(L, -2);
+        if (key[0] == '_') {
+            lua_pop(L,1);
+            continue; // no read
+        }
         switch (lua_type(L, -1)) {
         case LUA_TBOOLEAN:
         case LUA_TNUMBER:
@@ -28,8 +32,9 @@ _init_env(lua_State *L) {
             sc_setenv(key, lua_tostring(L, -1));
             break;
         default:
-            fprintf(stderr, "Invalid config table key %s\n", key);
-            exit(1);
+            //fprintf(stderr, "Invalid config table key %s\n", key);
+            //exit(1);
+            break;
         }
 		lua_pop(L,1);
 	}
@@ -39,6 +44,7 @@ _init_env(lua_State *L) {
 static void
 sc_env_load(const char* file) {
     lua_State* L = luaL_newstate();
+    luaL_openlibs(L);
     if (luaL_dofile(L, file) != LUA_OK) {
         fprintf(stderr, "Error load config file, %s\n", lua_tostring(L, -1));
         exit(1);

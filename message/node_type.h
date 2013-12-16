@@ -7,24 +7,28 @@
 
 #define NODE_TYPE_MIN 0
 #define NODE_CENTER 0
-#define NODE_GATE   1
-#define NODE_GAME   2 
-#define NODE_WORLD  3 
-#define NODE_REDISPROXY 4
-#define NODE_BENCHMARKDB 5
-#define NODE_LOGIN 6
-#define NODE_LOAD 7
-#define NODE_TYPE_MAX 8
+#define NODE_LOGIN  1
+#define NODE_GATELOAD   2 
+#define NODE_GATE   3
+#define NODE_WORLD  4
+#define NODE_GAME   5
+#define NODE_BMDB   6
+#define NODE_RPACC  7
+#define NODE_RPUSER 8
+#define NODE_RPRANK 9
+#define NODE_TYPE_MAX 10
 
 const char* NODE_NAMES[NODE_TYPE_MAX] = {
     "center", 
-    "gate", 
-    "game", 
-    "world", 
-    "redisproxy", 
-    "benchmarkdb", 
     "login", 
-    "load",
+    "gateload", 
+    "gate", 
+    "world", 
+    "game", 
+    "bmdb", 
+    "rpacc",
+    "rpuser", 
+    "rprank",
 };
 
 #define _NODEM_header \

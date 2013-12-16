@@ -49,7 +49,7 @@ ringlogic_init(struct service* s) {
 
 static inline bool
 _hasdb() {
-    return sc_node_get(HNODE_ID(NODE_REDISPROXY, 0)) != NULL;
+    return sc_node_get(HNODE_ID(NODE_RPUSER, 0)) != NULL;
 }
 
 static void

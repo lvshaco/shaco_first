@@ -200,7 +200,7 @@ forward_nodemsg(struct service* s, int id, void* msg, int sz) {
         return;
     }
     switch (nm.hn->tid) {
-    case NODE_LOAD:
+    case NODE_GATELOAD:
         _handleload(self, &nm);
         break;
     default:
