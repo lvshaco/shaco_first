@@ -84,8 +84,9 @@ _index32_create(struct tplt_visitor* visitor, struct tplt_holder* holder) {
         key = *(uint32_t*)ptr;
         if (key_max < key)
             key_max = key;
+        ptr += holder->elemsz;
     }
-   
+
     uint32_t max = key_max+1;
     void** p = malloc(sizeof(void*) * max);
     memset(p, 0, sizeof(*p));

@@ -5,6 +5,7 @@
 local iip = "127.0.0.1"
 local oip = "192.168.1.145"
 log_dir = "/home/game/log"
+local hb = 6000
 
 node_map = {
 center   = {ip=iip, port=8000, conn=1000},
@@ -20,10 +21,10 @@ rprank   = {ip=iip, port=8900, conn=1000},
 }
 
 open_node_map = {
-center = {ip=oip, port=18000, handler="cmds",  clientmax=100,   clientlive=60, wbuffer=0, verify=0},
-login  = {ip=oip, port=18100, handler="login", clientmax=10000, clientlive=0,  wbuffer=0},
-gate   = {ip=oip, port=18300, handler="gate",  clientmax=10000, clientlive=6,  wbuffer=128*1024, load=1},
-game   = {ip=oip, port=18500, handler="game",  clientmax=5000,  clientlive=6,  wbuffer=128*1024}, 
+center = {ip=iip, port=18000, handler="cmds",    clientmax=100,   clientlive=60, wbuffer=0, verify=0},
+login  = {ip=oip, port=18100, handler="login",   clientmax=10000, clientlive=0,  wbuffer=0},
+gate   = {ip=oip, port=18300, handler="forward", clientmax=10000, clientlive=hb,  wbuffer=128*1024, load=1},
+game   = {ip=oip, port=18500, handler="game",    clientmax=5000,  clientlive=hb,  wbuffer=128*1024}, 
 }
 
 function def_node(name, sid)

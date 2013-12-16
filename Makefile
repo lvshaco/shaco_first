@@ -107,8 +107,8 @@ worldservice_so=\
 	service_gamematch.so \
 	service_rolelogic.so \
 	service_ringlogic.so \
-	service_attribute.so \
-	service_award.so
+	service_awardlogic.so \
+	service_attribute.so
 
 all: \
 	shaco.so \

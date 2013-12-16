@@ -92,7 +92,7 @@ _getonlineplayer(struct login* self, struct gate_client* c) {
 
 static int
 _query(struct login* self, struct gate_client* c, struct player* p) {
-    const struct sc_node* redisp = sc_node_get(HNODE_ID(NODE_RPUSER, 0));
+    const struct sc_node* redisp = sc_node_get(HNODE_ID(NODE_RPACC, 0));
     if (redisp == NULL) {
         return 1;
     }
@@ -312,7 +312,7 @@ login_nodemsg(struct service* s, int id, void* msg, int sz) {
         return;
     }
     switch (nm.hn->tid) {
-    case NODE_RPUSER:
+    case NODE_RPACC:
         _handle_redis(self, &nm);
         break;
     case NODE_GATELOAD:

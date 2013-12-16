@@ -72,7 +72,7 @@ gamematch_free(struct gamematch* self) {
 int
 gamematch_init(struct service* s) {
     struct gamematch* self = SERVICE_SELF;
-    if (sc_handler("award", &self->award_handler))
+    if (sc_handler("awardlogic", &self->award_handler))
         return 1;
 
     self->randseed = time(NULL);

@@ -265,7 +265,7 @@ int main(int argc, char* argv[]) {
         port = strtoul(argv[3], NULL, 10);
     } else {
         ip = "192.168.1.140";
-        port = 18600;
+        port = 18100;
     }
     
     srand(time(NULL));
