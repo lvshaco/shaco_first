@@ -15,7 +15,9 @@
 #define TPLT_VAR TPLT_API
 
 #define TPLT_VIST_VEC32 &g_tplt_visitor_vec32
+#define TPLT_VIST_INDEX32 &g_tplt_visitor_index32
 
 TPLT_VAR const struct tplt_visitor_ops g_tplt_visitor_vec32;
+TPLT_VAR const struct tplt_visitor_ops g_tplt_visitor_index32;
 
 #endif

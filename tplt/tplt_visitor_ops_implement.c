@@ -3,6 +3,7 @@
 #include "tplt_visitor.h"
 #include "tplt_holder.h"
 #include <stdlib.h>
+#include <string.h>
 
 /*
  * vec32
@@ -63,5 +64,66 @@ const struct tplt_visitor_ops g_tplt_visitor_vec32 = {
 };
 
 /*
- * hash32
+ * index32
  */
+struct _index32 {
+    int sz;
+    void** p;
+};
+
+static int
+_index32_create(struct tplt_visitor* visitor, struct tplt_holder* holder) {
+    struct _index32* index = malloc(sizeof(*index));
+     
+    int i;
+    uint32_t key, key_max = 0;
+    char* ptr;
+
+    ptr = holder->data;
+    for (i=0; i<holder->nelem; ++i) {
+        key = *(uint32_t*)ptr;
+        if (key_max < key)
+            key_max = key;
+    }
+   
+    uint32_t max = key_max+1;
+    void** p = malloc(sizeof(void*) * max);
+    memset(p, 0, sizeof(*p));
+
+    ptr = holder->data;
+    for (i=0; i<holder->nelem; ++i) {
+        key = *(uint32_t*)ptr;
+        p[key] = ptr;
+        ptr += holder->elemsz;
+    }
+
+    index->p = p;
+    index->sz = max;
+    visitor->data = index;
+    return 0;
+}
+
+static void
+_index32_free(struct tplt_visitor* visitor) {
+    struct _index32* index = visitor->data;
+    if (index) {
+        free(index->p);
+        free(index);
+        visitor->data = NULL;
+    }
+}
+
+static void*
+_index32_find(const struct tplt_visitor* visitor, uint32_t key) {
+    const struct _index32* index = visitor->data;
+    if (key < index->sz) {
+        return index->p[key];
+    }
+    return NULL;
+}
+
+const struct tplt_visitor_ops g_tplt_visitor_index32 = {
+    _index32_create,
+    _index32_free,
+    _index32_find,
+};

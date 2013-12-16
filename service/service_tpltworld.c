@@ -10,6 +10,7 @@ _load() {
     struct tplt_desc desc[] = {
         { TPLT_ROLE, sizeof(struct role_tplt), 1, TBLFILE(role), 0, TPLT_VIST_VEC32},
         { TPLT_RING, sizeof(struct ring_tplt), 1, TBLFILE(ring), 0, TPLT_VIST_VEC32},
+        { TPLT_EXP,  sizeof(struct exp_tplt),  1, TBLFILE(exp),  0, TPLT_VIST_INDEX32},
     };
     return tplt_init(desc, sizeof(desc)/sizeof(desc[0]));
 }

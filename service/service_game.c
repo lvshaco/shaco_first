@@ -20,6 +20,7 @@
 #include <string.h>
 #include <stdint.h>
 #include <time.h>
+#include <math.h>
 
 #define ENTER_TIMELEAST (ROOM_LOAD_TIMELEAST*1000)
 #define ENTER_TIMEOUT (5000+ENTER_TIMELEAST)
@@ -55,16 +56,19 @@ struct member {
     uint64_t deathtime;
     int16_t noxygenitem;
     int16_t nitem;
+    int16_t ntrap;
     int16_t nbao;
+    int16_t nbedamage;
 };
 
 struct room { 
     int id;
     int used;
-    int8_t type;
+    int8_t type; // ROOM_TYPE*
     uint32_t key;
     int status; // RS_*
     uint64_t statustime;
+    uint64_t starttime;
     int np;
     struct member p[MEMBER_MAX];
     struct groundattri gattri;
@@ -101,6 +105,25 @@ struct buff {
     struct buff_effect effects[BUFF_EFFECT];
     int time;
 };
+
+static inline int
+_sendto_client(struct member* m, struct UM_BASE* um, int sz) {
+    if (m->online) {
+       UM_SENDTOCLI(m->connid, um, sz); 
+       return 0;
+    }
+    return 1;
+}
+
+static inline int
+_sendto_world(struct UM_BASE* um, int sz) {
+    const struct sc_node* node = sc_node_get(HNODE_ID(NODE_WORLD, 0));
+    if (node) {
+        UM_SENDTONODE(node, um, sz);
+        return 0;
+    }
+    return 1;
+}
 
 static inline int
 _get_oxygen(struct member* m) {
@@ -356,7 +379,9 @@ _enter_room(struct room* ro) {
 }
 static void
 _start_room(struct room* ro) {
-    ro->status = RS_START;
+    ro->status = RS_START; 
+    ro->starttime = sc_timer_now();
+    ro->statustime = ro->starttime;
     UM_DEFFIX(UM_GAMESTART, start);
     _multicast_msg(ro, (void*)start, 0);
 }
@@ -431,36 +456,140 @@ _rankcmp2(const void* p1, const void* p2) {
 }
 
 static void
-_gameover(struct game* self, struct room* ro, bool death) {
-    // rank
+_build_awards(struct room* ro, struct member** sortm, int n, struct memberaward* awards) {
     struct member* m;
-    struct member* pmarray[ro->np];
     int i;
+    uint64_t gametime = sc_timer_now() - ro->starttime;
+    if (gametime < 1000)
+        gametime = 1000;
+
+    int score_sum = 0;
+    for (i=1; i<ro->np; ++i) {
+        m = sortm[i];
+        score_sum += m->detail.score_dashi;
+    }
+    int score_diff;
+    if (ro->np > 0)
+        score_diff = abs(sortm[0]->detail.score_dashi - score_sum/ro->np);
+    else
+        score_diff = 0;
+    
+    struct extra_first {
+        int nitem;
+        int ntrap;
+        int nbedamage;
+    };
+    struct extra_first ef;
+    memset(&ef, 0, sizeof(ef));
     for (i=0; i<ro->np; ++i) {
-        pmarray[i] = &ro->p[i];
+        m = sortm[i];
+        if (m->nitem > ef.nitem)
+            ef.nitem = m->nitem;      
+        if (m->ntrap > ef.ntrap)
+            ef.ntrap = m->ntrap;
+        if (m->nbedamage > ef.nbedamage)
+            ef.nbedamage = m->nbedamage;
+    } 
+    int score_depth, score_speed, score_oxygen, score_item, score_bao;
+    int score, coin, exp;
+    int cut_score, extra_score;
+    const int score_line1 = 1000;
+    const int score_line2 = 2000;
+    float coin_profit, score_profit;
+    struct char_attribute* a = &m->detail.attri;
+    for (i=0; i<ro->np; ++i) {
+        m = sortm[i];
+        a = &m->detail.attri;
+        score_depth = pow(m->depth, 0.5) * 100;
+        score_speed = pow(m->depth/(gametime*0.001), 1.2) * 766;
+        score_oxygen = pow(m->noxygenitem, 1.2) * 20;
+        score_item = (m->nitem + m->ntrap) * 20;
+        score_bao = pow(m->nbao, 1.5) * 100;
+        
+        coin_profit = 1+a->coin_profit;
+        if (i==0)
+            coin_profit += a->wincoin_profit+0.05;
+        coin = (score_depth + score_speed + score_oxygen) * 0.1 * coin_profit;
+        
+        exp = (m->depth * 0.2 + m->nbao);
+        if (ro->type == ROOM_TYPE_DASHI) {
+            if (m->detail.score_dashi < score_line1)
+                cut_score = 0;
+            else {
+                int t = min(score_line2, max(200, (m->detail.score_dashi+score_line1-score_line2)));
+                cut_score = (t/200) * 200;
+                if (cut_score < t)
+                    cut_score += 1;
+            }
+            extra_score = 0;
+            if (m->nitem < ef.nitem)
+                extra_score++;
+            if (m->ntrap >= ef.ntrap)
+                extra_score++;
+            if (m->nbedamage >= ef.nbedamage)
+                extra_score++;
+            if (i == 0) {
+                score = max(3, min(20, 10 - score_diff * 0.05 - cut_score)) + extra_score;
+            } else {
+                score = max(-3, min(-15, -10 - score_diff * 0.1 - cut_score)) + extra_score;
+            }
+        }  else {
+            score_profit = 1+a->score_profit;
+            if (i==0)
+                score_profit += a->winscore_profit + 0.05;
+            score = score_depth + score_speed + score_oxygen + score_item + score_bao;
+            score = score * score_profit * 10;
+        }
+        awards[i].charid = m->detail.charid;
+        awards[i].exp = exp;
+        awards[i].coin = coin;
+        awards[i].score = score;
+    }
+}
+
+static void
+_gameover(struct game* self, struct room* ro, bool death) {
+    struct member* m;
+    struct member* sortm[MEMBER_MAX];
+    int i;
+    // rank sort
+    for (i=0; i<ro->np; ++i) {
+        sortm[i] = &ro->p[i];
     }
     if (death) {
-        qsort(pmarray, ro->np, sizeof(pmarray[0]), _rankcmp);
+        qsort(sortm, ro->np, sizeof(sortm[0]), _rankcmp);
     } else {
-        qsort(pmarray, ro->np, sizeof(pmarray[0]), _rankcmp2);
+        qsort(sortm, ro->np, sizeof(sortm[0]), _rankcmp2);
     }
 
+    // to world
+    UM_DEFVAR(UM_OVERROOM, or);
+    or->type = ro->type;
+    or->nmember = ro->np;
+    _build_awards(ro, sortm, ro->np, or->awards);
+    _sendto_world((void*)or, UM_OVERROOM_size(or));
+
+    // to client
     UM_DEFVAR(UM_GAMEOVER, go);
+    go->type = ro->type;
     go->nmember = ro->np;
     for (i=0; i<ro->np; ++i) {
-        m = pmarray[i];
+        m = sortm[i];
         go->stats[i].charid = m->detail.charid;
         go->stats[i].depth = m->depth;
         go->stats[i].noxygenitem = m->noxygenitem;
         go->stats[i].nitem = m->nitem;
         go->stats[i].nbao = m->nbao;
-    }
+        go->stats[i].exp = or->awards[i].exp;
+        go->stats[i].coin = or->awards[i].coin;
+        go->stats[i].score = or->awards[i].score;
+    }  
     for (i=0; i<ro->np; ++i) {
         m = &ro->p[i];
-        if (m->online) {
-            UM_SENDTOCLI(m->connid, go, UM_GAMEOVER_size(go));
-        }
+        _sendto_client(m, (void*)go, UM_GAMEOVER_size(go));
     }
+
+    // over room
     ro->status = RS_OVER;
     ro->statustime = sc_timer_now();
 }
@@ -681,7 +810,7 @@ _item_effectone(struct member* m, struct buff_effect* effect) {
     }
     return 0;
 }
-
+/*
 static void dump(uint32_t charid, const char* name, struct char_attribute* attri) {
     sc_rec("char: id %u, name %s", charid, name);
     sc_rec("oxygen: %d", attri->oxygen);     // 氧气
@@ -717,7 +846,7 @@ static void dump(uint32_t charid, const char* name, struct char_attribute* attri
     sc_rec("lucky: %d", attri->lucky);
     sc_rec("prices: %d", attri->prices);
 }
-
+*/
 static void
 _on_refresh_attri(struct member* m, struct room* ro) {
     if (m->refresh_flag == 0)
@@ -776,8 +905,7 @@ _item_effect_member(struct game* self, struct room* ro, struct member* m,
         }
 
         _on_refresh_attri(m, ro);
-//dump(m->detail.charid, m->detail.name, &m->base);
-dump(m->detail.charid, m->detail.name, &m->detail.attri);
+        //dump(m->detail.charid, m->detail.name, &m->detail.attri);
 
     }
 }
@@ -1017,8 +1145,8 @@ _handle_creategame(struct game* self, struct node_message* nm) {
         _notify_createroomres(nm->hn, SERR_CRENOTPLT, cr->id, cr->key, 0);
         return;
     }
-    struct genmap* m = _create_map(self, tmap, cr->key);
-    if (m == NULL) {
+    struct genmap* gm = _create_map(self, tmap, cr->key);
+    if (gm == NULL) {
         _notify_createroomres(nm->hn, SERR_CRENOMAP, cr->id, cr->key, 0);
         return;
     }
@@ -1026,20 +1154,19 @@ _handle_creategame(struct game* self, struct node_message* nm) {
     assert(ro);
     ro->type = cr->type;
     ro->key = cr->key;
-    ro->map = m; 
+    ro->map = gm; 
     ro->gattri.randseed = cr->key; // just easy
     ro->gattri.mapid = cr->mapid;
     ground_attri_build(tmap->difficulty, &ro->gattri);
 
     ro->np = cr->nmember;
+    struct member* m;
     int i;
     for (i=0; i<cr->nmember; ++i) {
-        _initmember(&ro->p[i], &cr->members[i]);
-        role_attri_build(&ro->gattri, &ro->p[i].detail.attri);
-struct member* m = &ro->p[i];
-dump(m->detail.charid, m->detail.name, &m->base);
-dump(m->detail.charid, m->detail.name, &m->detail.attri);
-
+        m = &ro->p[i];
+        _initmember(m, &cr->members[i]);
+        role_attri_build(&ro->gattri, &m->detail.attri);
+        //dump(m->detail.charid, m->detail.name, &m->detail.attri);
     }
     int roomid = GFREEID_ID(ro, &self->rooms);
     _notify_createroomres(nm->hn, SERR_OK, cr->id, cr->key, roomid);
@@ -1122,13 +1249,11 @@ _update_room(struct game* self, struct room* ro) {
                 m->refresh_flag |= REFRESH_ATTRI;
             }
             idmap_foreach(m->buffmap, _update_buffcb, m);
-            bool d = m->refresh_flag & REFRESH_SPEED;
+            //bool d = m->refresh_flag & REFRESH_SPEED;
             _on_refresh_attri(m, ro);
-            if (d) {
-//dump(m->detail.charid, m->detail.name, &m->base);
-dump(m->detail.charid, m->detail.name, &m->detail.attri);
-
-            }
+            //if (d) {
+                //dump(m->detail.charid, m->detail.name, &m->detail.attri);
+            //}
         }
     }
 }

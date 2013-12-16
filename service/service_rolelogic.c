@@ -130,7 +130,7 @@ _handle_userole(struct rolelogic* self, struct player_message* pm) {
     service_notify_service(self->attrihandler, &sm);
 
     _sync_role(p); 
-    player_send_dbcmd(self->dbhandler, p, PDB_SAVE);
+    send_playerdb(self->dbhandler, p, PDB_SAVE);
 }
 
 static void
@@ -168,7 +168,7 @@ _handle_buyrole(struct rolelogic* self, struct player_message* pm) {
     cdata->diamond -= tplt->needdiamond;
     _sync_addrole(p, roleid);
     _sync_money(p);
-    player_send_dbcmd(self->dbhandler, p, PDB_SAVE);
+    send_playerdb(self->dbhandler, p, PDB_SAVE);
     return;
 }
 

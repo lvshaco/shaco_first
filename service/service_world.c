@@ -88,10 +88,9 @@ _onlogin(struct world* self, struct player* p) {
 void
 world_service(struct service* s, struct service_message* sm) {
     struct world* self = SERVICE_SELF;
-    assert(sm->sz == sizeof(struct playerdbres));
-    struct playerdbres* res = sm->msg;
-    struct player* p = res->p;
-    switch (res->error) {
+    struct player* p = sm->msg;
+    int err = sm->type;
+    switch (err) {
     case SERR_OK:
         if (p->status == PS_LOGIN) {
             _onlogin(self, p);
@@ -99,10 +98,10 @@ world_service(struct service* s, struct service_message* sm) {
         break;
     case SERR_NOCHAR:
     case SERR_NAMEEXIST:
-        _forward_loginfail(p, res->error);
+        _forward_loginfail(p, err);
         break;
     default:
-        _forward_logout(p, res->error);
+        _forward_logout(p, err);
         _freeplayer(p);
         break;
     }
@@ -136,7 +135,7 @@ _login(struct world* self, const struct sc_node* node, int cid, struct UM_BASE* 
         _freeplayer(p);
         return;
     }
-    if (player_send_dbcmd(self->dbhandler, p, PDB_QUERY)) {
+    if (send_playerdb(self->dbhandler, p, PDB_QUERY)) {
         _forward_connlogout(node, cid, SERR_NODB);
         _freeplayer(p);
         return;
@@ -154,7 +153,7 @@ _createchar(struct world* self, const struct sc_node* node, int cid, struct UM_B
     }
     if (p->status == PS_WAITCREATECHAR) {
         strncpychk(p->data.name, sizeof(p->data.name), cre->name, sizeof(cre->name));
-        if (player_send_dbcmd(self->dbhandler, p, PDB_CHECKNAME)) {
+        if (send_playerdb(self->dbhandler, p, PDB_CHECKNAME)) {
             _forward_logout(p, SERR_NODB);
             _freeplayer(p);
         }
@@ -163,7 +162,7 @@ _createchar(struct world* self, const struct sc_node* node, int cid, struct UM_B
 
 static void
 _logout(struct world* self, struct player* p) {
-    player_send_dbcmd(self->dbhandler, p, PDB_SAVE);
+    send_playerdb(self->dbhandler, p, PDB_SAVE);
     _freeplayer(p);
 }
 

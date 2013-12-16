@@ -30,6 +30,12 @@
 #define max(x, y) ((x) > (y) ? (x) : (y))
 #endif
 
+static inline void
+sc_limitadd(uint32_t add, uint32_t* cur, uint32_t max) {
+    uint32_t r = *cur + add;
+    *cur = (*cur < r) ? r : max;
+}
+
 // time
 #define sc_day_offsecs(tmt) ((tmt).tm_hour * 3600 + (tmt).tm_min * 60 + (tmt).tm_sec)
 #define sc_day_base(now, tmnow) ((now) - sc_day_offsecs(tmnow))

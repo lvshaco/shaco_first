@@ -162,10 +162,23 @@ struct UM_CREATEROOMRES {
     int32_t roomid;
 };
 
+struct memberaward {
+    uint32_t charid;
+    int32_t exp;
+    int32_t coin;
+    int32_t score;
+};
+
 struct UM_OVERROOM {
     _UM_HEADER;
     int8_t type;
+    int8_t nmember;
+    struct memberaward awards[0];
 };
+static inline uint16_t
+UM_OVERROOM_size(struct UM_OVERROOM* um) {
+    return sizeof(*um) + sizeof(um->awards[0]) * um->nmember;
+}
 
 #pragma pack()
 

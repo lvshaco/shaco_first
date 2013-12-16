@@ -68,6 +68,30 @@ _str_to_bytes(const char* str, int sz, uint8_t* bytes, int nbyte) {
     }
 }
 */
+
+static inline int
+_sendto_db(struct UM_BASE* um, int sz) {
+    const struct sc_node* db = sc_node_get(HNODE_ID(NODE_RPUSER, 0));
+    if (db) {
+        UM_SENDTONODE(db, um, sz);
+        return 0;
+    }
+    return 1;
+}
+
+static int
+_offline_db(const char* sql, int sz) {
+    UM_DEFVAR(UM_REDISQUERY, rq);
+    rq->needreply = 0;
+    rq->needrecord = 1;
+    rq->cbsz = 0;
+    struct memrw rw;
+    memrw_init(&rw, rq->data, rq->msgsz - sizeof(*rq));
+    memrw_write(&rw, sql, sz); 
+    rq->msgsz = sizeof(*rq) + RW_CUR(&rw);
+    return _sendto_db((void*)rq, rq->msgsz);
+}
+
 static int
 _db(struct player* p, int8_t type) {
     struct chardata* cdata = &p->data;
@@ -132,6 +156,7 @@ _db(struct player* p, int8_t type) {
                 " package"
                 " role"
                 " skin"
+                " score"
                 " ownrole"
                 " usepage"
                 " npage"
@@ -198,7 +223,6 @@ _db(struct player* p, int8_t type) {
         sc_bytestr_encode((uint8_t*)rdata->rings, min(rdata->nring, sizeof(rdata->rings)), 
                           strrings, sizeof(strrings));
         int len = snprintf(rw.ptr, RW_SPACE(&rw), "hmset user:%u"
-                " name %s"
                 " level %u"
                 " exp %u"
                 " coin %u"
@@ -206,6 +230,8 @@ _db(struct player* p, int8_t type) {
                 " package %u"
                 " role %u"
                 " skin %u"
+                " score1 %u"
+                " score2 %u"
                 " ownrole %s"
                 " usepage %u"
                 " npage %u"
@@ -213,7 +239,6 @@ _db(struct player* p, int8_t type) {
                 " nring %u"
                 " rings %s"
                 "\r\n", charid,
-                cdata->name,
                 cdata->level, 
                 cdata->exp, 
                 cdata->coin, 
@@ -221,6 +246,8 @@ _db(struct player* p, int8_t type) {
                 cdata->package,
                 cdata->role,
                 cdata->skin,
+                cdata->score_normal,
+                cdata->score_dashi,
                 strownrole,
                 rdata->usepage,
                 rdata->npage,
@@ -234,14 +261,8 @@ _db(struct player* p, int8_t type) {
     default:
         return 1;
     }
-
-    const struct sc_node* redisp = sc_node_get(HNODE_ID(NODE_RPUSER, 0));
-    if (redisp == NULL) {
-        return 1;
-    }
     rq->msgsz = sizeof(*rq) + RW_CUR(&rw);
-    UM_SENDTONODE(redisp, rq, rq->msgsz);
-    return 0;
+    return _sendto_db((void*)rq, rq->msgsz);
 }
 
 static int
@@ -271,6 +292,8 @@ _loadpdb(struct player* p, struct redis_replyitem* item) {
     CHECK(cdata->package = redis_bulkitem_toul(si++));
     CHECK(cdata->role = redis_bulkitem_toul(si++));
     CHECK(cdata->skin = redis_bulkitem_toul(si++));
+    CHECK(cdata->score_normal = redis_bulkitem_toul(si++));
+    CHECK(cdata->score_dashi = redis_bulkitem_toul(si++));
     CHECK(
     sc_bytestr_decode(si->value.p, si->value.len, (uint8_t*)cdata->ownrole, sizeof(cdata->ownrole));
     si++;)
@@ -290,22 +313,18 @@ _loadpdb(struct player* p, struct redis_replyitem* item) {
 
 void
 playerdb_service(struct service* s, struct service_message* sm) {
-    //struct playerdb* self = SERVICE_SELF;
-    assert(sm->sz == sizeof(struct playerdbcmd));
-    struct playerdbcmd* cmd = sm->msg;
-    cmd->err = _db(cmd->p, cmd->type);
+    if (sm->source == DB_PLAYER) {
+        struct player* p = sm->msg;
+        sm->result = (void*)(ptrdiff_t)_db(p, sm->type);
+    } else {
+        const char* sql = sm->msg;
+        sm->result = (void*)(ptrdiff_t)_offline_db(sql, sm->sz);
+    }
 }
 
 static void
 _dbresponse(struct playerdb* self, struct player* p, int error) {
-    struct service_message sm;
-    sm.sessionid = 0;
-    sm.source = 0;
-    struct playerdbres res;
-    res.p = p;
-    res.error = error;
-    sm.msg = &res;
-    sm.sz = sizeof(res);
+    struct service_message sm = {0, 0, error, 0, p, 0};
     service_notify_service(self->requester, &sm);
 };
 

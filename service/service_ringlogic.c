@@ -148,7 +148,7 @@ _handle_equipring(struct ringlogic* self, struct player_message* pm) {
     }
     // do logic
     memcpy(page->slots, um->rings, sizeof(page->slots));
-    player_send_dbcmd(self->dbhandler, p, PDB_SAVE);
+    send_playerdb(self->dbhandler, p, PDB_SAVE);
 }
 /*
 static void
@@ -181,7 +181,7 @@ _handle_renameringpage(struct ringlogic* self, struct player_message* pm) {
     // do logic
     strncpy(page->name, um->name, sizeof(page->name));
     
-    player_send_dbcmd(self->dbhandler, p, PDB_SAVE);
+    send_playerdb(self->dbhandler, p, PDB_SAVE);
 }
 
 static void
@@ -205,7 +205,7 @@ _handle_buyringpage(struct ringlogic* self, struct player_message* pm) {
     
     _sync_money(p);
     _sync_ringpage(p); 
-    player_send_dbcmd(self->dbhandler, p, PDB_SAVE);
+    send_playerdb(self->dbhandler, p, PDB_SAVE);
     return;
 }
 
@@ -232,7 +232,7 @@ _handle_useringpage(struct ringlogic* self, struct player_message* pm) {
     struct service_message sm = { 0, 0, 0, sizeof(p), p };
     service_notify_service(self->attrihandler, &sm);
 
-    player_send_dbcmd(self->dbhandler, p, PDB_SAVE);
+    send_playerdb(self->dbhandler, p, PDB_SAVE);
     return;
 }
 

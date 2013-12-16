@@ -287,6 +287,7 @@ struct UM_ROLEINFO {
 
 struct UM_GAMEOVER {
     _UM_HEADER;
+    uint8_t type; // ROOM_TYPE*
     int8_t nmember;
     struct tmemberstat stats[0];
 };
