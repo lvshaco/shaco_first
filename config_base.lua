@@ -7,16 +7,16 @@ local oip = "192.168.1.145"
 log_dir = "/home/game/log"
 
 node_map = {
-    center   = {ip=iip, port=8000, conn=1000},
-    login    = {ip=iip, port=8100, conn=1000, sub="rpacc"},
-    gateload = {ip=iip, port=8200, conn=1000, sub="login"},
-    gate     = {ip=iip, port=8300, conn=1000, sub="gateload,world"},
-    world    = {ip=iip, port=8400, conn=1000, sub="rpuser"},
-    game     = {ip=iip, port=8500, conn=1000, sub="world"},
-    bmdb     = {ip=iip, port=8600, conn=1000, sub="rpacc,rpuser,rprank"},
-    rpacc    = {ip=iip, port=8700, conn=1000},
-    rpuser   = {ip=iip, port=8800, conn=1000},
-    rprank   = {ip=iip, port=8900, conn=1000},
+center   = {ip=iip, port=8000, conn=1000},
+login    = {ip=iip, port=8100, conn=1000, sub="rpacc"},
+gateload = {ip=iip, port=8200, conn=1000, sub="login"},
+gate     = {ip=iip, port=8300, conn=1000, sub="gateload,world"},
+world    = {ip=iip, port=8400, conn=1000, sub="rpuser"},
+game     = {ip=iip, port=8500, conn=1000, sub="world"},
+bmdb     = {ip=iip, port=8600, conn=1000, sub="rpacc,rpuser,rprank"},
+rpacc    = {ip=iip, port=8700, conn=1000},
+rpuser   = {ip=iip, port=8800, conn=1000},
+rprank   = {ip=iip, port=8900, conn=1000},
 }
 
 open_node_map = {
