@@ -19,7 +19,6 @@ node_map = {
     rprank   = {ip=iip, port=8900, conn=1000},
 }
 
-
 open_node_map = {
 center = {ip=oip, port=18000, handler="cmds",  clientmax=100,   clientlive=60, wbuffer=0, verify=0},
 login  = {ip=oip, port=18100, handler="login", clientmax=10000, clientlive=0,  wbuffer=0},
