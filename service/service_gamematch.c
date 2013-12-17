@@ -48,6 +48,7 @@ struct gfroom {
 
 struct gamematch {
     int award_handler;
+    int rank_handler;
     uint32_t randseed;
     uint32_t key;
     struct matchtag mtag;
@@ -72,7 +73,8 @@ gamematch_free(struct gamematch* self) {
 int
 gamematch_init(struct service* s) {
     struct gamematch* self = SERVICE_SELF;
-    if (sc_handler("awardlogic", &self->award_handler))
+    if (sc_handler("awardlogic", &self->award_handler) ||
+        sc_handler("rank", &self->rank_handler))
         return 1;
 
     self->randseed = time(NULL);
@@ -331,8 +333,26 @@ _onoverroom(struct gamematch* self, struct node_message* nm) {
     int load = _calcload(or->type);
     sc_node_updateload(nm->hn->id, -load);
 
-    struct service_message sm = {0, 0, 0, or->msgsz, or, 0};
+    struct player* allp[MEMBER_MAX];
+    struct player* p;
+    int i, n = 0;
+    for (i=0; i<min(MEMBER_MAX, or->nmember); ++i) {
+        p = _getplayerbycharid(or->awards[i].charid);
+        if (p == NULL)
+            continue;
+        allp[n++] = p;
+    }
+    struct service_message sm;
+    sm.p1 = allp;
+    sm.p2 = or->awards;
+    sm.i1 = n;
+    sm.i2 = or->type;
     service_notify_service(self->award_handler, &sm);
+
+    sm.p1 = allp;
+    sm.i1 = n;
+    sm.i2 = or->type;
+    service_notify_service(self->rank_handler, &sm);
 }
 
 static void

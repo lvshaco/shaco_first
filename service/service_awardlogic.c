@@ -57,52 +57,41 @@ _levelup(uint32_t* exp, uint16_t* level) {
 }
 
 static void
-_award(struct awardlogic* self, int8_t type, const struct memberaward* award) {
-    struct player* p = _getplayerbycharid(award->charid);
-    if (p) {
-        struct chardata* cdata = &p->data;
-        bool updated = false;
-        if (award->coin > 0) {
-            cdata->coin += award->coin;
+_award(struct awardlogic* self, 
+       int8_t type, struct player* p, const struct memberaward* award) {
+    struct chardata* cdata = &p->data;
+    bool updated = false;
+    if (award->coin > 0) {
+        cdata->coin += award->coin;
+        updated = true;
+    }
+    if (award->score > 0) {
+        if (type == ROOM_TYPE_DASHI) {
+            cdata->score_dashi += award->score;
             updated = true;
+        } else if (award->score > cdata->score_normal) {
+            cdata->score_normal = award->score;
         }
-        if (award->score > 0) {
-            if (type == ROOM_TYPE_DASHI)
-                cdata->score_dashi += award->score;
-            else
-                cdata->score_normal += award->score;
-            updated = true;
-        }
-        if (award->exp > 0) {
-            sc_limitadd(award->exp, &cdata->exp, UINT_MAX);
-            _levelup(&cdata->exp, &cdata->level);
-            updated = true;
-        }
-        if (updated) {
-            send_playerdb(self->db_handler, p, PDB_SAVE);
-        }
-    } else {
-        /* todo
-        char sql[1024];
-        int sz = snprintf(sql, sizeof(sql), "hmset user:%u"
-                "level %u"
-                "exp %u"
-                "coin %u"
-                "score1 %u"
-                "score2 %u"
-                "\r\n",
-                charid, level, exp, coin, score_normal, score_dashi);
-        send_offlinedb(self->dbhandler, sql, sz);
-        */
+    }
+    if (award->exp > 0) {
+        sc_limitadd(award->exp, &cdata->exp, UINT_MAX);
+        _levelup(&cdata->exp, &cdata->level);
+        updated = true;
+    }
+    if (updated) {
+        send_playerdb(self->db_handler, p, PDB_SAVE);
     }
 }
 
 void
 awardlogic_service(struct service* s, struct service_message* sm) {
     struct awardlogic* self = SERVICE_SELF;
-    struct UM_OVERROOM* or = sm->msg;
+    struct player** allp = sm->p1;
+    struct memberaward* awards = sm->p2;
+    int n = sm->i1;
+    int8_t type = sm->i2;
     int i;
-    for (i=0; i<or->nmember; ++i) {
-        _award(self, or->type, &or->awards[i]);
+    for (i=0; i<n; ++i) {
+        _award(self, type, allp[i], &awards[i]); 
     }
 }

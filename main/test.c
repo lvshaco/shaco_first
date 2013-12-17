@@ -1067,6 +1067,6 @@ main(int argc, char* argv[]) {
     //test_elog4(times);
     //test_redisnew(times);
     //test_copy(times);
-    test_encode();
+    //test_encode();
     return 0;
 }

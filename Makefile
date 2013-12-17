@@ -99,7 +99,6 @@ service_so=\
 	service_gate.so \
 	service_forward.so \
 	service_load.so \
-	service_cmdctlworld.so \
 	service_cmdctlgame.so
 
 worldservice_so=\
@@ -128,11 +127,13 @@ all: \
 	world.so \
 	$(worldservice_so) \
 	service_playerdb.so \
+	service_rank.so \
 	service_benchmarkdb.so \
 	service_redisproxy.so \
 	service_login.so \
 	service_tpltworld.so \
-	service_tpltgame.so
+	service_tpltgame.so \
+	service_cmdctlworld.so
 
 release: CFLAGS += -O2 -fno-strict-aliasing
 release: all
@@ -164,6 +165,11 @@ service_playerdb.so: $(service_dir)/service_playerdb.c
 	@rm -f $@
 	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Iinclude/libshaco -Inet -Ibase -Imessage -Iworld -Iredis -Wl,-rpath,. world.so redis.so
 
+service_rank.so: $(service_dir)/service_rank.c
+	@rm -f $@
+	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Iinclude/libshaco -Inet -Ibase -Imessage -Iworld -Iredis -Wl,-rpath,. world.so redis.so
+
+
 service_benchmarkdb.so: $(service_dir)/service_benchmarkdb.c
 	@rm -f $@
 	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Iinclude/libshaco -Inet -Ibase -Imessage -Iredis -Wl,-rpath,. redis.so
@@ -187,6 +193,10 @@ service_tpltgame.so: $(service_dir)/service_tpltgame.c \
 	game/genmap.h
 	@rm -f $@
 	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Iinclude/libshaco -Ibase -Itplt -Idatadefine -Igame -Wl,-rpath,. tplt.so
+
+service_cmdctlworld.so: $(service_dir)/service_cmdctlworld.c
+	@rm -f $@
+	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Iinclude/libshaco -Iworld -Iinclude/libshaco -Inet -Ibase -Imessage -Wl,-rpath,. world.so
 
 world.so: $(world_src)
 	@rm -f $@

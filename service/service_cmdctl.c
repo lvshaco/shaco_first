@@ -218,16 +218,18 @@ _lookupcmd(const struct ctl_command* cmdmap, const char* name) {
 static int 
 _execute(struct cmdctl* self, struct args* A, struct memrw* rw) {
     const char* name = A->argv[0]; 
-    const struct ctl_command* c = _lookupcmd(COMMAND_MAP, name);
-    if (c == NULL) {
-        if (self->cmdctl_handler != SERVICE_INVALID) {
-            struct service_message sm = {0, 0, 0, 0, NULL};
-            service_notify_service(self->cmdctl_handler, &sm);
-            if (sm.msg != NULL) {
-                struct ctl_command* extramap = sm.msg;
-                c = _lookupcmd(extramap, name);
-            }
+
+    const struct ctl_command* c = NULL;
+    if (self->cmdctl_handler != SERVICE_INVALID) {
+        struct service_message sm = {0, 0, 0, 0, NULL};
+        service_notify_service(self->cmdctl_handler, &sm);
+        if (sm.msg != NULL) {
+            struct ctl_command* extramap = sm.msg;
+            c = _lookupcmd(extramap, name);
         }
+    }
+    if (c == NULL) {
+        c = _lookupcmd(COMMAND_MAP, name);
     }
     if (c) {
         return c->fun(self, A, rw);
