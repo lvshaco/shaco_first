@@ -33,7 +33,7 @@
 static inline void
 sc_limitadd(uint32_t add, uint32_t* cur, uint32_t max) {
     uint32_t r = *cur + add;
-    *cur = (*cur < r) ? r : max;
+    *cur = (*cur <= r) ? r : max;
 }
 
 // time

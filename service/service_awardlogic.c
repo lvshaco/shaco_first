@@ -61,14 +61,26 @@ _award(struct awardlogic* self, int8_t type, const struct memberaward* award) {
     struct player* p = _getplayerbycharid(award->charid);
     if (p) {
         struct chardata* cdata = &p->data;
-        cdata->coin += award->coin;
-        if (type == ROOM_TYPE_DASHI)
-            cdata->score_dashi += award->score;
-        else
-            cdata->score_normal += award->score;
-        sc_limitadd(award->exp, &cdata->exp, UINT_MAX);
-        _levelup(&cdata->exp, &cdata->level);
-        send_playerdb(self->db_handler, p, PDB_SAVE);
+        bool updated = false;
+        if (award->coin > 0) {
+            cdata->coin += award->coin;
+            updated = true;
+        }
+        if (award->score > 0) {
+            if (type == ROOM_TYPE_DASHI)
+                cdata->score_dashi += award->score;
+            else
+                cdata->score_normal += award->score;
+            updated = true;
+        }
+        if (award->exp > 0) {
+            sc_limitadd(award->exp, &cdata->exp, UINT_MAX);
+            _levelup(&cdata->exp, &cdata->level);
+            updated = true;
+        }
+        if (updated) {
+            send_playerdb(self->db_handler, p, PDB_SAVE);
+        }
     } else {
         /* todo
         char sql[1024];

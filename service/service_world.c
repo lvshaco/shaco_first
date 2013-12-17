@@ -26,7 +26,6 @@ struct world {
     int rolehandler;
     int ringhandler;
     int attrihandler;
-    uint32_t chariditer;
 };
 
 struct world*
@@ -55,7 +54,6 @@ world_init(struct service* s) {
         return 1;
     }
         
-    self->chariditer = 1;
     int cmax = sc_getint("world_cmax_pergate", 0);
     int hmax = sc_getint("world_hmax_pergate", cmax);
     int gmax = sc_getint("world_gmax", 0);
