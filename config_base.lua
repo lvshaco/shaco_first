@@ -3,8 +3,9 @@
 -- the key prefix by "_" will no be read
 
 local iip = "127.0.0.1"
-local oip = "192.168.1.145"
-log_dir = "/home/game/log"
+local oip = "192.168.1.140"
+web_addr = "192.168.1.145"
+log_dir = "/home/lvxiaojun/log"
 local hb = 6000
 
 node_map = {

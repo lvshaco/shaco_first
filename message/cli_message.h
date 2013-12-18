@@ -17,6 +17,7 @@
 #define IDUM_LOGINACCOUNT   IDUM_CBEGIN+10
 #define IDUM_LOGINACCOUNTFAIL IDUM_CBEGIN+11
 #define IDUM_NOTIFYGATE IDUM_CBEGIN+12
+#define IDUM_NOTIFYWEB      IDUM_CBEGIN+13
 
 // role
 #define IDUM_USEROLE        IDUM_CBEGIN+20
@@ -80,6 +81,11 @@ struct UM_NOTIFYGATE {
     uint64_t key;
     uint32_t addr;
     uint16_t port;
+};
+
+struct UM_NOTIFYWEB {
+    _UM_HEADER;
+    uint32_t webaddr;
 };
 
 ////////////////////////////////////////////////////////////

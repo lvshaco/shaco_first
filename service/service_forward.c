@@ -1,4 +1,5 @@
 #include "sc_service.h"
+#include "sc_env.h"
 #include "sc_timer.h"
 #include "sc_gate.h"
 #include "sc_node.h"
@@ -10,6 +11,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+#include <arpa/inet.h>
 
 struct accinfo {
     uint64_t regtime;
@@ -20,6 +22,7 @@ struct accinfo {
 };
 
 struct forward {
+    uint32_t webaddr;
     struct idmap* regacc;
 };
 
@@ -47,6 +50,12 @@ forward_free(struct forward* self) {
 int
 forward_init(struct service* s) {
     struct forward* self = SERVICE_SELF;
+    const char* webaddr = sc_getstr("web_addr", "");
+    if (webaddr[0] == '\0') {
+        sc_error("no config web_addr");
+        return 1;
+    }
+    self->webaddr = inet_addr(webaddr);
     self->regacc = idmap_create(1); // memory
 
     SUBSCRIBE_MSG(s->serviceid, IDUM_FORWARD);
@@ -81,6 +90,13 @@ _logout(struct forward*self, struct gate_client* c, int error, bool forceclose, 
     sc_gate_disconnclient(c, forceclose);
 }
 
+static inline void
+_notify_webaddr(struct forward* self, struct gate_client* c) {
+    UM_DEFFIX(UM_NOTIFYWEB, nw);
+    nw->webaddr = self->webaddr;
+    UM_SENDTOCLI(c->connid, nw, nw->msgsz);
+}
+
 static int
 _login(struct forward* self, struct gate_client* c, struct UM_BASE* um) {
     if (c->status != GATE_CLIENT_CONNECTED) {
@@ -102,6 +118,8 @@ _login(struct forward* self, struct gate_client* c, struct UM_BASE* um) {
         free(acc);
         
         sc_gate_loginclient(c);
+
+        _notify_webaddr(self, c);
         return 0;
     } else {
         free(acc);
