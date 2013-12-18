@@ -4,10 +4,16 @@ local redis = require "resty.redis"
 local cjson = require "cjson"
 local strfmt = string.format
 local ngxvar = ngx.var
-local rankt = ngx.var.rank_type
 local connpool_size = 100
 local conn_alive = 10000
-local shm_expire = 60
+local shm_expire = 6--todo
+--local rankt = ngxvar.rank_type
+local rankt = ngxvar['arg_t']
+local typevalid = {dashi=true, xinshou=true,chuji=true,zhongji=true,gaoji=true,daren=true,prices=true}
+if not typevalid[rankt] then
+    --ngx.say("invalid rank type:", rankt)
+    return
+end
 
 local function _query_scorelist()
     local red  = redis:new()
@@ -21,7 +27,7 @@ local function _query_scorelist()
         ngx.log(ngx.ERR, err)
         return
     end
-    local ok, err = red:set_keepalive(conn_alive, coonpool_size)
+    local ok, err = red:set_keepalive(conn_alive, connpool_size)
     if not ok then
         ngx.log(ngx.ERR, err) 
     end
