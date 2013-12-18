@@ -199,4 +199,7 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.py *.h *.c" {
   test.c
   testclient.c
  }
+ web=web{
+  rank.lua
+ }
 }
