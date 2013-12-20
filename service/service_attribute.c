@@ -11,7 +11,7 @@ static void
 _effect(struct char_attribute* cattri, const struct role_tplt* base, 
         int32_t type, int32_t value, bool isper) {
 #define CASE(T, R, B, V, isper) \
-    case T: (R) += (isper) ? (B)*(V)*0.001 : (V); break;
+    case T: (R) += (isper) ? (B)*(V)/1000.f : (V); break;
 
     switch (type) {
     CASE(EFFECT_OXYGEN, cattri->oxygen, base->oxygen, value, isper);
@@ -47,7 +47,7 @@ _effect(struct char_attribute* cattri, const struct role_tplt* base,
     if (type > 0 && value > 0) { \
         _effect(cattri, base, type, value, isper); \
     }
-
+/*
 static void dump(struct chardata* cdata) {
     sc_rec("char: accid%u, id %u, name %s", cdata->accid, cdata->charid, cdata->name);
     struct char_attribute* attri = &cdata->attri;
@@ -85,7 +85,7 @@ static void dump(struct chardata* cdata) {
     sc_rec("lucky: %d", attri->lucky);
     sc_rec("prices: %d", attri->prices);
 }
-
+*/
 void
 attribute_service(struct service* s, struct service_message* sm) {
     struct player* p = sm->msg;
@@ -131,6 +131,7 @@ attribute_service(struct service* s, struct service_message* sm) {
     cattri->jump_range += base->jump_range;
     cattri->sence_range += base->sence_range;
     cattri->view_range += base->view_range;
-    cattri->coin_profit += base->coin_profit*0.01f;
-    dump(cdata);
+    cattri->coin_profit += base->coin_profit/100.f;
+
+    //dump(cdata);
 }

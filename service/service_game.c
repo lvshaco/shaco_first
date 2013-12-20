@@ -753,6 +753,21 @@ _sync(struct game* self, struct gate_client* c, struct UM_BASE* um) {
 }
 
 static void
+_on_refresh_attri(struct member* m, struct room* ro) {
+    if (m->refresh_flag == 0)
+        return;
+    if (m->refresh_flag & REFRESH_SPEED) {
+        role_attri_build(&ro->gattri, &m->detail.attri);
+    }
+    if (m->refresh_flag & REFRESH_ATTRI) {
+        UM_DEFFIX(UM_ROLEINFO, ri);
+        ri->detail = m->detail;
+        _multicast_msg(ro, (void*)ri, 0);
+    }
+    m->refresh_flag = 0;
+}
+
+static void
 _role_press(struct game* self, struct gate_client* c, struct UM_BASE* um) {
     struct player* p;
     struct room* ro;
@@ -760,42 +775,55 @@ _role_press(struct game* self, struct gate_client* c, struct UM_BASE* um) {
     if (_locate_player(self, c, &p, &ro, &m))
         return;
     UM_CAST(UM_GAMEPRESS, gp, um);
+    
+    int oxygen = m->base.oxygen/10;
+    if (_reduce_oxygen(m, oxygen) > 0) {
+        m->refresh_flag |= REFRESH_ATTRI;
+    }
+    _on_refresh_attri(m, ro);
+
     _multicast_msg(ro, (void*)gp, p->charid);
+
+    if (m->detail.attri.oxygen <= 0) {
+        _gameover(self, ro, true);
+    }
 }
 
 static float
 _effect(struct member* m, struct char_attribute* cattri, const struct char_attribute* base, 
         int32_t type, float value, bool isper) {
-#define CASE(T, R, B, V, isper, min, flag) \
+#define AMAX 10000000
+#define CASE(T, R, B, V, isper, min, max, flag) \
     case T: { \
         float old = R; \
         (R) += (isper) ? (B)*(V)*0.001 : (V); \
         if (R < min) R = min; \
+        else if (R > max) R = max; \
         float diff = R - old; \
         if (diff != 0) m->refresh_flag |= flag; \
         return diff; \
     }
     switch (type) {
-    CASE(EFFECT_OXYGEN, cattri->oxygen, base->oxygen, value, isper, 0, REFRESH_ATTRI);
-    CASE(EFFECT_BODY, cattri->body, base->body, value, isper, 0, REFRESH_ATTRI|REFRESH_SPEED);
-    CASE(EFFECT_QUICK, cattri->quick, base->quick, value, isper, 0, REFRESH_ATTRI|REFRESH_SPEED);
+    CASE(EFFECT_OXYGEN, cattri->oxygen, base->oxygen, value, isper, 0, base->oxygen, REFRESH_ATTRI);
+    CASE(EFFECT_BODY, cattri->body, base->body, value, isper, 0, AMAX, REFRESH_ATTRI|REFRESH_SPEED);
+    CASE(EFFECT_QUICK, cattri->quick, base->quick, value, isper, 0, AMAX, REFRESH_ATTRI|REFRESH_SPEED);
     //CASE(EFFECT_COIN_PROFIT, cattri->coin_profit, 1, value, isper, REFRESH_ATTRI);
-    CASE(EFFECT_MOVE_SPEED, cattri->movespeedadd, 1, value, isper, -1, REFRESH_ATTRI|REFRESH_SPEED);
-    CASE(EFFECT_FALL_SPEED, cattri->charfallspeedadd, 1, value, isper, -1, REFRESH_ATTRI|REFRESH_SPEED);
-    CASE(EFFECT_ATTACK_DISTANCE, cattri->attack_distance, base->attack_distance, value, isper, 0, REFRESH_ATTRI);
-    CASE(EFFECT_ATTACK_RANGE, cattri->attack_range, base->attack_range, value, isper, 0, REFRESH_ATTRI);
-    CASE(EFFECT_ATTACK_POWER, cattri->attack_power, base->attack_power, value, isper, 0, REFRESH_ATTRI);
-    CASE(EFFECT_LUCK, cattri->lucky, base->lucky, value, isper, 0, REFRESH_ATTRI);
-    CASE(EFFECT_ATTACK_SPEED, cattri->attack_speed, base->attack_speed, value, isper, 0, REFRESH_ATTRI);
-    CASE(EFFECT_DODGE_DISTANCE, cattri->dodgedistanceadd, 1, value, isper, -1, REFRESH_ATTRI|REFRESH_SPEED);  
-    CASE(EFFECT_REBIRTH_TIME, cattri->rebirthtimeadd, 1, value, isper, -1, REFRESH_ATTRI|REFRESH_SPEED);
-    CASE(EFFECT_JUMP_RANGE, cattri->jump_range, base->jump_range, value, isper, 0, REFRESH_ATTRI); 
-    CASE(EFFECT_SENCE_RANGE, cattri->sence_range, base->sence_range, value, isper, 0, REFRESH_ATTRI);
+    CASE(EFFECT_MOVE_SPEED, cattri->movespeedadd, 1, value, isper, -1, AMAX, REFRESH_ATTRI|REFRESH_SPEED);
+    CASE(EFFECT_FALL_SPEED, cattri->charfallspeedadd, 1, value, isper, -1, AMAX, REFRESH_ATTRI|REFRESH_SPEED);
+    CASE(EFFECT_ATTACK_DISTANCE, cattri->attack_distance, base->attack_distance, value, isper, 0, AMAX, REFRESH_ATTRI);
+    CASE(EFFECT_ATTACK_RANGE, cattri->attack_range, base->attack_range, value, isper, 0, AMAX, REFRESH_ATTRI);
+    CASE(EFFECT_ATTACK_POWER, cattri->attack_power, base->attack_power, value, isper, 0, AMAX, REFRESH_ATTRI);
+    CASE(EFFECT_LUCK, cattri->lucky, base->lucky, value, isper, 0, AMAX, REFRESH_ATTRI);
+    CASE(EFFECT_ATTACK_SPEED, cattri->attack_speed, base->attack_speed, value, isper, 0, AMAX, REFRESH_ATTRI);
+    CASE(EFFECT_DODGE_DISTANCE, cattri->dodgedistanceadd, 1, value, isper, -1, AMAX, REFRESH_ATTRI|REFRESH_SPEED);  
+    CASE(EFFECT_REBIRTH_TIME, cattri->rebirthtimeadd, 1, value, isper, -1, AMAX, REFRESH_ATTRI|REFRESH_SPEED);
+    CASE(EFFECT_JUMP_RANGE, cattri->jump_range, base->jump_range, value, isper, 0, AMAX, REFRESH_ATTRI); 
+    CASE(EFFECT_SENCE_RANGE, cattri->sence_range, base->sence_range, value, isper, 0, AMAX, REFRESH_ATTRI);
     //CASE(EFFECT_WINCOIN_PROFIT, cattri->wincoin_profit, 1, value, isper, REFRESH_ATTRI);
     //CASE(EFFECT_EXP_PROFIT, cattri->exp_profit, 1, value, isper, REFRESH_ATTRI);
-    CASE(EFFECT_ITEM_TIME, cattri->item_timeadd, 1, value, isper, -1, REFRESH_ATTRI);
-    CASE(EFFECT_ITEM_OXYGEN, cattri->item_oxygenadd, 1, value, isper, -1, REFRESH_ATTRI);
-    CASE(EFFECT_VIEW_RANGE, cattri->view_range, base->view_range, value, isper, 0, REFRESH_ATTRI);
+    CASE(EFFECT_ITEM_TIME, cattri->item_timeadd, 1, value, isper, -1, AMAX, REFRESH_ATTRI);
+    CASE(EFFECT_ITEM_OXYGEN, cattri->item_oxygenadd, 1, value, isper, -1, AMAX, REFRESH_ATTRI);
+    CASE(EFFECT_VIEW_RANGE, cattri->view_range, base->view_range, value, isper, 0, AMAX, REFRESH_ATTRI);
     //CASE(EFFECT_SCORE_PROFIT, cattri->score_profit, 1, value, isper, REFRESH_ATTRI);
     //CASE(EFFECT_WINSCORE_PROFIT, cattri->winscore_profit, 1, value, isper, REFRESH_ATTRI);
     default:return 0.0f;
@@ -847,20 +875,6 @@ static void dump(uint32_t charid, const char* name, struct char_attribute* attri
     sc_rec("prices: %d", attri->prices);
 }
 */
-static void
-_on_refresh_attri(struct member* m, struct room* ro) {
-    if (m->refresh_flag == 0)
-        return;
-    if (m->refresh_flag & REFRESH_SPEED) {
-        role_attri_build(&ro->gattri, &m->detail.attri);
-    }
-    if (m->refresh_flag & REFRESH_ATTRI) {
-        UM_DEFFIX(UM_ROLEINFO, ri);
-        ri->detail = m->detail;
-        _multicast_msg(ro, (void*)ri, 0);
-    }
-    m->refresh_flag = 0;
-}
 
 static void
 _item_effect_member(struct game* self, struct room* ro, struct member* m, 
