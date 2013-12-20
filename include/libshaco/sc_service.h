@@ -23,6 +23,7 @@ struct service_message {
     int32_t i1;
     int32_t i2;
     int32_t i3;
+    int64_t n1;
 };
 
 struct service {

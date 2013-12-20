@@ -10,7 +10,7 @@ _testrank(struct cmdctl* self, struct args* A, struct memrw* rw) {
     if (handler == SERVICE_INVALID) {
         return CTL_NOSERVICE;
     }
-    if (A->argc <= 1) {
+    if (A->argc <= 2) {
         return CTL_ARGLESS;
     }
     uint32_t charid = strtol(A->argv[1], NULL, 10);
@@ -19,11 +19,14 @@ _testrank(struct cmdctl* self, struct args* A, struct memrw* rw) {
         return CTL_ARGINVALID;
     }
     struct service_message sm;
-    sm.p1 = &p;
-    sm.i1 = 1;
-    sm.i2 = ROOM_TYPE_DASHI;
+    sm.p1 = "dashi";
+    sm.p2 = "";
+    sm.i1 = charid;
+    sm.n1 = strtol(A->argv[1], NULL, 10);
     service_notify_service(handler, &sm);
-    sm.i2 = ROOM_TYPE_NORMAL;
+
+    sm.p1 = "xinshou";
+    sm.p2 = "";
     service_notify_service(handler, &sm);
     return CTL_OK;
 }

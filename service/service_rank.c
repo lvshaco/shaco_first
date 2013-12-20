@@ -1,12 +1,3 @@
-//
-#include <stdio.h>
-#define _XOPEN_SOURCE
-
-#include <stdlib.h>
-#include <string.h>
-
-#include <time.h>
-
 #include "sc_service.h"
 #include "sc_util.h"
 #include "sc.h"
@@ -19,14 +10,17 @@
 #include "user_message.h"
 #include "node_type.h"
 #include "player.h"
-#include "rank.h"
 #include "sharetype.h"
 #include "memrw.h"
 #include "util.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
 
 struct rank {
-    uint32_t next_score_refresh_time;
-    uint32_t next_race_refresh_time;
+    uint32_t next_normal_refresh_time;
+    uint32_t next_dashi_refresh_time;
     struct redis_reply reply;
 };
 
@@ -86,17 +80,37 @@ _refresh_rank(const char* type, time_t now, uint32_t* base) {
 }
 
 static int
-_insert_rank(const char* type, uint32_t charid, uint64_t score) { 
+_insert_rank(const char* type, const char* oldtype, uint32_t charid, uint64_t score) { 
     UM_DEFVAR(UM_REDISQUERY, rq);
     rq->needreply = 0;
     rq->needrecord = 1;
     rq->cbsz = 0;
     struct memrw rw;
     memrw_init(&rw, rq->data, rq->msgsz - sizeof(*rq));
-    int len = snprintf(rw.ptr, RW_SPACE(&rw), 
-            "ZADD rank:%s %llu %u\r\n"
-            "ZREMRANGEBYRANK rank:%s -1000001 -1000001\r\n",
-            type, (unsigned long long int)score, (unsigned int)charid, type);
+    int len;
+    if (oldtype[0] == '\0') {
+        if (type[0]) {
+            len = snprintf(rw.ptr, RW_SPACE(&rw), 
+                    "ZADD rank:%s %llu %u\r\n"
+                    "ZREMRANGEBYRANK rank:%s -100001 -100001\r\n",
+                    type, (unsigned long long int)score, (unsigned int)charid, type);
+        } else {
+            return 1;
+        }
+    } else {
+        if (type[0]) {
+            len = snprintf(rw.ptr, RW_SPACE(&rw), 
+                    "ZREM rank:%s %u\r\n"
+                    "ZADD rank:%s %llu %u\r\n"
+                    "ZREMRANGEBYRANK rank:%s -100001 -100001\r\n",
+                    oldtype, (unsigned int)charid,
+                    type, (unsigned long long int)score, (unsigned int)charid, type);
+        } else {
+            len = snprintf(rw.ptr, RW_SPACE(&rw), 
+                    "ZREM rank:%s %u\r\n",
+                    oldtype, (unsigned int)charid);
+        }
+    }
     memrw_pos(&rw, len);
     rq->msgsz = sizeof(*rq) + RW_CUR(&rw);
     return _send_to_db(rq);
@@ -125,57 +139,26 @@ static void
 _refresh_db(struct rank* self) {
     uint32_t now = sc_timer_now()/1000;
     uint32_t base; 
-    if (self->next_score_refresh_time <= now) {
-        if (_refresh_rank("score1", now, &base) == 0) {
-            self->next_score_refresh_time = base + 7 * SC_DAY_SECS;
+    if (self->next_normal_refresh_time <= now) {
+        if (_refresh_rank("normal", now, &base) == 0) {
+            self->next_normal_refresh_time = base + 7 * SC_DAY_SECS;
         }
     }
-    if (self->next_race_refresh_time <= now) {
-        if (_refresh_rank("score2",  now, &base) == 0) {
-            self->next_race_refresh_time = base + 7 * SC_DAY_SECS;
+    if (self->next_dashi_refresh_time <= now) {
+        if (_refresh_rank("dashi",  now, &base) == 0) {
+            self->next_dashi_refresh_time = base + 7 * SC_DAY_SECS;
         }
     }
-}
-
-static inline uint64_t
-_get_score(struct chardata* cdata, uint32_t score) {
-    uint64_t level = cdata->level;
-    if (level > 999) level = 999;
-    uint32_t exp = cdata->exp;
-    if (exp > 9999999) exp = 9999999;
-    return (uint64_t)score * 10000000000L + 
-    (uint64_t)cdata->level * 10000000 + cdata->exp;
 }
 
 void
 rank_service(struct service* s, struct service_message* sm) {
     //struct rank* self = SERVICE_SELF;
-    struct player** allp = sm->p1; 
-    int8_t type = sm->i2;
-    int i, n = sm->i1;
-    struct chardata* cdata;
-    switch (type) {
-    case ROOM_TYPE_DASHI:
-        for (i=0; i<n; ++i) {
-            cdata = &allp[i]->data;
-            if (cdata->score_dashi > 0) {
-                _insert_rank("score2", cdata->charid, 
-                _get_score(cdata, cdata->score_dashi));
-            }
-        }
-        break;
-    case ROOM_TYPE_NORMAL:
-        for (i=0; i<n; ++i) {
-            cdata = &allp[i]->data;
-            if (cdata->score_normal > 0) {
-                _insert_rank("score1", cdata->charid, 
-                _get_score(cdata, cdata->score_normal));
-            }
-        }
-        break;
-    default:
-        return;
-    }
+    const char* type = sm->p1;
+    const char* oldtype = sm->p2;
+    uint32_t charid = sm->i1;
+    uint64_t score = sm->n1;
+    _insert_rank(type, oldtype, charid, score);
 }
 
 static struct redis_replyitem*
@@ -222,16 +205,16 @@ _handle_redis(struct rank* self, struct node_message* nm) {
     if (si == NULL) {
         return;
     } 
-    if (!strcmp(type, "score1")) {
+    if (!strcmp(type, "normal")) {
         time_t last = _get_timevalue(si); 
         struct tm tmlast = *localtime(&last);
         time_t base = sc_day_base(last, tmlast);
-        self->next_race_refresh_time = base + SC_DAY_SECS * 7;
-    } else if (!strcmp(type, "score2")) {
+        self->next_normal_refresh_time = base + SC_DAY_SECS * 7;
+    } else if (!strcmp(type, "dashi")) {
         time_t last = _get_timevalue(si);
         struct tm tmlast = *localtime(&last);
         time_t base = sc_day_base(last, tmlast);
-        self->next_race_refresh_time = base + SC_DAY_SECS * 7;
+        self->next_dashi_refresh_time = base + SC_DAY_SECS * 7;
     }
 }
 
