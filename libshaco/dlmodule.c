@@ -6,9 +6,11 @@
 #include <string.h>
 #include <stdio.h>
 #include <limits.h>
+#include <assert.h>
 
 static int
 _open(struct dlmodule* dl) {
+    assert(dl->handle == NULL);
     char tmp[64];
     int n = snprintf(tmp, sizeof(tmp), "service_%s.so", dl->name);
     if (n >= sizeof(tmp)) {
