@@ -79,7 +79,7 @@ _prepare(struct service* s) {
 
 static int
 _reload(struct service* s) {
-    assert(s->dl.handle);
+    //assert(s->dl.handle); donot do this
     if (dlmodule_reload(&s->dl)) {
         return 1;
     }

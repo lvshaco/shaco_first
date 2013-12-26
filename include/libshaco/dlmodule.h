@@ -6,7 +6,7 @@ struct service_message;
 struct net_message;
 
 struct dlmodule {
-    char* name;
+    char name[32];
     void* content;
     void* handle;
     void* (*create)();

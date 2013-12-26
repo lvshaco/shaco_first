@@ -149,8 +149,6 @@ $(worldservice_so): %.so: $(service_dir)/%.c
 service_game.so: $(service_dir)/service_game.c \
 	game/fight.c \
 	game/fight.h \
-	game/roommap.c \
-	game/roommap.h \
 	game/genmap.c \
 	game/genmap.h
 	@rm -f $@
@@ -188,9 +186,7 @@ service_tpltworld.so: $(service_dir)/service_tpltworld.c
 
 service_tpltgame.so: $(service_dir)/service_tpltgame.c \
 	game/roommap.c \
-	game/roommap.h \
-	game/genmap.c \
-	game/genmap.h
+	game/roommap.h
 	@rm -f $@
 	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Iinclude/libshaco -Ibase -Itplt -Idatadefine -Igame -Wl,-rpath,. tplt.so
 
@@ -249,6 +245,7 @@ res:
 	@mkdir -pv ./res/tbl
 	@rm -rf ./res/tplt
 	@mkdir -pv ./res/tplt
+	@mkdir -pv ./datadefine
 	@rm -rf ./datadefine/tplt_struct.h
 	@svn export $(SHACO_SVN_RES)/res/excel $(HOME)/.shaco/excel --force
 	@cd tool && \

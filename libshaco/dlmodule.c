@@ -1,9 +1,11 @@
 #include "dlmodule.h"
+#include "sc_util.h"
 #include "sc_log.h"
 #include <stdlib.h>
 #include <dlfcn.h>
 #include <string.h>
 #include <stdio.h>
+#include <limits.h>
 
 static int
 _open(struct dlmodule* dl) {
@@ -13,7 +15,9 @@ _open(struct dlmodule* dl) {
         sc_error("dlmodule %s, name is too long", dl->name);
         return 1;
     }
-    void* handle = dlopen(tmp, RTLD_NOW | RTLD_GLOBAL);
+    char fname[PATH_MAX];
+    snprintf(fname, sizeof(fname), "./%s", tmp);
+    void* handle = dlopen(fname, RTLD_NOW | /*RTLD_LOCAL*/ RTLD_GLOBAL);
     if (handle == NULL) {
         sc_error("dlmodule %s open error: %s", dl->name, dlerror());
         return 1;
@@ -75,10 +79,8 @@ _dlclose(struct dlmodule* dl) {
 int
 dlmodule_load(struct dlmodule* dl, const char* name) {
     memset(dl, 0, sizeof(*dl));
-
-    dl->name = malloc(strlen(name)+1);
-    strcpy(dl->name, name);
-
+    sc_strncpy(dl->name, name, sizeof(dl->name));
+    
     if (_open(dl)) {
         dlmodule_close(dl);
         return 1;
@@ -97,10 +99,6 @@ dlmodule_close(struct dlmodule* dl) {
     }
     if (dl->handle) {
         _dlclose(dl);
-    }
-    if (dl->name) {
-        free(dl->name);
-        dl->name = NULL;
     }
 }
 

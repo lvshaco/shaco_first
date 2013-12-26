@@ -1031,6 +1031,11 @@ _encode(const uint8_t* bytes, int nbyte) {
 
 void
 test_encode() {
+    const char* src = "12345";
+    char dest[4] = {1,2,3,4};
+    strncpy(dest, src, sizeof(dest));
+    assert(dest[3] == 4);
+    printf(dest);
     uint8_t bytes[512];
     int i;
     for (i=0; i<sizeof(bytes); ++i) {

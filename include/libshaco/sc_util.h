@@ -3,6 +3,7 @@
 
 #include <stdlib.h>
 #include <stdint.h>
+#include <string.h>
 
 // const cstring to int32, eg: "GMAP"
 #define sc_cstr_to_int32(cstr) ({ \
@@ -48,5 +49,14 @@ sc_limitadd(uint32_t add, uint32_t* cur, uint32_t max) {
 #define sc_bytestr_decode_leastn(n) ((n)*7 / 8 + 1)
 int sc_bytestr_encode(const uint8_t* bytes, int nbyte, char* str, int n);
 int sc_bytestr_decode(const char* str, int len, uint8_t* bytes, int nbyte);
+
+static inline char *
+sc_strncpy(char *dest, const char *src, size_t n) {
+    strncpy(dest, src, n);
+    if (n > 1) {
+        dest[n-1] = '\0';
+    }
+    return dest;
+}
 
 #endif
