@@ -173,6 +173,17 @@ service_query_name(int serviceid) {
 }
 
 int 
+sc_service_run(int handle, struct sc_service_arg *arg) {
+    struct service *s = array_get(S->sers, handle);
+    if (s && s->dl.run) {
+        s->dl.run(s, arg);
+        return 0;
+    }
+    return 1;
+}
+
+/*
+int 
 service_notify_service(int serviceid, struct service_message* sm) {
     struct service* s = array_get(S->sers, serviceid);
     if (s && s->dl.service) {
@@ -221,7 +232,7 @@ service_notify_usermsg(int serviceid, int id, void* msg, int sz) {
     }
     return 1;
 }
-
+*/
 static void
 service_init() {
     S = malloc(sizeof(*S));

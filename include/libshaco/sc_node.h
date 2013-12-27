@@ -4,53 +4,28 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#define NODE_MAX 256
+#define SUB_MAX 10
+
 struct sc_node {
-    union {
-        struct {
-            uint16_t sid:10;
-            uint16_t tid:6;
-        };
-        uint16_t id; // see HNODE_ID
-    };
-    uint32_t addr;
-    uint16_t port;
+    int connid;
+    uint32_t naddr;
+    uint16_t nport;
     uint32_t gaddr;
     uint16_t gport;
-    int connid;
-    int load;
 };
 
-#define HNODE_SID_MAX 0x3ff
-#define HNODE_TID_MAX 0x3f
-#define HNODE_NAME_MAX 16
-#define HNODESTR_MAX 128
+struct _remote {
+    struct sc_Nnode[NODE_MAX];
+};
 
-#define HNODE_ID(tid, sid) ((((uint16_t)(tid)&0x3f) << 10) | ((uint16_t)(sid)&0x3ff))
-#define HNODE_TID(id) (((uint16_t)(id) >> 10) & 0x3f)
-#define HNODE_SID(id) ((uint16_t)(id)&0x3ff)
-#define HNODE_MAX HNODE_ID(HNODE_TID_MAX, HNODE_SID_MAX)
+int sc_service_subscribe(int id, const char *name);
+int sc_service_publish(const char *name);
+int sc_service_send(int handle);
 
-// me node
-uint16_t sc_id();
-struct sc_node* sc_me();
-int sc_register_me(struct sc_node* me);
-
-int  sc_node_typeid(const char* name);
-const char* sc_node_typename(uint16_t tid);
-const struct sc_node* sc_node_get(uint16_t id);
-
-int  sc_node_types();
-int  sc_node_register_types(const char* types[], int n);
-bool sc_node_is_register(uint16_t id);
-int  sc_node_register(struct sc_node* node);
-int  sc_node_unregister(uint16_t id);
-int  sc_node_disconnect(int connid);
-void sc_node_foreach(uint16_t tid, int (*cb)(const struct sc_node*, void* ud), void* ud);
-const char* sc_strnode(const struct sc_node* node, char str[HNODESTR_MAX]);
-
-// load
-const struct sc_node* sc_node_minload(uint16_t tid);
-void sc_node_updateload(uint16_t id, int value);
-void sc_node_setload(uint16_t id, int value);
+int sc_Nnode_register(int nodeid, struct sc_Nnode* node);
+int sc_Nnode_unregister(int nodeid);
+int sc_Nnode_disconnect(int connid);
+int sc_Nnode_send(int nodeid, void *msg, int sz);
 
 #endif
