@@ -130,13 +130,21 @@ cnet_connect(const char* ip, uint16_t port, int ut) {
 }
 int  
 cnet_connecti(uint32_t addr, uint16_t port, int ut) {
-    struct net_message nm;
-    int n = net_connect(N, addr, port, false, 0, 0, ut, &nm);
-    if (n > 0) {
+    int err;
+    int id = net_connect(N, addr, port, false, 0, 0, ut, &err);
+    if (id >= 0) {
+        struct net_message nm = {
+            id, NETE_CONNECT, 0, 0, ut};
         _dispatch_one(&nm); 
-        return nm.type == NETE_CONNERR;
+        return 0;
+    } else if (id == -1) {
+        struct net_message nm = {
+            -1, NETE_CONNERR, err, 0, ut};
+        _dispatch_one(&nm); 
+        return 1;
+    } else {
+        return 0;
     }
-    return 0;
 }
 int
 cnet_send(int id, void* um, int sz) {

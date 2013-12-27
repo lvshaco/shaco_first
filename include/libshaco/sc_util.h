@@ -18,6 +18,9 @@
 #define sc_cstr_compare_int32(cstr, i32) \
     (sc_cstr_to_int32(cstr) == (i32))
 
+#define sc_cstr_compare_mem(cstr, mem, sz) \
+    (sizeof(cstr) != (sz) || memcmp(cstr, mem, sz))
+
 // countof
 #define sc_countof(x) (sizeof(x)/sizeof((x)[0]))
 

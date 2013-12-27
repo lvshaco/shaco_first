@@ -14,6 +14,7 @@
 #include <stdbool.h>
 #include <string.h>
 #include <assert.h>
+#include <stdio.h>
 
 struct querylink {
     struct querylink* next;
@@ -62,12 +63,80 @@ _connect_redis(struct service* s, bool block) {
     return 0;
 }
 
+static int
+_redis_read(int id, struct redis_reply* reply) {
+    int e;
+    for (;;) {
+        void* buf = REDIS_REPLYBUF(reply);
+        int space = REDIS_REPLYSPACE(reply);
+        if (space <= 0) {
+            return NET_ERR_NOBUF;
+        }
+        int nread = sc_net_readto(id, buf, space, &e);
+        if (e) {
+            return e;
+        }
+        if (nread <= 0)
+            continue;
+
+        reply->reader.sz += nread;
+        int result = redis_getreply(reply);
+       
+        switch (result) {
+        case REDIS_SUCCEED:
+            return 0;
+        case REDIS_NEXTTIME:
+            break;
+        default:
+            return NETE_REDISREPLY;
+        }
+    }
+    return 0;
+}
+
+static int
+_login_redis(struct service* s) {
+    struct redisproxy *self = SERVICE_SELF;
+    const char* addr = sc_getstr("redis_ip", "");
+    int port = sc_getint("redis_port", 0);
+    sc_info("connect to redis %s:%u ...", addr, port);
+    int err;
+    int id = sc_net_block_connect(addr, port, s->serviceid, CLI_REDIS, &err);
+    if (id < 0) {
+        sc_error("connect to redis fail: %s", sc_net_error(err)); 
+        return 1;
+    }
+    self->connid = id;
+    const char* auth = sc_getstr("redis_auth", "123456");
+    char tmp[128];
+    int len = snprintf(tmp, sizeof(tmp), "auth %s\r\n", auth);
+    if (sc_net_block_send(id, tmp, len, &err) != len) {
+        sc_error("auth fail: %s", sc_net_error(err)); 
+        return 1;
+    }
+    sc_info("send ok");
+    struct redis_reply reply;
+    redis_initreply(&reply, 512, 16*1024);
+    _redis_read(id, &reply);
+
+    if (!redis_to_status(REDIS_ITEM(&reply))) {
+        char tmp[1024];
+        redis_to_string(REDIS_ITEM(&reply), tmp, sizeof(tmp));
+        sc_error("redis auth error: %s", tmp);
+        return 1;
+    }
+    redis_finireply(&reply);
+    sc_info("login redis");
+    return 0;
+}
+
 int
 redisproxy_init(struct service* s) {
     struct redisproxy* self = SERVICE_SELF;
     self->connid = -1;
     
-    if (_connect_redis(s, true)) {
+    //if (_connect_redis(s, true)) {
+    if (_login_redis(s)) {
         return 1;
     } 
     redis_initreply(&self->reply, 512, 16*1024);

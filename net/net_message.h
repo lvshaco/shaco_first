@@ -19,7 +19,6 @@
 #define NETUT_TRUST 0 // or UNTRUST
 
 struct net_message {
-    int fd;
     int connid;
     int type;     // see NETE
     int error;

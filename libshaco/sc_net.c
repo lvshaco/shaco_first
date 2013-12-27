@@ -52,8 +52,9 @@ _dispatch() {
 int
 sc_net_listen(const char* addr, uint16_t port, int wbuffermax, int serviceid, int ut) {
     uint32_t ip = inet_addr(addr);
-    int err = net_listen(N, ip, port, wbuffermax, serviceid, ut);
-    if (err) {
+    int err;
+    int id = net_listen(N, ip, port, wbuffermax, serviceid, ut, &err);
+    if (id == -1) {
         sc_error("listen %s:%u fail: %s", addr, port, sc_net_error(err)); 
     } else {
         sc_info("listen on %s:%d", addr, port);
@@ -63,14 +64,30 @@ sc_net_listen(const char* addr, uint16_t port, int wbuffermax, int serviceid, in
 
 int 
 sc_net_connect(const char* addr, uint16_t port, bool block, int serviceid, int ut) { 
-    uint32_t ip = inet_addr(addr);
-    struct net_message nm;
-    int n = net_connect(N, ip, port, block, 0, serviceid, ut, &nm);
-    if (n > 0) {
+    uint32_t ip = inet_addr(addr); 
+    int err;
+    int id = net_connect(N, ip, port, block, 0, serviceid, ut, &err);
+    if (id >= 0) {
+        struct net_message nm = {
+            id, NETE_CONNECT, 0, serviceid, ut 
+        };
         _dispatch_one(&nm);
-        return nm.type == NETE_CONNERR;
+        return 0;
+    } else if (id == -1) {
+        struct net_message nm = {
+            id, NETE_CONNERR, err, serviceid, ut
+        };
+        _dispatch_one(&nm);
+        return 1;
+    } else {
+        return 0;
     }
-    return 0;
+}
+
+int 
+sc_net_block_connect(const char* addr, uint16_t port, int serviceid, int ut, int *err) {
+    uint32_t ip = inet_addr(addr); 
+    return net_connect(N, ip, port, true, 0, serviceid, ut, err);
 }
 
 void
@@ -89,6 +106,11 @@ sc_net_send(int id, void* data, int sz) {
         _dispatch_one(&nm);
     }
     return n;
+}
+
+int 
+sc_net_block_send(int id, void *data, int sz, int *err) {
+    return net_block_send(N, id, data, sz, err);
 }
 
 int 

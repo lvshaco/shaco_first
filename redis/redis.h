@@ -23,6 +23,7 @@
 
 #define REDIS_REPLYBUF(reply) ((reply)->reader.buf+(reply)->reader.sz)
 #define REDIS_REPLYSPACE(reply) ((reply)->reader.cap - (reply)->reader.sz)
+#define REDIS_ITEM(reply) ((reply)->stack[0])
 
 union redis_value {
     uint64_t u;
@@ -83,6 +84,40 @@ redis_bulkitem_toul(struct redis_replyitem* item) {
     char tmp[16];
     strncpychk(tmp, sizeof(tmp), item->value.p, item->value.len);
     return strtoul(tmp, NULL, 10); 
+}
+
+static inline int64_t
+redis_to_int64(struct redis_replyitem* item) {
+    if (redis_bulkitem_isnull(item))
+        return 0;
+    char tmp[32];
+    strncpychk(tmp, sizeof(tmp), item->value.p, item->value.len);
+    return strtold(tmp, NULL);
+}
+
+static inline bool
+redis_to_status(struct redis_replyitem* item) {
+    return item->type == REDIS_REPLY_STATUS;
+}
+
+static inline int
+redis_to_string(struct redis_replyitem *item, char* str, int sz) {
+    if (sz <= 0)
+        return 0;
+    if (item->type == REDIS_REPLY_STRING ||
+        item->type == REDIS_REPLY_STATUS ||
+        item->type == REDIS_REPLY_ERROR) {
+        int len = item->value.len;
+        if (len > 0) {
+            if (len >= sz)
+                len = sz - 1;
+            memcpy(str, item->value.p, len);
+            str[len] = '\0';
+            return len;
+        }
+    }
+    str[0] = '\0';
+    return 0;
 }
 
 #endif

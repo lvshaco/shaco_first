@@ -1044,6 +1044,14 @@ test_encode() {
     }    
 }
 
+void
+test() {
+    const char* s = "1234";
+    int i = strtol(s, NULL, 10); 
+    printf("strtol %d\n", i);
+    long long int l = strtold("1.1234e+20", NULL); 
+    printf("strtoll %llu\n", l);
+}
 int 
 main(int argc, char* argv[]) {
     int times = 1;
@@ -1073,5 +1081,6 @@ main(int argc, char* argv[]) {
     //test_redisnew(times);
     //test_copy(times);
     //test_encode();
+    test();
     return 0;
 }

@@ -47,6 +47,7 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.py *.h *.c" {
    sc_service.h
    sc_timer.h
    sc_util.h
+   sc_Nnode.h
   }
  }
  lur=lur{
@@ -121,6 +122,7 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.py *.h *.c" {
   service_tpltgame.c
   service_tpltworld.c
   service_world.c
+  service_Nnode.c
  }
  world=world{
   player.h
