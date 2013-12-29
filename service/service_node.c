@@ -29,10 +29,16 @@ struct _service {
     int handle;
 };
 
+struct _service_holder {
+    int cap;
+    int sz;
+    struct _service *p;
+};
+
 struct remote {
     int myid;
     struct _node nodes[NODE_MAX];
-    struct _service sers[SUB_MAX];
+    struct _service_holder sers[SUB_MAX];
 };
 
 struct remote_msg_header {
@@ -158,24 +164,52 @@ _vsend(struct remote *self, int source, int dest, const char *fmt, ...) {
 }
 
 static int
-_subscribe(struct remote *self, int id, const char *name) {
-    assert(id > 0 && id < SUB_MAX);
-    if (name[0] == '\0')
-        return -1;
-    struct _service *s = &self->sers[id];
-    if (s->name[0] == '\0') {
-        sc_strncpy(s->name, name, sizeof(s->name));
-    } else {
-        if (strcmp(s->name, name)) {
-            sc_error("Conflict service subscibe, %s -> [%d]%s", name, id, s->name);
-            return -1;
+_add_service(struct _service_holder *sh, const char *name) {
+    if (sh->sz <= sh->cap) {
+        sh->cap *= 2;
+        if (sh->cap == 0)
+            sh->cap = 1;
+        sh->p = realloc(sh->p, sizeof(struct _service) * sh->cap);
+        memset(sh->p+sh->sz, 0, sh->cap - sh->sz);
+    }
+    struct _service *s = &sh->p[sh->sz];
+    sc_strncpy(s->name, name, sizeof(s->name));
+    return sh->sz;
+}
+
+static int
+_get_service(struct _service_holder *sh, const char *name) {
+    int i;
+    for (i=0; i<sh->sz; ++i) {
+        if (strcmp(sh->p[i].name, name)) {
+            return i;
+            return &sh->p[i];
         }
     }
+    return -1;
+}
+
+static int
+_subscribe_service(struct remote *self, const char *name) {
+    struct _service_holder *sh = &self->sers;
+    int id;
+    if (name[0] == '\0') {
+        sc_error("Subscribe null service");
+        return -1;
+    }
+    if (sh->sz >= SUB_MAX) {
+        sc_error("Subscribe too much service");
+        return -1;
+    }
+    id = _get_service(sh, name);
+    if (id == -1) {
+        id = _add_service(sh, name);
+    } 
     return 0x8000 | id;
 }
 
 static int
-_publish(struct remote *self, const char *name) {
+_publish_service(struct remote *self, const char *name) {
     int handle = sc_service_query_id(name);
     if (handle == -1) {
         return 1;
@@ -200,17 +234,38 @@ _init_mynode(struct remote *self) {
 }
 
 static int
-_listen(struct service* s) {
+_listen(struct service *s) {
     const char* addr = sc_getstr("node_ip", ""); 
     int port = sc_getint("node_port", 0);
     if (addr[0] == '\0')
         return 1;
     if (sc_net_listen(addr, port, 0, s->serviceid, 0)) {
-        sc_error("listen node fail");
+        sc_error("Listen node fail");
         return 1;
     }
     return 0;
 }
+
+static int
+_scan_service(const char *str, int sz, struct _service *s) {
+    if (sz < 1)
+        return 1;
+    struct args A;
+    args_parsestrl(&A, 2, str, sz);
+    if (A->argc != 2) {
+        return 1;
+    if (strcmp(A->argv[0], "PUB"))
+        return 1;
+    char *p = strchr(A->argv[1], ':');
+    if (p) {
+        p = '\0';
+        sc_strncpy(s->name, name, sizeof(s->name));
+        s->handle = strtol(p+1, NULL, 10);
+        return 0;
+    }
+    return 1;
+}
+
 
 static int
 _connect_to_center(struct service* s) {
@@ -230,6 +285,11 @@ _connect_to_center(struct service* s) {
         sc_error("Recv center entry fail: %s", sc_net_error(err));
         return 1;
     }
+    struct _service s;
+    if (_scan_service(msg+2, msg->sz-4, &s)) {
+        return 1;
+    }
+      
     int center_handle = msg->source;
     int self_handle   = HANDLE_SELF;
     struct _node *me = _me(self);
