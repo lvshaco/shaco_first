@@ -129,7 +129,7 @@ elog_rollfile_append(struct elog* self, const char* msg, int sz) {
         od->current_size = 0;
         _rollover(od);
     }
-    fprintf(od->current_fp, msg);
+    fprintf(od->current_fp, "%s", msg);
     od->current_size += sz;
 }
 

@@ -47,7 +47,7 @@ elog_file_close(struct elog* self) {
 static void
 elog_file_append(struct elog* self, const char* msg, int sz) {
     struct appender_data* od = self->od;
-    fprintf(od->fp, msg);
+    fprintf(od->fp, "%s", msg);
 }
 
 const struct elog_appender g_elog_appender_file = {

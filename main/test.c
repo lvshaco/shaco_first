@@ -853,7 +853,7 @@ test_log(int times) {
 
     t1 = _elapsed();
     for (i=0; i<times; ++i) {
-        fprintf(fp, data);
+        fprintf(fp, "%s", data);
     }
     t2 = _elapsed();
     sz = ftell(fp);
