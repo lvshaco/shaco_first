@@ -29,28 +29,72 @@ struct _service {
     int handle;
 };
 
-struct _service_holder {
+struct _service_array {
     int cap;
     int sz;
     struct _service *p;
 };
 
 struct remote {
-    int myid;
+    int center_handle;
+    int self_id;
     struct _node nodes[NODE_MAX];
-    struct _service_holder sers[SUB_MAX];
+    struct _service_array sers[SUB_MAX];
 };
 
+#pragma pack(1)
 struct remote_msg_header {
     uint16_t msgsz;
     uint16_t source;
     uint16_t dest;
 };
+#pragma pack()
 
-static struct _node *
-_me(struct remote *self) {
+static inline int
+_handle_id(int nodeid, int serviceid) {
+    return ((nodeid & 0xff) << 8) | (serviceid & 0xff)
+}
+
+static inline int
+_service_id_from_handle(int handle) {
+    return handle & 0x00ff;
+}
+
+static inline int
+_node_id_from_handle(int handle) {
+    return (handle >> 8) & 0x00ff;
+}
+
+static inline struct _node *
+_self_node(struct remote *self) {
     assert(myid >= 0 && myid < NODE_MAX);
     return self->nodes[self->myid];
+}
+
+static int
+_register_node(struct remote *self, int id, int connid, 
+        uint32_t naddr, int nport, uint32_t gaddr, int gport) {
+    if (id <= 0 || id >= NODE_MAX)
+        return 1;
+    struct _node *node = self->nodes[id];
+    node->connid = connid;
+    node->naddr = naddr;
+    node->nport = nport;
+    node->gaddr = gaddr;
+    node->gport = gport;
+    return 1;
+}
+
+static int
+_disconnect_node(struct remote *self, int connid) {
+    int i;
+    for (i=0; i<NODE_MAX; ++i) {
+        if (self->nodes[i].connid == connid) {
+            self->nodes[i].connid = -1;
+            return 0;
+        }
+    }
+    return 1;
 }
 
 static int
@@ -64,7 +108,7 @@ _connect(struct service* s, const char* addr, int port) {
 }
 
 static int
-_send(int id, const char *fmt, ...) {
+_block_send(int id, const char *fmt, ...) {
     char msg[UM_MAXSZ];
     int sz = sizeof(msg);
     int n;
@@ -164,47 +208,34 @@ _vsend(struct remote *self, int source, int dest, const char *fmt, ...) {
 }
 
 static int
-_add_service(struct _service_holder *sh, const char *name) {
-    if (sh->sz <= sh->cap) {
-        sh->cap *= 2;
-        if (sh->cap == 0)
-            sh->cap = 1;
-        sh->p = realloc(sh->p, sizeof(struct _service) * sh->cap);
-        memset(sh->p+sh->sz, 0, sh->cap - sh->sz);
-    }
-    struct _service *s = &sh->p[sh->sz];
-    sc_strncpy(s->name, name, sizeof(s->name));
-    return sh->sz;
-}
-
-static int
-_get_service(struct _service_holder *sh, const char *name) {
-    int i;
-    for (i=0; i<sh->sz; ++i) {
-        if (strcmp(sh->p[i].name, name)) {
-            return i;
-            return &sh->p[i];
-        }
-    }
-    return -1;
-}
-
-static int
-_subscribe_service(struct remote *self, const char *name) {
-    struct _service_holder *sh = &self->sers;
-    int id;
+_subscribe_service(struct remote *self, const char *name, int handle) {
+    struct _service_array *sers = &self->sers;
     if (name[0] == '\0') {
         sc_error("Subscribe null service");
         return -1;
     }
-    if (sh->sz >= SUB_MAX) {
+    int i;
+    for (i=0; i<sers->sz; ++i) {
+        if (strcmp(sers->p[i].name, name)) {
+            sers->p[i].handle = handle;
+            return 0x8000 | i;
+        }
+    }
+    if (sers->sz >= SUB_MAX) {
         sc_error("Subscribe too much service");
         return -1;
     }
-    id = _get_service(sh, name);
-    if (id == -1) {
-        id = _add_service(sh, name);
-    } 
+    if (sers->sz <= sers->cap) {
+        sers->cap *= 2;
+        if (sers->cap == 0)
+            sers->cap = 1;
+        sers->p = realloc(sers->p, sizeof(struct _service) * sers->cap);
+        memset(sers->p+sers->sz, 0, sers->cap - sers->sz);
+    }
+    int id = sers->sz++;
+    struct _service *s = &sers->p[id];
+    sc_strncpy(s->name, name, sizeof(s->name));
+    s->handle = handle;
     return 0x8000 | id;
 }
 
@@ -247,9 +278,22 @@ _listen(struct service *s) {
 }
 
 static int
-_scan_service(const char *str, int sz, struct _service *s) {
-    if (sz < 1)
+_send_center_entry(struct service *s, int id) {
+    struct remote *self = SERVICE_SELF;
+    if (_vsend(id, 0, 0, "PUB %s:%d", SERVICE_NAME, _handle_id(self->self_id, SERVICE_ID))) {
         return 1;
+    }
+    return 0;
+}
+
+static int
+_recv_center_entry(int id, struct _service *s) {
+    int err;
+    struct remote_msg_header *msg = _recv(id, &err);
+    if (msg == NULL) {
+        sc_error("Recv center entry fail: %s", sc_net_error(err));
+        return 1;
+    }
     struct args A;
     args_parsestrl(&A, 2, str, sz);
     if (A->argc != 2) {
@@ -263,7 +307,7 @@ _scan_service(const char *str, int sz, struct _service *s) {
         s->handle = strtol(p+1, NULL, 10);
         return 0;
     }
-    return 1;
+    return 0;
 }
 
 
@@ -271,56 +315,106 @@ static int
 _connect_to_center(struct service* s) {
     struct remote *self = SERVICE_SELF;
 
-    const char* addr = sc_getstr("center_ip", "");
+    const char *addr = sc_getstr("center_ip", "");
     int port = sc_getint("center_port", 0);
     int err; 
-    int id = sc_net_block_connect(addr, port, s->serviecid, 0, &err);
-    if (id < 0) {
+    int connid = sc_net_block_connect(addr, port, s->serviecid, 0, &err);
+    if (connid < 0) {
         sc_error("Connect to center fail: %s", sc_net_error(err));
         return 1;
     }
-   
-    struct remote_msg_header *msg = _recv(id, &err);
+    struct remote_msg_header *msg = _recv(connid, &err);
     if (msg == NULL) {
         sc_error("Recv center entry fail: %s", sc_net_error(err));
         return 1;
     }
-    struct _service s;
-    if (_scan_service(msg+2, msg->sz-4, &s)) {
+    struct _service centers;
+    if (_recv_center_entry(connid, &centers)) {
         return 1;
     }
-      
-    int center_handle = msg->source;
-    int self_handle   = HANDLE_SELF;
-    struct _node *me = _me(self);
-    if (_vdsend(id, 0, self_handle, center_handle, "REG %d %u:%u %u:%u",
-                self->myid, me->naddr, me->nport, me->gaddr, me->nport)) {
-        sc_error("Reg to center fail");
+    int center_handle = _subscribe_service(self, centers.name, centers.handle);
+    if (center_handle == -1) {
+        sc_error("Sub center entry fail");
+        return 1;
+    }
+    int center_id = _node_id_from_handle(centers.handle);
+    if (_register_node(self, center_id, connid, inet_addr(addr), port, 0, 0)) {
+        sc_error("Reg center node fail");
+        return 1;
+    }
+    int self_handle = _handle_id(self->self_id, s->service);
+    struct _node *me = _self_node(self);
+    if (_vsend(self, self_handle, center_handle, "REG %d %u:%u %u:%u",
+                self->self_id, me->naddr, me->nport, me->gaddr, me->nport)) {
+        sc_error("Reg self to center fail");
         return 1;
     }
     return 0;
 }
 
 void
-node_run(struct service *s, struct sc_service_arg *a) {
+node_run(struct service *s, struct sc_service_arg *sa) {
     struct remote *self = SERVICE_SELF;
-    switch (a->type) {
-    case ST_SOCK:
-        _send(self, a->source, a->dest, a->msg, a->sz);
-        break; 
-    case ST_SERV: {
-        struct args A;
-        if (args_parsestrl(&A, 3, a->msg, a->sz) < 3)
+    struct args A;
+    if (args_parsestrl(&A, 0 sa->msg, sa->sz) < 1)
+        return;
+
+    if (strcmp(A->argv[0], "REG")) {
+        if (A->argc != 4)
             return;
-        if (strcmp(A->argv[0], "SUB")) {
-            int id = strtol(A->argv[1], NULL, 10);
-            const char *name = A->argv[2];
-            _subscribe(self, id, name);
-        } else if (strcmp(A->argv[0], "PUB")) {
-            const char *name = A->argv[1];
-            _publish(self, name);
+        int nodeid = strtol(A->argv[1]);
+        char *p = strchr(A->argv[2], ':');
+        if (p == NULL)
+            return;
+        *p = '\0';
+        uint32_t naddr = strtoul(A->argv[2], NULL, 10);
+        int nport = strtol(p+1, NULL, 10);
+        p = strchr(A->argv[3], ':');
+        if (p == NULL)
+            return;
+        *p = '\0';
+        uint32_t gaddr = strtoul(A->argv[3], NULL, 10);
+        int gport = strtol(p+1, NULL, 10);
+       
+        int err;
+        int connid = sc_net_block_connect(naddr, nport, SERVICE_ID, 0, &err);
+        if (connid < 0) {
+            sc_error("Connect node#%d@%s:%u fail: %s", nodeid, naddr, nport, sc_net_error(err));
+            return;
         }
-        break;
+        if (_register_node(self, nodeid, connid, naddr, nport, gaddr, gport)) {
+            sc_error("Reg node#%d@%s:%u fail", nodeid, naddr, nport);
+            return;
+        }
+    } else if (strcmp(A->argv[0], "SUB")) {
+        if (A->argc != 2)
+            return;
+        const char *name = A->argv[1];
+        if (_subscribe_service(self, name, -1)) {
+            return;
+        } 
+        if (sc_service_send(sc_handle_id(sc_self_id(), SERVICE_ID),
+                    self->center_handle, sa->msg, sa->sz)) {
+            return; 
+        }
+    } else if (strcmp(A->argv[0], "PUB")) {
+        if (A->argc != 2)
+            return;
+        const char *name = A->argv[1];
+        if (_publish_service(self, name)) {
+            return;
+        }
+    } else if (strcmp(A->argv[0], "HANDLE")) {
+        if (A->argc != 2)
+            return;
+        char *p = strchr(A->argv[1], ':');
+        if (p == NULL)
+            return;
+        *p = '\0';
+        const char *name = A->argv[1];
+        int handle = strtol(p+1, NULL, 10);
+        if (_subscribe_service(self, name, handle)) {
+            return;
         }
     }
 }
@@ -370,9 +464,6 @@ _listen(struct service* s) {
 int
 node_init(struct service* s) {
     struct node* self = SERVICE_SELF;
-    SUBSCRIBE_MSG(s->serviceid, IDUM_NODEREG);
-    SUBSCRIBE_MSG(s->serviceid, IDUM_NODEREGOK);
-    SUBSCRIBE_MSG(s->serviceid, IDUM_NODENOTIFY);
 
     if (sc_node_register_types(NODE_NAMES, NODE_TYPE_MAX))
         return 1;
@@ -390,125 +481,107 @@ node_init(struct service* s) {
     return 0;
 }
 
-static void
-_reg_request(int id) {
-    struct sc_node* me = sc_me();
-    UM_DEFFIX(UM_NODEREG, reg);
-    reg->addr = me->addr;
-    reg->port = me->port;
-    reg->gaddr = me->gaddr;
-    reg->gport = me->gport;
-    UM_SEND(id, reg, sizeof(*reg));
-}
-
-static void
-_reg(struct service* s, int id, struct UM_BASE* um) {
-    struct node* self = SERVICE_SELF;
-    UM_CAST(UM_NODEREG, reg, um);
-    struct sc_node node;
-    node.id = reg->nodeid;
-    node.addr = reg->addr;
-    node.port = reg->port;
-    node.gaddr = reg->gaddr;
-    node.gport = reg->gport;
-    node.connid = id;
-    if (sc_node_register(&node)) {
-        sc_net_close_socket(id, true);
-        return; // no need response for fail
-    }
-    struct sc_node* me = sc_me();
-    UM_DEFFIX(UM_NODEREGOK, ok);
-    ok->addr = me->addr;
-    ok->port = me->port;
-    ok->gaddr = me->gaddr;
-    ok->gport = me->gport;
-    UM_SEND(id, ok, sizeof(*ok));
-
-    if (self->iscenter) {
-        struct service_message sm;
-        sm.sessionid = 0;
-        sm.source = s->serviceid;
-        sm.sz = sizeof(node);
-        sm.msg = &node;
-        service_notify_service(
-        self->center_or_cli_service, &sm);
-    }
-}
-
-static void
-_regok(struct service* s, int id, struct UM_BASE* um) {
-    struct node* self = SERVICE_SELF;
-    UM_CAST(UM_NODEREGOK, ok, um);
-    struct sc_node node;
-    node.id = ok->nodeid;
-    node.addr = ok->addr;
-    node.port = ok->port;
-    node.gaddr = ok->gaddr;
-    node.gport = ok->gport;
-    node.connid = id;
-    if (sc_node_register(&node)) {
-        sc_net_close_socket(id, true);
-        return;
-    }
-    if (!self->iscenter &&
-        HNODE_TID(ok->nodeid) == NODE_CENTER) {
-        struct service_message sm;
-        sm.sessionid = id; // reuse for connid
-        sm.source = s->serviceid;
-        sm.sz = 0;
-        sm.msg = NULL;
-        service_notify_service(
-        self->center_or_cli_service, &sm);
-    }
-}
-
-static void
-_onnotify(struct service* s, int id, struct UM_BASE* um) {
-    UM_CAST(UM_NODENOTIFY, notify, um);
-    struct in_addr in;
-    in.s_addr = notify->addr;
-    char* saddr = inet_ntoa(in);
-    const struct sc_node* node = sc_node_get(notify->tnodeid);
-    if (node == NULL) {
-        sc_info("connect to %s:%u ...", saddr, notify->port);
-        sc_net_connect(saddr, notify->port, false, s->serviceid, 0);
+static inline struct remote_msg_header * 
+_read_one(struct mread_buffer *buf, int *err) {
+    *err = 0;
+    struct remote_msg_header *base = buf->ptr;
+    int sz = buf->sz;
+    int body;
+    if (sz >= sizeof(*base)) {
+        sz -= sizeof(*base);
+        if (base->msgsz >= sizeof(*base)) {
+            body = base->msgsz - sizeof(*base);
+            if (body > 0) {
+                if (body <= sz) {
+                    goto ok;
+                } else {
+                    return NULL;
+                }
+            } else if (body < 0) {
+                return NULL;
+            } else {
+                goto ok;
+            }
+        } else {
+            *err = NET_ERR_MSG;
+            return NULL;
+        }
     } else {
-        // todo address update
+        return NULL;
+    }
+ok:
+    buf->ptr += base->msgsz;
+    buf->sz  -= base->msgsz;
+    return base;
+}
+
+static void
+_read(struct service *s, struct net_message *nm) {
+    assert(nm->type == NETE_READ);
+    struct dispatcher* self = SERVICE_SELF;
+    int id = nm->connid; 
+    int step = 0; 
+    int drop = 1;     
+    for (;;) {
+        int error = 0;
+        struct mread_buffer buf;
+        int nread = sc_net_read(id, drop==0, &buf, &error);
+        if (nread <= 0) {
+            mread_throwerr(nm, error);
+            return;
+        }
+        struct remote_msg_header* um;
+        while ((um = _read_one(&buf, &error))) {
+            int service_id = _service_id_from_handle(um->dest);
+            struct sc_service_arg sa;
+            sa->type = ST_SOCK;
+            sa->source = um->source;
+            sa->dest = _service_id_from_handle(um->dest);
+            sa->msg = um+1;
+            sa->sz = um->msgsz;
+            sc_service_send(sa.dest, &sa);
+            if (++step > 1000) {
+                sc_net_dropread(id, nread-buf.sz);
+                return;
+            }
+        }
+        if (error) {
+            sc_net_close_socket(id, true);
+            mread_throwerr(nm, error);
+            return;
+        }
+        drop = nread-buf.sz;
+        sc_net_dropread(id, drop);       
     }
 }
+
 void
-node_nodemsg(struct service* s, int id, void* msg, int sz) {
-    struct UM_BASE* um = msg;
-    switch (um->msgid) {
-    case IDUM_NODEREG:
-        _reg(s, id, um);
-        break;
-    case IDUM_NODEREGOK:
-        _regok(s, id, um);
-        break;
-    case IDUM_NODENOTIFY:
-        _onnotify(s, id, um);
-        break;
-    }
+node_send(struct service *s, int source, int dest, const void *msg, int sz) {
+
 }
 
 void
 node_net(struct service* s, struct net_message* nm) {
     switch (nm->type) {
+    case NETE_READ:
+        _read(s, nm);
+        break;
     case NETE_ACCEPT:
+        if (self->is_center) {
+            _send_center_entry(s, nm->connid);
+        }
         sc_net_subscribe(nm->connid, true);
         break;
-    case NETE_CONNECT:
-        sc_info("connect to node ok, %d", nm->connid);
-        sc_net_subscribe(nm->connid, true);
-        _reg_request(nm->connid);
-        break;
-    case NETE_CONNERR:
-        sc_error("connect to node fail: %s", sc_net_error(nm->error));
-        break;
+    // todo do not do this
+    //case NETE_CONNECT:
+        //sc_info("connect to node ok, %d", nm->connid);
+        //break;
+    //case NETE_CONNERR:
+        //sc_error("connect to node fail: %s", sc_net_error(nm->error));
+        //break;
     case NETE_SOCKERR:
         sc_error("node disconnect: %s, %d", sc_net_error(nm->error), nm->connid);
-        sc_node_disconnect(nm->connid);
+        _disconnect_node(self, nm->connid);
         break;
     }
 }

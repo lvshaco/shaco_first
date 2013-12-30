@@ -25,6 +25,8 @@ _dispatch_one(struct net_message* nm) {
         service_notify_net(serviceid, nm);
         nm->type = NETE_READ;
     }
+    service_notify_net(serviceid, nm);
+    /*
     if (nm->type == NETE_READ) {
         if (nm->ut == NETUT_TRUST) {
             if (sc_dispatcher_publish(nm)) {
@@ -35,7 +37,7 @@ _dispatch_one(struct net_message* nm) {
         }
     } else {
         service_notify_net(serviceid, nm);
-    }
+    }*/
 }
 
 static void

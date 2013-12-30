@@ -9,7 +9,8 @@
 #define SERVICE_HOST 0xff
 
 #define SERVICE_SELF ((s)->dl.content)
-
+#define SERVICE_NAME ((s)->dl.name)
+#define SERVICE_ID ((s)->serviceid)
 #define ST_SOCK 0
 #define ST_SERV 1
 

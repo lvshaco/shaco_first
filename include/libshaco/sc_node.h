@@ -4,28 +4,24 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#define NODE_MAX 256
-#define SUB_MAX 10
-
-struct sc_node {
-    int connid;
-    uint32_t naddr;
-    uint16_t nport;
-    uint32_t gaddr;
-    uint16_t gport;
-};
-
-struct _remote {
-    struct sc_Nnode[NODE_MAX];
-};
-
-int sc_service_subscribe(int id, const char *name);
+int sc_service_subscribe(const char *name);
 int sc_service_publish(const char *name);
-int sc_service_send(int handle);
+int sc_service_send(int source, int dest, const void *msg, int sz);
+int sc_service_vsend(int source, int dest, const char *fmt, ...);
 
-int sc_Nnode_register(int nodeid, struct sc_Nnode* node);
-int sc_Nnode_unregister(int nodeid);
-int sc_Nnode_disconnect(int connid);
-int sc_Nnode_send(int nodeid, void *msg, int sz);
+static inline int
+sc_handle_id(int nodeid, int serviceid) {
+    return ((nodeid & 0xff) << 8) | (serviceid & 0xff)
+}
+
+static inline int
+sc_service_id_from_handle(int handle) {
+    return handle & 0x00ff;
+}
+
+static inline int
+sc_node_id_from_handle(int handle) {
+    return (handle >> 8) & 0x00ff;
+}
 
 #endif

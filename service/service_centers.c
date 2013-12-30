@@ -1,45 +1,32 @@
 #include "sc_service.h"
 #include "sc_node.h"
 #include "sc_log.h"
-#include "sc_dispatcher.h"
-#include "node_type.h"
-#include "user_message.h"
+#include "args.h"
 #include <stdlib.h>
 #include <assert.h>
 #include <string.h>
 
-struct _array {
+struct _int_array {
     int cap;
-    int size;
-    uint16_t* p;
+    int sz;
+    int *p;     
 };
 
-struct centers {
-    struct _array subs[NODE_TYPE_MAX];
+struct _pubsub_slot {
+    char name[32]; 
+    struct _int_array pubs;
+    struct _int_array subs;
 };
 
-static void
-_add_subscribe(struct _array* arr, uint16_t tid) {
-    int tmp;
-    int i;
-    for (i=0; i<arr->size; ++i) {
-        tmp = arr->p[i];
-        if (tid == tmp)
-            return; // already sub
-    }
-    int idx = arr->size;
-    int cap = arr->cap;
-    if (idx >= cap) {
-        cap *= 2;
-        if (cap <= 0)
-            cap = 1;
-        arr->p = realloc(arr->p, sizeof(arr->p[0]) * cap);
-        arr->cap = cap;
-        memset(arr->p + idx, 0, sizeof(arr->p[0]) * (cap-idx));
-    }
-    arr->p[idx] = tid;
-    arr->size = idx+1;
-}
+struct _pubsub_array {
+    int cap;
+    int sz;
+    struct _pubsub_slot *p;
+};
+
+struct centers { 
+    struct _pubsub_array ps;
+};
 
 struct centers*
 centers_create() {
@@ -52,99 +39,92 @@ void
 centers_free(struct centers* self) {
     if (self == NULL)
         return;
-    
-    struct _array* arr;
-    int i;
-    for (i=0; i<NODE_TYPE_MAX; ++i) {
-        arr = &self->subs[i];
-        free(arr->p);
-    }
     free(self);
 }
 
 int
 centers_init(struct service* s) {
-    SUBSCRIBE_MSG(s->serviceid, IDUM_NODESUBS);
     return 0;
 }
 
-static inline bool
-_isvalid_tid(uint16_t tid) {
-    return tid < NODE_TYPE_MAX && tid != NODE_CENTER;
-}
-
-static void
-_notify(int id, const struct sc_node* node) {
-    UM_DEFFIX(UM_NODENOTIFY, notify);
-    notify->tnodeid = node->id;
-    notify->addr = node->addr;
-    notify->port = node->port;
-    UM_SEND(id, notify, sizeof(*notify));
+struct struct _pubsub_slot *
+_insert_pubsub_name(struct _pubsub_array *ps, const char *name) {
+    int i;
+    for (i=0; i<ps->sz; ++i) {
+        if (strcmp(ps->p[i].name, name) == 0)
+            return &ps->p[i];
+    }
+    if (ps->sz >= ps->cap) {
+        ps->cap *= 2;
+        if (ps->cap == 0)
+            ps->cap = 1;
+        ps->p = realloc(ps->p, sizeof(struct _pubsub_slot) * ps->cap);
+        memset(ps->p+ps->sz, 0, sizeof(struct _pubsub_slot) * (ps->cap-ps->sz));
+    }
+    struct _pubsub_slot *slot = &ps->p[ps->sz++];
+    sc_strncpy(slot->name, name, sizeof(slot->name));
+    return slot;
 }
 
 static int
-_subscribecb(const struct sc_node* node, void* ud) {
-    int id = (int)(intptr_t)ud;
-    _notify(id, node);
+_insert_int(struct _int_array *inta, int value) {
+    int i;
+    for (i=0; i<inta->sz; ++i) {
+        if (inta->p[i] == value)
+            return 1;
+    }
+    if (inta->sz >= inta->cap) {
+        inta->cap *= 2;
+        if (inta->cap == 0)
+            inta->cap = 1;
+        inta->p = realloc(inta->p, sizeof(int) * inta->cap);
+        memset(inta->p+inta->sz, 0, sizeof(int) * (inta->cap-inta->sz));
+    }
+    inta->p[inta->sz++] = value;
     return 0;
 }
 
-static void
-_subscribe(struct centers* self, int id, struct UM_BASE* um) {
-    UM_CAST(UM_NODESUBS, req, um);
-    uint16_t src_tid = HNODE_TID(req->nodeid);
-    uint16_t tid;
-    struct _array* arr;
-    int i;
-    for (i=0; i<req->n; ++i) {
-        tid = req->subs[i];
-        if (!_isvalid_tid(tid)) {
-            sc_error("subscribe fail: invalid tid:%d,%s", 
-                    tid, sc_node_typename(tid));
-            continue;
+void
+centers_run(struct service *s, struct sc_service_arg *sa) {
+    struct centers *self = SERVICE_SELF;
+    struct args A;
+    if (args_parsestrl(&A, 0 sa->msg, sa->sz) < 1)
+        return;
+
+    if (strcmp(A->argv[0], "SUB")) {
+        if (A->argc != 2)
+            return;
+        const char *name = A->argv[1];
+        struct _pubsub_slot *slot= _insert_pubsub_name(&self->ps, name);
+        if (slot == NULL)
+            return;
+        int nodeid = sc_nodeid_from_handle(sa->source);
+        if (_insert_int(&slot->subs, nodeid)) {
+            sc_error("Subscribe %s repeat by node#%d", name, nodeid);
+            return;
         }
-        arr = &self->subs[tid];
-        _add_subscribe(arr, src_tid);
-        sc_node_foreach(tid, _subscribecb, (void*)(intptr_t)id);
+        int i;
+        for (i=0; i<slot->pubs.sz; ++i) {
+            sc_service_vsend(sc_handle_id(sc_self_id(), SERVICE_ID), sa->source, 
+                    "HANDLE %s:%d", name, slot->pubs.p[i]);
+        }
+    } else if (strcmp(A->argv[0], "PUB")) {
+        if (A->argc != 2)
+            return;
+        char *p = strchr(A->argv[1], ":");
+        if (p == NULL)
+            return;
+        *p = '\0';
+        const char *name = A->argv[1];
+        int handle = strtol(p+1, NULL, 10);
+        struct _pubsub_slot *slot = _insert_pubsub_name(&self->pubs);
+        if (slot == NULL)
+            return;
+        int i;
+        for (i=0; i<slot->subs.sz; ++i) {
+            sc_service_vsend(sc_handle_id(sc_self_id(), SERVICE_ID), slot->subs.p[i],
+                    "HANDLE %s:%d", name, handle);
+        }
     }
-}
 
-static int
-_onregcb(const struct sc_node* node, void* ud) {
-    struct sc_node* tnode = ud;
-    _notify(node->connid, tnode);
-    return 0;
-}
-
-static void
-_onreg(struct centers* self, struct sc_node* node) {
-    struct sc_node* tnode = node;
-    uint16_t tid = HNODE_TID(node->id);
-    assert(_isvalid_tid(tid));
-
-    struct _array* arr = &self->subs[tid];
-    uint16_t sub;
-    int i;
-    for (i=0; i<arr->size; ++i) {
-        sub = arr->p[i];
-        sc_node_foreach(sub, _onregcb, tnode); 
-    }
-}
-
-void
-centers_service(struct service* s, struct service_message* sm) {
-    struct centers* self = SERVICE_SELF;
-    struct sc_node* regn = sm->msg;
-    _onreg(self, regn);
-}
-
-void
-centers_nodemsg(struct service* s, int id, void* msg, int sz) {
-    struct centers* self = SERVICE_SELF;
-    struct UM_BASE* um = msg;
-    switch (um->msgid) {
-    case IDUM_NODESUBS:
-        _subscribe(self, id, um);
-        break;
-    }
 }

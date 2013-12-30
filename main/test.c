@@ -1051,7 +1051,18 @@ test() {
     printf("strtol %d\n", i);
     long long int l = strtold("1.1234e+20", NULL); 
     printf("strtoll %llu\n", l);
+
+    char tmp[4];
+    int n ;
+    n = snprintf(tmp, sizeof(tmp), "123");
+    printf("%d",n);
+    n = snprintf(tmp, sizeof(tmp), "1234");
+    printf("%d",n);
+    n = snprintf(tmp, sizeof(tmp), "12345");
+    printf("%d",n);
+
 }
+
 int 
 main(int argc, char* argv[]) {
     int times = 1;

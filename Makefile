@@ -71,7 +71,6 @@ libshaco_src=\
  	libshaco/sc_timer.c \
  	libshaco/sc_log.c \
 	libshaco/sc_reload.c \
-	libshaco/sc_dispatcher.c \
 	libshaco/sc_node.c \
 	libshaco/sc_gate.c \
  	libshaco/dlmodule.c \
@@ -90,7 +89,6 @@ LDFLAGS=-Wl,-rpath,. \
 service_so=\
 	service_benchmark.so \
 	service_echo.so \
-	service_dispatcher.so \
 	service_centerc.so \
 	service_centers.so \
 	service_node.so \
