@@ -5,7 +5,6 @@
 #include "sc_gate.h"
 #include "sc_log.h"
 #include "sc_timer.h"
-#include "sc_assert.h"
 #include "redis.h"
 #include "cli_message.h"
 #include "user_message.h"
@@ -173,8 +172,6 @@ _checkvalue(struct redis_replyitem* f, const char* value) {
 
 static void
 _handle_redis(struct login* self, struct node_message* nm) {
-    hassertlog(nm->um->msgid == IDUM_REDISREPLY);
-
     UM_CAST(UM_REDISREPLY, rep, nm->um);
     struct memrw rw;
     memrw_init(&rw, rep->data, rep->msgsz - sizeof(*rep));

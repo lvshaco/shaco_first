@@ -1,10 +1,9 @@
 #include "sc_service.h"
+#include "sc_env.h"
 #include "sc_node.h"
 #include "sc_log.h"
+#include "sc_util.h"
 #include "args.h"
-#include <stdlib.h>
-#include <assert.h>
-#include <string.h>
 
 struct _int_array {
     int cap;
@@ -25,6 +24,7 @@ struct _pubsub_array {
 };
 
 struct centers { 
+    int node_handle;
     struct _pubsub_array ps;
 };
 
@@ -44,10 +44,14 @@ centers_free(struct centers* self) {
 
 int
 centers_init(struct service* s) {
+    struct centers *self = SERVICE_SELF;
+    self->node_handle = sc_service_subscribe("node");
+    if (self->node_handle == -1)
+        return 1;
     return 0;
 }
 
-struct struct _pubsub_slot *
+static struct _pubsub_slot *
 _insert_pubsub_name(struct _pubsub_array *ps, const char *name) {
     int i;
     for (i=0; i<ps->sz; ++i) {
@@ -85,46 +89,50 @@ _insert_int(struct _int_array *inta, int value) {
 }
 
 void
-centers_run(struct service *s, struct sc_service_arg *sa) {
+centers_main(struct service *s, int session, int source, const void *msg, int sz) {
     struct centers *self = SERVICE_SELF;
     struct args A;
-    if (args_parsestrl(&A, 0 sa->msg, sa->sz) < 1)
+    if (args_parsestrl(&A, 0, msg, sz) < 1)
         return;
+    const char *cmd = A.argv[0];
 
-    if (strcmp(A->argv[0], "SUB")) {
-        if (A->argc != 2)
+    if (strcmp(cmd, "REG")) {
+        sc_service_send(SERVICE_ID, self->node_handle, msg, sz);
+        int nodeid = strtol(A.argv[1], NULL, 10);
+        sc_service_send(SERVICE_ID, self->node_handle, "BROADCAST %d", nodeid);
+    } else if (strcmp(cmd, "SUB")) {
+        if (A.argc != 2)
             return;
-        const char *name = A->argv[1];
-        struct _pubsub_slot *slot= _insert_pubsub_name(&self->ps, name);
+        const char *name = A.argv[1];
+        struct _pubsub_slot *slot = _insert_pubsub_name(&self->ps, name);
         if (slot == NULL)
             return;
-        int nodeid = sc_nodeid_from_handle(sa->source);
+        int nodeid = sc_nodeid_from_handle(source);
         if (_insert_int(&slot->subs, nodeid)) {
             sc_error("Subscribe %s repeat by node#%d", name, nodeid);
             return;
         }
         int i;
         for (i=0; i<slot->pubs.sz; ++i) {
-            sc_service_vsend(sc_handle_id(sc_self_id(), SERVICE_ID), sa->source, 
+            sc_service_vsend(SERVICE_ID, source, 
                     "HANDLE %s:%d", name, slot->pubs.p[i]);
         }
-    } else if (strcmp(A->argv[0], "PUB")) {
-        if (A->argc != 2)
+    } else if (strcmp(cmd, "PUB")) {
+        if (A.argc != 2)
             return;
-        char *p = strchr(A->argv[1], ":");
+        char *p = strchr(A.argv[1], ':');
         if (p == NULL)
             return;
         *p = '\0';
-        const char *name = A->argv[1];
+        const char *name = A.argv[1];
         int handle = strtol(p+1, NULL, 10);
-        struct _pubsub_slot *slot = _insert_pubsub_name(&self->pubs);
+        struct _pubsub_slot *slot = _insert_pubsub_name(&self->ps, name);
         if (slot == NULL)
             return;
         int i;
         for (i=0; i<slot->subs.sz; ++i) {
-            sc_service_vsend(sc_handle_id(sc_self_id(), SERVICE_ID), slot->subs.p[i],
+            sc_service_vsend(SERVICE_ID, slot->subs.p[i],
                     "HANDLE %s:%d", name, handle);
         }
     }
-
 }

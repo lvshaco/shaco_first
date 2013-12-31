@@ -5,7 +5,7 @@
 #include <stdbool.h>
 #include "net.h"
 
-int sc_net_listen(const char* addr, uint16_t port, int wbuffermax, int serviceid, int ut);
+int sc_net_listen(const char* addr, uint16_t port, int wbuffermax, int serviceid, int ut, int *err);
 int sc_net_connect(const char* addr, uint16_t port, bool block, int serviceid, int ut);
 int sc_net_block_connect(const char* addr, uint16_t port, int serviceid, int ut, int *err);
 void sc_net_poll(int timeout);

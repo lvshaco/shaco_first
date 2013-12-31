@@ -1,6 +1,5 @@
 #include "sc_service.h"
 #include "sc_env.h"
-#include "sc_assert.h"
 #include "sc.h"
 #include "sc_timer.h"
 #include "sc_dispatcher.h"
@@ -166,8 +165,6 @@ _logout(struct world* self, struct player* p) {
 
 static void 
 _handlegate(struct world* self, struct node_message* nm) {
-    hassertlog(nm->um->msgid == IDUM_FORWARD);
-
     UM_CAST(UM_FORWARD, fw, nm->um);
     switch (fw->wrap.msgid) {
     case IDUM_LOGIN:

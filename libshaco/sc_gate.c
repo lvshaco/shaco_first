@@ -36,12 +36,7 @@ sc_gate_prepare(int cmax, int hmax) {
 
 static void
 _notify_gate_event(int event) {
-    struct service_message sm;
-    sm.sessionid = event; // reuse for GATE_EVENT
-    sm.source = SERVICE_HOST;
-    sm.sz = 0;
-    sm.msg = NULL;
-    service_notify_service(G->serviceid, &sm);
+    service_main(G->serviceid, event, 0, NULL, 0);
 }
 
 struct gate_client*

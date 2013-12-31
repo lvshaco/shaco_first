@@ -1,7 +1,10 @@
 #include "sc_node.h"
+#include "sc.h"
+#include "sc_service.h"
 #include "sc_init.h"
 #include "sc_log.h"
 #include <stdio.h>
+#include <stdarg.h>
 
 static int _SERVICE = -1;
 
@@ -19,6 +22,7 @@ int
 sc_service_send(int source, int dest, const void *msg, int sz) {
     // todo add net send interface
     //service_send
+    return 0;
 }
 
 int 

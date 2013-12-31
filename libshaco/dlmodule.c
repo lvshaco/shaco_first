@@ -34,22 +34,16 @@ _open(struct dlmodule* dl) {
     dl->init = dlsym(handle, tmp);
     strcpy(tmp+len, "_reload");
     dl->reload = dlsym(handle, tmp);
-    strcpy(tmp+len, "_service");
-    dl->service = dlsym(handle, tmp);
     strcpy(tmp+len, "_time");
     dl->time = dlsym(handle, tmp);
     strcpy(tmp+len, "_net");
     dl->net = dlsym(handle, tmp);
-    strcpy(tmp+len, "_nodemsg");
-    dl->nodemsg = dlsym(handle, tmp);
-    strcpy(tmp+len, "_usermsg");
-    dl->usermsg = dlsym(handle, tmp);
+    strcpy(tmp+len, "_main");
+    dl->main = dlsym(handle, tmp);
  
-    if (dl->service == NULL &&
-        dl->time == NULL &&
+    if (dl->main == NULL &&
         dl->net == NULL &&
-        dl->nodemsg == NULL &&
-        dl->usermsg == NULL) {
+        dl->time == NULL) {
         sc_error("dlmodule %s no symbol", dl->name);
         return 1;
     }
@@ -71,11 +65,9 @@ _dlclose(struct dlmodule* dl) {
     dl->free = NULL;
     dl->init = NULL;
     dl->reload = NULL;
-    dl->service = NULL;
     dl->time = NULL;
     dl->net = NULL;
-    dl->nodemsg = NULL;
-    dl->nodemsg = NULL;
+    dl->main = NULL;
 }
 
 int

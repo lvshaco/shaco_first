@@ -4,7 +4,6 @@
 #include "sc_env.h"
 #include "sc_log.h"
 #include "sc_service.h"
-#include "sc_dispatcher.h"
 #include "net.h"
 #include <stdlib.h>
 #include <arpa/inet.h>
@@ -22,10 +21,10 @@ _dispatch_one(struct net_message* nm) {
     int serviceid = nm->ud;
     if (nm->type == NETE_CONN_THEN_READ) {
         nm->type = NETE_CONNECT;
-        service_notify_net(serviceid, nm);
+        service_net(serviceid, nm);
         nm->type = NETE_READ;
     }
-    service_notify_net(serviceid, nm);
+    service_net(serviceid, nm);
     /*
     if (nm->type == NETE_READ) {
         if (nm->ut == NETUT_TRUST) {
@@ -52,16 +51,8 @@ _dispatch() {
 }
 
 int
-sc_net_listen(const char* addr, uint16_t port, int wbuffermax, int serviceid, int ut) {
-    uint32_t ip = inet_addr(addr);
-    int err;
-    int id = net_listen(N, ip, port, wbuffermax, serviceid, ut, &err);
-    if (id == -1) {
-        sc_error("listen %s:%u fail: %s", addr, port, sc_net_error(err)); 
-    } else {
-        sc_info("listen on %s:%d", addr, port);
-    }
-    return err;
+sc_net_listen(const char* addr, uint16_t port, int wbuffermax, int serviceid, int ut, int *err) {
+    return net_listen(N, inet_addr(addr), port, wbuffermax, serviceid, ut, err);
 }
 
 int 

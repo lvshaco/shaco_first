@@ -5,7 +5,6 @@
 #include "sc_log.h"
 #include "sc_net.h"
 #include "sc_timer.h"
-#include "sc_assert.h"
 #include "redis.h"
 #include "user_message.h"
 #include "node_type.h"
@@ -331,7 +330,6 @@ _dbresponse(struct playerdb* self, struct player* p, int error) {
 
 static void
 _handle_redis(struct playerdb* self, struct node_message* nm) { 
-    hassertlog(nm->um->msgid == IDUM_REDISREPLY);
     UM_CAST(UM_REDISREPLY, rep, nm->um);
         
     int8_t type = 0; 

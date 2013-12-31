@@ -6,7 +6,6 @@
 #include "sc_log.h"
 #include "sc_net.h"
 #include "sc_timer.h"
-#include "sc_assert.h"
 #include "redis.h"
 #include "user_message.h"
 #include "node_type.h"
@@ -136,13 +135,12 @@ benchmarkdb_service(struct service* s, struct service_message* sm) {
 
 static void
 _handleredisproxy(struct benchmarkdb* self, struct node_message* nm) {
-    hassertlog(nm->um->msgid == IDUM_REDISREPLY);
     UM_CAST(UM_REDISREPLY, rep, nm->um);
     struct memrw rw;
     memrw_init(&rw, rep->data, rep->msgsz - sizeof(*rep));
 
     redis_resetreplybuf(&self->reply, rw.ptr, RW_SPACE(&rw));
-    hassertlog(redis_getreply(&self->reply) == REDIS_SUCCEED);
+    assert(redis_getreply(&self->reply) == REDIS_SUCCEED);
     //redis_walkreply(&self->reply);
     self->query_done++;
     self->query_recv++;

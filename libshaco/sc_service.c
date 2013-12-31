@@ -173,28 +173,17 @@ service_query_name(int serviceid) {
 }
 
 int 
-sc_service_run(int handle, struct sc_service_arg *arg) {
-    struct service *s = array_get(S->sers, handle);
-    if (s && s->dl.run) {
-        s->dl.run(s, arg);
-        return 0;
-    }
-    return 1;
-}
-
-/*
-int 
-service_notify_service(int serviceid, struct service_message* sm) {
-    struct service* s = array_get(S->sers, serviceid);
-    if (s && s->dl.service) {
-        s->dl.service(s, sm);
+service_main(int serviceid, int session, int source, const void *msg, int sz) {
+    struct service *s = array_get(S->sers, serviceid);
+    if (s && s->dl.main) {
+        s->dl.main(s, session, source, msg, sz);
         return 0;
     }
     return 1;
 }
 
 int 
-service_notify_net(int serviceid, struct net_message* nm) {
+service_net(int serviceid, struct net_message* nm) {
     struct service* s = array_get(S->sers, serviceid);
     if (s && s->dl.net) {
         s->dl.net(s, nm);
@@ -204,7 +193,7 @@ service_notify_net(int serviceid, struct net_message* nm) {
 }
 
 int 
-service_notify_time(int serviceid) {
+service_time(int serviceid) {
     struct service* s = array_get(S->sers, serviceid);
     if (s && s->dl.time) {
         s->dl.time(s);
@@ -213,32 +202,12 @@ service_notify_time(int serviceid) {
     return 1;
 }
 
-int 
-service_notify_nodemsg(int serviceid, int id, void* msg, int sz) {
-    struct service* s = array_get(S->sers, serviceid);
-    if (s && s->dl.nodemsg) {
-        s->dl.nodemsg(s, id, msg, sz);
-        return 0;
-    }
-    return 1;
-}
-
-int 
-service_notify_usermsg(int serviceid, int id, void* msg, int sz) {
-    struct service* s = array_get(S->sers, serviceid);
-    if (s && s->dl.usermsg) {
-        s->dl.usermsg(s, id, msg, sz);
-        return 0;
-    }
-    return 1;
-}
-*/
 static void
 service_init() {
     S = malloc(sizeof(*S));
     S->sers = array_new(INIT_COUNT);
 
-    const char* services = sc_getstr("sc_service", "");
+    const char* services = sc_getstr("service", "");
     if (services[0] &&
         service_load(services)) {
         sc_exit("service_load fail, services=%s", services);
@@ -269,7 +238,7 @@ service_prepareall() {
         sc_exit("service_prepareall fail");
     }
 }
-
+/*
 int 
 sc_handler(const char* name, int* handler) {
     *handler = service_query_id(name);
@@ -279,6 +248,6 @@ sc_handler(const char* name, int* handler) {
     }
     return 0;
 }
-
+*/
 SC_LIBRARY_INIT_PRIO(service_init, service_fini, 11)
 SC_LIBRARY_INIT_PRIO(service_prepareall, NULL, 50)

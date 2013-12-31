@@ -74,12 +74,7 @@ _log(int level, char* log, int sz) {
         fprintf(stderr, log);
         return;
     }
-    struct service_message sm;
-    sm.sessionid = level; // reuse for level
-    sm.source = SERVICE_HOST;
-    sm.sz = sz;
-    sm.msg = log;
-    service_notify_service(_LOG_SERVICE, &sm);
+    service_main(_LOG_SERVICE, level, 0, log, sz);
 }
 
 static void

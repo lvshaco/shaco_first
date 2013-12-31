@@ -129,7 +129,7 @@ sc_timer_dispatch_timeout() {
     for (i=0; i<eh->sz; ++i) {
         e = &eh->p[i];
         if (e->next_time <= T->elapsed_time) {
-            service_notify_time(e->serviceid);
+            service_time(e->serviceid);
             e->next_time += e->interval;
         }
     }

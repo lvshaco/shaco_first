@@ -17,7 +17,6 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.py *.h *.c" {
  libshaco=libshaco{
   dlmodule.c
   sc_check.c
-  sc_dispatcher.c
   sc_env.c
   sc_gate.c
   sc_init.c
@@ -35,8 +34,6 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.py *.h *.c" {
   libshaco=libshaco{
    dlmodule.h
    sc.h
-   sc_assert.h
-   sc_dispatcher.h
    sc_env.h
    sc_gate.h
    sc_init.h
@@ -148,7 +145,6 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.py *.h *.c" {
   user_message.h
  }
  datadefine=datadefine{
-  tplt_struct.h
  }
  tplt=tplt{
   tplt.h
