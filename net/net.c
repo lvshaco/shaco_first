@@ -26,7 +26,10 @@ static const char *STRERROR[] = {
     "net error msg",
     "net error no socket",
     "net error create socket",
+    "net error write buffer over"
     "net error no buffer",
+    "net error listen",
+    "net error connect",
 };
 
 struct sbuffer {
@@ -42,8 +45,6 @@ struct socket {
     int mask;
     int ud;
     int ut;
-    uint32_t addr;
-    uint16_t port;
     struct netbuf_block *rb;
     struct sbuffer *head;
     struct sbuffer *tail; 
@@ -99,8 +100,6 @@ _alloc_sockets(int max) {
         s[i].mask = 0;
         s[i].ud = -1;
         s[i].ut = -1;
-        s[i].addr = 0;
-        s[i].port = 0;
         s[i].rb = NULL;
         s[i].head = NULL;
         s[i].tail = NULL;
@@ -112,8 +111,7 @@ _alloc_sockets(int max) {
 }
 
 static struct socket*
-_create_socket(struct net *self, socket_t fd, uint32_t addr, uint16_t port,
-        int wbuffermax, int ud, int ut) {
+_create_socket(struct net *self, socket_t fd, int wbuffermax, int ud, int ut) {
     if (self->free_socket == NULL)
         return NULL;
     struct socket *s = self->free_socket;
@@ -126,8 +124,6 @@ _create_socket(struct net *self, socket_t fd, uint32_t addr, uint16_t port,
     s->status = STATUS_SUSPEND;
     s->ud = ud;
     s->ut = ut;
-    s->addr = addr;
-    s->port = port;
     s->rb = netbuf_alloc_block(self->rpool, s-self->sockets);
     s->wbuffersz = 0;
     s->wbuffermax = wbuffermax;
@@ -573,10 +569,7 @@ _accept(struct net *self, struct socket *listens) {
     if (fd < 0) {
         return NULL;
     }
-    uint32_t addr = remote_addr.sin_addr.s_addr;
-    uint16_t port = ntohs(remote_addr.sin_port);
-    struct socket *s = _create_socket(self, fd, addr, port, 
-            listens->wbuffermax, listens->ud, listens->ut);
+    struct socket *s = _create_socket(self, fd, listens->wbuffermax, listens->ud, listens->ut);
     if (s == NULL) {
         _socket_close(fd);
         return NULL;
@@ -591,40 +584,60 @@ _accept(struct net *self, struct socket *listens) {
 }
 
 int
-net_listen(struct net *self, uint32_t addr, uint16_t port, 
+net_listen(struct net *self, const char *addr, int port, 
         int wbuffermax, int ud, int ut, int *err) {
-    socket_t fd = socket(AF_INET, SOCK_STREAM, 0);
-    if (fd < 0) {
-        *err = _socket_error;
-        return -1;
-    }
-
-    if (_socket_nonblocking(fd) == -1 ||
-        _socket_closeonexec(fd) == -1 ||
-        _socket_reuseaddr(fd)   == -1) {
-        *err = _socket_error;
-        _socket_close(fd);
-        return -1;
-    }
+    char sport[6];
+    snprintf(sport, sizeof(sport), "%u", port);
     
-    struct sockaddr_in my_addr;
-    memset(&my_addr, 0, sizeof(struct sockaddr_in));
-    my_addr.sin_family = AF_INET;
-    my_addr.sin_port = htons(port);
-    my_addr.sin_addr.s_addr = addr;
-    if (bind(fd, (struct sockaddr*)&my_addr, sizeof(struct sockaddr)) == -1) {
-        *err = _socket_error;
-        _socket_close(fd);
-        return -1;
-    }   
+    struct addrinfo hints;
+    struct addrinfo *result, *rp;
+    memset(&hints, 0, sizeof(hints));
+    hints.ai_family = AF_UNSPEC; // Allow IPv4 or IPv6
+    hints.ai_socktype = SOCK_STREAM; 
+    hints.ai_protocol = IPPROTO_TCP;
 
+    *err = 0;
+    int fd = -1;
+    int r = getaddrinfo(addr, sport, &hints, &result);
+    if (r) {
+        *err = NET_ERR_LISTEN;
+        return -1;
+    }
+    for (rp = result; rp != NULL; rp = rp->ai_next) {
+        fd = socket(rp->ai_family, rp->ai_socktype, rp->ai_protocol);
+        if (fd == -1)
+            continue;
+
+        if (_socket_nonblocking(fd) == -1 ||
+            _socket_closeonexec(fd) == -1 ||
+            _socket_reuseaddr(fd)   == -1) {
+            *err = _socket_error;
+            _socket_close(fd);
+            return -1;
+        }
+
+        if (bind(fd, rp->ai_addr, rp->ai_addrlen) == -1) {
+            *err = _socket_error;
+            _socket_close(fd);
+            fd = -1;
+            continue;
+        }
+        break;
+    }
+    if (fd == -1) {
+        if (*err == 0)
+            *err = NET_ERR_LISTEN;
+        return -1;
+    }
+    freeaddrinfo(result);
+        
     if (listen(fd, LISTEN_BACKLOG) == -1) {
         *err = _socket_error;
         _socket_close(fd);
         return -1;
     }
 
-    struct socket *s = _create_socket(self, fd, addr, port, wbuffermax, ud, ut);
+    struct socket *s = _create_socket(self, fd, wbuffermax, ud, ut);
     if (s == NULL) {
         *err = NET_ERR_CREATESOCK;
         _socket_close(fd);
@@ -662,50 +675,70 @@ _onconnect(struct net *self, struct socket *s) {
 }
 
 int
-net_connect(struct net *self, uint32_t addr, uint16_t port, bool block, 
+net_connect(struct net *self, const char *addr, int port, bool block, 
         int wbuffermax, int ud, int ut, int *err) {
-    socket_t fd = socket(AF_INET, SOCK_STREAM, 0);
-    if (fd < 0) {
-        *err = _socket_error;
+    char sport[6];
+    snprintf(sport, sizeof(sport), "%u", port);
+    
+    struct addrinfo hints;
+    struct addrinfo *result, *rp;
+    memset(&hints, 0, sizeof(hints));
+    hints.ai_family = AF_UNSPEC; // Allow IPv4 or IPv6
+    hints.ai_socktype = SOCK_STREAM; 
+    hints.ai_protocol = IPPROTO_TCP;
+
+    *err = 0;
+    int status;
+    int fd = -1;
+    int r = getaddrinfo(addr, sport, &hints, &result);
+    if (r) {
+        *err = NET_ERR_CONNECT;
         return -1;
     }
-    if (!block)
-        if (_socket_nonblocking(fd) == -1) {
-            *err = _socket_error;
-            return -1;
-        }
+    for (rp = result; rp != NULL; rp = rp->ai_next) {
+        fd = socket(rp->ai_family, rp->ai_socktype, rp->ai_protocol);
+        if (fd == -1)
+            continue;
 
-    int status;
-    struct sockaddr_in saddr;
-    memset(&saddr, 0, sizeof(struct sockaddr_in));
-    saddr.sin_family = AF_INET;
-    saddr.sin_port = htons(port);
-    saddr.sin_addr.s_addr = addr;
-    int r = connect(fd, (struct sockaddr*)&saddr, sizeof(struct sockaddr));
-    if (r < 0) {
-        if (block) {
-            *err = _socket_error; 
-            _socket_close(fd);
-            return -1;
-        } else {
-            *err = _socket_geterror(fd);
-            if (!SECONNECTING(*err)) {
-                _socket_close(fd);
+        if (!block)
+            if (_socket_nonblocking(fd) == -1) {
+                *err = _socket_error;
                 return -1;
             }
+
+        if (connect(fd, rp->ai_addr, rp->ai_addrlen) == -1) {
+            if (block) {
+                *err = _socket_error; 
+                _socket_close(fd);
+                fd = -1;
+                continue;
+            } else {
+                *err = _socket_geterror(fd);
+                if (!SECONNECTING(*err)) {
+                    _socket_close(fd);
+                    fd = -1;
+                    continue;
+                }
+            }
+            status = STATUS_CONNECTING;
+        } else {
+            status = STATUS_CONNECTED;
         }
-        status = STATUS_CONNECTING;
-    } else {
-        status = STATUS_CONNECTED;
+        if (block)
+            if (_socket_nonblocking(fd) == -1) { // 仅connect阻塞
+                *err = _socket_error;
+                return -1;
+            }
+        break;
     }
+    if (fd == -1) {
+        if (*err == 0)
+            *err = NET_ERR_CONNECT;
+        return -1;
+    }
+    freeaddrinfo(result);
 
-    if (block)
-        if (_socket_nonblocking(fd) == -1) { // 仅connect阻塞
-            *err = _socket_error;
-            return -1;
-        }
-
-    struct socket *s = _create_socket(self, fd, addr, port, wbuffermax, ud, ut);
+    struct socket *s = _create_socket(self, fd, wbuffermax, ud, ut);
     if (s == NULL) {
         *err = NET_ERR_CREATESOCK;
         _socket_close(fd);
@@ -811,11 +844,12 @@ net_getevents(struct net *self, struct net_message **e) {
 }
 
 int 
-net_socket_address(struct net *self, int id, uint32_t *addr, uint16_t *port) {
+net_socket_address(struct net *self, int id, uint32_t *addr, int *port) {
+    // todo
     struct socket *s = _get_socket(self, id);
     if (s) {
-        *addr = s->addr;
-        *port = s->port;
+        *addr = 0;
+        *port = 0;
         return 0;
     }
     return 1;

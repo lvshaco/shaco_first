@@ -12,18 +12,12 @@
 #define NET_ERR_CREATESOCK  -4
 #define NET_ERR_WBUFOVER    -5
 #define NET_ERR_NOBUF       -6
+#define NET_ERR_LISTEN      -7
+#define NET_ERR_CONNECT     -8
 
 struct mread_buffer {
     void *ptr;
     int sz;
-};
-
-struct socketinfo {
-    uint32_t addr;
-    uint16_t port;
-    int wbuffermax;
-    int ud;
-    int ut;
 };
 
 struct net;
@@ -32,12 +26,12 @@ void net_free(struct net *self);
 
 // return connid
 // -1 for error
-int net_listen(struct net *self, uint32_t addr, uint16_t port, 
+int net_listen(struct net *self, const char *addr, int port, 
         int wbuffermax, int ud, int ut, int *err);
 
 // return connid
 // -1 for error, -2 for connecting
-int net_connect(struct net *self, uint32_t addr, uint16_t port, bool block, 
+int net_connect(struct net *self, const char *addr, int port, bool block, 
         int wbuffermax, int ud, int ut, int *err);
 
 int net_send(struct net *self, int id, void *data, int sz, struct net_message *nm);
@@ -56,7 +50,7 @@ int net_subscribe(struct net *self, int id, bool read);
 bool net_close_socket(struct net *self, int id, bool force);
 const char *net_error(struct net *self, int err);
 int net_max_socket(struct net *self);
-int net_socket_address(struct net *self, int id, uint32_t *addr, uint16_t *port);
+int net_socket_address(struct net *self, int id, uint32_t *addr, int *port);
 int net_socket_isclosed(struct net *self, int id);
 int net_socket_ud(struct net* self, int id, int *ud, int *ut);
 int net_socket_nonblocking(struct net *self, int id);

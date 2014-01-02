@@ -1,6 +1,9 @@
 #ifndef __sc_node_h__
 #define __sc_node_h__
 
+#include "sc_service.h"
+
+int sc_service_bind(const char *name, int handle);
 int sc_service_subscribe(const char *name);
 int sc_service_publish(const char *name);
 int sc_service_send(int source, int dest, const void *msg, int sz);
@@ -10,6 +13,8 @@ int sc_service_vsend(int source, int dest, const char *fmt, ...)
 __attribute__((format(printf, 3, 4)))
 #endif
 ;
+
+#define NODE_MASK 0xff00
 
 static inline int
 sc_handleid(int nodeid, int serviceid) {

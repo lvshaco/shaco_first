@@ -14,6 +14,7 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.py *.h *.c" {
  config_rprank.lua
  config_rpuser.lua
  config_world.lua
+ config_node.lua
  libshaco=libshaco{
   dlmodule.c
   sc_check.c

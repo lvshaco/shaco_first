@@ -16,7 +16,15 @@ struct service {
     bool inited;
     struct dlmodule dl;
 };
-
+/*
+typedef union sc_ret {
+    int i32;
+    uint32_t u32;
+    int64_t i64;
+    uint64_t u64;
+    void *p;
+} sc_ret;
+*/
 int service_load(const char* name);
 int service_prepare(const char* name);
 int service_reload(const char* name);
@@ -27,5 +35,6 @@ const char* service_query_name(int serviceid);
 int service_main(int serviceid, int session, int source, const void *msg, int sz);
 int service_time(int serviceid);
 int service_net(int serviceid, struct net_message *nm);
+int service_send(int serviceid, int session, int source, int dest, const void *msg, int sz);
 
 #endif

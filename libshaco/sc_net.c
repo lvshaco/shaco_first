@@ -51,15 +51,14 @@ _dispatch() {
 }
 
 int
-sc_net_listen(const char* addr, uint16_t port, int wbuffermax, int serviceid, int ut, int *err) {
-    return net_listen(N, inet_addr(addr), port, wbuffermax, serviceid, ut, err);
+sc_net_listen(const char* addr, int port, int wbuffermax, int serviceid, int ut, int *err) {
+    return net_listen(N, addr, port, wbuffermax, serviceid, ut, err);
 }
 
 int 
-sc_net_connect(const char* addr, uint16_t port, bool block, int serviceid, int ut) { 
-    uint32_t ip = inet_addr(addr); 
+sc_net_connect(const char* addr, int port, bool block, int serviceid, int ut) { 
     int err;
-    int id = net_connect(N, ip, port, block, 0, serviceid, ut, &err);
+    int id = net_connect(N, addr, port, block, 0, serviceid, ut, &err);
     if (id >= 0) {
         struct net_message nm = {
             id, NETE_CONNECT, 0, serviceid, ut 
@@ -78,9 +77,8 @@ sc_net_connect(const char* addr, uint16_t port, bool block, int serviceid, int u
 }
 
 int 
-sc_net_block_connect(const char* addr, uint16_t port, int serviceid, int ut, int *err) {
-    uint32_t ip = inet_addr(addr); 
-    return net_connect(N, ip, port, true, 0, serviceid, ut, err);
+sc_net_block_connect(const char* addr, int port, int serviceid, int ut, int *err) {
+    return net_connect(N, addr, port, true, 0, serviceid, ut, err);
 }
 
 void
@@ -131,7 +129,7 @@ int sc_net_max_socket() {
 int sc_net_subscribe(int id, bool read) { 
     return net_subscribe(N, id, read); 
 }
-int sc_net_socket_address(int id, uint32_t* addr, uint16_t* port) { 
+int sc_net_socket_address(int id, uint32_t* addr, int* port) { 
     return net_socket_address(N, id, addr, port); 
 }
 int sc_net_socket_isclosed(int id) {

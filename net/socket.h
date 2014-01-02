@@ -13,6 +13,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <errno.h>
+#include <netdb.h>
 #endif
 
 // socket type

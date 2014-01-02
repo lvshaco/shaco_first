@@ -15,6 +15,7 @@ struct dlmodule {
     int   (*reload)(struct service* s);
     void  (*time)(struct service* s);
     void  (*net)(struct service* s, struct net_message* nm);
+    void  (*send)(struct service *s, int session, int source, int dest, const void *msg, int sz);
     void  (*main)(struct service *s, int session, int source, const void *msg, int sz);
 };
 

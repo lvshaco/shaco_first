@@ -38,10 +38,13 @@ _open(struct dlmodule* dl) {
     dl->time = dlsym(handle, tmp);
     strcpy(tmp+len, "_net");
     dl->net = dlsym(handle, tmp);
+    strcpy(tmp+len, "_send");
+    dl->send = dlsym(handle, tmp);
     strcpy(tmp+len, "_main");
     dl->main = dlsym(handle, tmp);
  
     if (dl->main == NULL &&
+        dl->send == NULL &&
         dl->net == NULL &&
         dl->time == NULL) {
         sc_error("dlmodule %s no symbol", dl->name);
@@ -67,6 +70,7 @@ _dlclose(struct dlmodule* dl) {
     dl->reload = NULL;
     dl->time = NULL;
     dl->net = NULL;
+    dl->send = NULL;
     dl->main = NULL;
 }
 

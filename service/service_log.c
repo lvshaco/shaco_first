@@ -36,11 +36,6 @@ int
 log_init(struct service* s) {
     struct log* self = SERVICE_SELF;
     
-    const char* node = sc_getstr("node_type", "");
-    if (node[0] == '\0') {
-        fprintf(stderr, "no config node_type\n");
-        return 1;
-    }
     struct elog* el;
     if (sc_getint("sc_daemon", 0)) { 
         const char* logdir = sc_getstr("log_dir", "");
@@ -50,10 +45,9 @@ log_init(struct service* s) {
         }
         mkdir(logdir, 0744);
         char logfile[PATH_MAX];
-        snprintf(logfile, sizeof(logfile), "%s/%s%d.log",
+        snprintf(logfile, sizeof(logfile), "%s/%d.log",
                 logdir,
-                node,
-                sc_getint("node_sid", 0));
+                sc_getint("node_id", 0));
 
         el = elog_create(logfile);
         if (el == NULL) {
@@ -88,7 +82,7 @@ log_init(struct service* s) {
 }
 
 void
-log_service(struct service* s, struct service_message* sm) {
+log_main(struct service* s, int session, int source, const void *msg, int sz) {
     struct log* self = SERVICE_SELF;
-    elog_append(self->el, sm->msg, sm->sz);
+    elog_append(self->el, msg, sz);
 }

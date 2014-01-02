@@ -183,6 +183,16 @@ service_main(int serviceid, int session, int source, const void *msg, int sz) {
 }
 
 int 
+service_send(int serviceid, int session, int source, int dest, const void *msg, int sz) {
+    struct service *s = array_get(S->sers, serviceid);
+    if (s && s->dl.send) {
+        s->dl.send(s, session, source, dest, msg, sz);
+        return 0;
+    }
+    return 1;
+}
+
+int 
 service_net(int serviceid, struct net_message* nm) {
     struct service* s = array_get(S->sers, serviceid);
     if (s && s->dl.net) {
@@ -207,7 +217,7 @@ service_init() {
     S = malloc(sizeof(*S));
     S->sers = array_new(INIT_COUNT);
 
-    const char* services = sc_getstr("service", "");
+    const char* services = sc_getstr("sc_service", "");
     if (services[0] &&
         service_load(services)) {
         sc_exit("service_load fail, services=%s", services);
