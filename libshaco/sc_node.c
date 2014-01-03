@@ -121,6 +121,12 @@ sc_service_vsend(int source, int dest, const char *fmt, ...) {
     return 0;
 }
 
+int 
+sc_handler(const char *name, int *handle) {
+    *handle = sc_service_subscribe(name);
+    return (*handle != -1) ? 0 : 1;
+}
+
 static void
 sc_node_init() { 
     int handle = service_query_id("node");

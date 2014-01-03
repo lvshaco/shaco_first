@@ -195,13 +195,9 @@ static int
 _listen(struct service *s) {
     const char *addr = sc_getstr("node_ip", "0");
     int port = sc_getint("node_port", 0);
-    int err;
-    int id = sc_net_listen(addr, port, 0, s->serviceid, 0, &err);
-    if (id < 0) {
-        sc_error("Listen %s:%d fail: %s", addr, port, sc_net_error(err));
+    if (sc_net_listen(addr, port, 0, s->serviceid, 0)) {
         return 1;
     }
-    return 0;
 }
 
 static int

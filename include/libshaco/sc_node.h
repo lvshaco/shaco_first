@@ -16,6 +16,8 @@ __attribute__((format(printf, 3, 4)))
 
 #define NODE_MASK 0xff00
 
+int sc_handler(const char *name, int *handle);
+
 static inline int
 sc_handleid(int nodeid, int serviceid) {
     return ((nodeid & 0xff) << 8) | (serviceid & 0xff);

@@ -13,6 +13,8 @@
 #define IDUM_NODEREGOK  IDUM_NBEGIN+2
 #define IDUM_NODESUBS   IDUM_NBEGIN+3
 #define IDUM_NODENOTIFY IDUM_NBEGIN+4
+#define IDUM_NETDISCONN IDUM_NBEGIN+5
+#define IDUM_GATE       IDUM_NBEGIN+6
 
 #define IDUM_CMDREQ     IDUM_NBEGIN+10
 #define IDUM_CMDRES     IDUM_NBEGIN+11
@@ -33,6 +35,18 @@
 #define IDUM_OVERROOM       IDUM_NBEGIN+202
 
 #pragma pack(1)
+
+struct UM_GATE {
+    _UM_HEADER;
+    uint16_t connid;
+    uint8_t wrap[0];
+};
+
+struct UM_NETDISCONN {
+    _UM_HEADER;
+    int32_t err;
+};
+
 
 // node
 struct UM_NODEREG {
@@ -76,7 +90,7 @@ struct UM_CMDRES {
     int32_t cid;
     char str[0];
 };
-
+/*
 // forward
 struct UM_FORWARD {
     _UM_HEADER;
@@ -95,7 +109,7 @@ UM_FORWARD_size(struct UM_FORWARD* um) {
     name->nodeid = 0; \
     name->msgid = ID##type; \
     name->msgsz = sizeof(*name);
-
+*/
 // load
 struct UM_UPDATELOAD {
     _UM_HEADER;

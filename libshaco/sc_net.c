@@ -51,8 +51,14 @@ _dispatch() {
 }
 
 int
-sc_net_listen(const char* addr, int port, int wbuffermax, int serviceid, int ut, int *err) {
-    return net_listen(N, addr, port, wbuffermax, serviceid, ut, err);
+sc_net_listen(const char* addr, int port, int wbuffermax, int serviceid, int ut) {
+    int err;
+    int id = net_listen(N, addr, port, wbuffermax, serviceid, ut, &err);
+    if (id < 0) {
+        sc_error("Listen %s:%d fail: %s", addr, port, sc_net_error(err));
+        return 1;
+    }
+    return 0;
 }
 
 int 

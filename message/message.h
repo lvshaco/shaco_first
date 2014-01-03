@@ -12,41 +12,21 @@
 
 #pragma pack(1)
 
-// nodeid: source node id where UM from
-#define _NODE_HEADER \
-    uint16_t nodeid;
-
-#define _UM_CLI_HEADER \
-    uint16_t msgsz; \
-    uint16_t msgid;
-
 #define _UM_HEADER \
-    _NODE_HEADER; \
-    _UM_CLI_HEADER;
-
-struct NODE_HEADER {
-    _NODE_HEADER;
-};
-
-struct UM_CLI_BASE {
-    _UM_CLI_HEADER;
-};
+union { \
+    struct { uint16_t head; }; \
+    uint16_t msgid; \
+}; \
+uint8_t body[0];
 
 struct UM_BASE {
-    union {
-        struct { _UM_HEADER; };
-        struct { 
-            struct NODE_HEADER nod_head;
-            struct UM_CLI_BASE cli_base;
-        };
-    };
-    uint8_t data[0];
+    _UM_HEADER;
 };
 
-#define UM_BASE_SZ sizeof(struct UM_BASE)
-#define UM_CLI_OFF offsetof(struct UM_BASE, cli_base)
-#define UM_CLI_BASE_SZ sizeof(struct UM_CLI_BASE)
-#define UM_CLI_SZ(um) ((um)->msgsz - UM_CLI_OFF)
+//#define UM_BASE_SZ sizeof(struct UM_BASE)
+//#define UM_CLI_OFF offsetof(struct UM_BASE, cli_base)
+//#define UM_CLI_BASE_SZ sizeof(struct UM_CLI_BASE)
+//#define UM_CLI_SZ(um) ((um)->msgsz - UM_CLI_OFF)
 
 //#define UM_MAXDATA UM_MAXSZ - UM_BASE_SZ
 #define UM_DEF(um, n) \
@@ -57,16 +37,23 @@ struct UM_BASE {
     struct type name##data; \
     struct type* name = &name##data; \
     name->msgid = ID##type; \
-    name->msgsz = sizeof(*name);
 
 #define UM_DEFVAR(type, name) \
     char name##data[UM_MAXSZ]; \
     struct type* name = (void*)name##data; \
     name->msgid = ID##type; \
-    name->msgsz = UM_MAXSZ;
+
+#define UM_DEFVAR2(type, name, sz) \
+    char name##data[sz]; \
+    struct type* name = (void*)name##data; \
+    name->msgid = ID##type; \
 
 #define UM_CAST(type, name, um) \
     struct type* name = (struct type*)um;
+
+#define UD_CAST(type, name, data) \
+    struct type *name = (struct type*)data; \
+    name->msgid = ID##type;
 
 #pragma pack()
 
