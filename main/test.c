@@ -1045,7 +1045,7 @@ test_encode() {
 }
 
 void
-test() {
+test(int times) {
     const char* s = "1234";
     int i = strtol(s, NULL, 10); 
     printf("strtol %d\n", i);
@@ -1060,9 +1060,223 @@ test() {
     printf("%d",n);
     n = snprintf(tmp, sizeof(tmp), "12345");
     printf("%d",n);
+    printf("-------------\n");
+
+    const char *ss = "123456789";
+    int ii = 123456789;
+    char t[16];
+
+    uint64_t t1, t2;
+    t1 = _elapsed();
+    for (i=0; i<times; ++i)
+        snprintf(t, sizeof(t), "%s", ss);
+    t2 = _elapsed();
+    printf("t1 : %d\n", (int)(t2-t1));
+
+    t1 = _elapsed();
+    for (i=0; i<times; ++i)
+        snprintf(t, sizeof(t), "%d", ii);
+    t2 = _elapsed();
+    printf("t1 : %d\n", (int)(t2-t1));
+}
+
+void
+test_redis_command(int times) {
+    uint64_t t1, t2;
+    int i;
+
+    t1 = _elapsed();
+    for (i=0; i<times; ++i) {
+        char *cmd = redis_formatcommand("hmset user:%s"
+                    " level %s"
+                    " exp %s"
+                    " coin %s"
+                    " diamond %s"
+                    " package %s"
+                    " role %s"
+                    " skin %s"
+                    " score1 %s"
+                    " score2 %s"
+                    " ownrole %s"
+                    " usepage %s"
+                    " npage %s"
+                    " pages %s"
+                    " nring %s"
+                    " rings %s",
+                    "1",
+                    "10",
+                    "1000",
+                    "9999",
+                    "999",
+                    "100",
+                    "10",
+                    "11",
+                    "100",
+                    "200",
+                    "123123",
+                    "2",
+                    "10",
+                    "strpages",
+                    "123",
+                    "strings");
+        //printf(cmd);
+        free(cmd);
+    }
+    t2 = _elapsed();
+    printf("t1 : %d\n", (int)(t2-t1));
+
+
+    char tmp2[10240];
+    t1 = _elapsed();
+    for (i=0; i<times; ++i) {
+        redis_formatcommand2(tmp2, sizeof(tmp2), "hmset user:%s"
+                    " level %s"
+                    " exp %s"
+                    " coin %s"
+                    " diamond %s"
+                    " package %s"
+                    " role %s"
+                    " skin %s"
+                    " score1 %s"
+                    " score2 %s"
+                    " ownrole %s"
+                    " usepage %s"
+                    " npage %s"
+                    " pages %s"
+                    " nring %s"
+                    " rings %s",
+                    "1",
+                    "10",
+                    "1000",
+                    "9999",
+                    "999",
+                    "100",
+                    "10",
+                    "11",
+                    "100",
+                    "200",
+                    "123123",
+                    "2",
+                    "10",
+                    "strpages",
+                    "123",
+                    "strings");
+        //printf(cmd);
+        //free(cmd);
+    }
+    t2 = _elapsed();
+    printf("t2 : %d\n", (int)(t2-t1));
+    //printf(tmp2);
+
+    char tmp3[10240];
+    t1 = _elapsed();
+    for (i=0; i<times; ++i) {
+        redis_formatcommand3(tmp3, sizeof(tmp3), "hmset user:%s"
+                    " level %s"
+                    " exp %s"
+                    " coin %s"
+                    " diamond %s"
+                    " package %s"
+                    " role %s"
+                    " skin %s"
+                    " score1 %s"
+                    " score2 %s"
+                    " ownrole %s"
+                    " usepage %s"
+                    " npage %s"
+                    " pages %s"
+                    " nring %s"
+                    " rings %s",
+                    "1",
+                    "10",
+                    "1000",
+                    "9999",
+                    "999",
+                    "100",
+                    "10",
+                    "11",
+                    "100",
+                    "200",
+                    "123123",
+                    "2",
+                    "10",
+                    "strpages",
+                    "123",
+                    "strings");
+    } 
+    t2 = _elapsed();
+    printf("t3 ------- : %d\n", (int)(t2-t1));
+    //printf(tmp3);
+
+    char tmp[1024];
+    t1 = _elapsed();
+    for (i=0; i<times; ++i) {
+        snprintf(tmp, sizeof(tmp), "hmset user:%s"
+                    " level %s"
+                    " exp %s"
+                    " coin %s"
+                    " diamond %s"
+                    " package %s"
+                    " role %s"
+                    " skin %s"
+                    " score1 %s"
+                    " score2 %s"
+                    " ownrole %s"
+                    " usepage %s"
+                    " npage %s"
+                    " pages %s"
+                    " nring %s"
+                    " rings %s",
+                    "1",
+                    "10",
+                    "1000",
+                    "9999",
+                    "999",
+                    "100",
+                    "10",
+                    "11",
+                    "100",
+                    "200",
+                    "123123",
+                    "2",
+                    "10",
+                    "strpages",
+                    "123",
+                    "strings");
+    }
+    t2 = _elapsed();
+    printf("t : %d\n", (int)(t2-t1));
 
 }
 
+int itoa(int i, char tmp[16]) {
+    int n = 0;
+    char *p = tmp;
+    if (i<0) {
+        p[n] = '-';
+        i = -i;
+        n++;
+    }
+    do {
+        int c = i%10;
+        i /= 10;
+        p[n] = c + '0';
+        n++;
+    } while (i);
+    p[n] = '\0';
+    return n;
+}
+
+int test_itoa(int times) {
+    uint64_t t1, t2;
+
+    char tmp[16];
+    t1 = _elapsed();
+    for (i=0; i<times; ++i) {
+        int n = itoa(i, tmp);
+    }
+    t2 = _elapsed();
+}
 int 
 main(int argc, char* argv[]) {
     int times = 1;
@@ -1092,6 +1306,7 @@ main(int argc, char* argv[]) {
     //test_redisnew(times);
     //test_copy(times);
     //test_encode();
-    test();
+    //test(times);
+    test_redis_command(times);
     return 0;
 }

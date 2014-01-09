@@ -71,6 +71,24 @@ void redis_resetreply(struct redis_reply* reply);
 void redis_resetreplybuf(struct redis_reply* reply, char* buf, int cap);
 
 void redis_walkreply(struct redis_reply* reply);
+int  redis_command(char *buf, int sz, const char *cmd, const char *fmt, ...);
+char *redis_formatcommand(const char *fmt, ...)
+#ifdef __GNUC__
+__attribute__((format(printf, 1, 2)))
+#endif
+;
+
+char *redis_formatcommand2(char *cmd, int sz, const char *fmt, ...)
+#ifdef __GNUC__
+__attribute__((format(printf, 3, 4)))
+#endif
+;
+
+char *redis_formatcommand3(char *cmd, int sz, const char *fmt, ...)
+#ifdef __GNUC__
+__attribute__((format(printf, 3, 4)))
+#endif
+;
 
 static inline int
 redis_bulkitem_isnull(struct redis_replyitem* item) {
