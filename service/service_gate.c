@@ -6,6 +6,7 @@
 #include "sc_timer.h"
 #include "sc.h"
 #include "sc_gate.h"
+#include "sh_util.h"
 #include "user_message.h"
 #include "message.h"
 #include "cli_message.h"
@@ -97,7 +98,7 @@ _handlemsg(struct service *s, struct gate_client* c, const void *msg, int sz) {
         memcpy(gm->wrap, msg, sz);
 
         sc_debug("Receive msg:%u", um->msgid);
-        sc_service_send(SERVICE_ID, self->handler, gm, sizeof(*gm)+sz);
+        sh_service_send(SERVICE_ID, self->handler, MT_UM, gm, sizeof(*gm)+sz);
     }
     return 0;
 }
@@ -122,14 +123,13 @@ _read(struct service* s, struct gate_client* c, struct net_message* nm) {
             if (buf.sz < 2) {
                 break;
             }
-            uint16_t *p = buf.ptr;
-            uint16_t sz = (*p++) + 2;
+            uint16_t sz = sh_from_littleendian16((uint8_t*)buf.ptr) + 2;
             if (buf.sz < sz) {
                 break;
             }
             buf.ptr += sz;
             buf.sz  -= sz;
-            if (_handlemsg(s, c, p, sz-2)) {
+            if (_handlemsg(s, c, buf.ptr+2, sz-2)) {
                 err = NET_ERR_MSG;
                 break;
             }
@@ -159,20 +159,43 @@ _updateload(struct service *s) {
         UM_DEFFIX(UM_UPDATELOAD, load);
         load->value = sc_gate_usedclient();
         sc_debug("update load %d", load->value);
-        sc_service_send(SERVICE_ID, self->load_handle, load, sizeof(*load));
+        sh_service_send(SERVICE_ID, self->load_handle, MT_UM, load, sizeof(*load));
     }
 }
 
 void
-gate_main(struct service* s, int session, int source, const void *msg, int sz) {
+gate_main(struct service* s, int session, int source, int type, const void *msg, int sz) {
     struct gate* self = SERVICE_SELF;
-    if (!self->need_load) {
-        return;
-    }
-    int event = session;
-    if (event == GATE_EVENT_ONDISCONN ||
-        event == GATE_EVENT_ONACCEPT) {
-        _updateload(s);
+    switch (type) {
+    case MT_UM: {
+        UM_CAST(UM_GATE, g, msg);
+        UM_CAST(UM_BASE, sub, g->wrap);
+        switch (sub->msgid) {
+        case IDUM_CLOSECONN: {
+            struct gate_client *c = sc_gate_getclient(g->connid);
+            if (c) {
+                UM_CAST(UM_CLOSECONN, cc, sub);
+                sc_gate_disconnclient(c, cc->force);
+            }
+            }
+            break;
+        default:
+            sc_net_send(g->connid, g->wrap, sz-sizeof(*g));
+            break;
+        }
+        break;
+        }
+    case MT_GATE: {
+        if (!self->need_load) {
+            return;
+        }
+        int event = session;
+        if (event == GATE_EVENT_ONDISCONN ||
+            event == GATE_EVENT_ONACCEPT) {
+            _updateload(s);
+        }
+        break;
+        }
     }
 }
 
@@ -204,7 +227,7 @@ gate_net(struct service* s, struct net_message* nm) {
             gm->connid = id;
             UD_CAST(UM_NETDISCONN, disconn, gm->wrap);
             disconn->err = NETE_SOCKERR;
-            sc_service_send(SERVICE_ID, self->handler, gm, sizeof(*gm) + sizeof(*disconn));
+            sh_service_send(SERVICE_ID, self->handler, MT_UM, gm, sizeof(*gm) + sizeof(*disconn));
         }
         sc_gate_disconnclient(c, true);
         }
@@ -245,7 +268,8 @@ gate_time(struct service* s) {
                 gm->connid = c->connid;
                 UD_CAST(UM_NETDISCONN, disconn, gm->wrap);
                 disconn->err = NETE_TIMEOUT;
-                sc_service_send(SERVICE_ID, self->handler, gm, sizeof(*gm) + sizeof(*disconn));
+                sh_service_send(SERVICE_ID, self->handler, MT_UM, 
+                        gm, sizeof(*gm) + sizeof(*disconn));
 
                 sc_gate_disconnclient(c, true);
             }

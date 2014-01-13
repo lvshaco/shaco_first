@@ -13,12 +13,12 @@ struct reload_cache {
 
 static struct reload_cache* C = NULL;
 
-void
+int
 sc_reload_prepare(const char* names) {
     struct args A;
     args_parsestr(&A, CACHE_MAX, names);
     if (A.argc == 0)
-        return;
+        return 1;
     int sz = 0;
     int id;
     int i;
@@ -26,9 +26,12 @@ sc_reload_prepare(const char* names) {
         id = service_query_id(A.argv[i]);
         if (id != SERVICE_INVALID) {
             C->services[sz++] = id;
+        } else {
+            return 1;
         }
     }
     C->size = sz;
+    return 0;
 }
 
 void

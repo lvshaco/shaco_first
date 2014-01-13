@@ -10,11 +10,11 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.py *.h *.c" {
  config_gate.lua
  config_gateload.lua
  config_login.lua
+ config_node.lua
  config_rpacc.lua
  config_rprank.lua
  config_rpuser.lua
  config_world.lua
- config_node.lua
  libshaco=libshaco{
   dlmodule.c
   sc_check.c
@@ -29,7 +29,8 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.py *.h *.c" {
   sc_sig.c
   sc_start.c
   sc_timer.c
-  sc_util.c
+  sh_monitor.c
+  sh_util.c
  }
  include=include{
   libshaco=libshaco{
@@ -44,7 +45,9 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.py *.h *.c" {
    sc_reload.h
    sc_service.h
    sc_timer.h
-   sc_util.h
+   sh_hash.h
+   sh_monitor.h
+   sh_util.h
   }
  }
  lur=lur{
@@ -58,6 +61,7 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.py *.h *.c" {
   freelist.h
   gfreeid.h
   hashid.h
+  ghashid.h
   hmap.h
   map.h
   memrw.h
@@ -119,6 +123,10 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.py *.h *.c" {
   service_tpltgame.c
   service_tpltworld.c
   service_world.c
+  service_route.c
+  service_loadbalance.c
+  service_watchdog.c
+  service_uniqueol.c
  }
  world=world{
   player.h

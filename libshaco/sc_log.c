@@ -1,5 +1,6 @@
 #include "sc_log.h"
 #include "sc.h"
+#include "sc_node.h"
 #include "sc_env.h"
 #include "sc_init.h"
 #include "sc_timer.h"
@@ -74,7 +75,7 @@ _log(int level, char* log, int sz) {
         fprintf(stderr, log);
         return;
     }
-    service_main(_LOG_SERVICE, level, 0, log, sz);
+    service_main(_LOG_SERVICE, level, 0, MT_TEXT, log, sz);
 }
 
 static void

@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+#define UM_MINSZ 1024
 #define UM_MAXSZ 61000
 #define UM_CLI_MAXSZ (UM_MAXSZ - 1000)
 #define IDUM_MAX 65536
@@ -48,8 +49,15 @@ struct UM_BASE {
     struct type* name = (void*)name##data; \
     name->msgid = ID##type; \
 
+#define UM_DEFWRAP(type, name, wraptype) \
+    UM_DEFVAR2(type, name, sizeof(struct type)+sizeof(struct wraptype))
+
 #define UM_CAST(type, name, um) \
     struct type* name = (struct type*)um;
+
+#define UM_CASTCK(type, name, msg, sz) \
+    if (sz < sizeof(struct type)) return; \
+    struct type *name = (struct type*)msg;
 
 #define UD_CAST(type, name, data) \
     struct type *name = (struct type*)data; \

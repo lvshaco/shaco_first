@@ -1,5 +1,5 @@
 #include "sc_service.h"
-#include "sc_util.h"
+#include "sh_util.h"
 #include "sc_env.h"
 #include "cmdctl.h"
 #include "sc.h"
@@ -68,7 +68,9 @@ static int
 _reload(struct cmdctl* self, struct args* A, struct memrw* rw) {
     if (A->argc <= 1)
         return CTL_ARGLESS;
-    sc_reload_prepare(A->argv[1]);
+    if (sc_reload_prepare(A->argv[1])) {
+        return CTL_ARGINVALID;
+    }
     return CTL_OK;
 }
 

@@ -111,9 +111,9 @@ _query(struct login* self, struct gate_client* c, struct player* p) {
 }
 
 static void
-_notify_loginfail(struct gate_client* c, int error) {
+_notify_loginfail(struct gate_client* c, int err) {
     UM_DEFFIX(UM_LOGINACCOUNTFAIL, fail);
-    fail->error = error;
+    fail->err = err;
     UM_SENDTOCLI(c->connid, fail, fail->msgsz);
 }
 

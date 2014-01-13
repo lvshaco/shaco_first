@@ -1,5 +1,5 @@
 #include "sc_service.h"
-#include "sc_util.h"
+#include "sh_util.h"
 #include "sc.h"
 #include "sc_dispatcher.h"
 #include "sc_log.h"

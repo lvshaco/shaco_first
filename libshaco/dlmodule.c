@@ -1,5 +1,5 @@
 #include "dlmodule.h"
-#include "sc_util.h"
+#include "sh_util.h"
 #include "sc_log.h"
 #include <stdlib.h>
 #include <dlfcn.h>
@@ -32,8 +32,6 @@ _open(struct dlmodule* dl) {
     dl->free = dlsym(handle, tmp);
     strcpy(tmp+len, "_init");
     dl->init = dlsym(handle, tmp);
-    strcpy(tmp+len, "_reload");
-    dl->reload = dlsym(handle, tmp);
     strcpy(tmp+len, "_time");
     dl->time = dlsym(handle, tmp);
     strcpy(tmp+len, "_net");
@@ -67,7 +65,6 @@ _dlclose(struct dlmodule* dl) {
     dl->create = NULL;
     dl->free = NULL;
     dl->init = NULL;
-    dl->reload = NULL;
     dl->time = NULL;
     dl->net = NULL;
     dl->send = NULL;

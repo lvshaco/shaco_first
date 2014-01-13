@@ -1,4 +1,5 @@
 #include "sc_gate.h"
+#include "sc_node.h"
 #include "sc.h"
 #include "sc_init.h"
 #include "sc_net.h"
@@ -36,7 +37,7 @@ sc_gate_prepare(int cmax, int hmax) {
 
 static void
 _notify_gate_event(int event) {
-    service_main(G->serviceid, event, 0, NULL, 0);
+    service_main(G->serviceid, event, 0, MT_GATE, NULL, 0);
 }
 
 struct gate_client*

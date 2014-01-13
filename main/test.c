@@ -1,5 +1,5 @@
 #include "lur.h"
-#include "sc_util.h"
+#include "sh_util.h"
 #include "args.h"
 #include "freeid.h"
 #include "hashid.h"
@@ -9,6 +9,7 @@
 #include "map.h"
 #include "hmap.h"
 #include "elog_include.h"
+#include "sh_hash.h"
 #include <stdint.h>
 #include <stdarg.h>
 #include <stdio.h>
@@ -1267,16 +1268,60 @@ int itoa(int i, char tmp[16]) {
     return n;
 }
 
-int test_itoa(int times) {
-    uint64_t t1, t2;
+void
+test_hash(int times) {
+    struct sh_hash h;
+    sh_hash_init(&h, 0);
 
-    char tmp[16];
+    int i;
+    for (i=1; i<=times; ++i) {
+        sh_hash_insert(&h, i, (void*)(intptr_t)i);
+    }
+    for (i=1; i<=times; ++i) {
+        assert(sh_hash_insert(&h, i, (void*)(intptr_t)i) == 1);
+    }
+    for (i=1; i<=times; ++i) {
+        assert(sh_hash_remove(&h, i) == (void*)(intptr_t)i);
+    }
+    for (i=1; i<=times; ++i) {
+        assert(sh_hash_remove(&h, i) == NULL);
+    }
+    sh_hash_fini(&h);
+}
+
+void 
+test_hash2(int times) {
+    uint64_t t1, t2;
+    int i;
+    struct sh_hash h;
+    sh_hash_init(&h, 0);
+
     t1 = _elapsed();
-    for (i=0; i<times; ++i) {
-        int n = itoa(i, tmp);
+    for (i=1; i<=times; ++i) {
+        sh_hash_insert(&h, i, (void*)(intptr_t)i);
     }
     t2 = _elapsed();
+    printf("1 t1 : %d\n", (int)(t2-t1));
+
+    t1 = _elapsed();
+    for (i=1; i<=times; ++i) {
+        assert(sh_hash_find(&h, i) == (void*)(intptr_t)i);
+    }
+    t2 = _elapsed(); 
+    printf("1 t2 : %d\n", (int)(t2-t1));
+
+    t1 = _elapsed();
+    for (i=1; i<=times; ++i) {
+        assert(sh_hash_remove(&h, i) == (void*)(intptr_t)i);
+    }
+    t2 = _elapsed(); 
+    printf("1 t3 : %d\n", (int)(t2-t1));
+
+    sh_hash_fini(&h);
+
+    // ---------------------------------
 }
+
 int 
 main(int argc, char* argv[]) {
     int times = 1;
@@ -1307,6 +1352,7 @@ main(int argc, char* argv[]) {
     //test_copy(times);
     //test_encode();
     //test(times);
-    test_redis_command(times);
+    //test_redis_command(times);
+    test_hash2(times);
     return 0;
 }

@@ -16,7 +16,7 @@
 #define NET_ERR_CONNECT     -8
 
 struct mread_buffer {
-    void *ptr;
+    char *ptr;
     int sz;
 };
 

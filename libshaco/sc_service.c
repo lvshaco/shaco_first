@@ -1,5 +1,6 @@
 #include "sc_service.h"
 #include "sc.h"
+#include "sh_util.h"
 #include "sc_init.h"
 #include "sc_env.h"
 #include "sc_log.h"
@@ -22,13 +23,25 @@ _find(const char* name) {
     int i;
     for (i=0; i<array_size(S->sers); ++i) {
         struct service* s = array_get(S->sers, i);
+        if (s && strcmp(s->name, name) == 0) {
+            return s;
+        }
+    }
+    return NULL;
+}
+/*
+static struct service *
+_find_by_module_name(const char *name) {
+    int i;
+    for (i=0; i<array_size(S->sers); ++i) {
+        struct service* s = array_get(S->sers, i);
         if (s && strcmp(s->dl.name, name) == 0) {
             return s;
         }
     }
     return NULL;
 }
-
+*/
 static inline void
 _insert(struct service* s) {
     s->serviceid = array_push(S->sers, s);
@@ -39,7 +52,7 @@ _remove(const char* name) {
     int i;
     for (i=0; i<array_size(S->sers); ++i) {
         struct service* s = array_get(S->sers, i);
-        if (s && strcmp(s->dl.name, name) == 0) {
+        if (s && strcmp(s->name, name) == 0) {
             assert(s->serviceid >= 0);
             array_set(S->sers, s->serviceid, NULL);
             return s;
@@ -50,13 +63,27 @@ _remove(const char* name) {
 */
 static int
 _create(const char* name) {
-    struct service* s = _find(name);
+    char tmp[128];
+    sc_strncpy(tmp, name, sizeof(tmp));
+
+    struct service *s;
+    const char *sname, *dname;
+    char *p = strchr(tmp, ':');
+    if (p) {
+        p[0] = '\0';
+        sname = p+1;
+    } else {
+        sname = name;
+    }
+    dname = tmp;
+    s = _find(sname);
     if (s) {
         return 0;
     }
     s = malloc(sizeof(*s));
     memset(s, 0, sizeof(*s));
-    if (dlmodule_load(&s->dl, name)) {
+    sc_strncpy(s->name, sname, sizeof(s->name));
+    if (dlmodule_load(&s->dl, dname)) {
         free(s);
         return 1;
     }
@@ -72,7 +99,7 @@ _prepare(struct service* s) {
             return 1;
         }
         s->inited = true;
-        sc_info("prepare service %s ok", s->dl.name);
+        sc_info("prepare service %s ok", s->name);
     }
     return 0;
 }
@@ -83,10 +110,7 @@ _reload(struct service* s) {
     if (dlmodule_reload(&s->dl)) {
         return 1;
     }
-    if (s->dl.reload) {
-        s->dl.reload(s);
-    }
-    sc_info("reload service %s ok", s->dl.name);
+    sc_info("reload service %s ok", s->name);
     return 0;
 }
 
@@ -162,9 +186,17 @@ service_query_id(const char* name) {
     struct service* s = _find(name);
     return s ? s->serviceid : SERVICE_INVALID;
 }
-
+/*
+int
+service_query_id_by_module_name(const char* name) {
+    if (name == NULL || name[0] == '\0')
+        return SERVICE_INVALID;
+    struct service* s = _find_by_module_name(name);
+    return s ? s->serviceid : SERVICE_INVALID;
+}
+*/
 const char* 
-service_query_name(int serviceid) {
+service_query_module_name(int serviceid) {
     struct service* s = array_get(S->sers, serviceid);
     if (s) {
         return s->dl.name;
@@ -173,20 +205,20 @@ service_query_name(int serviceid) {
 }
 
 int 
-service_main(int serviceid, int session, int source, const void *msg, int sz) {
+service_main(int serviceid, int session, int source, int type, const void *msg, int sz) {
     struct service *s = array_get(S->sers, serviceid);
     if (s && s->dl.main) {
-        s->dl.main(s, session, source, msg, sz);
+        s->dl.main(s, session, source, type, msg, sz);
         return 0;
     }
     return 1;
 }
 
 int 
-service_send(int serviceid, int session, int source, int dest, const void *msg, int sz) {
+service_send(int serviceid, int session, int source, int dest, int type, const void *msg, int sz) {
     struct service *s = array_get(S->sers, serviceid);
     if (s && s->dl.send) {
-        s->dl.send(s, session, source, dest, msg, sz);
+        s->dl.send(s, session, source, dest, type, msg, sz);
         return 0;
     }
     return 1;

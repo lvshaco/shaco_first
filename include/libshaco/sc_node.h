@@ -3,10 +3,27 @@
 
 #include "sc_service.h"
 
-int sc_service_bind(const char *name, int handle);
+#define MT_SYS  0
+#define MT_TEXT 1
+#define MT_UM   2
+#define MT_MONITOR 3
+#define MT_GATE 4
+
+struct sh_node_addr {
+    char naddr[40];
+    char gaddr[40];
+    int  nport;
+    int  gport;
+};
+
+int sc_service_start(const char *name, int handle, const struct sh_node_addr *addr);
+int sc_service_exit(int handle);
+
 int sc_service_subscribe(const char *name);
-int sc_service_publish(const char *name);
-int sc_service_send(int source, int dest, const void *msg, int sz);
+// flag: 1 for service name, 2 for module name, 3 for both
+int sc_service_publish(const char *name, int flag);
+int sc_service_send(int source, int dest, int type, const void *msg, int sz);
+int sc_service_broadcast(int source, int dest, int type, const void *msg, int sz);
 
 #ifdef __GNUC__
 int sc_service_vsend(int source, int dest, const char *fmt, ...)
@@ -14,7 +31,8 @@ __attribute__((format(printf, 3, 4)))
 #endif
 ;
 
-#define NODE_MASK 0xff00
+int sc_service_minload(int vhandle);
+int sc_service_nextload(int vhandle);
 
 int sc_handler(const char *name, int *handle);
 

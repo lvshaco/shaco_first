@@ -2,7 +2,6 @@
 #define __dlmodule_h__
 
 struct service;
-struct service_message;
 struct net_message;
 
 struct dlmodule {
@@ -12,11 +11,10 @@ struct dlmodule {
     void* (*create)();
     void  (*free)(void* pointer);
     int   (*init)(struct service* s);
-    int   (*reload)(struct service* s);
     void  (*time)(struct service* s);
     void  (*net)(struct service* s, struct net_message* nm);
-    void  (*send)(struct service *s, int session, int source, int dest, const void *msg, int sz);
-    void  (*main)(struct service *s, int session, int source, const void *msg, int sz);
+    void  (*send)(struct service *s, int session, int source, int dest, int type, const void *msg, int sz);
+    void  (*main)(struct service *s, int session, int source, int type, const void *msg, int sz);
 };
 
 int dlmodule_load(struct dlmodule* dl, const char* name);

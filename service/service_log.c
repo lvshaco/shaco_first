@@ -82,7 +82,7 @@ log_init(struct service* s) {
 }
 
 void
-log_main(struct service* s, int session, int source, const void *msg, int sz) {
+log_main(struct service* s, int session, int source, int type, const void *msg, int sz) {
     struct log* self = SERVICE_SELF;
     elog_append(self->el, msg, sz);
 }

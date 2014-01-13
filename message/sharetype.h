@@ -35,6 +35,7 @@
 #define SERR_NOMEMBER       52
 #define SERR_ROOMOVER       53
 #define SERR_ALLOC          54
+#define SERR_NOAUTHS        55
 
 #pragma pack(1)
 

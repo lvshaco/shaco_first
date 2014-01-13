@@ -73,8 +73,10 @@ libshaco_src=\
 	libshaco/sc_reload.c \
 	libshaco/sc_node.c \
 	libshaco/sc_gate.c \
+	libshaco/sh_monitor.c \
  	libshaco/dlmodule.c \
-	libshaco/sc_util.c
+	libshaco/sh_util.c
+	
 
 cli_src=\
 	tool/shaco-cli.c
@@ -95,8 +97,10 @@ service_so=\
 	service_cmds.so \
 	service_cmdctl.so \
 	service_gate.so \
-	service_forward.so \
-	service_load.so \
+	service_route.so \
+	service_loadbalance.so \
+	service_watchdog.so \
+	service_uniqueol.so \
 	service_cmdctlgame.so
 
 worldservice_so=\

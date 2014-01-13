@@ -18,6 +18,9 @@
 #define IDUM_LOGINACCOUNTFAIL IDUM_CBEGIN+11
 #define IDUM_NOTIFYGATE IDUM_CBEGIN+12
 #define IDUM_NOTIFYWEB      IDUM_CBEGIN+13
+#define IDUM_GATEADDRREQ    IDUM_CBEGIN+14
+#define IDUM_GATEADDR       IDUM_CBEGIN+15
+#define IDUM_GATEADDRFAIL   IDUM_CBEGIN+16
 
 // role
 #define IDUM_USEROLE        IDUM_CBEGIN+20
@@ -63,6 +66,20 @@
 
 #pragma pack(1)
 ////////////////////////////////////////////////////////////
+struct UM_GATEADDRREQ {
+    _UM_HEADER;
+};
+
+struct UM_GATEADDR {
+    _UM_HEADER;
+    char ip[40];
+    uint16_t port;
+};
+
+struct UM_GATEADDRFAIL {
+    _UM_HEADER;
+};
+
 // login account
 struct UM_LOGINACCOUNT {
     _UM_HEADER;

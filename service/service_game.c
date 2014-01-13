@@ -1,6 +1,6 @@
 #include "sc_service.h"
 #include "sc.h"
-#include "sc_util.h"
+#include "sh_util.h"
 #include "sc_node.h"
 #include "sc_timer.h"
 #include "sc_dispatcher.h"

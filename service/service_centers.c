@@ -2,7 +2,7 @@
 #include "sc_env.h"
 #include "sc_node.h"
 #include "sc_log.h"
-#include "sc_util.h"
+#include "sh_util.h"
 #include "args.h"
 
 struct _int_array {
@@ -89,7 +89,7 @@ _insert_int(struct _int_array *inta, int value) {
 }
 
 void
-centers_main(struct service *s, int session, int source, const void *msg, int sz) {
+centers_main(struct service *s, int session, int source, int type, const void *msg, int sz) {
     struct centers *self = SERVICE_SELF;
     struct args A;
     char tmp[sz+1];
@@ -102,9 +102,9 @@ centers_main(struct service *s, int session, int source, const void *msg, int sz
     const char *cmd = A.argv[0];
 
     if (strcmp(cmd, "REG")) {
-        sc_service_send(SERVICE_ID, self->node_handle, msg, sz);
+        sh_service_send(SERVICE_ID, self->node_handle, MT_TEXT, msg, sz);
         int nodeid = strtol(A.argv[1], NULL, 10);
-        sc_service_send(SERVICE_ID, self->node_handle, "BROADCAST %d", nodeid);
+        sc_service_vsend(SERVICE_ID, self->node_handle, "BROADCAST %d", nodeid);
     } else if (strcmp(cmd, "SUB")) {
         if (A.argc != 2)
             return;
