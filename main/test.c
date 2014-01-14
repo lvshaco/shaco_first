@@ -1290,7 +1290,7 @@ test_hash(int times) {
 }
 
 void 
-test_hash2(int times) {
+test_hash32(int times) {
     uint64_t t1, t2;
     int i;
     struct sh_hash h;
@@ -1321,6 +1321,40 @@ test_hash2(int times) {
 
     // ---------------------------------
 }
+
+void 
+test_hash64(int times) {
+    uint64_t t1, t2;
+    int i;
+    struct sh_hash64 h;
+    sh_hash64_init(&h, 0);
+
+    t1 = _elapsed();
+    for (i=1; i<=times; ++i) {
+        sh_hash64_insert(&h, i, (void*)(intptr_t)i);
+    }
+    t2 = _elapsed();
+    printf("1 t1 : %d\n", (int)(t2-t1));
+
+    t1 = _elapsed();
+    for (i=1; i<=times; ++i) {
+        assert(sh_hash64_find(&h, i) == (void*)(intptr_t)i);
+    }
+    t2 = _elapsed(); 
+    printf("1 t2 : %d\n", (int)(t2-t1));
+
+    t1 = _elapsed();
+    for (i=1; i<=times; ++i) {
+        assert(sh_hash64_remove(&h, i) == (void*)(intptr_t)i);
+    }
+    t2 = _elapsed(); 
+    printf("1 t3 : %d\n", (int)(t2-t1));
+
+    sh_hash64_fini(&h);
+
+    // ---------------------------------
+}
+
 
 int 
 main(int argc, char* argv[]) {
@@ -1353,6 +1387,7 @@ main(int argc, char* argv[]) {
     //test_encode();
     //test(times);
     //test_redis_command(times);
-    test_hash2(times);
+    test_hash32(times);
+    test_hash64(times);
     return 0;
 }

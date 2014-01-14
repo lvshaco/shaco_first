@@ -9,6 +9,9 @@
 #define IDUM_CEND   2000
 
 #define IDUM_HEARTBEAT      IDUM_CBEGIN
+
+#define IDUM_HALLB          IDUM_CBEGIN+1  // hall begin
+
 #define IDUM_LOGIN          IDUM_CBEGIN+1
 #define IDUM_LOGINFAIL      IDUM_CBEGIN+2
 #define IDUM_LOGOUT         IDUM_CBEGIN+3
@@ -47,22 +50,27 @@
 #define IDUM_PLAYUNJOIN     IDUM_CBEGIN+106
 #define IDUM_PLAYDONE       IDUM_CBEGIN+107
 
+#define IDUM_HALLE          IDUM_CBEGIN+499  // hall end
+
+#define IDUM_ROOMB          IDUM_CBEGIN+500  // room begin
 // game
-#define IDUM_NOTIFYGAME     IDUM_CBEGIN+200
-#define IDUM_GAMELOGIN      IDUM_CBEGIN+201
-#define IDUM_GAMELOGINFAIL  IDUM_CBEGIN+202
-#define IDUM_GAMELOGOUT     IDUM_CBEGIN+203
-#define IDUM_GAMEINFO       IDUM_CBEGIN+204
-#define IDUM_GAMEENTER      IDUM_CBEGIN+205
-#define IDUM_GAMESTART      IDUM_CBEGIN+206
-#define IDUM_GAMEUNJOIN     IDUM_CBEGIN+207
-#define IDUM_GAMESYNC       IDUM_CBEGIN+208
-#define IDUM_USEITEM        IDUM_CBEGIN+209
-#define IDUM_ITEMEFFECT     IDUM_CBEGIN+210
-#define IDUM_ROLEPRESS      IDUM_CBEGIN+211
-#define IDUM_ROLEINFO       IDUM_CBEGIN+212
-#define IDUM_GAMEOVER       IDUM_CBEGIN+213
-#define IDUM_GAMELOADOK     IDUM_CBEGIN+214
+#define IDUM_NOTIFYGAME     IDUM_CBEGIN+500
+#define IDUM_GAMELOGIN      IDUM_CBEGIN+501
+#define IDUM_GAMELOGINFAIL  IDUM_CBEGIN+502
+#define IDUM_GAMELOGOUT     IDUM_CBEGIN+503
+#define IDUM_GAMEINFO       IDUM_CBEGIN+504
+#define IDUM_GAMEENTER      IDUM_CBEGIN+505
+#define IDUM_GAMESTART      IDUM_CBEGIN+506
+#define IDUM_GAMEUNJOIN     IDUM_CBEGIN+507
+#define IDUM_GAMESYNC       IDUM_CBEGIN+508
+#define IDUM_USEITEM        IDUM_CBEGIN+509
+#define IDUM_ITEMEFFECT     IDUM_CBEGIN+510
+#define IDUM_ROLEPRESS      IDUM_CBEGIN+511
+#define IDUM_ROLEINFO       IDUM_CBEGIN+512
+#define IDUM_GAMEOVER       IDUM_CBEGIN+513
+#define IDUM_GAMELOADOK     IDUM_CBEGIN+514
+
+#define IDUM_ROOME          IDUM_CBEGIN+799 // room end
 
 #pragma pack(1)
 ////////////////////////////////////////////////////////////
@@ -89,7 +97,7 @@ struct UM_LOGINACCOUNT {
 
 struct UM_LOGINACCOUNTFAIL {
     _UM_HEADER;
-    int32_t error;
+    int32_t err;
 };
 
 struct UM_NOTIFYGATE {
@@ -130,12 +138,12 @@ struct UM_LOGIN {
 
 struct UM_LOGOUT {
     _UM_HEADER;
-    int32_t error; // see SERR_OK
+    int8_t err; // see SERR_OK
 };
 
 struct UM_LOGINFAIL {
     _UM_HEADER;
-    int32_t error; // see SERR_OK
+    int8_t err; // see SERR_OK
 };
 
 struct UM_CHARCREATE {

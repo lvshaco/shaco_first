@@ -12,10 +12,12 @@
 #define IDUM_SERVICEINFO    IDUM_NBEGIN+1
 #define IDUM_SERVICEDEL     IDUM_NBEGIN+2
 #define IDUM_SERVICELOAD    IDUM_NBEGIN+3
+#define IDUM_HALL       IDUM_NBEGIN+4
 #define IDUM_NETDISCONN IDUM_NBEGIN+5
 #define IDUM_GATE       IDUM_NBEGIN+6
 #define IDUM_CLOSECONN  IDUM_NBEGIN+7
-#define IDUM_WATCHDOG   IDUM_NBEGIN+8
+#define IDUM_AUTH       IDUM_NBEGIN+8
+#define IDUM_ROOM       IDUM_NBEGIN+9
 
 #define IDUM_CMDREQ     IDUM_NBEGIN+10
 #define IDUM_CMDRES     IDUM_NBEGIN+11
@@ -34,6 +36,7 @@
 //#define IDUM_ACCOUNTLOGINREG IDUM_NBEGIN+100
 //#define IDUM_ACCOUNTLOGINRES IDUM_NBEGIN+101
 #define IDUM_LOGINACCOUNTOK  IDUM_NBEGIN+102
+#define IDUM_ENTERHALL    IDUM_NBEGIN+110
 
 #define IDUM_MINLOADEND   IDUM_NBEGIN+199 // minload end
 
@@ -45,19 +48,32 @@
 
 struct UM_GATE {
     _UM_HEADER;
-    uint16_t connid;
+    int connid;
     uint8_t wrap[0];
 };
 
-struct UM_WATCHDOG {
+struct UM_AUTH {
     _UM_HEADER;
-    uint32_t conn;
+    uint64_t conn;
+    uint32_t wsession;
+    uint8_t wrap[0];
+};
+
+struct UM_HALL {
+    _UM_HEADER;
+    uint32_t accid;
+    uint8_t wrap[0];
+};
+
+struct UM_ROOM {
+    _UM_HEADER;
+    uint32_t accid;
     uint8_t wrap[0];
 };
 
 struct UM_NETDISCONN {
     _UM_HEADER;
-    int32_t err;
+    int8_t err;
 };
 
 struct UM_CLOSECONN {
@@ -105,8 +121,7 @@ struct UM_UNIQUEUNUSE {
 };
 
 #define UNIQUE_USE_OK   1
-#define UNIQUE_UNUSE_OK 2
-#define UNIQUE_HAS_USED 3
+#define UNIQUE_HAS_USED 2
 struct UM_UNIQUESTATUS {
     _UM_HEADER;
     uint32_t id;
@@ -202,8 +217,8 @@ struct UM_REDISREPLY {
     char data[];
 };
 
-/*
 // account login
+/*
 struct UM_ACCOUNTLOGINREG {
     _UM_HEADER;
     int32_t cid;
@@ -222,11 +237,20 @@ struct UM_ACCOUNTLOGINRES {
     uint16_t port;
 };
 */
-
 struct UM_LOGINACCOUNTOK {
     _UM_HEADER;
-    uint32_t conn;
     uint32_t accid;
+};
+
+// hall
+struct UM_ENTERHALL {
+    _UM_HEADER;
+    uint32_t accid;
+};
+
+struct UM_ENTERROOM {
+    _UM_HEADER;
+    uint16_t room_handle;
 };
 
 // room

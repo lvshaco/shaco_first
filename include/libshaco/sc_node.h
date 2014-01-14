@@ -22,7 +22,7 @@ int sc_service_exit(int handle);
 int sc_service_subscribe(const char *name);
 // flag: 1 for service name, 2 for module name, 3 for both
 int sc_service_publish(const char *name, int flag);
-int sc_service_send(int source, int dest, int type, const void *msg, int sz);
+int sh_service_send(int source, int dest, int type, const void *msg, int sz);
 int sc_service_broadcast(int source, int dest, int type, const void *msg, int sz);
 
 #ifdef __GNUC__

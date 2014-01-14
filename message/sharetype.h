@@ -36,6 +36,9 @@
 #define SERR_ROOMOVER       53
 #define SERR_ALLOC          54
 #define SERR_NOAUTHS        55
+#define SERR_NOUNIQUEOL     56
+#define SERR_ACCINSERT      57
+#define SERR_NOHALLS        58
 
 #pragma pack(1)
 

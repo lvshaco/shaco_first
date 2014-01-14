@@ -52,6 +52,9 @@ struct UM_BASE {
 #define UM_DEFWRAP(type, name, wraptype) \
     UM_DEFVAR2(type, name, sizeof(struct type)+sizeof(struct wraptype))
 
+#define UM_DEFWRAP2(type, name, wrapsz) \
+    UM_DEFVAR2(type, name, sizeof(struct type)+wrapsz)
+
 #define UM_CAST(type, name, um) \
     struct type* name = (struct type*)um;
 
