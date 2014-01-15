@@ -30,6 +30,9 @@
 #define SERR_CREATEROOM     41
 #define SERR_CRENOTPLT      42
 #define SERR_CRENOMAP       43
+#define SERR_CREMAP         44
+#define SERR_ROOMIDCONFLICT 45
+
 #define SERR_NOROOM         50
 #define SERR_ROOMKEY        51
 #define SERR_NOMEMBER       52

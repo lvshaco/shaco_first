@@ -41,7 +41,7 @@ route_init(struct service *s) {
 }
 
 static struct service_info *
-_find_service(struct target_vector *ts, int handle) {
+find_service(struct target_vector *ts, int handle) {
     int i;
     for (i=0; i<ts->sz; ++i) {
         if (ts->p[i].handle == handle) {
@@ -52,8 +52,8 @@ _find_service(struct target_vector *ts, int handle) {
 }
 
 static struct service_info *
-_find_or_insert_service(struct target_vector *ts, int handle) {
-    struct service_info *one = _find_service(ts, handle);
+find_or_insert_service(struct target_vector *ts, int handle) {
+    struct service_info *one = find_service(ts, handle);
     if (one) {
         return one;
     }
@@ -70,7 +70,7 @@ _find_or_insert_service(struct target_vector *ts, int handle) {
 }
 
 static int
-_remove_service(struct target_vector *ts, int handle) {
+remove_service(struct target_vector *ts, int handle) {
     int i;
     for (i=0; i<ts->sz; ++i) {
         if (ts->p[i].handle == handle) {
@@ -148,7 +148,7 @@ route_main(struct service *s, int session, int source, int type, const void *msg
         struct service_info *one;
         int i;
         for (i=0; i<si->ninfo; ++i) {
-            one = _find_or_insert_service(&self->gates, si->info[i].handle);
+            one = find_or_insert_service(&self->gates, si->info[i].handle);
             assert(one);
             *one = si->info[i];
             one->ip[sizeof(one->ip)-1] = '\0';
@@ -157,12 +157,12 @@ route_main(struct service *s, int session, int source, int type, const void *msg
         break;
     case IDUM_SERVICEDEL: {
         UM_CAST(UM_SERVICEDEL, sd, msg);
-        _remove_service(&self->gates, sd->handle);
+        remove_service(&self->gates, sd->handle);
         }
         break;
     case IDUM_SERVICELOAD: {
         UM_CAST(UM_SERVICELOAD, sl, msg);
-        struct service_info *one = _find_or_insert_service(&self->gates, sl->handle);
+        struct service_info *one = find_or_insert_service(&self->gates, sl->handle);
         assert(one);
         one->load = sl->load;
         }

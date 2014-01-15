@@ -64,7 +64,6 @@ struct member {
 
 struct room { 
     int id;
-    int used;
     int8_t type; // ROOM_TYPE*
     uint32_t key;
     int status; // RS_*
@@ -84,6 +83,7 @@ struct game {
     int tplt_handler;
     int tick;
     uint32_t randseed;
+    uint32_t map_randseed;
     struct sh_hash players;
     struct sh_hash rooms;
 };
@@ -216,7 +216,9 @@ game_init(struct service* s) {
     // todo test this
     GFREEID_INIT(room, &self->rooms, 1);
 
-    self->randseed = time(NULL);
+    uint32_t now = sc_timer_now()/1000;
+    self->randseed = now;
+    self->map_randseed = now;
 
     SUBSCRIBE_MSG(s->serviceid, IDUM_CREATEROOM);
     SUBSCRIBE_MSG(s->serviceid, IDUM_CREATEROOMRES);
@@ -633,7 +635,7 @@ _check_destory_room(struct game* self, struct room* ro) {
 }
 
 static inline const struct map_tplt*
-find_maptplt(uint32_t mapid) {
+maptplt_find(uint32_t mapid) {
     const struct tplt_visitor* visitor = tplt_get_visitor(TPLT_MAP);
     if (visitor) 
         return tplt_visitor_find(visitor, mapid);
@@ -1045,7 +1047,7 @@ _use_item(struct game* self, struct gate_client* c, struct UM_BASE* um) {
         return;
     }
     const struct item_tplt* oriitem = titem;
-    const struct map_tplt* tmap = find_maptplt(ro->gattri.mapid); 
+    const struct map_tplt* tmap = maptplt_find(ro->gattri.mapid); 
     if (tmap == NULL) {
         return;
     }
@@ -1123,7 +1125,7 @@ static void
 _handle_creategame(struct game* self, struct node_message* nm) {
     UM_CAST(UM_CREATEROOM, cr, nm->um);
 
-    const struct map_tplt* tmap = find_maptplt(cr->mapid); 
+    const struct map_tplt* tmap = maptplt_find(cr->mapid); 
     if (tmap == NULL) {
         notify_create_room_result(nm->hn, SERR_CRENOTPLT, cr->id, cr->key, 0);
         return;
@@ -1266,14 +1268,26 @@ game_nodemsg(struct service* s, int id, void* msg, int sz) {
 
 static void
 room_create(struct service *s, int source, const struct UM_CREATEROOM *create) {
-    const struct map_tplt* mapt = find_maptplt(create->mapid); 
+    struct game* self = SERVICE_SELF;
+
+    struct room *ro = sh_hash_find(&self->rooms, create->id);
+    if (ro) {
+        notify_create_room_result(s, source, create->id, SERR_ROOMIDCONFLICT);
+        return;
+    }
+    const struct map_tplt *mapt = maptplt_find(create->mapid); 
     if (mapt == NULL) {
         notify_create_room_result(s, source, create->id, SERR_CRENOTPLT);
         return;
     }
-    struct genmap* gm = _create_map(self, mapt, cr->key);
-    if (gm == NULL) {
+    const struct roommap *mapdata = mapdatamgr_find(mapt->id);
+    if (mapdata == NULL) {
         notify_create_room_result(s, source, create->id, SERR_CRENOMAP);
+        return;
+    }
+    struct genmap* gm = genmap_create(mapt, m, self->map_randseed++);
+    if (gm == NULL) {
+        notify_create_room_result(s, source, create->id, SERR_CREMAP);
         return;
     }
 
