@@ -46,6 +46,7 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.py *.h *.c" {
    sc_service.h
    sc_timer.h
    sh_hash.h
+   sh_hashid.h
    sh_monitor.h
    sh_util.h
   }
@@ -112,21 +113,23 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.py *.h *.c" {
   service_gamematch.c
   service_gate.c
   service_load.c
+  service_loadbalance.c
   service_log.c
   service_login.c
+  service_match.c
   service_node.c
   service_playerdb.c
   service_rank.c
   service_redisproxy.c
   service_ringlogic.c
   service_rolelogic.c
-  service_tpltgame.c
-  service_tpltworld.c
-  service_world.c
   service_route.c
-  service_loadbalance.c
-  service_watchdog.c
+  service_tpltgame.c
+  service_tplthall.c
+  service_tpltroom.c
   service_uniqueol.c
+  service_watchdog.c
+  service_world.c
  }
  world=world{
   player.h
@@ -138,9 +141,11 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.py *.h *.c" {
  game=game{
   fight.h
   genmap.h
+  mapdatamgr.h
   roommap.h
   fight.c
   genmap.c
+  mapdatamgr.c
   roommap.c
  }
  message=message{

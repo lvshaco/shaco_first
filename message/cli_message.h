@@ -226,7 +226,7 @@ struct UM_PLAY {
 
 struct UM_PLAYFAIL {
     _UM_HEADER;
-    int8_t error;
+    int8_t err;
 };
 
 struct UM_PLAYWAIT {

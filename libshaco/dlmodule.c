@@ -88,7 +88,8 @@ dlmodule_close(struct dlmodule* dl) {
     if (dl == NULL)
         return;
 
-    if (dl->free && dl->content) {
+    if (dl->free) {
+        // sometimes need free, even if no dl->content
         dl->free(dl->content);
         dl->content = NULL;
     }

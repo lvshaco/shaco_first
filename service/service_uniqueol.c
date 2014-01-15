@@ -88,7 +88,7 @@ int
 uniqueol_init(struct service *s) {
     struct uniqueol *self = SERVICE_SELF;
 
-    if (sc_handler("watchdog", &self->watchdog_handle)) {
+    if (sh_handler("watchdog", &self->watchdog_handle)) {
         return 1;
     }
     unique_init(&self->uni, UNIQUE_INIT);

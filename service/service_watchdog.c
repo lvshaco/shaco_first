@@ -63,9 +63,9 @@ int
 watchdog_init(struct service *s) {
     struct watchdog *self = SERVICE_SELF;
 
-    if (sc_handler("auth", &self->auth_handle) ||
-        sc_handler("hall", &self->hall_handle) ||
-        sc_handler("room", &self->room_handle)) {
+    if (sh_handler("auth", &self->auth_handle) ||
+        sh_handler("hall", &self->hall_handle) ||
+        sh_handler("room", &self->room_handle)) {
         return 1;
     }
     return 0;

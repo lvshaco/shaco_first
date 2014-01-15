@@ -1289,6 +1289,12 @@ test_hash(int times) {
     sh_hash_fini(&h);
 }
 
+static inline int
+hash_cb(uint32_t key, void *pointer) {
+    printf("key: %u, pointer: %p\n", key, pointer);
+    return 1;
+}
+
 void 
 test_hash32(int times) {
     uint64_t t1, t2;
@@ -1302,6 +1308,8 @@ test_hash32(int times) {
     }
     t2 = _elapsed();
     printf("1 t1 : %d\n", (int)(t2-t1));
+
+    sh_hash_foreach(&h, hash_cb);
 
     t1 = _elapsed();
     for (i=1; i<=times; ++i) {

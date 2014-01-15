@@ -282,7 +282,7 @@ service_prepareall() {
 }
 /*
 int 
-sc_handler(const char* name, int* handler) {
+sh_handler(const char* name, int* handler) {
     *handler = service_query_id(name);
     if (*handler == SERVICE_INVALID) {
         sc_error("lost %s service", name);

@@ -306,7 +306,7 @@ sc_service_nextload(int vhandle) {
 }
 
 int 
-sc_handler(const char *name, int *handle) {
+sh_handler(const char *name, int *handle) {
     *handle = sc_service_subscribe(name);
     return (*handle != -1) ? 0 : 1;
 }

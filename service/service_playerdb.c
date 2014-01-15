@@ -38,7 +38,7 @@ playerdb_free(struct playerdb* self) {
 int
 playerdb_init(struct service* s) {
     struct playerdb* self = SERVICE_SELF;
-    if (sc_handler("world", &self->requester))
+    if (sh_handler("world", &self->requester))
         return 1;
     
     redis_initreply(&self->reply, 512, 0);

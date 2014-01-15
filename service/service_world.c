@@ -46,10 +46,10 @@ int
 world_init(struct service* s) {
     struct world* self = SERVICE_SELF;
 
-    if (sc_handler("rolelogic", &self->rolehandler) ||
-        sc_handler("ringlogic", &self->ringhandler) ||
-        sc_handler("attribute", &self->attrihandler) ||
-        sc_handler("playerdb", &self->dbhandler)) {
+    if (sh_handler("rolelogic", &self->rolehandler) ||
+        sh_handler("ringlogic", &self->ringhandler) ||
+        sh_handler("attribute", &self->attrihandler) ||
+        sh_handler("playerdb", &self->dbhandler)) {
         return 1;
     }
         

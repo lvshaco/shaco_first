@@ -34,8 +34,8 @@ ringlogic_free(struct ringlogic* self) {
 int
 ringlogic_init(struct service* s) {
     struct ringlogic* self = SERVICE_SELF;
-    if (sc_handler("attribute", &self->attrihandler) ||
-        sc_handler("playerdb", &self->dbhandler))
+    if (sh_handler("attribute", &self->attrihandler) ||
+        sh_handler("playerdb", &self->dbhandler))
         return 1;
     SUBSCRIBE_MSG(s->serviceid, IDUM_RINGPAGEBUY);
     SUBSCRIBE_MSG(s->serviceid, IDUM_RINGPAGERENAME);

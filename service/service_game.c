@@ -16,6 +16,7 @@
 #include "map.h"
 #include "roommap.h"
 #include "genmap.h"
+#include "sh_hash.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
@@ -81,11 +82,10 @@ struct gfroom {
 
 struct game {
     int tplt_handler;
-    int pmax;
-    struct player* players;
-    struct gfroom rooms;
     int tick;
     uint32_t randseed;
+    struct sh_hash players;
+    struct sh_hash rooms;
 };
 
 struct buff_delay {
@@ -203,7 +203,7 @@ _get_item_tplt(struct game* self, uint32_t itemid) {
 int
 game_init(struct service* s) {
     struct game* self = SERVICE_SELF;
-    if (sc_handler("tpltgame", &self->tplt_handler))
+    if (sh_handler("tpltgame", &self->tplt_handler))
         return 1;
     int pmax = sc_gate_maxclient();
     if (pmax == 0) {
@@ -633,7 +633,7 @@ _check_destory_room(struct game* self, struct room* ro) {
 }
 
 static inline const struct map_tplt*
-_maptplt(uint32_t mapid) {
+find_maptplt(uint32_t mapid) {
     const struct tplt_visitor* visitor = tplt_get_visitor(TPLT_MAP);
     if (visitor) 
         return tplt_visitor_find(visitor, mapid);
@@ -641,7 +641,7 @@ _maptplt(uint32_t mapid) {
 }
 
 static struct genmap*
-_create_map(struct game* self, const struct map_tplt* tplt, uint32_t seed) {
+create_map(struct game* self, const struct map_tplt* tplt, uint32_t seed) {
     struct service_message sm = { tplt->id, 0, sc_cstr_to_int32("GMAP"), 0, NULL };
     service_notify_service(self->tplt_handler, &sm);
     struct roommap* m = sm.result;
@@ -1045,7 +1045,7 @@ _use_item(struct game* self, struct gate_client* c, struct UM_BASE* um) {
         return;
     }
     const struct item_tplt* oriitem = titem;
-    const struct map_tplt* tmap = _maptplt(ro->gattri.mapid); 
+    const struct map_tplt* tmap = find_maptplt(ro->gattri.mapid); 
     if (tmap == NULL) {
         return;
     }
@@ -1111,57 +1111,26 @@ _use_item(struct game* self, struct gate_client* c, struct UM_BASE* um) {
     }
 }
 
-void
-game_usermsg(struct service* s, int id, void* msg, int sz) {
-    struct game* self = SERVICE_SELF;
-    struct gate_message* gm = msg;
-    assert(gm->c);
-    UM_CAST(UM_BASE, um, gm->msg);
-    switch (um->msgid) {
-    case IDUM_GAMELOGIN:
-        _login(self, gm->c, um);
-        break;
-    case IDUM_GAMELOGOUT:
-        _logout(self, gm->c, true, true);
-        break;
-    case IDUM_GAMELOADOK:
-        _loadok(self, gm->c);
-        break;
-    case IDUM_GAMESYNC:
-        _sync(self, gm->c, um);
-        break;
-    case IDUM_ROLEPRESS:
-        _role_press(self, gm->c, um);
-        break;
-    case IDUM_USEITEM:
-        _use_item(self, gm->c, um);
-        break;
-    }
-}
-
-static void
-_notify_createroomres(const struct sc_node* node, 
-        int error, int id, uint32_t key, int roomid) {
-    UM_DEFFIX(UM_CREATEROOMRES, res);
-    res->error = error;
-    res->id = id;
-    res->key = key;
-    res->roomid = roomid;
-    UM_SENDTONODE(node, res, sizeof(*res));
+static inline void
+notify_create_room_result(struct service *s, int dest_handle, int id, int err) {
+    UM_DEFFIX(UM_CREATEROOMRES, result);
+    result->id = roomid;
+    result->err = err;
+    sh_service_send(SERVICE_ID, dest_handle, MT_UM, result, sizeof(*result));
 }
 
 static void
 _handle_creategame(struct game* self, struct node_message* nm) {
     UM_CAST(UM_CREATEROOM, cr, nm->um);
 
-    const struct map_tplt* tmap = _maptplt(cr->mapid); 
+    const struct map_tplt* tmap = find_maptplt(cr->mapid); 
     if (tmap == NULL) {
-        _notify_createroomres(nm->hn, SERR_CRENOTPLT, cr->id, cr->key, 0);
+        notify_create_room_result(nm->hn, SERR_CRENOTPLT, cr->id, cr->key, 0);
         return;
     }
     struct genmap* gm = _create_map(self, tmap, cr->key);
     if (gm == NULL) {
-        _notify_createroomres(nm->hn, SERR_CRENOMAP, cr->id, cr->key, 0);
+        notify_create_room_result(nm->hn, SERR_CRENOMAP, cr->id, cr->key, 0);
         return;
     }
     struct room* ro = _create_room(self);
@@ -1183,7 +1152,7 @@ _handle_creategame(struct game* self, struct node_message* nm) {
         //dump(m->detail.charid, m->detail.name, &m->detail.attri);
     }
     int roomid = GFREEID_ID(ro, &self->rooms);
-    _notify_createroomres(nm->hn, SERR_OK, cr->id, cr->key, roomid);
+    notify_create_room_result(nm->hn, SERR_OK, cr->id, cr->key, roomid);
 }
 
 static void
@@ -1295,14 +1264,88 @@ game_nodemsg(struct service* s, int id, void* msg, int sz) {
     }
 }
 
+static void
+room_create(struct service *s, int source, const struct UM_CREATEROOM *create) {
+    const struct map_tplt* mapt = find_maptplt(create->mapid); 
+    if (mapt == NULL) {
+        notify_create_room_result(s, source, create->id, SERR_CRENOTPLT);
+        return;
+    }
+    struct genmap* gm = _create_map(self, mapt, cr->key);
+    if (gm == NULL) {
+        notify_create_room_result(s, source, create->id, SERR_CRENOMAP);
+        return;
+    }
+
+    struct room *ro = malloc(sizeof(*ro));
+    ro->status = RS_CREATE;
+    ro->statustime = sc_timer_now();
+    ro->type = create->type;
+    ro->map = gm;
+
+    ro->gattri.randseed = cr->key; // just easy
+    ro->gattri.mapid = cr->mapid;
+    ground_attri_build(mapt->difficulty, &ro->gattri);
+
+    ro->np = cr->nmember;
+    struct member* m;
+    int i;
+    for (i=0; i<cr->nmember; ++i) {
+        m = &ro->p[i];
+        _initmember(m, &cr->members[i]);
+        role_attri_build(&ro->gattri, &m->detail.attri);
+        //dump(m->detail.charid, m->detail.name, &m->detail.attri);
+    }
+    int roomid = GFREEID_ID(ro, &self->rooms);
+    notify_create_room_result(nm->hn, SERR_OK, cr->id, cr->key, roomid);
+
+}
+
+static void
+room_destroy(struct service *s, uint32_t roomid) {
+}
+
 void
-game_net(struct service* s, struct gate_message* gm) {
-    struct game* self = SERVICE_SELF;
-    struct net_message* nm = gm->msg;
-    switch (nm->type) {
-    case NETE_SOCKERR:
-    case NETE_TIMEOUT:
-        _logout(self, gm->c, false, true);
+game_main(struct service *s, int session, int source, int type, const void *msg, int sz) {
+    switch (type) {
+    case MT_UM: {
+        UM_CAST(UM_BASE, base, msg);
+        switch (base->msgid) {
+        case IDUM_HALL: {
+            UM_CAST(UM_HALL, ha, msg);
+            UM_CAST(UM_BASE, wrap, ha->wrap);
+
+            switch (wrap->msgid) {
+            case IDUM_LOGINROOM:
+                //_login(self, gm->c, um);
+                break;
+            case IDUM_LOGOUT:
+                //_logout(self, gm->c, true, true);
+                break;
+            case IDUM_GAMELOADOK:
+                _loadok(self, gm->c);
+                break;
+            case IDUM_GAMESYNC:
+                _sync(self, gm->c, um);
+                break;
+            case IDUM_ROLEPRESS:
+                _role_press(self, gm->c, um);
+                break;
+            case IDUM_USEITEM:
+                _use_item(self, gm->c, um);
+                break;
+            }
+            break;
+            }
+        case IDUM_CREATEROOM: {
+            UM_CAST(UM_CREATEROOM, create, msg);
+            break;
+            }
+        }
+        break;
+        }
+    case MT_MONITOR:
+        // todo
         break;
     }
 }

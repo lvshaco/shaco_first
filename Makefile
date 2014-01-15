@@ -101,6 +101,7 @@ service_so=\
 	service_loadbalance.so \
 	service_watchdog.so \
 	service_uniqueol.so \
+	service_match.so \
 	service_cmdctlgame.so
 
 worldservice_so=\
@@ -133,8 +134,8 @@ all: \
 	service_benchmarkdb.so \
 	service_redisproxy.so \
 	service_login.so \
-	service_tpltworld.so \
-	service_tpltgame.so \
+	service_tplthall.so \
+	service_tpltroom.so \
 	service_cmdctlworld.so
 
 release: CFLAGS += -O2 -fno-strict-aliasing
@@ -182,15 +183,13 @@ service_login.so: $(service_dir)/service_login.c
 	@rm -f $@
 	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Iinclude/libshaco -Inet -Ibase -Imessage -Iredis -Wl,-rpath,. redis.so
 
-service_tpltworld.so: $(service_dir)/service_tpltworld.c
+service_tplthall.so: $(service_dir)/service_tplthall.c
 	@rm -f $@
 	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Iinclude/libshaco -Itplt -Idatadefine -Wl,-rpath,. tplt.so
 
-service_tpltgame.so: $(service_dir)/service_tpltgame.c \
-	game/roommap.c \
-	game/roommap.h
+service_tpltroom.so: $(service_dir)/service_tpltroom.c
 	@rm -f $@
-	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Iinclude/libshaco -Ibase -Itplt -Idatadefine -Igame -Wl,-rpath,. tplt.so
+	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Iinclude/libshaco -Itplt -Idatadefine -Igame -Wl,-rpath,. tplt.so mapdatamgr.so
 
 service_cmdctlworld.so: $(service_dir)/service_cmdctlworld.c
 	@rm -f $@
@@ -219,6 +218,10 @@ base.so: $(base_src)
 tplt.so: $(tplt_src)
 	@rm -f $@
 	gcc $(CFLAGS) $(SHARED) -o $@ $^ -DUSE_HOSTLOG -Iinclude/libshaco
+
+mapdatamgr.so: game/mapdatamgr.c game/mapdatamgr.c
+	@rm -f $@
+	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Iinclude/libshaco -Itplt -Idatadefine -Igame
 
 elog.so: $(elog_src)
 	@rm -f $@

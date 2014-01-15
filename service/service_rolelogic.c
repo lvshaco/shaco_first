@@ -34,8 +34,8 @@ rolelogic_free(struct rolelogic* self) {
 int
 rolelogic_init(struct service* s) {
     struct rolelogic* self = SERVICE_SELF;
-    if (sc_handler("attribute", &self->attrihandler) ||
-        sc_handler("playerdb", &self->dbhandler))
+    if (sh_handler("attribute", &self->attrihandler) ||
+        sh_handler("playerdb", &self->dbhandler))
         return 1;
     SUBSCRIBE_MSG(s->serviceid, IDUM_USEROLE);
     SUBSCRIBE_MSG(s->serviceid, IDUM_BUYROLE);

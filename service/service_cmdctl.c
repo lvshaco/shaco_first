@@ -196,7 +196,7 @@ cmdctl_init(struct service* s) {
     SUBSCRIBE_MSG(s->serviceid, IDUM_CMDREQ);
 
     if (HNODE_TID(sc_id()) == NODE_CENTER) {
-        if (sc_handler("cmds", &self->cmds_service))
+        if (sh_handler("cmds", &self->cmds_service))
             return 1;
     } else {
         self->cmds_service = SERVICE_INVALID;

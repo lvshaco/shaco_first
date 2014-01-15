@@ -33,8 +33,8 @@ awardlogic_free(struct awardlogic* self) {
 int
 awardlogic_init(struct service* s) {
     struct awardlogic* self = SERVICE_SELF;
-    if (sc_handler("playerdb", &self->db_handler) ||
-        sc_handler("rank", &self->rank_handler))
+    if (sh_handler("playerdb", &self->db_handler) ||
+        sh_handler("rank", &self->rank_handler))
         return 1;
     return 0;
 }

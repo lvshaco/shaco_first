@@ -5,7 +5,7 @@
 #include <stdint.h>
 #include <string.h>
 
-//------------------------------hash32-------------------------------
+// hash32
 struct sh_hash_slot {
     uint32_t key;
     void *pointer;
@@ -33,10 +33,35 @@ void
 sh_hash_fini(struct sh_hash *h) {
     if (h == NULL)
         return;
+
+    struct sh_hash_slot *one, *next;
+    int i;
+    for (i=0; i<h->used; ++i) {
+        one = h->slots[i];
+        while (one) {
+            next = one->next;
+            free(one);
+            one = next;
+        }
+    }
     free(h->slots);
     h->slots = NULL;
     h->used = 0;
     h->cap = 0;
+}
+
+struct sh_hash *
+sh_hash_new(uint32_t init) {
+    struct sh_hash *h = malloc(sizeof(*h));
+    memset(h, 0, sizeof(*h));
+    sh_hash_init(h, init);
+    return h;
+}
+
+void
+sh_hash_delete(struct sh_hash *h) {
+    sh_hash_fini(h);
+    free(h);
 }
 
 void *
@@ -118,7 +143,20 @@ sh_hash_remove(struct sh_hash *h, uint32_t key) {
     return NULL;
 }
 
-//--------------------------------hash64---------------------------------
+void
+sh_hash_foreach(struct sh_hash *h, void (*cb)(void *pointer)) {
+    struct sh_hash_slot *one;
+    int i;
+    for (i=0; i<h->used; ++i) {
+        one = h->slots[i];
+        while (one) {
+            (cb)(one->pointer);
+            one = one->next;
+        }
+    }
+}
+
+// hash64
 struct sh_hash64_slot {
     uint64_t key;
     void *pointer;
@@ -230,6 +268,5 @@ sh_hash64_remove(struct sh_hash64 *h, uint64_t key) {
     }
     return NULL;
 }
-
 
 #endif

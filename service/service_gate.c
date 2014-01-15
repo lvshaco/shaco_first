@@ -56,12 +56,12 @@ gate_init(struct service* s) {
     struct gate* self = SERVICE_SELF;
     
     const char* hname = sc_getstr("gate_handler", ""); 
-    if (sc_handler(hname, &self->handler))
+    if (sh_handler(hname, &self->handler))
         return 1;
     self->need_load = sc_getint("gate_load", 0);
     if (self->need_load) {
         const char *lname = sc_getstr("gate_load", "");
-        if (sc_handler(lname, &self->load_handle)) {
+        if (sh_handler(lname, &self->load_handle)) {
             return 1;
         }
     }

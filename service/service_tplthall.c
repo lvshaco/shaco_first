@@ -1,10 +1,12 @@
 #include "sc_service.h"
-#include "sh_util.h"
+#include "sc_node.h"
+#include "sc_log.h"
 #include "tplt_include.h"
 #include "tplt_struct.h"
+#include <string.h>
 
 static int
-_load() {
+load_tplt() {
     tplt_fini();
 #define TBLFILE(name) "./res/tbl/"#name".tbl"
     struct tplt_desc desc[] = {
@@ -16,21 +18,28 @@ _load() {
 }
 
 void
-tpltworld_free(void* pnull) {
+tplthall_free(void* null) {
     tplt_fini();
 }
 
 int
-tpltworld_init(struct service* s) {
-    if (_load()) {
+tplthall_init(struct service* s) {
+    if (load_tplt()) {
         return 1;
     }
     return 0;
 }
 
 void
-tpltworld_service(struct service* s, struct service_message* sm) {
-    if (sc_cstr_compare_int32("TPLT", sm->type)) { 
-        _load();
+tplthall_main(struct service *s, int session, int source, int type, const void *msg, int sz) {
+    if (type != MT_TEXT)
+        return;
+
+    if (strncmp("reload", msg, sz)) {
+        if (!load_tplt()) {
+            sc_info("reload tplt ok");
+        } else {
+            sc_error("reload tplt fail");
+        }
     }
 }

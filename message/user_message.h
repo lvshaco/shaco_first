@@ -43,6 +43,10 @@
 #define IDUM_CREATEROOM     IDUM_NBEGIN+200
 #define IDUM_CREATEROOMRES  IDUM_NBEGIN+201
 #define IDUM_OVERROOM       IDUM_NBEGIN+202
+#define IDUM_DESTROYROOM    IDUM_NBEGIN+203
+
+#define IDUM_APPLY          IDUM_NBEGIN+210
+#define IDUM_APPLYCANCEL    IDUM_NBEGIN+211
 
 #pragma pack(1)
 
@@ -61,13 +65,13 @@ struct UM_AUTH {
 
 struct UM_HALL {
     _UM_HEADER;
-    uint32_t accid;
+    uint32_t charid;
     uint8_t wrap[0];
 };
 
 struct UM_ROOM {
     _UM_HEADER;
-    uint32_t accid;
+    uint32_t charid;
     uint8_t wrap[0];
 };
 
@@ -251,6 +255,13 @@ struct UM_ENTERHALL {
 struct UM_ENTERROOM {
     _UM_HEADER;
     uint16_t room_handle;
+    uint32_t roomid;
+};
+
+struct UM_LOGINROOM {
+    _UM_HEADER;
+    uint32_t roomid;
+    struct tmemberdetail detail;
 };
 
 // room
@@ -259,21 +270,23 @@ struct UM_CREATEROOM {
     int8_t type;  // see ROOM_TYPE*
     uint32_t mapid;
     int id;
-    uint32_t key; // key of room
     int8_t nmember;
-    struct tmemberdetail members[0];
+    uint32_t members[0];
 };
 static inline uint16_t 
 UM_CREATEROOM_size(struct UM_CREATEROOM* cr) {
     return sizeof(*cr) + sizeof(cr->members[0]) * cr->nmember;
 }
 
+struct UM_DESTROYROOM {
+    _UM_HEADER;
+    uint32_t id;
+};
+
 struct UM_CREATEROOMRES {
     _UM_HEADER;
-    int32_t error;
-    int32_t id;
-    uint32_t key;
-    int32_t roomid;
+    uint32_t id;
+    int8_t err;
 };
 
 struct memberaward {
@@ -293,6 +306,15 @@ static inline uint16_t
 UM_OVERROOM_size(struct UM_OVERROOM* um) {
     return sizeof(*um) + sizeof(um->awards[0]) * um->nmember;
 }
+
+struct UM_APPLY {
+    _UM_HEADER;
+    int8_t type;
+};
+
+struct UM_APPLYCANCEL {
+    _UM_HEADER;
+};
 
 #pragma pack()
 

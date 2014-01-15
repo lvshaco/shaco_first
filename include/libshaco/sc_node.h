@@ -34,7 +34,7 @@ __attribute__((format(printf, 3, 4)))
 int sc_service_minload(int vhandle);
 int sc_service_nextload(int vhandle);
 
-int sc_handler(const char *name, int *handle);
+int sh_handler(const char *name, int *handle);
 
 static inline int
 sc_handleid(int nodeid, int serviceid) {

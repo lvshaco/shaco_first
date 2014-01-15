@@ -44,7 +44,7 @@ cmds_free(struct server* self) {
 int
 cmds_init(struct service* s) {
     struct server* self = SERVICE_SELF;
-    if (sc_handler("cmdctl", &self->ctl_service))
+    if (sh_handler("cmdctl", &self->ctl_service))
         return 1;
     int cmax = sc_gate_maxclient();
     if (cmax == 0) {

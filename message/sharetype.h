@@ -39,6 +39,7 @@
 #define SERR_NOUNIQUEOL     56
 #define SERR_ACCINSERT      57
 #define SERR_NOHALLS        58
+#define SERR_NOROOMS        59
 
 #pragma pack(1)
 
