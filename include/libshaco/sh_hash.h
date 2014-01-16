@@ -156,6 +156,19 @@ sh_hash_foreach(struct sh_hash *h, void (*cb)(void *pointer)) {
     }
 }
 
+void
+sh_hash_foreach2(struct sh_hash *h, void (*cb)(void *pointer, void *ud), void *ud) {
+    struct sh_hash_slot *one;
+    int i;
+    for (i=0; i<h->used; ++i) {
+        one = h->slots[i];
+        while (one) {
+            (cb)(one->pointer, ud);
+            one = one->next;
+        }
+    }
+}
+
 // hash64
 struct sh_hash64_slot {
     uint64_t key;

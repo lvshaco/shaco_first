@@ -25,6 +25,8 @@
 #define IDUM_MINLOADFAIL IDUM_NBEGIN+13
 #define IDUM_UPDATELOAD IDUM_NBEGIN+14
 
+#define IDUM_CLIENT     IDUM_NBEGIN+15
+
 #define IDUM_REDISQUERY IDUM_NBEGIN+20
 #define IDUM_REDISREPLY IDUM_NBEGIN+21
 
@@ -37,12 +39,14 @@
 //#define IDUM_ACCOUNTLOGINRES IDUM_NBEGIN+101
 #define IDUM_LOGINACCOUNTOK  IDUM_NBEGIN+102
 #define IDUM_ENTERHALL    IDUM_NBEGIN+110
+#define IDUM_ENTERROOM    IDUM_NBEGIN+111
+#define IDUM_LOGINROOM    IDUM_NBEGIN+112
 
 #define IDUM_MINLOADEND   IDUM_NBEGIN+199 // minload end
 
 #define IDUM_CREATEROOM     IDUM_NBEGIN+200
 #define IDUM_CREATEROOMRES  IDUM_NBEGIN+201
-#define IDUM_OVERROOM       IDUM_NBEGIN+202
+//#define IDUM_OVERROOM       IDUM_NBEGIN+202
 #define IDUM_DESTROYROOM    IDUM_NBEGIN+203
 
 #define IDUM_APPLY          IDUM_NBEGIN+210
@@ -63,12 +67,21 @@ struct UM_AUTH {
     uint8_t wrap[0];
 };
 
+// watchdog 对此类消息转发给gate
+struct UM_CLIENT {
+    _UM_HEADER;
+    uint32_t charid;
+    uint8_t wrap[0];
+};
+
+// watchdog 对此类消息转发给hall
 struct UM_HALL {
     _UM_HEADER;
     uint32_t charid;
     uint8_t wrap[0];
 };
 
+// watchdog 对此类消息转发给room
 struct UM_ROOM {
     _UM_HEADER;
     uint32_t charid;
@@ -290,22 +303,16 @@ struct UM_CREATEROOMRES {
 };
 
 struct memberaward {
-    uint32_t charid;
     int32_t exp;
     int32_t coin;
     int32_t score;
 };
 
-struct UM_OVERROOM {
+struct UM_GAMEAWARD {
     _UM_HEADER;
     int8_t type;
-    int8_t nmember;
-    struct memberaward awards[0];
+    struct memberaward award;
 };
-static inline uint16_t
-UM_OVERROOM_size(struct UM_OVERROOM* um) {
-    return sizeof(*um) + sizeof(um->awards[0]) * um->nmember;
-}
 
 struct UM_APPLY {
     _UM_HEADER;

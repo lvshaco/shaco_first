@@ -130,6 +130,7 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.py *.h *.c" {
   service_uniqueol.c
   service_watchdog.c
   service_world.c
+  service_hall.c
  }
  world=world{
   player.h
@@ -139,6 +140,7 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.py *.h *.c" {
   player.c
  }
  game=game{
+  buff.h
   fight.h
   genmap.h
   mapdatamgr.h

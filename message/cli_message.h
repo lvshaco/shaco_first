@@ -259,8 +259,14 @@ struct UM_GAMELOGOUT {
     _UM_HEADER;
 };
 
+#define ROOMS_CREATE 0
+#define ROOMS_ENTER  1
+#define ROOMS_START  2
+#define ROOMS_OVER   3
+
 struct UM_GAMEINFO {
     _UM_HEADER;
+    int8_t status;
     struct groundattri gattri;
     int8_t nmember;
     struct tmemberdetail members[0];
