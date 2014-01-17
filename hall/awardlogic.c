@@ -1,4 +1,5 @@
 #include "sc_service.h"
+#include "sc_node.h"
 #include "sh_util.h"
 #include "sc.h"
 #include "sc_log.h"
@@ -8,36 +9,10 @@
 #include "player.h"
 #include "playerdb.h"
 #include "user_message.h"
+#include "hall.h"
 #include <stdlib.h>
 #include <string.h>
 #include <limits.h>
-
-// awardlogic
-struct awardlogic {
-    int db_handler;
-    int rank_handler;
-};
-
-struct awardlogic*
-awardlogic_create() {
-    struct awardlogic* self = malloc(sizeof(*self));
-    memset(self, 0, sizeof(*self));
-    return self;
-}
-
-void
-awardlogic_free(struct awardlogic* self) {
-    free(self);
-}
-
-int
-awardlogic_init(struct service* s) {
-    struct awardlogic* self = SERVICE_SELF;
-    if (sh_handler("playerdb", &self->db_handler) ||
-        sh_handler("rank", &self->rank_handler))
-        return 1;
-    return 0;
-}
 
 static void
 _levelup(uint32_t* exp, uint16_t* level) {
@@ -70,20 +45,20 @@ _get_score(struct chardata* cdata, uint32_t score) {
 }
 
 static inline void
-_rank(struct awardlogic* self, struct player* p, 
-      const char* type, const char* oldtype, uint64_t score) {
-    struct service_message sm;
-    sm.p1 = (void*)type;
-    sm.p2 = (void*)oldtype;
-    sm.i1 = p->data.charid;
-    sm.n1 = score;
-    service_notify_service(self->rank_handler, &sm);
+_rank(struct service *s, struct player* pr, 
+      const char* type, const char* type_old, uint64_t score) {
+    struct hall *self = SERVICE_SELF;
+    UM_DEFFIX(UM_DBRANK, dr);
+    dr->type = type;
+    dr->type_old = type_old;
+    dr->charid = pr->data.charid;
+    dr->score = score;
+    sh_service_send(SERVICE_ID, self->rank_handle, MT_UM, dr, sizeof(*dr));
 }
 
 static void
-_award(struct awardlogic* self, 
-       int8_t type, struct player* p, const struct memberaward* award) {
-    struct chardata* cdata = &p->data;
+process_award(struct service *s, struct player* pr, int8_t type, const struct memberaward* award) {
+    struct chardata* cdata = &pr->data;
     bool updated = false;
     // coin
     if (award->coin > 0) {
@@ -107,14 +82,14 @@ _award(struct awardlogic* self,
     case ROOM_TYPE_NORMAL:
         if (new_grade != old_grade) {
             cdata->score_normal = award->score;
-            _rank(self, p, 
+            _rank(s, pr, 
             _player_gradestr(new_grade), 
             _player_gradestr(old_grade),
             _get_score(cdata, cdata->score_normal));
             updated = true;
         } else if (award->score > cdata->score_normal) {
             cdata->score_normal = award->score;
-            _rank(self, p, _player_gradestr(new_grade), "",
+            _rank(s, pr, _player_gradestr(new_grade), "",
             _get_score(cdata, cdata->score_normal));
             updated = true;
         }
@@ -122,26 +97,25 @@ _award(struct awardlogic* self,
     case ROOM_TYPE_DASHI:
         if (award->score > 0) {
             cdata->score_dashi += award->score;
-            _rank(self, p, "dashi", "", 
+            _rank(s, pr, "dashi", "", 
             _get_score(cdata, cdata->score_dashi));
             updated = true;
         }
         break;
     }
-    if (updated) {
-        send_playerdb(self->db_handler, p, PDB_SAVE);
+    if (updated) { 
+        playerdb_send(s, pr, PDB_SAVE);
     }
 }
 
 void
-awardlogic_service(struct service* s, struct service_message* sm) {
-    struct awardlogic* self = SERVICE_SELF;
-    struct player** allp = sm->p1;
-    struct memberaward* awards = sm->p2;
-    int n = sm->i1;
-    int8_t type = sm->i2;
-    int i;
-    for (i=0; i<n; ++i) {
-        _award(self, type, allp[i], &awards[i]); 
+awardlogic_main(struct service *s, struct player *pr, const void *msg, int sz) {
+    UM_CAST(UM_BASE, base, msg);
+    switch (base->msgid) {
+    case IDUM_GAMEAWARD: {
+        UM_CASTCK(UM_GAMEAWARD, ga, base, sz);
+        process_award(s, pr, ga->type, &ga->award);
+        break;
+        }
     }
 }

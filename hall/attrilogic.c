@@ -1,14 +1,16 @@
 #include "sc_service.h"
+#include "sc_node.h"
 #include "sc_log.h"
 #include "sharetype.h"
 #include "player.h"
+#include "user_message.h"
 #include "tplt_include.h"
 #include "tplt_struct.h"
 #include <stdlib.h>
 #include <string.h>
 
 static void
-_effect(struct char_attribute* cattri, const struct role_tplt* base, 
+effect(struct char_attribute* cattri, const struct role_tplt* base, 
         int32_t type, int32_t value, bool isper) {
 #define CASE(T, R, B, V, isper) \
     case T: (R) += (isper) ? (B)*(V)/1000.f : (V); break;
@@ -45,8 +47,9 @@ _effect(struct char_attribute* cattri, const struct role_tplt* base,
 
 #define EFFECT(cattri, base, type, value, isper) \
     if (type > 0 && value > 0) { \
-        _effect(cattri, base, type, value, isper); \
+        effect(cattri, base, type, value, isper); \
     }
+
 /*
 static void dump(struct chardata* cdata) {
     sc_rec("char: accid%u, id %u, name %s", cdata->accid, cdata->charid, cdata->name);
@@ -87,9 +90,8 @@ static void dump(struct chardata* cdata) {
 }
 */
 void
-attribute_service(struct service* s, struct service_message* sm) {
-    struct player* p = sm->msg;
-    struct chardata* cdata = &p->data; 
+attribute_refresh(struct player *pr) {
+    struct chardata* cdata = &pr->data; 
     struct ringdata* rdata = &cdata->ringdata;
     struct char_attribute* cattri = &cdata->attri;
 
@@ -134,4 +136,9 @@ attribute_service(struct service* s, struct service_message* sm) {
     cattri->coin_profit += base->coin_profit/100.f;
 
     //dump(cdata);
+}
+
+void
+attribute_main(struct service *s, struct player *pr, const void *msg, int sz) {
+    attribute_refresh(pr);
 }

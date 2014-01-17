@@ -81,10 +81,6 @@ libshaco_src=\
 cli_src=\
 	tool/shaco-cli.c
 
-world_src=\
-	world/player.c \
-	world/player.h
-
 LDFLAGS=-Wl,-rpath,. \
 		shaco.so net.so lur.so base.so -llua -lm -ldl -lrt -rdynamic# -Wl,-E
 
@@ -127,7 +123,6 @@ all: \
 	service_log.so \
 	$(service_so) \
 	service_game.so \
-	world.so \
 	$(worldservice_so) \
 	service_playerdb.so \
 	service_rank.so \
@@ -136,7 +131,8 @@ all: \
 	service_login.so \
 	service_tplthall.so \
 	service_tpltroom.so \
-	service_cmdctlworld.so
+	service_cmdctlworld.so \
+	service_hall.so
 
 release: CFLAGS += -O2 -fno-strict-aliasing
 release: all
@@ -147,7 +143,7 @@ $(service_so): %.so: $(service_dir)/%.c
 
 $(worldservice_so): %.so: $(service_dir)/%.c
 	@rm -f $@
-	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Iinclude/libshaco -Inet -Ibase -Imessage -Iworld -Itplt -Idatadefine -Wl,-rpath,. world.so tplt.so
+	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Iinclude/libshaco -Inet -Ibase -Imessage -Iworld -Itplt -Idatadefine -Wl,-rpath,. tplt.so
 
 service_game.so: $(service_dir)/service_game.c \
 	game/fight.c \
@@ -164,11 +160,11 @@ service_log.so: $(service_dir)/service_log.c
 
 service_playerdb.so: $(service_dir)/service_playerdb.c
 	@rm -f $@
-	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Iinclude/libshaco -Inet -Ibase -Imessage -Iworld -Iredis -Wl,-rpath,. world.so redis.so
+	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Iinclude/libshaco -Inet -Ibase -Imessage -Iworld -Iredis -Wl,-rpath,. redis.so
 
 service_rank.so: $(service_dir)/service_rank.c
 	@rm -f $@
-	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Iinclude/libshaco -Inet -Ibase -Imessage -Iworld -Iredis -Wl,-rpath,. world.so redis.so
+	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Iinclude/libshaco -Inet -Ibase -Imessage -Iworld -Iredis -Wl,-rpath,. redis.so
 
 
 service_benchmarkdb.so: $(service_dir)/service_benchmarkdb.c
@@ -193,11 +189,23 @@ service_tpltroom.so: $(service_dir)/service_tpltroom.c
 
 service_cmdctlworld.so: $(service_dir)/service_cmdctlworld.c
 	@rm -f $@
-	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Iinclude/libshaco -Iworld -Iinclude/libshaco -Inet -Ibase -Imessage -Wl,-rpath,. world.so
+	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Iinclude/libshaco -Inet -Ibase -Imessage -Wl,-rpath,. 
 
-world.so: $(world_src)
+service_hall.so: $(service_dir)/service_hall.c \
+	hall/player.c \
+	hall/player.h \
+	hall/playerdb.c \
+	hall/playerdb.h \
+	hall/rolelogic.c \
+	hall/rolelogic.h \
+	hall/ringlogic.c \
+	hall/ringlogic.h \
+	hall/awardlogic.c \
+	hall/awardlogic.h \
+	hall/attrilogic.c \
+	hall/attrilogic.h
 	@rm -f $@
-	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Iworld -Ibase -Imessage
+	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Iinclude/libshaco -Inet -Ibase -Itplt -Idatadefine -Imessage -Iredis -Ihall -Wl,-rpath,. redis.so
 
 lur.so: $(lur_src)
 	@rm -f $@

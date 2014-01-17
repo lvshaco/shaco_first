@@ -49,8 +49,9 @@ struct UM_BASE {
     struct type* name = (void*)name##data; \
     name->msgid = ID##type; \
 
-#define UM_DEFWRAP(type, name, wraptype) \
-    UM_DEFVAR2(type, name, sizeof(struct type)+sizeof(struct wraptype))
+#define UM_DEFWRAP(type, name, wraptype, wrapname) \
+    UM_DEFVAR2(type, name, sizeof(struct type)+sizeof(struct wraptype)) \
+    struct wraptype *wrapname = (struct wraptype*)(name->wrap);
 
 #define UM_DEFWRAP2(type, name, wrapsz) \
     UM_DEFVAR2(type, name, sizeof(struct type)+wrapsz)

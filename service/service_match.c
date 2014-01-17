@@ -12,7 +12,7 @@
 #define S_GAMING 2
 
 struct applyer {
-    uint32_t charid;
+    uint32_t uid;
     int hall_source;
     //int8_t type;
     int8_t status;
@@ -21,7 +21,7 @@ struct applyer {
 };
 
 struct member {
-    uint32_t charid;
+    uint32_t uid;
 };
 
 struct room {
@@ -120,19 +120,16 @@ room_create(struct match *self, int8_t type, int room_handle) {
 
 static inline void
 response_play_fail(struct service *s, struct applyer *ar, int err) {
-    UM_DEFWRAP(UM_HALL, ha, UM_PLAYFAIL);
-    ha->charid = ar->charid;
-    UM_CAST(UM_PLAYFAIL, pf, ha->wrap);
+    UM_DEFWRAP(UM_HALL, ha, UM_PLAYFAIL, pf);
+    ha->uid = ar->uid;
     pf->err = err;
     sh_service_send(SERVICE_ID, ar->hall_source, MT_UM, ha, sizeof(*ha)+sizeof(*pf));
 }
 
 static inline void
 notify_enter_room(struct service *s, struct applyer *ar, struct room *ro) {
-    UM_DEFWRAP(UM_HALL, ha, UM_ENTERROOM);
-    ha->charid = ar->charid;
-
-    UM_CAST(UM_ENTERROOM, en, ha->wrap);
+    UM_DEFWRAP(UM_HALL, ha, UM_ENTERROOM, en);
+    ha->uid = ar->uid;
     en->room_handle = ro->room_handle;
     en->roomid = ro->id;
     sh_service_send(SERVICE_ID, ar->hall_source, MT_UM, ha, sizeof(*ha)+sizeof(*en));
@@ -154,7 +151,7 @@ notify_create_room(struct service *s, struct room *ro) {
     create->nmember = ro->nmember;
     int i;
     for (i=0; i<ro->nmember; ++i) {
-        create->members[i] = ro->members[i].charid;
+        create->members[i] = ro->members[i].uid;
     }
     sh_service_send(SERVICE_ID, ro->room_handle, MT_UM, create, UM_CREATEROOM_size(create));
 }
@@ -162,9 +159,8 @@ notify_create_room(struct service *s, struct room *ro) {
 static inline void
 notify_waiting(struct service *s, struct applyer *ar) {
     ar->status = S_WAITING;
-    UM_DEFWRAP(UM_HALL, ha, UM_PLAYWAIT);
-    ha->charid = ar->charid;
-    UM_CAST(UM_PLAYWAIT, pw, ha->wrap);
+    UM_DEFWRAP(UM_HALL, ha, UM_PLAYWAIT, pw);
+    ha->uid = ar->uid;
     pw->timeout = 60; // todo just test
     sh_service_send(SERVICE_ID, ar->hall_source, MT_UM, ha, sizeof(*ha)+sizeof(*pw));
 }
@@ -182,7 +178,7 @@ room_create_ok(struct service *s, uint32_t id) {
     struct applyer *ar;
     int i;
     for (i=0; i<ro->nmember; ++i) {
-        ar = sh_hash_find(&self->applyers, ro->members[i].charid);
+        ar = sh_hash_find(&self->applyers, ro->members[i].uid);
         if (ar) {
             ar->status = S_GAMING;
             notify_enter_room(s, ar, ro);
@@ -201,7 +197,7 @@ room_create_fail(struct service *s, uint32_t id, int err) {
     struct applyer *ar;
     int i;
     for (i=0; i<ro->nmember; ++i) {
-        ar = sh_hash_find(&self->applyers, ro->members[i].charid);
+        ar = sh_hash_find(&self->applyers, ro->members[i].uid);
         if (ar) {
             response_play_fail(s, ar, err);
             free_applyer(self, ar);
@@ -214,12 +210,12 @@ room_create_fail(struct service *s, uint32_t id, int err) {
 static void
 join_waiting(struct match *self, struct applyer *ar) {
     ar->status = S_WAITING;
-    self->waiting = ar->charid;
+    self->waiting = ar->uid;
 }
 
 static void
 leave_waiting(struct match *self, struct applyer *ar) {
-    if (self->waiting == ar->charid) {
+    if (self->waiting == ar->uid) {
         self->waiting = 0;
     }
 }
@@ -229,10 +225,10 @@ join_room(struct room *ro, struct applyer *ar) {
     assert(ro->nmember < MEMBER_MAX);
     ar->status = S_CREATING;
     ar->roomid = ro->id;
-    ro->members[ro->nmember++].charid = ar->charid;
+    ro->members[ro->nmember++].uid = ar->uid;
 }
 
-static void
+static int
 lookup(struct service *s, struct applyer *ar, int8_t type) {
     struct match *self = SERVICE_SELF;
 
@@ -246,10 +242,7 @@ lookup(struct service *s, struct applyer *ar, int8_t type) {
     if (other) {
         int room_handle = sc_service_minload(self->room_handle);
         if (room_handle == -1) {
-            response_play_fail(s, ar, SERR_NOROOMS);
-            sh_hash_remove(&self->applyers, ar->charid);
-            free_applyer(self, ar);
-            return;
+            return 1;
         }
         struct room *ro = room_create(self, type, room_handle);
         join_room(ro, ar);
@@ -260,41 +253,46 @@ lookup(struct service *s, struct applyer *ar, int8_t type) {
         join_waiting(self, ar);
         notify_waiting(s, ar);
     }
+    return 0;
 }
 
 static void
-apply(struct service *s, int source, uint32_t charid, struct UM_APPLY *ap) {
+apply(struct service *s, int source, uint32_t uid, struct UM_APPLY *ap) {
     struct match *self = SERVICE_SELF;
-    struct applyer *ar = sh_hash_find(&self->applyers, charid);
+    struct applyer *ar = sh_hash_find(&self->applyers, uid);
     if (ar) {
         return; // applyers already
     }
     ar = alloc_applyer(self);
-    ar->charid = charid;
+    ar->uid = uid;
     ar->hall_source = source;
     //ar->type = ap->type;
     ar->status = S_WAITING;
-    assert(!sh_hash_insert(&self->applyers, charid, ar));
 
-    lookup(s, ar, ap->type);
-}
-
-static void
-apply_cancel(struct service *s, int source, uint32_t charid) {
-    struct match *self = SERVICE_SELF;
-    struct applyer *ar = sh_hash_find(&self->applyers, charid);
-    if (ar &&
-        ar->status == S_WAITING) {
-        leave_waiting(self, ar);
-        sh_hash_remove(&self->applyers, charid);
+    if (!lookup(s, ar, ap->type)) {
+        assert(!sh_hash_insert(&self->applyers, uid, ar));
+    } else {
+        response_play_fail(s, ar, SERR_NOROOMS);
         free_applyer(self, ar);
     }
 }
 
 static void
-logout(struct service *s, uint32_t charid) {
+apply_cancel(struct service *s, int source, uint32_t uid) {
     struct match *self = SERVICE_SELF;
-    struct applyer *ar = sh_hash_find(&self->applyers, charid);
+    struct applyer *ar = sh_hash_find(&self->applyers, uid);
+    if (ar &&
+        ar->status == S_WAITING) {
+        leave_waiting(self, ar);
+        sh_hash_remove(&self->applyers, uid);
+        free_applyer(self, ar);
+    }
+}
+
+static void
+logout(struct service *s, uint32_t uid) {
+    struct match *self = SERVICE_SELF;
+    struct applyer *ar = sh_hash_find(&self->applyers, uid);
     if (ar == NULL) {
         return;
     }
@@ -309,7 +307,7 @@ logout(struct service *s, uint32_t charid) {
             }
         }
     }
-    sh_hash_remove(&self->applyers, charid);
+    sh_hash_remove(&self->applyers, uid);
     free_applyer(self, ar);
 }
 
@@ -325,15 +323,15 @@ match_main(struct service *s, int session, int source, int type, const void *msg
             switch (wrap->msgid) {
             case IDUM_APPLY: {
                 UM_CAST(UM_APPLY, ap, msg);
-                apply(s, source, ha->charid, ap);
+                apply(s, source, ha->uid, ap);
                 break;
                 }
             case IDUM_APPLYCANCEL: {
-                apply_cancel(s, source, ha->charid);
+                apply_cancel(s, source, ha->uid);
                 break;
                 }
             case IDUM_LOGOUT: {
-                logout(s, ha->charid);
+                logout(s, ha->uid);
                 break;
                 }
             }

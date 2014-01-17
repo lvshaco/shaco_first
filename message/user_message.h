@@ -26,6 +26,10 @@
 #define IDUM_UPDATELOAD IDUM_NBEGIN+14
 
 #define IDUM_CLIENT     IDUM_NBEGIN+15
+#define IDUM_PLAYER     IDUM_NBEGIN+16
+#define IDUM_DB         IDUM_NBEGIN+17
+#define IDUM_ATTRIBUTE  IDUM_NBEGIN+18
+#define IDUM_DBRANK     IDUM_NBEGIN+19
 
 #define IDUM_REDISQUERY IDUM_NBEGIN+20
 #define IDUM_REDISREPLY IDUM_NBEGIN+21
@@ -38,9 +42,12 @@
 //#define IDUM_ACCOUNTLOGINREG IDUM_NBEGIN+100
 //#define IDUM_ACCOUNTLOGINRES IDUM_NBEGIN+101
 #define IDUM_LOGINACCOUNTOK  IDUM_NBEGIN+102
+
 #define IDUM_ENTERHALL    IDUM_NBEGIN+110
-#define IDUM_ENTERROOM    IDUM_NBEGIN+111
-#define IDUM_LOGINROOM    IDUM_NBEGIN+112
+#define IDUM_EXITHALL     IDUM_NBEGIN+111
+
+#define IDUM_ENTERROOM    IDUM_NBEGIN+150
+#define IDUM_LOGINROOM    IDUM_NBEGIN+151
 
 #define IDUM_MINLOADEND   IDUM_NBEGIN+199 // minload end
 
@@ -49,8 +56,51 @@
 //#define IDUM_OVERROOM       IDUM_NBEGIN+202
 #define IDUM_DESTROYROOM    IDUM_NBEGIN+203
 
-#define IDUM_APPLY          IDUM_NBEGIN+210
-#define IDUM_APPLYCANCEL    IDUM_NBEGIN+211
+#define IDUM_AWARDB         IDUM_NBEGIN+220
+#define IDUM_GAMEAWARD      IDUM_NBEGIN+220
+#define IDUM_AWARDE         IDUM_NBEGIN+229
+
+#define IDUM_APPLY          IDUM_NBEGIN+300
+#define IDUM_APPLYCANCEL    IDUM_NBEGIN+301
+
+// player 仅限本地服务通讯
+struct player;
+struct UM_PLAYER {
+    _UM_HEADER;
+    struct player *pr;
+    struct UM_BASE *real;
+    int realsz;
+};
+
+// DB_PLAYER type
+#define PDB_UNKNOW 0
+#define PDB_QUERY 1
+#define PDB_LOAD  2
+#define PDB_SAVE  3
+#define PDB_CHECKNAME 4
+#define PDB_SAVENAME 5
+#define PDB_CHARID 6
+#define PDB_CREATE 7
+#define PDB_BINDCHARID 8
+
+struct UM_DB {
+    _UM_HEADER;
+    struct player *pr;
+    int8_t type;
+};
+
+struct UM_DBRANK {
+    _UM_HEADER;
+    const char *type;
+    const char *type_old;
+    uint32_t charid;
+    uint64_t score;
+};
+
+struct UM_ATTRIBUTE {
+    _UM_HEADER;
+    struct player *pr;
+};
 
 #pragma pack(1)
 
@@ -70,21 +120,21 @@ struct UM_AUTH {
 // watchdog 对此类消息转发给gate
 struct UM_CLIENT {
     _UM_HEADER;
-    uint32_t charid;
+    uint32_t uid;
     uint8_t wrap[0];
 };
 
 // watchdog 对此类消息转发给hall
 struct UM_HALL {
     _UM_HEADER;
-    uint32_t charid;
+    uint32_t uid;
     uint8_t wrap[0];
 };
 
 // watchdog 对此类消息转发给room
 struct UM_ROOM {
     _UM_HEADER;
-    uint32_t charid;
+    uint32_t uid;
     uint8_t wrap[0];
 };
 
@@ -262,7 +312,13 @@ struct UM_LOGINACCOUNTOK {
 // hall
 struct UM_ENTERHALL {
     _UM_HEADER;
-    uint32_t accid;
+    uint32_t uid;
+};
+
+struct UM_EXITHALL {
+    _UM_HEADER;
+    uint32_t uid;
+    int8_t err;
 };
 
 struct UM_ENTERROOM {

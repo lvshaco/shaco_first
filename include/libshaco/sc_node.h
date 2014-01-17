@@ -8,6 +8,14 @@
 #define MT_UM   2
 #define MT_MONITOR 3
 #define MT_GATE 4
+#define MT_USR1 5
+#define MT_USR2 6
+#define MT_USR3 7
+
+// publish flag
+#define PUB_SER 1
+#define PUB_MOD 2
+#define PUB_BOTH PUB_SER|PUB_MOD
 
 struct sh_node_addr {
     char naddr[40];
@@ -20,7 +28,6 @@ int sc_service_start(const char *name, int handle, const struct sh_node_addr *ad
 int sc_service_exit(int handle);
 
 int sc_service_subscribe(const char *name);
-// flag: 1 for service name, 2 for module name, 3 for both
 int sc_service_publish(const char *name, int flag);
 int sh_service_send(int source, int dest, int type, const void *msg, int sz);
 int sc_service_broadcast(int source, int dest, int type, const void *msg, int sz);

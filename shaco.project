@@ -31,6 +31,7 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.py *.h *.c" {
   sc_timer.c
   sh_monitor.c
   sh_util.c
+  sh_hash.c
  }
  include=include{
   libshaco=libshaco{
@@ -96,8 +97,6 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.py *.h *.c" {
  }
  service=service{
   cmdctl.h
-  service_attribute.c
-  service_awardlogic.c
   service_benchmark.c
   service_benchmarkdb.c
   service_centerc.c
@@ -112,6 +111,7 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.py *.h *.c" {
   service_game.c
   service_gamematch.c
   service_gate.c
+  service_hall.c
   service_load.c
   service_loadbalance.c
   service_log.c
@@ -121,23 +121,27 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.py *.h *.c" {
   service_playerdb.c
   service_rank.c
   service_redisproxy.c
-  service_ringlogic.c
-  service_rolelogic.c
   service_route.c
-  service_tpltgame.c
   service_tplthall.c
   service_tpltroom.c
   service_uniqueol.c
   service_watchdog.c
   service_world.c
-  service_hall.c
  }
- world=world{
+ hall=hall{
+  attrilogic.h
+  awardlogic.h
+  hall.h
   player.h
   playerdb.h
-  worldevent.h
-  worldhelper.h
+  ringlogic.h
+  rolelogic.h
+  attrilogic.c
+  awardlogic.c
   player.c
+  playerdb.c
+  ringlogic.c
+  rolelogic.c
  }
  game=game{
   buff.h
@@ -161,6 +165,7 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.py *.h *.c" {
   user_message.h
  }
  datadefine=datadefine{
+  tplt_struct.h
  }
  tplt=tplt{
   tplt.h

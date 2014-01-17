@@ -205,14 +205,14 @@ sc_service_publish(const char *name, int flag) {
     if (handle == -1) {
         return 1;
     }
-    if (flag & 1) {
+    if (flag & PUB_SER) {
         char msg[128];
         int n = snprintf(msg, sizeof(msg), "PUB %s %d", name, handle);
         service_main(R->handle, 0, 0, MT_TEXT, msg, n);
     }
-    if (flag & 2) {
+    if (flag & PUB_MOD) {
         const char *module_name = service_query_module_name(handle);
-        if (!(flag&1) || strcmp(module_name, name)) {
+        if (!(flag & PUB_SER) || strcmp(module_name, name)) {
             char msg[128];
             int n = snprintf(msg, sizeof(msg), "PUB %s %d", module_name, handle);
             service_main(R->handle, 0, 0, MT_TEXT, msg, n);
