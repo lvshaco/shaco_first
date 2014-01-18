@@ -14,10 +14,10 @@
 struct applyer {
     uint32_t uid;
     int hall_source;
-    //int8_t type;
     int8_t status;
     uint32_t roomid;
-    // todo:
+
+    struct tmemberbrief brief;
 };
 
 struct member {
@@ -128,11 +128,11 @@ response_play_fail(struct service *s, struct applyer *ar, int err) {
 
 static inline void
 notify_enter_room(struct service *s, struct applyer *ar, struct room *ro) {
-    UM_DEFWRAP(UM_HALL, ha, UM_ENTERROOM, en);
+    UM_DEFWRAP(UM_HALL, ha, UM_ENTERROOM, enter);
     ha->uid = ar->uid;
-    en->room_handle = ro->room_handle;
-    en->roomid = ro->id;
-    sh_service_send(SERVICE_ID, ar->hall_source, MT_UM, ha, sizeof(*ha)+sizeof(*en));
+    enter->room_handle = ro->room_handle;
+    enter->roomid = ro->id;
+    sh_service_send(SERVICE_ID, ar->hall_source, MT_UM, ha, sizeof(*ha)+sizeof(*enter));
 }
 
 static inline void
@@ -158,11 +158,24 @@ notify_create_room(struct service *s, struct room *ro) {
 
 static inline void
 notify_waiting(struct service *s, struct applyer *ar) {
-    ar->status = S_WAITING;
     UM_DEFWRAP(UM_HALL, ha, UM_PLAYWAIT, pw);
     ha->uid = ar->uid;
     pw->timeout = 60; // todo just test
     sh_service_send(SERVICE_ID, ar->hall_source, MT_UM, ha, sizeof(*ha)+sizeof(*pw));
+}
+
+static inline void
+notify_loading(struct service *s, struct applyer *ar, struct applyer *other) {
+    UM_DEFWRAP(UM_HALL, ha, UM_PLAYLOADING, pl);
+    ha->uid = ar->uid;
+    pl->leasttime = ROOM_LOAD_TIMELEAST;
+    if (other) {
+        pl->member = other->brief;
+    } else {
+        // maybe other == NULL, if other logout
+        memset(&pl->member, 0, sizeof(pl->member));
+    }
+    sh_service_send(SERVICE_ID, ar->hall_source, MT_UM, ha, sizeof(*ha)+sizeof(*pl));
 }
 
 static void
@@ -174,14 +187,24 @@ room_create_ok(struct service *s, uint32_t id) {
         return;
     }
     ro->status = S_GAMING;
- 
-    struct applyer *ar;
+
+    assert(ro->nmember <= MEMBER_MAX);
+    struct applyer *all[MEMBER_MAX];
+    memset(all, 0, sizeof(all));
+
     int i;
     for (i=0; i<ro->nmember; ++i) {
-        ar = sh_hash_find(&self->applyers, ro->members[i].uid);
-        if (ar) {
-            ar->status = S_GAMING;
-            notify_enter_room(s, ar, ro);
+        all[i] = sh_hash_find(&self->applyers, ro->members[i].uid);
+        if (all[i]) {
+            all[i]->status = S_GAMING;
+            notify_enter_room(s, all[i], ro);
+        }
+    }
+    for (i=0; i<ro->nmember; ++i) {
+        if (all[i]) {
+            all[i]->status = S_GAMING;
+            notify_enter_room(s, all[i], ro);
+            notify_loading(s, all[i], all[ro->nmember-1-i]);
         }
     }
 }
@@ -268,7 +291,8 @@ apply(struct service *s, int source, uint32_t uid, struct UM_APPLY *ap) {
     ar->hall_source = source;
     //ar->type = ap->type;
     ar->status = S_WAITING;
-
+    ar->roomid = 0;
+    ar->brief = ap->brief;
     if (!lookup(s, ar, ap->type)) {
         assert(!sh_hash_insert(&self->applyers, uid, ar));
     } else {

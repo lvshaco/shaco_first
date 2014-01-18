@@ -203,7 +203,9 @@ service_hall.so: $(service_dir)/service_hall.c \
 	hall/awardlogic.c \
 	hall/awardlogic.h \
 	hall/attrilogic.c \
-	hall/attrilogic.h
+	hall/attrilogic.h \
+	hall/playlogic.c \
+	hall/playlogic.h
 	@rm -f $@
 	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Iinclude/libshaco -Inet -Ibase -Itplt -Idatadefine -Imessage -Iredis -Ihall -Wl,-rpath,. redis.so
 

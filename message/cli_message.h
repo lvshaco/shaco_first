@@ -8,73 +8,87 @@
 #define IDUM_CBEGIN 1000
 #define IDUM_CEND   2000
 
-#define IDUM_HEARTBEAT      IDUM_CBEGIN
-
-#define IDUM_HALLB          IDUM_CBEGIN+1  // hall begin
-
-#define IDUM_LOGIN          IDUM_CBEGIN+1
-#define IDUM_LOGINFAIL      IDUM_CBEGIN+2
-#define IDUM_LOGOUT         IDUM_CBEGIN+3
-#define IDUM_CHARINFO       IDUM_CBEGIN+4
-#define IDUM_CHARCREATE     IDUM_CBEGIN+5
 #define IDUM_LOGINACCOUNT   IDUM_CBEGIN+10
-#define IDUM_LOGINACCOUNTFAIL IDUM_CBEGIN+11
-#define IDUM_NOTIFYGATE IDUM_CBEGIN+12
-#define IDUM_NOTIFYWEB      IDUM_CBEGIN+13
-#define IDUM_GATEADDRREQ    IDUM_CBEGIN+14
-#define IDUM_GATEADDR       IDUM_CBEGIN+15
-#define IDUM_GATEADDRFAIL   IDUM_CBEGIN+16
+
+// client -> server (hall)
+#define IDUM_HALLB          IDUM_CBEGIN+1  // hall begin
+// user
+#define IDUM_CHARCREATE     IDUM_CBEGIN+10
 
 // role
 #define IDUM_ROLEB          IDUM_CBEGIN+20
 #define IDUM_USEROLE        IDUM_CBEGIN+20
 #define IDUM_BUYROLE        IDUM_CBEGIN+21
 #define IDUM_ADDROLE        IDUM_CBEGIN+22
-#define IDUM_SYNCMONEY      IDUM_CBEGIN+23
 #define IDUM_ROLEE          IDUM_CBEGIN+29
 
 // ring
 #define IDUM_RINGB          IDUM_CBEGIN+30
 #define IDUM_RINGPAGEBUY    IDUM_CBEGIN+30
-#define IDUM_RINGPAGERENAME   IDUM_CBEGIN+31
+#define IDUM_RINGPAGERENAME IDUM_CBEGIN+31
 #define IDUM_RINGEQUIP      IDUM_CBEGIN+32
 #define IDUM_RINGSALE       IDUM_CBEGIN+33
-#define IDUM_RINGPAGESYNC   IDUM_CBEGIN+34
-#define IDUM_RINGSTACK      IDUM_CBEGIN+35
-#define IDUM_RINGPAGEUSE    IDUM_CBEGIN+36
+#define IDUM_RINGPAGEUSE    IDUM_CBEGIN+34
 #define IDUM_RINGE          IDUM_CBEGIN+39
 
 // play
-#define IDUM_PLAY           IDUM_CBEGIN+100
-#define IDUM_PLAYFAIL       IDUM_CBEGIN+101
-#define IDUM_PLAYWAIT       IDUM_CBEGIN+102
-#define IDUM_PLAYLOADING    IDUM_CBEGIN+103
-#define IDUM_PLAYBEGIN      IDUM_CBEGIN+104
-#define IDUM_PLAYJOIN       IDUM_CBEGIN+105
-#define IDUM_PLAYUNJOIN     IDUM_CBEGIN+106
-#define IDUM_PLAYDONE       IDUM_CBEGIN+107
+#define IDUM_PLAYB          IDUM_CBEGIN+40
+#define IDUM_PLAY           IDUM_CBEGIN+41
+//#define IDUM_PLAYBEGIN      IDUM_CBEGIN+42
+//#define IDUM_PLAYJOIN       IDUM_CBEGIN+43
+//#define IDUM_PLAYUNJOIN     IDUM_CBEGIN+44
+//#define IDUM_PLAYDONE       IDUM_CBEGIN+45
+#define IDUM_PLAYE          IDUM_CBEGIN+46
 
 #define IDUM_HALLE          IDUM_CBEGIN+499  // hall end
 
+// client -> server (room)
 #define IDUM_ROOMB          IDUM_CBEGIN+500  // room begin
-// game
-#define IDUM_NOTIFYGAME     IDUM_CBEGIN+500
-#define IDUM_GAMELOGIN      IDUM_CBEGIN+501
-#define IDUM_GAMELOGINFAIL  IDUM_CBEGIN+502
-#define IDUM_GAMELOGOUT     IDUM_CBEGIN+503
-#define IDUM_GAMEINFO       IDUM_CBEGIN+504
-#define IDUM_GAMEENTER      IDUM_CBEGIN+505
-#define IDUM_GAMESTART      IDUM_CBEGIN+506
-#define IDUM_GAMEUNJOIN     IDUM_CBEGIN+507
-#define IDUM_GAMESYNC       IDUM_CBEGIN+508
-#define IDUM_USEITEM        IDUM_CBEGIN+509
-#define IDUM_ITEMEFFECT     IDUM_CBEGIN+510
-#define IDUM_ROLEPRESS      IDUM_CBEGIN+511
-#define IDUM_ROLEINFO       IDUM_CBEGIN+512
-#define IDUM_GAMEOVER       IDUM_CBEGIN+513
-#define IDUM_GAMELOADOK     IDUM_CBEGIN+514
+#define IDUM_GAMESYNC       IDUM_CBEGIN+500
+#define IDUM_USEITEM        IDUM_CBEGIN+501
+#define IDUM_ROLEPRESS      IDUM_CBEGIN+502
+#define IDUM_GAMELOADOK     IDUM_CBEGIN+503
+#define IDUM_ROOME          IDUM_CBEGIN+599 // room end
 
-#define IDUM_ROOME          IDUM_CBEGIN+799 // room end
+// server -> client
+// user
+#define IDUM_LOGINACCOUNTFAIL IDUM_CBEGIN+600
+#define IDUM_NOTIFYGATE     IDUM_CBEGIN+601
+#define IDUM_NOTIFYWEB      IDUM_CBEGIN+602
+#define IDUM_LOGINFAIL      IDUM_CBEGIN+603
+#define IDUM_LOGOUT         IDUM_CBEGIN+604
+
+// role
+#define IDUM_CHARINFO       IDUM_CBEGIN+620
+#define IDUM_SYNCMONEY      IDUM_CBEGIN+621
+
+// ring
+#define IDUM_RINGPAGESYNC   IDUM_CBEGIN+630
+#define IDUM_RINGSTACK      IDUM_CBEGIN+631
+
+// play
+#define IDUM_PLAYB2         IDUM_CBEGIN+640
+#define IDUM_PLAYFAIL       IDUM_CBEGIN+641
+#define IDUM_PLAYWAIT       IDUM_CBEGIN+642
+#define IDUM_PLAYLOADING    IDUM_CBEGIN+643
+#define IDUM_PLAYE2         IDUM_CBEGIN+649
+
+// room
+#define IDUM_GAMEINFO       IDUM_CBEGIN+800
+#define IDUM_GAMEENTER      IDUM_CBEGIN+801
+#define IDUM_GAMESTART      IDUM_CBEGIN+802
+#define IDUM_GAMEUNJOIN     IDUM_CBEGIN+803
+#define IDUM_ITEMEFFECT     IDUM_CBEGIN+804
+#define IDUM_ROLEINFO       IDUM_CBEGIN+805
+#define IDUM_GAMEOVER       IDUM_CBEGIN+806
+
+// heartbeat
+#define IDUM_HEARTBEAT      IDUM_CBEGIN+900
+
+// route
+#define IDUM_GATEADDRREQ    IDUM_CBEGIN+901
+#define IDUM_GATEADDR       IDUM_CBEGIN+902
+#define IDUM_GATEADDRFAIL   IDUM_CBEGIN+903
 
 #pragma pack(1)
 ////////////////////////////////////////////////////////////
@@ -123,22 +137,8 @@ struct UM_HEARTBEAT {
     _UM_HEADER;
 };
 
-struct UM_NOTIFYGAME {
-    _UM_HEADER;
-    uint32_t addr;
-    uint16_t port;
-    uint32_t key;
-    int32_t  roomid;
-};
-
 ////////////////////////////////////////////////////////////
 // login
-struct UM_LOGIN {
-    _UM_HEADER;
-    uint32_t accid;
-    uint64_t key;
-    char account[ACCOUNT_NAME_MAX];
-};
 
 struct UM_LOGOUT {
     _UM_HEADER;
@@ -247,21 +247,6 @@ struct UM_PLAYLOADING {
 
 /////////////////////////////////////////////////////////////
 // game login
-struct UM_GAMELOGIN {
-    _UM_HEADER;
-    uint32_t charid;
-    int roomid;
-    uint32_t roomkey;
-};
-
-struct UM_GAMELOGINFAIL {
-    _UM_HEADER;
-    int8_t error;
-};
-
-struct UM_GAMELOGOUT {
-    _UM_HEADER;
-};
 
 #define ROOMS_CREATE 0
 #define ROOMS_ENTER  1

@@ -81,9 +81,8 @@ alloc_sessionid(struct watchdog *self) {
 
 static inline void
 response_loginfail(struct service *s, int gate_source, int connid, int err) {
-    UM_DEFWRAP(UM_GATE, g, UM_LOGINACCOUNTFAIL);
+    UM_DEFWRAP(UM_GATE, g, UM_LOGINACCOUNTFAIL, fail);
     g->connid = connid;
-    UM_CAST(UM_LOGINACCOUNTFAIL, fail, g->wrap);
     fail->err = err;
     sh_service_send(SERVICE_ID, gate_source, MT_UM, g, sizeof(*g) + sizeof(*fail));
 }
@@ -108,9 +107,8 @@ free_user(struct user *ur) {
 
 static void
 disconnect_client(struct service *s, int gate_source, int connid, int err) {
-    UM_DEFWRAP(UM_GATE, g, UM_LOGOUT);
+    UM_DEFWRAP(UM_GATE, g, UM_LOGOUT, lo);
     g->connid = connid;
-    UM_CAST(UM_LOGOUT, lo, g->wrap);
     lo->err = err;
     int sz = sizeof(*g)+sizeof(*lo);
     sh_service_send(SERVICE_ID, gate_source, MT_UM, g, sz);
@@ -133,17 +131,15 @@ logout(struct service *s, struct user *ur, int8_t err, int disconn) {
         sh_service_send(SERVICE_ID, self->uniqueol_handle, MT_UM, uni, sizeof(*uni));
     }
     if (ur->hall_handle != -1) {
-        UM_DEFWRAP(UM_HALL, ha, UM_LOGOUT);
-        ha->accid = ur->accid;
-        UM_CAST(UM_LOGOUT, lo, ha->wrap);
+        UM_DEFWRAP(UM_HALL, ha, UM_LOGOUT, lo);
+        ha->uid = ur->accid;
         lo->err = err;
         int sz = sizeof(*ha) + sizeof(*lo);
         sh_service_send(SERVICE_ID, ur->hall_handle, MT_UM, ha, sz);
     }
     if (ur->room_handle != -1) {
-        UM_DEFWRAP(UM_ROOM, ro, UM_LOGOUT);
-        ro->accid = ur->accid;
-        UM_CAST(UM_LOGOUT, lo, ro->wrap);
+        UM_DEFWRAP(UM_ROOM, ro, UM_LOGOUT, lo);
+        ro->uid = ur->accid;
         lo->err = err;
         int sz = sizeof(*ro) + sizeof(*lo);
         sh_service_send(SERVICE_ID, ur->room_handle, MT_UM, ro, sz);
@@ -178,10 +174,9 @@ process_gate(struct service *s, int source, int connid, const void *msg, int sz)
         assert(!sh_hash64_insert(&self->conn2user, conn, ur));
         ur->status = S_AUTH_VERIFY;
         
-        UM_DEFWRAP(UM_AUTH, w, UM_LOGINACCOUNT);
+        UM_DEFWRAP(UM_AUTH, w, UM_LOGINACCOUNT, wla);
         w->conn = conn;
         w->wsession = ur->wsession;
-        UM_CAST(UM_LOGINACCOUNT, wla, w->wrap);
         *wla = *la;
         sh_service_send(SERVICE_ID, auth, MT_UM, w, sizeof(*w) + sizeof(*wla));
         return;
@@ -194,14 +189,14 @@ process_gate(struct service *s, int source, int connid, const void *msg, int sz)
     if (base->msgid >= IDUM_HALLB && base->msgid <= IDUM_HALLE) {
         if (ur->status == S_HALL && ur->hall_handle != -1) {
             UM_DEFWRAP2(UM_HALL, ha, sz);
-            ha->accid = ur->accid;
+            ha->uid = ur->accid;
             memcpy(ha->wrap, msg, sz);
             sh_service_send(SERVICE_ID, ur->hall_handle, MT_UM, ha, sizeof(*ha)+sz);
         }
     } else if (base->msgid >= IDUM_ROOMB && base->msgid <= IDUM_ROOME) {
         if (ur->status == S_ROOM && ur->room_handle != -1) {
             UM_DEFWRAP2(UM_ROOM, ro, sz);
-            ro->accid = ur->accid;
+            ro->uid = ur->accid;
             memcpy(ro->wrap, msg, sz);
             sh_service_send(SERVICE_ID, ur->room_handle, MT_UM, ro, sizeof(*ro)+sz);
         }
@@ -254,7 +249,7 @@ uniqueol_ok(struct service *s, struct user *ur) {
     ur->hall_handle = hall_handle;
 
     UM_DEFFIX(UM_ENTERHALL, enter);
-    enter->accid = ur->accid;
+    enter->uid = ur->accid;
     sh_service_send(SERVICE_ID, hall_handle, MT_UM, enter, sizeof(*enter));
 }
 
@@ -263,7 +258,7 @@ uniqueol_fail(struct service *s, struct user *ur) {
     logout(s, ur, SERR_ACCLOGINED, DISCONNECT);
 }
 
-static void
+static inline void
 process_auth(struct service *s, int source, uint64_t conn, uint32_t wsession, const void *msg) {
     struct watchdog *self = SERVICE_SELF;
 
@@ -289,7 +284,7 @@ process_auth(struct service *s, int source, uint64_t conn, uint32_t wsession, co
     }
 }
 
-static void
+static inline void
 process_unique(struct service *s, uint32_t id, int status) {
     struct watchdog *self = SERVICE_SELF;
 
@@ -307,10 +302,45 @@ process_unique(struct service *s, uint32_t id, int status) {
     }
 }
 
-static void
-process_role(struct service *s, uint32_t accid, const void *msg, int sz) {
+static inline void
+process_hall(struct service *s, uint32_t accid, const void *msg, int sz) {
     struct watchdog *self = SERVICE_SELF;
+    struct user *ur = sh_hash_find(&self->acc2user, accid);
+    if (ur) {
+        sh_service_send(SERVICE_ID, ur->hall_handle, MT_UM, msg, sz);
+    }
+}
 
+static inline void
+process_room(struct service *s, uint32_t accid, const void *msg, int sz) {
+    struct watchdog *self = SERVICE_SELF;
+    struct user *ur = sh_hash_find(&self->acc2user, accid);
+    if (ur) {
+        sh_service_send(SERVICE_ID, ur->room_handle, MT_UM, msg, sz);
+    }
+}
+
+static inline void
+login_room(struct service *s, struct UM_LOGINROOM *lr, int sz) {
+    struct watchdog *self = SERVICE_SELF;
+    uint32_t accid  = lr->detail.accid;
+    struct user *ur = sh_hash_find(&self->acc2user, accid);
+    if (ur == NULL) {
+        return;
+    }
+    if (sc_service_has(self->room_handle, lr->room_handle)) {
+        ur->status = S_ROOM;
+        ur->room_handle = lr->room_handle;
+        sh_service_send(SERVICE_ID, ur->room_handle, MT_UM, lr, sz);
+    } else {
+        // todo notify hall exit room status (now match service do this)
+        //sh_service_send(SERVICE_ID, ur->hall_handle, MT_UM, msg, sz);
+    }
+}
+
+static inline void
+process_client(struct service *s, uint32_t accid, const void *msg, int sz) {
+    struct watchdog *self = SERVICE_SELF;
     struct user *ur = sh_hash_find(&self->acc2user, accid);
     if (ur == NULL) {
         return;
@@ -353,12 +383,22 @@ watchdog_main(struct service *s, int session, int source, int type, const void *
             }
         case IDUM_HALL: {
             UM_CAST(UM_HALL, ha, msg);
-            process_role(s, ha->accid, ha->wrap, sz-sizeof(*ha));
+            process_hall(s, ha->uid, msg, sz);
+            break;
+            }
+        case IDUM_LOGINROOM: {
+            UM_CAST(UM_LOGINROOM, lr, msg);
+            login_room(s, lr, sz);
             break;
             }
         case IDUM_ROOM: {
             UM_CAST(UM_ROOM, ro, msg);
-            process_role(s, ro->accid, ro->wrap, sz-sizeof(*ro));
+            process_room(s, ro->uid, msg, sz);
+            break;
+            }
+        case IDUM_CLIENT: {
+            UM_CAST(UM_CLIENT, cl, msg);
+            process_client(s, cl->uid, cl->wrap, sz-sizeof(*cl));
             break;
             }
         }

@@ -7,6 +7,7 @@
 #include "rolelogic.h"
 #include "ringlogic.h"
 #include "awardlogic.h"
+#include "playlogic.h"
 #include "user_message.h"
 #include "cli_message.h"
 #include <stdlib.h>
@@ -68,13 +69,19 @@ hall_main(struct service *s, int session, int source, int type, const void *msg,
             case IDUM_CHARCREATE:
                 player_main(s, source, pr, wrap, sz-sizeof(*ha));
                 break;
+            case IDUM_ENTERROOM:
+                playlogic_main(s, pr, wrap, sz-sizeof(*ha));
+                break;
             default:
-                if (wrap->msgid >= IDUM_ROLEB && wrap->msgid <= IDUM_ROLEE) {
+                if (wrap->msgid >= IDUM_AWARDB && wrap->msgid <= IDUM_AWARDE) {
                     rolelogic_main(s, pr, wrap, sz-sizeof(*ha));
+                } else if (wrap->msgid >= IDUM_ROLEB && wrap->msgid <= IDUM_ROLEE) {
+                    awardlogic_main(s, pr, wrap, sz-sizeof(*ha));
                 } else if (wrap->msgid >= IDUM_RINGB && wrap->msgid <= IDUM_RINGE) {
                     ringlogic_main(s, pr, wrap, sz-sizeof(*ha));
-                } else if (wrap->msgid >= IDUM_AWARDB && wrap->msgid <= IDUM_AWARDE) {
-                    awardlogic_main(s, pr, wrap, sz-sizeof(*ha));
+                } else if ((wrap->msgid >= IDUM_PLAYB && wrap->msgid <= IDUM_PLAYE) ||
+                           (wrap->msgid >= IDUM_PLAYB2 && wrap->msgid <= IDUM_PLAYE2)) {
+                    playlogic_main(s, pr, wrap, sz-sizeof(*ha));
                 }
             }
             break;

@@ -86,6 +86,16 @@ _first_handle(struct _service *s) {
     return -1;
 }
 
+static bool
+_has_handle(struct _service *s, int handle) {
+    int i;
+    for (i=0; i<s->sz; ++i) {
+        if (s->phandle[i].id == handle)
+            return true;
+    }
+    return false;
+}
+
 static inline struct _service *
 _get_service(int vhandle) {
     int id = vhandle & SID_MASK;
@@ -303,6 +313,15 @@ sc_service_nextload(int vhandle) {
     } else {
         return -1;
     }
+}
+
+bool 
+sc_service_has(int vhandle, int handle) {
+    struct _service *s = _get_service(vhandle);
+    if (s) {
+        return _has_handle(s, handle);
+    }
+    return false;
 }
 
 int 

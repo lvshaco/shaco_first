@@ -206,6 +206,7 @@ struct groundattri {
 
 // team member detail info
 struct tmemberdetail {
+    uint32_t accid;
     uint32_t charid;
     char name[CHAR_NAME_MAX];
 
@@ -217,6 +218,7 @@ struct tmemberdetail {
 
 // team member brief info
 struct tmemberbrief {
+    uint32_t accid;
     uint32_t charid;
     char name[CHAR_NAME_MAX];
 

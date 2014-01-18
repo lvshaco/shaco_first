@@ -16,7 +16,7 @@
 #define PS_LOGIN 9
 #define PS_GAME  10
 #define PS_WAITING  11
-#define PS_CREATING 12
+#define PS_LOADING 12
 #define PS_ROOM 13
 
 // level grade

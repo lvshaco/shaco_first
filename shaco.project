@@ -129,6 +129,8 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.py *.h *.c" {
   service_world.c
  }
  hall=hall{
+  playlogic.h
+  playlogic.c
   attrilogic.h
   awardlogic.h
   hall.h

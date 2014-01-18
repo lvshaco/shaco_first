@@ -72,7 +72,7 @@ struct room {
     ((struct room*)((m) - offsetof(struct room, p) + (m)->index * sizeof(*(m)))); \
 })
 
-#define charid(m) ((m)->detail.charid)
+#define UID(m) ((m)->detail.accid)
 
 struct game {
     int watchdog_handle;
@@ -176,9 +176,9 @@ multicast_msg(struct service *s, struct room* ro, const void *msg, int sz, uint3
     int i;
     for (i=0; i<ro->np; ++i) {
         struct player *m = &ro->p[i];
-        if (charid(m) != except &&
+        if (UID(m) != except &&
             m->online) {
-            cl->charid = charid(m);
+            cl->uid = UID(m);
             sh_service_send(SERVICE_ID, m->watchdog_source, MT_UM, cl, sz);
         }
     }
@@ -188,25 +188,20 @@ multicast_msg(struct service *s, struct room* ro, const void *msg, int sz, uint3
 // room logic
 
 struct player *
-member_get(struct room *ro, uint32_t charid) {
+member_get(struct room *ro, uint32_t accid) {
     int i;
     for (i=0; i<ro->np; ++i) {
-        if (ro->p[i].detail.charid  == charid)
+        if (ro->p[i].detail.accid == accid)
             return &ro->p[i];
     }
     return NULL;
 }
 
-static inline bool
-member_isplaced(struct room* ro, uint32_t charid) {
-    return member_get(ro, charid) != NULL;
-}
-
 static inline void
-member_place(struct player *m, uint32_t charid, uint8_t index) {
+member_place(struct player *m, uint32_t accid, uint8_t index) {
     memset(m, 0, sizeof(*m));
     m->index = index;
-    m->detail.charid = charid;
+    m->detail.accid = accid;
 }
 
 static void
@@ -427,9 +422,8 @@ game_over(struct service *s, struct room* ro, bool death) {
         m = sortm[i];
         if (m->online)
             continue;
-        UM_DEFWRAP(UM_HALL, ha, UM_GAMEAWARD);
-        UM_CAST(UM_GAMEAWARD, ga, ha->wrap);
-        ha->charid = charid(m);
+        UM_DEFWRAP(UM_HALL, ha, UM_GAMEAWARD, ga);
+        ha->uid  = UID(m);
         ga->type = ro->type;
         ga->award = awards[i];
         sh_service_send(SERVICE_ID, m->watchdog_source, MT_UM, ha, sizeof(*ha)+sizeof(*ga));
@@ -454,7 +448,7 @@ game_over(struct service *s, struct room* ro, bool death) {
     int oversz = UM_GAMEOVER_size(go);
     for (i=0; i<ro->np; ++i) {
         m = &ro->p[i];
-        umro->charid = m->detail.charid;
+        umro->uid = UID(m);
         if (m->online) {
             sh_service_send(SERVICE_ID, m->watchdog_source, MT_UM, umro, sizeof(*umro)+oversz);
         }
@@ -571,7 +565,7 @@ static void
 notify_game_info(struct service *s, struct player *m, struct room* ro) {
     UM_DEFVAR(UM_CLIENT, cl); 
     UM_CAST(UM_GAMEINFO, gi, cl->wrap);
-    cl->charid = m->detail.charid;
+    cl->uid = UID(m);
     gi->status = ro->status;
     gi->gattri = ro->gattri;
     gi->nmember = ro->np;
@@ -700,7 +694,7 @@ item_effect_member(struct service *s, struct room *ro, struct player *m,
             effectptr = effect->effects;
         }
         effect->time = sc_timer_now()/1000 + item->time + addtime;
-        sc_debug("insert time: %u, to char %u", effect->time, charid(m));
+        sc_debug("insert time: %u, to char %u", effect->time, m->detail.charid);
     } else {
         effectptr = tmp;
     }
@@ -994,14 +988,14 @@ static void
 login(struct service *s, int source, const struct UM_LOGINROOM *lo) {
     struct game *self = SERVICE_SELF;
 
-    uint32_t charid = lo->detail.charid;
+    uint32_t accid  = lo->detail.accid;
     uint32_t roomid = lo->roomid;
 
     struct room *ro = sh_hash_find(&self->rooms, roomid); 
     if (ro == NULL) {
         return; // someting wrong
     }
-    struct player *m = member_get(ro, charid);
+    struct player *m = member_get(ro, accid);
     if (m == NULL || m->online) {
         return; // someting wrong
     }
@@ -1013,7 +1007,7 @@ login(struct service *s, int source, const struct UM_LOGINROOM *lo) {
     m->online = 1;
     m->watchdog_source = source;
    
-    assert(!sh_hash_insert(&self->players, charid, m));
+    assert(!sh_hash_insert(&self->players, accid, m));
 
     notify_game_info(s, m, ro);
     check_enter_room(s, ro);
@@ -1029,10 +1023,10 @@ logout(struct service *s, struct player *m) {
     member_free(m);
 
     UM_DEFFIX(UM_GAMEUNJOIN, unjoin);
-    unjoin->charid = charid(m);
+    unjoin->charid = m->detail.charid;
     multicast_msg(s, ro, unjoin, sizeof(*unjoin), 0);
 
-    sh_hash_remove(&self->players, charid(m));
+    sh_hash_remove(&self->players, UID(m));
 }
 
 static void
@@ -1047,7 +1041,7 @@ sync_position(struct service *s, struct player *m, const struct UM_GAMESYNC *syn
     struct room *ro = member2room(m);
 
     m->depth = sync->depth;
-    multicast_msg(s, ro, sync, sizeof(*sync), charid(m));
+    multicast_msg(s, ro, sync, sizeof(*sync), UID(m));
 
     if (m->depth >= ro->map->height) {
         game_over(s, ro, false);
@@ -1064,7 +1058,7 @@ sync_press(struct service *s, struct player *m, const struct UM_ROLEPRESS *press
     }
     on_refresh_attri(s, m, ro);
 
-    multicast_msg(s, ro, press, sizeof(*press), charid(m));
+    multicast_msg(s, ro, press, sizeof(*press), UID(m));
 
     if (m->detail.attri.oxygen <= 0) {
         game_over(s, ro, true);
@@ -1089,7 +1083,7 @@ game_main(struct service *s, int session, int source, int type, const void *msg,
             UM_CAST(UM_ROOM, ha, msg);
             UM_CAST(UM_BASE, wrap, ha->wrap);
  
-            m = sh_hash_find(&self->players, ha->charid);
+            m = sh_hash_find(&self->players, ha->uid);
             if (m == NULL) {
                 break;
             }

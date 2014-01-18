@@ -38,6 +38,8 @@ __attribute__((format(printf, 3, 4)))
 #endif
 ;
 
+bool sc_service_has(int vhandle, int handle);
+
 int sc_service_minload(int vhandle);
 int sc_service_nextload(int vhandle);
 

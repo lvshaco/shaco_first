@@ -323,12 +323,13 @@ struct UM_EXITHALL {
 
 struct UM_ENTERROOM {
     _UM_HEADER;
-    uint16_t room_handle;
+    int room_handle;
     uint32_t roomid;
 };
 
 struct UM_LOGINROOM {
     _UM_HEADER;
+    int room_handle;
     uint32_t roomid;
     struct tmemberdetail detail;
 };
@@ -373,6 +374,7 @@ struct UM_GAMEAWARD {
 struct UM_APPLY {
     _UM_HEADER;
     int8_t type;
+    struct tmemberbrief brief;
 };
 
 struct UM_APPLYCANCEL {
