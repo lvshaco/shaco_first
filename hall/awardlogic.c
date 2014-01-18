@@ -48,6 +48,8 @@ static inline void
 _rank(struct service *s, struct player* pr, 
       const char* type, const char* type_old, uint64_t score) {
     struct hall *self = SERVICE_SELF;
+
+    // todo do not pointer
     UM_DEFFIX(UM_DBRANK, dr);
     dr->type = type;
     dr->type_old = type_old;

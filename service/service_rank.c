@@ -1,14 +1,12 @@
 #include "sc_service.h"
+#include "sc_node.h"
 #include "sh_util.h"
 #include "sc.h"
-#include "sc_dispatcher.h"
 #include "sc_log.h"
 #include "sc_net.h"
 #include "sc_timer.h"
 #include "redis.h"
 #include "user_message.h"
-#include "node_type.h"
-#include "player.h"
 #include "sharetype.h"
 #include "memrw.h"
 #include "util.h"
@@ -18,6 +16,7 @@
 #include <time.h>
 
 struct rank {
+    int rprank_handle;
     uint32_t next_normal_refresh_time;
     uint32_t next_dashi_refresh_time;
     struct redis_reply reply;
@@ -39,34 +38,26 @@ rank_free(struct rank* self) {
 int
 rank_init(struct service* s) {
     struct rank* self = SERVICE_SELF;
-    
+   
+    if (sh_handler("rprank", &self->rprank_handle))
+        return 1;
     redis_initreply(&self->reply, 512, 0);
-    SUBSCRIBE_MSG(s->serviceid, IDUM_REDISREPLY);
     return 0;
 }
 
 static int
-_send_to_db(struct UM_REDISQUERY* rq) {
-    const struct sc_node* db = sc_node_get(HNODE_ID(NODE_RPRANK, 0));
-    if (db) {
-        UM_SENDTONODE(db, rq, rq->msgsz);
-        return 0;
-    }
-    return 1;
-}
-
-static int
-_refresh_rank(const char* type, time_t now, uint32_t* base) {
+_refresh_rank(struct service *s, const char* type, time_t now, uint32_t* base) {
+    struct rank *self = SERVICE_SELF;
     char strtime[24];
     struct tm tmnow  = *localtime(&now); 
     strftime(strtime, sizeof(strtime), "%y%m%d-%H:%M:%S", &tmnow);
 
-    UM_DEFVAR(UM_REDISQUERY, rq);
+    UM_DEFVAR2(UM_REDISQUERY, rq, UM_MAXSZ);
     rq->needreply = 0;
     rq->needrecord = 1;
     rq->cbsz = 0;
     struct memrw rw;
-    memrw_init(&rw, rq->data, rq->msgsz - sizeof(*rq));
+    memrw_init(&rw, rq->data, UM_MAXSZ - sizeof(*rq));
     int len = snprintf(rw.ptr, RW_SPACE(&rw), 
             "MULTI\r\n"
             "SET rank:%s_refresh_time %s\r\n"
@@ -74,18 +65,19 @@ _refresh_rank(const char* type, time_t now, uint32_t* base) {
             "EXEC\r\n",
             type, strtime, type, strtime, type);
     memrw_pos(&rw, len);
-    rq->msgsz = sizeof(*rq) + RW_CUR(&rw);
-    return _send_to_db(rq);
+    int msgsz = sizeof(*rq) + RW_CUR(&rw);
+    return sh_service_send(SERVICE_ID, self->rprank_handle, MT_UM, rq, msgsz);
 }
 
 static int
-_insert_rank(const char* type, const char* oldtype, uint32_t charid, uint64_t score) { 
-    UM_DEFVAR(UM_REDISQUERY, rq);
+_insert_rank(struct service *s, const char* type, const char* oldtype, uint32_t charid, uint64_t score) { 
+    struct rank *self = SERVICE_SELF;
+    UM_DEFVAR2(UM_REDISQUERY, rq, UM_MAXSZ);
     rq->needreply = 0;
     rq->needrecord = 1;
     rq->cbsz = 0;
     struct memrw rw;
-    memrw_init(&rw, rq->data, rq->msgsz - sizeof(*rq));
+    memrw_init(&rw, rq->data, UM_MAXSZ - sizeof(*rq));
     int len;
     if (oldtype[0] == '\0') {
         if (type[0]) {
@@ -111,13 +103,14 @@ _insert_rank(const char* type, const char* oldtype, uint32_t charid, uint64_t sc
         }
     }
     memrw_pos(&rw, len);
-    rq->msgsz = sizeof(*rq) + RW_CUR(&rw);
-    return _send_to_db(rq);
+    int msgsz = sizeof(*rq) + RW_CUR(&rw);
+    return sh_service_send(SERVICE_ID, self->rprank_handle, MT_UM, rq, msgsz);
 }
 /*
 static int
-_query_refresh_time(const char* type) {
-    UM_DEFVAR(UM_REDISQUERY, rq);
+_query_refresh_time(struct service *s, const char* type) {
+    struct rank *self = SERVICE_SELF;
+    UM_DEFVAR2(UM_REDISQUERY, rq, UM_MAXSZ);
     rq->needreply = 1;
     rq->needrecord = 0;
     rq->cbsz = 0;
@@ -130,34 +123,25 @@ _query_refresh_time(const char* type) {
     int len = snprintf(rw.ptr, RW_SPACE(&rw), 
             "GET rank:%s_refresh_time\r\n", type);
     memrw_pos(&rw, len);
-    rq->msgsz = sizeof(*rq) + RW_CUR(&rw);
-    return _send_to_db(rq);
+    int msgsz = sizeof(*rq) + RW_CUR(&rw);
+    return sh_service_send(SERVICE_SELF, self->rprank_handle, MT_UM, rq, msgsz);
 }
 */
 static void
-_refresh_db(struct rank* self) {
+_refresh_db(struct service *s) {
+    struct rank *self = SERVICE_SELF;
     uint32_t now = sc_timer_now()/1000;
     uint32_t base; 
     if (self->next_normal_refresh_time <= now) {
-        if (_refresh_rank("normal", now, &base) == 0) {
+        if (_refresh_rank(s, "normal", now, &base) == 0) {
             self->next_normal_refresh_time = base + 7 * SC_DAY_SECS;
         }
     }
     if (self->next_dashi_refresh_time <= now) {
-        if (_refresh_rank("dashi",  now, &base) == 0) {
+        if (_refresh_rank(s, "dashi",  now, &base) == 0) {
             self->next_dashi_refresh_time = base + 7 * SC_DAY_SECS;
         }
     }
-}
-
-void
-rank_service(struct service* s, struct service_message* sm) {
-    //struct rank* self = SERVICE_SELF;
-    const char* type = sm->p1;
-    const char* oldtype = sm->p2;
-    uint32_t charid = sm->i1;
-    uint64_t score = sm->n1;
-    _insert_rank(type, oldtype, charid, score);
 }
 
 static struct redis_replyitem*
@@ -186,11 +170,11 @@ _get_timevalue(struct redis_replyitem* si) {
 }
 
 static void
-_handle_redis(struct rank* self, struct node_message* nm) {
-    UM_CAST(UM_REDISREPLY, rep, nm->um);
+_handle_redis(struct service *s, struct UM_REDISREPLY *rep, int sz) {
+    struct rank *self = SERVICE_SELF;
         
     struct memrw rw;
-    memrw_init(&rw, rep->data, rep->msgsz - sizeof(*rep));
+    memrw_init(&rw, rep->data, sz - sizeof(*rep));
     uint8_t len; 
     memrw_read(&rw, &len, sizeof(len));
     char type[(int)len+1];
@@ -217,21 +201,28 @@ _handle_redis(struct rank* self, struct node_message* nm) {
 }
 
 void
-rank_nodemsg(struct service* s, int id, void* msg, int sz) {
-    struct rank* self = SERVICE_SELF;
-    struct node_message nm;
-    if (_decode_nodemessage(msg, sz, &nm)) {
-        return;
-    }
-    switch (nm.hn->tid) {
-    case NODE_RPRANK:
-        _handle_redis(self, &nm);
+rank_main(struct service *s, int session, int source, int type, const void *msg, int sz) {
+    switch (type) {
+    case MT_UM: {
+        UM_CAST(UM_BASE, base, msg);
+        switch (base->msgid) {
+        case IDUM_DBRANK: {
+            UM_CAST(UM_DBRANK, dr, msg);
+            _insert_rank(s, dr->type, dr->type_old, dr->charid, dr->score);
+            break;
+            }
+        case IDUM_REDISREPLY: {
+            UM_CAST(UM_REDISREPLY, rep, msg);
+            _handle_redis(s, rep, sz);
+            break;
+            }
+        }
         break;
+        }
     }
 }
 
 void
 rank_time(struct service* s) {
-    struct rank* self = SERVICE_SELF;
-    _refresh_db(self);
+    _refresh_db(s);
 }

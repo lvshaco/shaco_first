@@ -44,5 +44,7 @@ void sh_hash64_fini(struct sh_hash64 *h);
 void *sh_hash64_find(struct sh_hash64 *h, uint64_t key);
 int sh_hash64_insert(struct sh_hash64 *h, uint64_t key, void *pointer);
 void * sh_hash64_remove(struct sh_hash64 *h, uint64_t key);
-    
+void sh_hash64_foreach(struct sh_hash64 *h, void (*cb)(void *pointer));
+void sh_hash64_foreach2(struct sh_hash64 *h, void (*cb)(void *pointer, void *ud), void *ud);
+   
 #endif

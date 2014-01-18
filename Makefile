@@ -87,7 +87,6 @@ LDFLAGS=-Wl,-rpath,. \
 service_so=\
 	service_benchmark.so \
 	service_echo.so \
-	service_centerc.so \
 	service_centers.so \
 	service_node.so \
 	service_cmds.so \
@@ -99,14 +98,6 @@ service_so=\
 	service_uniqueol.so \
 	service_match.so \
 	service_cmdctlgame.so
-
-worldservice_so=\
-	service_world.so \
-	service_gamematch.so \
-	service_rolelogic.so \
-	service_ringlogic.so \
-	service_awardlogic.so \
-	service_attribute.so
 
 all: \
 	shaco.so \
@@ -123,12 +114,9 @@ all: \
 	service_log.so \
 	$(service_so) \
 	service_game.so \
-	$(worldservice_so) \
-	service_playerdb.so \
 	service_rank.so \
 	service_benchmarkdb.so \
 	service_redisproxy.so \
-	service_login.so \
 	service_tplthall.so \
 	service_tpltroom.so \
 	service_cmdctlworld.so \
@@ -140,10 +128,6 @@ release: all
 $(service_so): %.so: $(service_dir)/%.c
 	@rm -f $@
 	gcc $(CFLAGS) $(SHARED) -o $@ $< -Iinclude/libshaco -Inet -Ibase -Imessage
-
-$(worldservice_so): %.so: $(service_dir)/%.c
-	@rm -f $@
-	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Iinclude/libshaco -Inet -Ibase -Imessage -Iworld -Itplt -Idatadefine -Wl,-rpath,. tplt.so
 
 service_game.so: $(service_dir)/service_game.c \
 	game/fight.c \

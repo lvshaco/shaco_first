@@ -159,7 +159,7 @@ process_gate(struct service *s, int source, int connid, const void *msg, int sz)
     UM_CAST(UM_BASE, base, msg); 
 
     if (base->msgid == IDUM_LOGINACCOUNT) {
-        UM_CAST(UM_LOGINACCOUNT, la, base);
+        UM_CASTCK(UM_LOGINACCOUNT, la, base, sz);
         struct user *ur = sh_hash64_find(&self->conn2user, conn);
         if (ur) {
             disconnect_client(s, source, connid, SERR_RELOGIN);
