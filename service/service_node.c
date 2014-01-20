@@ -6,6 +6,7 @@
 #include "sc_net.h"
 #include "sc_node.h"
 #include "args.h"
+#include "message.h"
 #include <string.h>
 #include <stdbool.h>
 #include <stdlib.h>
@@ -15,7 +16,6 @@
 #include <stdio.h>
 
 #define NODE_MAX 256
-#define MSG_MAX 60*1024
 
 struct _int_vector {
     int cap;
@@ -127,12 +127,14 @@ _block_read(int id, int *msgsz, int *err) {
 
 static int
 _dsend(struct remote *self, int connid, int source, int dest, int type, const void *msg, size_t sz) {
-    uint8_t tmp[MSG_MAX];
-    int len = sz+6;
-    if (len <= sizeof(tmp)) {
+    if (sz <= UM_MAXSZ) {
+        int len = sz+6;
+        source &= 0x00ff;
         source |= (self->myid << 8);
-        dest &= 0xff;
-        dest |= (type & 0xff) << 8;
+        dest   &= 0x00ff;
+        dest   |= (type << 8);
+
+        uint8_t *tmp = malloc(len);
         sh_to_bigendian16(len-2, tmp);
         sh_to_bigendian16(source, tmp+2);
         sh_to_bigendian16(dest, tmp+4);
@@ -146,7 +148,7 @@ _dsend(struct remote *self, int connid, int source, int dest, int type, const vo
 
 static int
 _vdsend(struct remote *self, int connid, int source, int dest, const char *fmt, ...) {
-    char msg[MSG_MAX];
+    char msg[UM_MAXSZ];
     int n;
     va_list ap;
     va_start(ap, fmt);
@@ -178,7 +180,7 @@ _send(struct remote *self, int source, int dest, int type, const void *msg, size
 
 static int
 _vsend(struct remote *self, int source, int dest, const char *fmt, ...) {
-    char msg[MSG_MAX];
+    char msg[UM_MAXSZ];
     int n;
     va_list ap;
     va_start(ap, fmt);
@@ -427,7 +429,7 @@ _read(struct service *s, struct net_message *nm) {
                 break;
             }
             uint16_t msgsz = sh_from_bigendian16((uint8_t*)buf.ptr) + 2;
-            if (msgsz <= 6 || msgsz > MSG_MAX) {
+            if (msgsz <= 6 || (msgsz-6) > UM_MAXSZ) {
                 err = NET_ERR_MSG;
                 break;
             }

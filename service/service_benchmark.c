@@ -2,14 +2,13 @@
 #include "sc_env.h"
 #include "sc_net.h"
 #include "sc_log.h"
+#include "sh_util.h"
 #include "sc_timer.h"
-#include "sc_dispatcher.h"
 #include "sc.h"
 #include "hashid.h"
 #include "freeid.h"
-#include "message_helper.h"
 #include "user_message.h"
-#include "client_type.h"
+#include "cli_message.h"
 #include <stdlib.h>
 #include <unistd.h>
 #include <stdio.h>
@@ -53,14 +52,14 @@ benchmark_free(struct benchmark* self) {
 }
 
 static int
-_connect(struct service* s) {
+connect_clients(struct service* s) {
     struct benchmark* self = SERVICE_SELF;
     const char* ip = sc_getstr("echo_ip", "");
     int port = sc_getint("echo_port", 0);
     int count = 0;
     int i;
     for (i=0; i<self->max; ++i) { 
-        if (sc_net_connect(ip, port, 1, s->serviceid, CLI_GAME) == 0) {
+        if (sc_net_connect(ip, port, true, SERVICE_ID, 0) == 0) {
             count++;
         }
     }
@@ -69,24 +68,23 @@ _connect(struct service* s) {
 }
 
 static void
-_send_one(struct benchmark* self, int id) {
+send_one(struct benchmark* self, int id) {
     int sz = self->packetsz;
     int split = self->packetsplit;
 
     sc_net_subscribe(id, true);
-    UM_DEF(um, sz);
-    memset(um, 0, sz);
-    um->msgid = 100;
-    um->msgsz = sz;
-    //memcpy(tm.data, "ping pong!", sizeof(tm.data));
+    uint8_t *text = malloc(sz+2);
+    sh_to_littleendian16(sz, text);
+    sh_to_littleendian16(IDUM_TEXT, text+2);
+    memset(text+4, 0, sz-2);
     if (split == 0) {
-        UM_SENDTOSVR(id, um, sz);
-    } else {
+        sc_net_send(id, text, sz+2);
+    } else {/* todo
         sz -= UM_CLI_OFF;
         int i;
         int step = sz/split;
         if (step <= 0) step = 1;
-        char* ptr = (char*)um + UM_CLI_OFF;
+        char* ptr = (char*)text;
         for (i=0; i<sz; i+=step) {
             if (i+step > sz) {
                 step = sz - i;
@@ -94,26 +92,24 @@ _send_one(struct benchmark* self, int id) {
             sc_net_send(id, ptr+i, step); 
             usleep(10000);
             //sc_error("send i %d", i);
-        }
+        }*/
     }
     self->query_send++;
 }
 
 static void
-_start(struct benchmark* self) {
+start_send(struct benchmark* self) {
     self->start = sc_timer_now();
-    struct client* c;
-    int i;
+    int i, n;
     for (i=0; i<self->max; ++i) {
-        c = &self->clients[i];
+        struct client *c = &self->clients[i];
         if (c->connected) {
             if (self->query_first > 0) {
-                int n;
                 for (n=0; n<self->query_first; ++n) {
-                    _send_one(self, c->connid);
+                    send_one(self, c->connid);
                 }
             } else {
-                _send_one(self, c->connid);
+                send_one(self, c->connid);
             }
         }
     }
@@ -129,8 +125,8 @@ benchmark_init(struct service* s) {
     self->query_recv = 0;
     self->query_done = 0;
     int sz = sc_getint("benchmark_packet_size", 10);
-    if (sz < sizeof(struct UM_BASE))
-        sz = sizeof(struct UM_BASE);
+    if (sz < sizeof(struct UM_TEXT))
+        sz = sizeof(struct UM_TEXT);
     self->packetsz = sz;
     self->packetsplit = sc_getint("benchmark_packet_split", 0);
     int hmax = sc_getint("sc_connmax", 0);
@@ -144,27 +140,27 @@ benchmark_init(struct service* s) {
     self->start = 0;
     self->end = 0;
 
-    self->connected = _connect(s);
+    self->connected = connect_clients(s);
     if (self->connected == 0) {
         return 1;
     }
-    //_start(self);
-    sc_timer_register(s->serviceid, 1000);
+    //start_send(self);
+    sc_timer_register(SERVICE_ID, 1000);
     return 0;
 }
 
 static inline struct client*
-_getclient(struct benchmark* self, int id) {
-    if (id >= 0 && id < self->max) {
-        struct client* c = &self->clients[id];
-        if (c->connected)
-            return c;
-    }
-    return NULL;
+get_client(struct benchmark* self, int id) {
+    assert(id >= 0 && id < self->max);
+    struct client* c = &self->clients[id];
+    assert(c->connected);
+    return c;
 }
 
-static inline void
-_handlemsg(struct benchmark* self, struct client* c, struct UM_BASE* um) {
+static inline int
+handle_msg(struct benchmark* self, struct client* c, const void *msg, int sz) {
+    if (sz < sizeof(struct UM_BASE) || sz > UM_CLI_MAXSZ)
+        return 1;
     self->query_done++;
     self->query_recv++;
     if (self->query_done == self->query) {
@@ -177,50 +173,65 @@ _handlemsg(struct benchmark* self, struct client* c, struct UM_BASE* um) {
         self->start = self->end;
         self->query_done = 0;
     }
-    _send_one(self, c->connid);
+    send_one(self, c->connid);
+    return 0;
 }
 
 static void
-_read(struct benchmark* self, struct net_message* nm) {
+read_msg(struct benchmark* self, struct net_message* nm) {
     int id = nm->connid;
-    struct client* c = _getclient(self, id);
+    struct client* c = get_client(self, id);
     assert(c);
     assert(c->connid == id);
-
     int step = 0;
     int drop = 1;
+    int err;
     for (;;) {
-        int error = 0;
+        err = 0; 
         struct mread_buffer buf;
-        int nread = sc_net_read(id, drop==0, &buf, &error);
+        int nread = sc_net_read(id, drop==0, &buf, &err);
         if (nread <= 0) {
-            mread_throwerr(nm, error);
-            return;
+            if (!err)
+                return;
+            else
+                goto errout;
         }
-        struct UM_CLI_BASE* one;
-        while ((one = mread_cli_one(&buf, &error))) {
-            // copy to stack buffer, besafer
-            UM_DEF(msg, UM_CLI_MAXSZ); 
-            msg->nodeid = 0;
-            memcpy(&msg->cli_base, one, UM_CLI_SZ(one));
-            _handlemsg(self, c, msg);
+        for (;;) {
+            if (buf.sz < 2) {
+                break;
+            }
+            uint16_t sz = sh_from_littleendian16((uint8_t*)buf.ptr) + 2;
+            if (buf.sz < sz) {
+                break;
+            }
+            buf.ptr += sz;
+            buf.sz  -= sz;
+            if (handle_msg(self, c, buf.ptr+2, sz-2)) {
+                err = NET_ERR_MSG;
+                break;
+            }
             if (++step > 10) {
                 sc_net_dropread(id, nread-buf.sz);
                 return;
             }
         }
-        if (error) {
+        if (err) {
             sc_net_close_socket(id, true);
-            mread_throwerr(nm, error);
-            return;
+            goto errout;
         }
         drop = nread - buf.sz;
         sc_net_dropread(id, drop);       
     }
+    return;
+errout:
+    nm->type = NETE_SOCKERR;
+    nm->error = err;
+    service_net(nm->ud, nm);
+
 }
 
 static void
-_onconnect(struct benchmark* self, int connid) {
+on_connect(struct benchmark* self, int connid) {
     int id = freeid_alloc(&self->fi, connid);
     if (id == -1) {
         return;
@@ -236,7 +247,7 @@ _onconnect(struct benchmark* self, int connid) {
 }
 
 static void
-_ondisconnect(struct benchmark* self, int connid) {
+on_disconnect(struct benchmark* self, int connid) {
     int id = freeid_free(&self->fi, connid);
     if (id == -1) {
         return;
@@ -245,32 +256,19 @@ _ondisconnect(struct benchmark* self, int connid) {
     struct client* c = &self->clients[id];
     c->connected = false;
 }
-/*
-static void
-_disconnect(struct benchmark* self, int id, const char* error) {
-    assert(id >= 0 && id < self->max);
-    struct client* c = &self->clients[id]; 
-    assert(c->connected);
-    assert(c->connid >= 0);
-    int tmp = freeid_free(&self->fi, c->connid);
-    assert(tmp == id);
-    sc_net_close_socket(c->connid);
-    c->connected = false;
-}
-*/
 
 void
 benchmark_net(struct service* s, struct net_message* nm) {
     struct benchmark* self = SERVICE_SELF;
     switch (nm->type) {
     case NETE_READ:
-        _read(self, nm);
+        read_msg(self, nm);
         break;
     case NETE_CONNECT:
-        _onconnect(self, nm->connid);
+        on_connect(self, nm->connid);
         break;
     case NETE_SOCKERR:
-        _ondisconnect(self, nm->connid);
+        on_disconnect(self, nm->connid);
         break;
     }
 }
@@ -293,5 +291,5 @@ benchmark_time(struct service* s) {
     if (n != self->connected)
         return;
 
-    _start(self);
+    start_send(self);
 }

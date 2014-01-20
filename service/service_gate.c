@@ -137,7 +137,6 @@ get_client(struct gate *self, int connid) {
 struct gate*
 gate_create() {
     struct gate* self = malloc(sizeof(*self));
-    self->handler = SERVICE_INVALID;
     return self;
 }
 

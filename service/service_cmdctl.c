@@ -7,7 +7,6 @@
 #include "sc_log.h"
 #include "sc_node.h"
 #include "sc_reload.h"
-#include "sc_gate.h"
 #include "user_message.h"
 #include "cli_message.h"
 #include "args.h"

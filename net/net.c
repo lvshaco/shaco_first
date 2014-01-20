@@ -35,8 +35,8 @@ static const char *STRERROR[] = {
 struct sbuffer {
     struct sbuffer *next;
     int sz;
+    char *begin;
     char *ptr;
-    char data[0];
 };
 
 struct socket {
@@ -147,6 +147,7 @@ _close_socket(struct net *self, struct socket *s) {
     while (s->head) {
         p = s->head;
         s->head = s->head->next;
+        free(p->data);
         free(p);
     }
     s->tail = NULL;
@@ -454,6 +455,7 @@ _send_buffer(struct net *self, struct socket *s) {
             }
         }
         s->head = p->next;
+        free(p->begin);
         free(p);
     }
     if (total > 0 &&
@@ -477,13 +479,16 @@ net_send(struct net* self, int id, void* data, int sz, struct net_message* nm) {
     }
     int error;
     if (s->head == NULL) {
+        char *ptr;
         int n = _socket_write(s->fd, data, sz);
         if (n >= sz) {
+            free(data);
             return 0;
         } else if (n >= 0) {
-            data = (char*)data + n;
+            ptr = (char*)data + n;
             sz -= n;
         } else {
+            ptr = data;
             error = _socket_geterror(s->fd);
             switch (error) {
             case SEAGAIN:
@@ -499,12 +504,12 @@ net_send(struct net* self, int id, void* data, int sz, struct net_message* nm) {
             error = NET_ERR_WBUFOVER;
             goto errout;
         }
-        struct sbuffer* p = malloc(sizeof(*p) + sz);
-        memcpy(p->data, data, sz);
+        struct sbuffer* p = malloc(sizeof(*p));
         p->next = NULL;
         p->sz = sz;
-        p->ptr = p->data;
-
+        p->begin = data;
+        p->ptr = ptr;
+        
         s->head = s->tail = p;
         _subscribe(self, s, s->mask|NET_WABLE);
         return 0;
@@ -514,11 +519,12 @@ net_send(struct net* self, int id, void* data, int sz, struct net_message* nm) {
             error = NET_ERR_WBUFOVER;
             goto errout;
         }
-        struct sbuffer* p = malloc(sizeof(*p) + sz);
-        memcpy(p->data, data, sz);
+        struct sbuffer* p = malloc(sizeof(*p));
         p->next = NULL;
         p->sz = sz;
-        p->ptr = p->data;
+        p->begin = data;
+        p->ptr = data;
+        
         assert(s->tail != NULL);
         assert(s->tail->next == NULL);
         s->tail->next = p;
@@ -526,6 +532,7 @@ net_send(struct net* self, int id, void* data, int sz, struct net_message* nm) {
         return 0;
     }
 errout:
+    free(data);
     nm->connid = s - self->sockets;
     nm->type = NETE_SOCKERR;
     nm->error = NETERR(error);

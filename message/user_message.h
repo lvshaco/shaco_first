@@ -15,21 +15,15 @@
 #define IDUM_HALL       IDUM_NBEGIN+4
 #define IDUM_NETDISCONN IDUM_NBEGIN+5
 #define IDUM_GATE       IDUM_NBEGIN+6
-#define IDUM_CLOSECONN  IDUM_NBEGIN+7
 #define IDUM_AUTH       IDUM_NBEGIN+8
 #define IDUM_ROOM       IDUM_NBEGIN+9
 
-#define IDUM_CMDREQ     IDUM_NBEGIN+10
-#define IDUM_CMDRES     IDUM_NBEGIN+11
 #define IDUM_CMDS       IDUM_NBEGIN+12
 //#define IDUM_FORWARD    IDUM_NBEGIN+12
 #define IDUM_MINLOADFAIL IDUM_NBEGIN+13
 #define IDUM_UPDATELOAD IDUM_NBEGIN+14
 
 #define IDUM_CLIENT     IDUM_NBEGIN+15
-#define IDUM_PLAYER     IDUM_NBEGIN+16
-#define IDUM_DB         IDUM_NBEGIN+17
-#define IDUM_ATTRIBUTE  IDUM_NBEGIN+18
 #define IDUM_DBRANK     IDUM_NBEGIN+19
 
 #define IDUM_REDISQUERY IDUM_NBEGIN+20
@@ -64,43 +58,12 @@
 #define IDUM_APPLY          IDUM_NBEGIN+300
 #define IDUM_APPLYCANCEL    IDUM_NBEGIN+301
 
-// player 仅限本地服务通讯
-struct player;
-struct UM_PLAYER {
-    _UM_HEADER;
-    struct player *pr;
-    struct UM_BASE *real;
-    int realsz;
-};
-
-// DB_PLAYER type
-#define PDB_UNKNOW 0
-#define PDB_QUERY 1
-#define PDB_LOAD  2
-#define PDB_SAVE  3
-#define PDB_CHECKNAME 4
-#define PDB_SAVENAME 5
-#define PDB_CHARID 6
-#define PDB_CREATE 7
-#define PDB_BINDCHARID 8
-
-struct UM_DB {
-    _UM_HEADER;
-    struct player *pr;
-    int8_t type;
-};
-
 struct UM_DBRANK {
     _UM_HEADER;
     const char *type;
     const char *type_old;
     uint32_t charid;
     uint64_t score;
-};
-
-struct UM_ATTRIBUTE {
-    _UM_HEADER;
-    struct player *pr;
 };
 
 #pragma pack(1)
@@ -143,11 +106,6 @@ struct UM_NETDISCONN {
     _UM_HEADER;
     int8_t type;
     int err;
-};
-
-struct UM_CLOSECONN {
-    _UM_HEADER;
-    int8_t force; // !=0 for force
 };
 
 struct service_info {
@@ -198,77 +156,13 @@ struct UM_UNIQUESTATUS {
 };
 // end unique
 
-/*
-// node
-struct UM_NODEREG {
-    _UM_HEADER;
-    uint32_t addr;
-    uint16_t port;
-    uint32_t gaddr;
-    uint16_t gport;
-};
-struct UM_NODEREGOK {
-    _UM_HEADER;
-    uint32_t addr;
-    uint16_t port;
-    uint32_t gaddr;
-    uint16_t gport;
-};
-struct UM_NODESUBS {
-    _UM_HEADER;
-    uint16_t n;
-    uint16_t subs[0];
-};
-static inline uint16_t 
-UM_NODESUBS_size(struct UM_NODESUBS* um) {
-    return sizeof(*um) + sizeof(um->subs[0]) * um->n;
-}
-struct UM_NODENOTIFY {
-    _UM_HEADER;
-    uint16_t tnodeid;
-    uint32_t addr;
-    uint16_t port;
-};
-*/
-
 // cmd
-struct UM_CMDREQ {
-    _UM_HEADER;
-    int32_t cid;
-    char cmd[0];
-};
-struct UM_CMDRES {
-    _UM_HEADER;
-    int32_t cid;
-    char str[0];
-};
-
 struct UM_CMDS {
     _UM_HEADER;
     int connid;
     uint8_t wrap[0];
 };
 
-/*
-// forward
-struct UM_FORWARD {
-    _UM_HEADER;
-    int32_t cid;
-    struct UM_BASE wrap;
-};
-static inline uint16_t
-UM_FORWARD_size(struct UM_FORWARD* um) {
-    return sizeof(*um) + um->wrap.msgsz - UM_BASE_SZ;
-}
-//#define UM_CLI_MAXSZ (UM_MAXSZ-sizeof(struct UM_FORWARD)+UM_BASE_SZ)
-#define UM_DEFFORWARD(fw, fid, type, name) \
-    UM_DEFVAR(UM_FORWARD, fw); \
-    fw->cid = fid; \
-    UM_CAST(type, name, &fw->wrap); \
-    name->nodeid = 0; \
-    name->msgid = ID##type; \
-    name->msgsz = sizeof(*name);
-*/
 // load
 struct UM_UPDATELOAD {
     _UM_HEADER;
@@ -294,25 +188,6 @@ struct UM_REDISREPLY {
 };
 
 // account login
-/*
-struct UM_ACCOUNTLOGINREG {
-    _UM_HEADER;
-    int32_t cid;
-    uint32_t accid;
-    uint64_t key;
-    uint32_t clientip;
-    char account[ACCOUNT_NAME_MAX];
-};
-struct UM_ACCOUNTLOGINRES {
-    _UM_HEADER;
-    int8_t ok;
-    int32_t cid;
-    uint32_t accid;
-    uint64_t key;
-    uint32_t addr;
-    uint16_t port;
-};
-*/
 struct UM_LOGINACCOUNTOK {
     _UM_HEADER;
     uint32_t accid;
@@ -391,32 +266,5 @@ struct UM_APPLYCANCEL {
 };
 
 #pragma pack()
-
-#define UM_SEND(id, um, sz) do { \
-    (um)->nodeid = sc_id();   \
-    (um)->msgsz = sz;           \
-    sc_net_send(id, um, sz);  \
-} while(0)
-
-#define UM_SENDTOCLI(id, um, sz) do { \
-    (um)->msgsz = sz; \
-    sc_net_send(id, (char*)um + UM_CLI_OFF, (um)->msgsz - UM_CLI_OFF); \
-} while(0)
-
-#define UM_SENDTOSVR UM_SENDTOCLI
-
-#define UM_SENDTONODE(hn, um, sz) \
-    UM_SEND(hn->connid, um, sz)
-
-#define UM_SENDTONID(tid, sid, um, sz) do { \
-    uint16_t id = HNODE_ID(tid, sid);               \
-    const struct sc_node* hn = sc_node_get(id); \
-    if (hn) {                                       \
-        UM_SENDTONODE(hn, um, sz);                  \
-    }                                               \
-} while(0)
-
-#define UM_SENDFORWARD(id, fw) \
-    UM_SEND(id, fw, UM_FORWARD_size(fw));
 
 #endif

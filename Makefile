@@ -84,7 +84,7 @@ cli_src=\
 LDFLAGS=-Wl,-rpath,. \
 		shaco.so net.so lur.so base.so -llua -lm -ldl -lrt -rdynamic# -Wl,-E
 
-#service_benchmark.so
+
 #service_benchmarkdb.so
 
 service_so=\
@@ -98,7 +98,8 @@ service_so=\
 	service_loadbalance.so \
 	service_watchdog.so \
 	service_uniqueol.so \
-	service_match.so
+	service_match.so \
+	service_benchmark.so
 
 all: \
 	shaco.so \
