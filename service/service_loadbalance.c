@@ -64,7 +64,7 @@ loadbalance_init(struct service *s) {
 }
 
 static struct service_info *
-_find_service(struct target_vector *ts, int handle) {
+find_service(struct target_vector *ts, int handle) {
     int i;
     for (i=0; i<ts->sz; ++i) {
         if (ts->p[i].handle == handle) {
@@ -75,8 +75,8 @@ _find_service(struct target_vector *ts, int handle) {
 }
 
 static struct service_info *
-_find_or_insert_service(struct target_vector *ts, int handle) {
-    struct service_info *one = _find_service(ts, handle);
+find_or_insert_service(struct target_vector *ts, int handle) {
+    struct service_info *one = find_service(ts, handle);
     if (one) {
         return one;
     }
@@ -93,7 +93,7 @@ _find_or_insert_service(struct target_vector *ts, int handle) {
 }
 
 static int
-_remove_service(struct target_vector *ts, int handle) {
+remove_service(struct target_vector *ts, int handle) {
     int i;
     for (i=0; i<ts->sz; ++i) {
         if (ts->p[i].handle == handle) {
@@ -108,10 +108,10 @@ _remove_service(struct target_vector *ts, int handle) {
 }
 
 static inline void
-_target_start(struct service *s, int handle, const void *msg, int sz) {
+target_start(struct service *s, int handle, const void *msg, int sz) {
     struct loadbalance *self = SERVICE_SELF;
     assert(sz >= (40+2));
-    struct service_info *one = _find_or_insert_service(&self->targets, handle);
+    struct service_info *one = find_or_insert_service(&self->targets, handle);
     assert(one);
     memcpy(one->ip, msg, 40);
     one->port = sh_from_bigendian16(msg+40);
@@ -119,24 +119,22 @@ _target_start(struct service *s, int handle, const void *msg, int sz) {
     UM_DEFVAR(UM_SERVICEINFO, si);
     si->ninfo = 1;
     si->info[0] = *one;
-    sc_service_broadcast(SERVICE_ID, self->subscriber_vhandle, MT_UM, si, UM_SERVICEINFO_size(si));
-
+    sh_service_broadcast(SERVICE_ID, self->subscriber_vhandle, MT_UM, si, UM_SERVICEINFO_size(si));
 }
 
 static inline void
-_target_exit(struct service *s, int handle) {
+target_exit(struct service *s, int handle) {
     struct loadbalance *self = SERVICE_SELF;
-    if (_remove_service(&self->targets, handle)) {
+    if (remove_service(&self->targets, handle)) {
         return;
     }
     UM_DEFFIX(UM_SERVICEDEL, sd);
     sd->handle = handle;
-    sc_service_broadcast(SERVICE_ID, self->subscriber_vhandle, MT_UM, sd, sizeof(*sd));
-
+    sh_service_broadcast(SERVICE_ID, self->subscriber_vhandle, MT_UM, sd, sizeof(*sd));
 }
 
 static inline void
-_subscriber_start(struct service *s, int handle) {
+subscriber_start(struct service *s, int handle) {
     struct loadbalance *self = SERVICE_SELF;
     UM_DEFVAR(UM_SERVICEINFO, si);
     si->ninfo = self->targets.sz;
@@ -145,16 +143,16 @@ _subscriber_start(struct service *s, int handle) {
 }
 
 static void
-_update_load(struct service *s, int handle, int load) {
+update_load(struct service *s, int handle, int load) {
     struct loadbalance *self = SERVICE_SELF;
-    struct service_info *one = _find_or_insert_service(&self->targets, handle);
+    struct service_info *one = find_or_insert_service(&self->targets, handle);
     assert(one);
     one->load = load;
 
     UM_DEFFIX(UM_SERVICELOAD, sl);
     sl->handle = one->handle;
     sl->load = one->load;
-    sc_service_broadcast(SERVICE_ID, self->subscriber_vhandle, MT_UM, sl, sizeof(*sl));
+    sh_service_broadcast(SERVICE_ID, self->subscriber_vhandle, MT_UM, sl, sizeof(*sl));
 }
 
 void
@@ -170,28 +168,28 @@ loadbalance_main(struct service *s, int session, int source, int type, const voi
             case MONITOR_START: {
                 // todo
                 int diff = 5+40+2;
-                _target_start(s, source, msg+diff, sz-diff);
+                target_start(s, source, msg+diff, sz-diff);
                 }
                 break;
             case MONITOR_EXIT:
-                _target_exit(s, source);
+                target_exit(s, source);
                 break;
             }
         }
         if (vhandle == self->subscriber_vhandle) {
             if (type == MONITOR_START) {
-                _subscriber_start(s, source);
+                subscriber_start(s, source);
             }
         }
-        }
         break;
+        }
     case MT_UM: {
         UM_CAST(UM_BASE, base, msg);
         if (base->msgid == IDUM_UPDATELOAD) {
             UM_CAST(UM_UPDATELOAD, ul, msg);
-            _update_load(s, source, ul->value);
-        }
+            update_load(s, source, ul->value);
         }
         break;
+        }
     }
 }

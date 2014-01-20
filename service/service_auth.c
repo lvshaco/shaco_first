@@ -1,20 +1,21 @@
 #include "sc_service.h"
+#include "sc_timer.h"
+#include "sc_node.h"
+#include "sh_hash.h"
+#include "redis.h"
+#include "cli_message.h"
+#include "user_message.h"
+#include "memrw.h"
 #include <stdlib.h>
-
-/*#define STATE_FREE   0*/
-//#define STATE_LOGIN     1
-//#define STATE_VERIFYED  2
-//#define STATE_GATELOAD  3
-//#define STATE_DONE      4
+#include <assert.h>
+#include <stdio.h>
+#include <string.h>
 
 struct user {
     uint64_t conn;
     int watchdog_source;
     uint32_t wsession;
-    //int state;  // see STATE_*
-    //uint64_t login_time;
-    //uint32_t accid;
-    //uint64_t key;
+    //uint64_t logintime;
     char account[ACCOUNT_NAME_MAX];
     char passwd[ACCOUNT_PASSWD_MAX];
 };
@@ -39,14 +40,20 @@ auth_free(struct auth *self) {
     if (self == NULL)
         return;
     redis_finireply(&self->reply);
-    sh_hash64_foreach(&self->reply, free);
-    sh_hash64_fini(&self->reply);
+    sh_hash64_foreach(&self->conn2user, free);
+    sh_hash64_fini(&self->conn2user);
     free(self);
 }
 
 int
 auth_init(struct service *s) {
-    //struct auth *self = SERVICE_SELF;
+    struct auth *self = SERVICE_SELF;
+    if (sh_handler("watchdog", &self->watchdog_handle) ||
+        sh_handler("rpacc", &self->rpacc_handle)) {
+        return 1;
+    }
+    redis_initreply(&self->reply, 512, 0);
+    sh_hash64_init(&self->conn2user, 1);
     return 0;
 }
 
@@ -55,25 +62,28 @@ login(struct service *s, int source, uint64_t conn, uint32_t wsession, struct UM
     struct auth *self = SERVICE_SELF; 
     struct user *ur = sh_hash64_find(&self->conn2user, conn);
     if (ur) {
-        return;
+        // if db no reply, then user will no remove, we just reuse it as cache
+    } else {
+        ur = malloc(sizeof(*ur)); 
+        assert(!sh_hash64_insert(&self->conn2user, conn, ur));
     }
-    ur = malloc(sizeof(*ur));
     ur->conn = conn;
     ur->watchdog_source = source;
     ur->wsession = wsession;
+    //ur->logintime = sc_timer_now();
     memcpy(ur->account, la->account, sizeof(ur->account));
     memcpy(ur->passwd, la->passwd, sizeof(ur->passwd));
-    assert(!sh_hash64_insert(&self->conn2user, conn, ur));
-
+    
     UM_DEFVAR2(UM_REDISQUERY, rq, UM_MAXSZ);
     rq->needreply = 1;
     rq->needrecord = 0;
     struct memrw rw;
     memrw_init(&rw, rq->data, UM_MAXSZ - sizeof(*rq));
     memrw_write(&rw, &ur->conn, sizeof(ur->conn));
-    memrw_write(&rw, &ur->wsession, sizeof(ur->wsession));
+    //memrw_write(&rw, &ur->wsession, sizeof(ur->wsession));
+    memrw_write(&rw, ur->account, sizeof(ur->account));
     rq->cbsz = RW_CUR(&rw);
-    int len = snprintf(rw.ptr, RW_SPACE(&rw), "hmget acc:%s id passwd\r\n", p->account);
+    int len = snprintf(rw.ptr, RW_SPACE(&rw), "hmget acc:%s id passwd\r\n", ur->account);
     memrw_pos(&rw, len);
     int msgsz = sizeof(*rq) + RW_CUR(&rw);
     sh_service_send(SERVICE_ID, self->rpacc_handle, MT_UM, rq, msgsz);
@@ -99,15 +109,22 @@ notify_login_ok(struct service *s, struct user *ur, uint32_t accid) {
 
 static void
 process_redis(struct service *s, struct UM_REDISREPLY *rep, int sz) {
+    struct auth *self = SERVICE_SELF;
     struct memrw rw;
     memrw_init(&rw, rep->data, sz - sizeof(*rep));
     uint64_t conn = 0;
     memrw_read(&rw, &conn, sizeof(conn));
-    uint32_t wsession = 0;
-    memrw_read(&rw, &wsession, sizeof(wsession));
-    
+    //uint32_t wsession = 0;
+    //memrw_read(&rw, &wsession, sizeof(wsession));
+   
+    char account[ACCOUNT_NAME_MAX];
+    memrw_read(&rw, account, sizeof(account));
+
     struct user *ur = sh_hash64_find(&self->conn2user, conn);
-    if (ur == NULL || ur->wsession != wsession) {
+    if (ur == NULL /*|| ur->wsession != wsession*/) {
+        return;
+    }
+    if (memcmp(ur->account, account, sizeof(account))) {
         return;
     }
     redis_resetreplybuf(&self->reply, rw.ptr, RW_SPACE(&rw));
@@ -135,7 +152,7 @@ process_redis(struct service *s, struct UM_REDISREPLY *rep, int sz) {
         return;
     }
     notify_login_ok(s, ur, accid);
-    sh_hash64_remove(self->conn2user, conn);
+    sh_hash64_remove(&self->conn2user, conn);
     free(ur);
 }
 

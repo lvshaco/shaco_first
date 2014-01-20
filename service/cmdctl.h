@@ -8,13 +8,13 @@
 #define CTL_ARGINVALID 4
 #define CTL_NOSERVICE 5
 
-struct cmdctl;
+struct service;
 struct args;
 struct memrw;
 
 struct ctl_command {
     const char* name;
-    int (*fun)(struct cmdctl* self, struct args* A, struct memrw* rw);
+    int (*fun)(struct service *s, struct args* A, struct memrw* rw);
 };
 
 #endif

@@ -72,10 +72,10 @@ libshaco_src=\
  	libshaco/sc_log.c \
 	libshaco/sc_reload.c \
 	libshaco/sc_node.c \
-	libshaco/sc_gate.c \
 	libshaco/sh_monitor.c \
  	libshaco/dlmodule.c \
-	libshaco/sh_util.c
+	libshaco/sh_util.c \
+	libshaco/sh_hash.c
 	
 
 cli_src=\
@@ -84,8 +84,10 @@ cli_src=\
 LDFLAGS=-Wl,-rpath,. \
 		shaco.so net.so lur.so base.so -llua -lm -ldl -lrt -rdynamic# -Wl,-E
 
+#service_benchmark.so
+#service_benchmarkdb.so
+
 service_so=\
-	service_benchmark.so \
 	service_echo.so \
 	service_centers.so \
 	service_node.so \
@@ -96,8 +98,7 @@ service_so=\
 	service_loadbalance.so \
 	service_watchdog.so \
 	service_uniqueol.so \
-	service_match.so \
-	service_cmdctlgame.so
+	service_match.so
 
 all: \
 	shaco.so \
@@ -106,6 +107,7 @@ all: \
 	base.so \
 	redis.so \
 	tplt.so \
+	mapdatamgr.so \
 	elog.so \
 	shaco \
 	shaco-cli \
@@ -115,12 +117,11 @@ all: \
 	$(service_so) \
 	service_game.so \
 	service_rank.so \
-	service_benchmarkdb.so \
 	service_redisproxy.so \
 	service_tplthall.so \
 	service_tpltroom.so \
-	service_cmdctlworld.so \
-	service_hall.so
+	service_hall.so \
+	service_auth.so
 
 release: CFLAGS += -O2 -fno-strict-aliasing
 release: all
@@ -159,7 +160,7 @@ service_redisproxy.so: $(service_dir)/service_redisproxy.c
 	@rm -f $@
 	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Iinclude/libshaco -Inet -Ibase -Imessage -Iredis -Wl,-rpath,. redis.so
 
-service_login.so: $(service_dir)/service_login.c
+service_auth.so: $(service_dir)/service_auth.c
 	@rm -f $@
 	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Iinclude/libshaco -Inet -Ibase -Imessage -Iredis -Wl,-rpath,. redis.so
 
@@ -170,10 +171,6 @@ service_tplthall.so: $(service_dir)/service_tplthall.c
 service_tpltroom.so: $(service_dir)/service_tpltroom.c
 	@rm -f $@
 	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Iinclude/libshaco -Itplt -Idatadefine -Igame -Wl,-rpath,. tplt.so mapdatamgr.so
-
-service_cmdctlworld.so: $(service_dir)/service_cmdctlworld.c
-	@rm -f $@
-	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Iinclude/libshaco -Inet -Ibase -Imessage -Wl,-rpath,. 
 
 service_hall.so: $(service_dir)/service_hall.c \
 	hall/player.c \
@@ -230,8 +227,8 @@ shaco: main/shaco.c
 shaco-cli: $(cli_src)
 	gcc $(CFLAGS) -o $@ $^ -lpthread
 
-t: main/test.c net.so lur.so base.so redis.so elog.so
-	gcc $(CFLAGS) -o $@ $^ -Iinclude/libshaco -Ilur -Inet -Ibase -Iredis -Ielog $(LDFLAGS) redis.so
+t: main/test.c shaco.so net.so lur.so base.so redis.so elog.so
+	gcc $(CFLAGS) -o $@ $^ -Iinclude/libshaco -Ilur -Inet -Ibase -Iredis -Ielog $(LDFLAGS) redis.so 
 
 robot: main/robot.c cnet/cnet.c cnet/cnet.h net.so
 	gcc $(CFLAGS) -o $@ $^ -Ilur -Icnet -Inet -Ibase -Imessage -Wl,-rpath,. net.so

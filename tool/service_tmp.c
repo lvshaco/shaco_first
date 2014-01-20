@@ -27,4 +27,13 @@ tmp_time(struct service *s) {
 void
 tmp_main(struct service *s, int session, int source, int type, const void *msg, int sz) {
     //struct tmp *self = SERVICE_SELF;
+    switch (type) {
+    case MT_UM: {
+        UM_CAST(UM_BASE, base, msg);
+        switch (base->msgid) {
+        }
+        break;
+        }
+    }
+
 }

@@ -7,7 +7,6 @@
 #include "sc.h"
 #include "hashid.h"
 #include "freeid.h"
-#include "message_reader.h"
 #include "message_helper.h"
 #include "user_message.h"
 #include "client_type.h"

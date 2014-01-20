@@ -85,7 +85,7 @@ remove_service(struct target_vector *ts, int handle) {
 }
 
 static struct service_info *
-_minload_service(struct route *self) {
+minload_service(struct route *self) {
     int minload = INT_MAX;
     int idx=-1;
     int n = self->gates.sz;
@@ -106,28 +106,31 @@ _minload_service(struct route *self) {
 }
 
 static void
-_handle_gate(struct service *s, int source, int connid, const void *msg, int sz) {
+handle_gate(struct service *s, int source, int connid, const void *msg, int sz) {
     struct route *self = SERVICE_SELF;
     
     UM_CASTCK(UM_BASE, base, msg, sz); 
     if (base->msgid != IDUM_GATEADDRREQ) {
         return;
     }
-    UM_DEFVAR(UM_GATE, cli);
-    cli->connid = connid;
-    struct service_info *one = _minload_service(self);
+    struct service_info *one = minload_service(self);
     if (one) {
-        UM_CAST(UM_GATEADDR, addr, cli->wrap);
-        memcpy(addr->ip, one->ip, sizeof(one->ip));
-        addr->port = one->port;
-        sh_service_send(SERVICE_ID, source, MT_UM, cli, sizeof(*addr) + sizeof(*cli));
+        UM_DEFWRAP(UM_GATE, ga, UM_GATEADDR, ok);
+        ga->connid = connid;
+        memcpy(ok->ip, one->ip, sizeof(one->ip));
+        ok->port = one->port;
+        sh_service_send(SERVICE_ID, source, MT_UM, ga, sizeof(*ga) + sizeof(*ok));
     } else {
-        UM_CAST(UM_GATEADDRFAIL, fail, cli->wrap);
-        sh_service_send(SERVICE_ID, source, MT_UM, cli, sizeof(*fail) + sizeof(*cli));
+        UM_DEFWRAP(UM_GATE, ga, UM_GATEADDRFAIL, fail);
+        ga->connid = connid;
+        sh_service_send(SERVICE_ID, source, MT_UM, ga, sizeof(*ga) + sizeof(*fail));
+    } 
+    {
+        UM_DEFWRAP(UM_GATE, ga, UM_LOGOUT, lo);
+        ga->connid = connid;
+        lo->err = SERR_OK;
+        sh_service_send(SERVICE_ID, source, MT_UM, ga, sizeof(*ga) + sizeof(*lo));
     }
-    UM_CAST(UM_CLOSECONN, cc, cli->wrap);
-    cc->force = 0;
-    sh_service_send(SERVICE_ID, source, MT_UM, cli, sizeof(*cc) + sizeof(*cli));
 }
 
 void
@@ -140,7 +143,7 @@ route_main(struct service *s, int session, int source, int type, const void *msg
     switch(base->msgid) {
     case IDUM_GATE: {
         UM_CAST(UM_GATE, g, msg);
-        _handle_gate(s, source, g->connid, g->wrap, sz-sizeof(*g));
+        handle_gate(s, source, g->connid, g->wrap, sz-sizeof(*g));
         }
         break;
     case IDUM_SERVICEINFO: {

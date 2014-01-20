@@ -11,6 +11,8 @@
 #include <unistd.h>
 #include <errno.h>
 
+#define TYPE 1001
+
 struct client {
     int fd;
 };
@@ -74,8 +76,8 @@ _write_one(int fd, const char* buf, int sz, int8_t mode) {
     int l = sz + 7;
     head[0] = l & 0xff;
     head[1] = (l >> 8) & 0xff;
-    head[2] = 0;
-    head[3] = 0;
+    head[2] = TYPE && 0xff;
+    head[3] = (TYPE >> 8) & 0xff;
     CHK(_write(fd, head, 4));
     CHK(_write(fd, &mode, 1));
     CHK(_write(fd, buf, sz));

@@ -52,7 +52,7 @@ centers_init(struct service* s) {
 }
 
 static struct _pubsub_slot *
-_insert_pubsub_name(struct _pubsub_array *ps, const char *name) {
+insert_pubsub_name(struct _pubsub_array *ps, const char *name) {
     int i;
     for (i=0; i<ps->sz; ++i) {
         if (strcmp(ps->p[i].name, name) == 0)
@@ -71,7 +71,7 @@ _insert_pubsub_name(struct _pubsub_array *ps, const char *name) {
 }
 
 static int
-_insert_int(struct _int_array *inta, int value) {
+insert_int(struct _int_array *inta, int value) {
     int i;
     for (i=0; i<inta->sz; ++i) {
         if (inta->p[i] == value)
@@ -109,11 +109,11 @@ centers_main(struct service *s, int session, int source, int type, const void *m
         if (A.argc != 2)
             return;
         const char *name = A.argv[1];
-        struct _pubsub_slot *slot = _insert_pubsub_name(&self->ps, name);
+        struct _pubsub_slot *slot = insert_pubsub_name(&self->ps, name);
         if (slot == NULL)
             return;
         int nodeid = sc_nodeid_from_handle(source);
-        if (_insert_int(&slot->subs, nodeid)) {
+        if (insert_int(&slot->subs, nodeid)) {
             sc_error("Subscribe %s repeat by node#%d", name, nodeid);
             return;
         }
@@ -131,7 +131,7 @@ centers_main(struct service *s, int session, int source, int type, const void *m
         *p = '\0';
         const char *name = A.argv[1];
         int handle = strtol(p+1, NULL, 10);
-        struct _pubsub_slot *slot = _insert_pubsub_name(&self->ps, name);
+        struct _pubsub_slot *slot = insert_pubsub_name(&self->ps, name);
         if (slot == NULL)
             return;
         int i;

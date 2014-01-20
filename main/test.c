@@ -1289,10 +1289,9 @@ test_hash(int times) {
     sh_hash_fini(&h);
 }
 
-static inline int
-hash_cb(uint32_t key, void *pointer) {
-    printf("key: %u, pointer: %p\n", key, pointer);
-    return 1;
+static inline void 
+hash_cb(void *pointer) {
+    printf("pointer: %p\n", pointer);
 }
 
 void 

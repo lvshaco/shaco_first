@@ -1,6 +1,6 @@
 #include "cnet.h"
 #include "net.h"
-#include "message_reader.h"
+//#include "message_reader.h"
 #include <stdio.h>
 #include <string.h>
 #ifndef WIN32
@@ -9,7 +9,7 @@
 #else
 #include <winsock2.h>
 #endif
-
+/*
 static struct net* N = NULL;
 static cnet_onconn     _onconnect = NULL;
 static cnet_onconnerr  _onconnerr = NULL;
@@ -198,4 +198,4 @@ int cnet_subscribe(int id, int read) {
 }
 int cnet_disconnect(int id) {
     return net_close_socket(N, id, true);
-}
+}*/

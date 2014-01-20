@@ -21,7 +21,8 @@
 
 #define IDUM_CMDREQ     IDUM_NBEGIN+10
 #define IDUM_CMDRES     IDUM_NBEGIN+11
-#define IDUM_FORWARD    IDUM_NBEGIN+12
+#define IDUM_CMDS       IDUM_NBEGIN+12
+//#define IDUM_FORWARD    IDUM_NBEGIN+12
 #define IDUM_MINLOADFAIL IDUM_NBEGIN+13
 #define IDUM_UPDATELOAD IDUM_NBEGIN+14
 
@@ -140,7 +141,8 @@ struct UM_ROOM {
 
 struct UM_NETDISCONN {
     _UM_HEADER;
-    int8_t err;
+    int8_t type;
+    int err;
 };
 
 struct UM_CLOSECONN {
@@ -240,6 +242,13 @@ struct UM_CMDRES {
     int32_t cid;
     char str[0];
 };
+
+struct UM_CMDS {
+    _UM_HEADER;
+    int connid;
+    uint8_t wrap[0];
+};
+
 /*
 // forward
 struct UM_FORWARD {

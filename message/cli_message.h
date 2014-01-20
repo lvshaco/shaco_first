@@ -8,10 +8,12 @@
 #define IDUM_CBEGIN 1000
 #define IDUM_CEND   2000
 
-#define IDUM_LOGINACCOUNT   IDUM_CBEGIN+10
+#define IDUM_GATEB          IDUM_CBEGIN+0
+#define IDUM_LOGINACCOUNT   IDUM_CBEGIN+0
+#define IDUM_TEXT           IDUM_NBEGIN+1
 
 // client -> server (hall)
-#define IDUM_HALLB          IDUM_CBEGIN+1  // hall begin
+#define IDUM_HALLB          IDUM_CBEGIN+10  // hall begin
 // user
 #define IDUM_CHARCREATE     IDUM_CBEGIN+10
 
@@ -49,6 +51,7 @@
 #define IDUM_ROLEPRESS      IDUM_CBEGIN+502
 #define IDUM_GAMELOADOK     IDUM_CBEGIN+503
 #define IDUM_ROOME          IDUM_CBEGIN+599 // room end
+#define IDUM_GATEE          IDUM_CBEGIN+599
 
 // server -> client
 // user
@@ -106,6 +109,11 @@ struct UM_GATEADDRFAIL {
     _UM_HEADER;
 };
 
+struct UM_TEXT {
+    _UM_HEADER;
+    char str[0];
+};
+
 // login account
 struct UM_LOGINACCOUNT {
     _UM_HEADER;
@@ -142,7 +150,7 @@ struct UM_HEARTBEAT {
 
 struct UM_LOGOUT {
     _UM_HEADER;
-    int8_t err; // see SERR_OK
+    int8_t err; // see SERR_OK, if err == SERR_OK, then gate force close connection
 };
 
 struct UM_LOGINFAIL {

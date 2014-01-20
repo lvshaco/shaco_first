@@ -7,7 +7,7 @@
 #define MT_TEXT 1
 #define MT_UM   2
 #define MT_MONITOR 3
-#define MT_GATE 4
+//#define MT_GATE 4
 #define MT_USR1 5
 #define MT_USR2 6
 #define MT_USR3 7
@@ -30,7 +30,7 @@ int sc_service_exit(int handle);
 int sc_service_subscribe(const char *name);
 int sc_service_publish(const char *name, int flag);
 int sh_service_send(int source, int dest, int type, const void *msg, int sz);
-int sc_service_broadcast(int source, int dest, int type, const void *msg, int sz);
+int sh_service_broadcast(int source, int dest, int type, const void *msg, int sz);
 
 #ifdef __GNUC__
 int sc_service_vsend(int source, int dest, const char *fmt, ...)

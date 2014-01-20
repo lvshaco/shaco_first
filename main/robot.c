@@ -4,7 +4,7 @@
 #include <assert.h>
 #include <string.h>
 #include <time.h>
-
+/*
 #define TLOGIN 0
 #define TGATE 1
 #define TGAME 2
@@ -138,14 +138,13 @@ static void
 _handleum(int id, int ut, struct UM_BASE* um) {
     printf("handleum: %d\n", um->msgid);
     switch (um->msgid) {
-/*    case 1500: {
-        static int I = 0;
-        I++;
-        if (I > 900)
-            cnet_disconnect(id);
-        }
-        break;
-*/
+//    case 1500: {
+//        static int I = 0;
+//        I++;
+//        if (I > 900)
+//            cnet_disconnect(id);
+//        }
+//        break;
     case IDUM_LOGINACCOUNTFAIL: {
         UM_CAST(UM_LOGINACCOUNTFAIL, fail, um);
         printf("accout login fail: error#%d\n", fail->error);
@@ -251,8 +250,9 @@ _handleum(int id, int ut, struct UM_BASE* um) {
         break;
     }
 }
-
+*/
 int main(int argc, char* argv[]) { 
+/*
     const char* ip;
     uint16_t port;
     if (argc > 1) {
@@ -289,5 +289,6 @@ int main(int argc, char* argv[]) {
     }
     cnet_fini();
     system("pause"); 
+    */
     return 0;
 }

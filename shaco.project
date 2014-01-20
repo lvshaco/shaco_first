@@ -19,7 +19,6 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.py *.h *.c" {
   dlmodule.c
   sc_check.c
   sc_env.c
-  sc_gate.c
   sc_init.c
   sc_log.c
   sc_net.c
@@ -29,16 +28,15 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.py *.h *.c" {
   sc_sig.c
   sc_start.c
   sc_timer.c
+  sh_hash.c
   sh_monitor.c
   sh_util.c
-  sh_hash.c
  }
  include=include{
   libshaco=libshaco{
    dlmodule.h
    sc.h
    sc_env.h
-   sc_gate.h
    sc_init.h
    sc_log.h
    sc_net.h
@@ -47,7 +45,6 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.py *.h *.c" {
    sc_service.h
    sc_timer.h
    sh_hash.h
-   sh_hashid.h
    sh_monitor.h
    sh_util.h
   }
@@ -63,7 +60,6 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.py *.h *.c" {
   freelist.h
   gfreeid.h
   hashid.h
-  ghashid.h
   hmap.h
   map.h
   memrw.h
@@ -97,12 +93,11 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.py *.h *.c" {
  }
  service=service{
   cmdctl.h
+  service_auth.c
   service_benchmark.c
   service_benchmarkdb.c
   service_centers.c
   service_cmdctl.c
-  service_cmdctlgame.c
-  service_cmdctlworld.c
   service_cmds.c
   service_echo.c
   service_game.c
@@ -110,7 +105,6 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.py *.h *.c" {
   service_hall.c
   service_loadbalance.c
   service_log.c
-  service_login.c
   service_match.c
   service_node.c
   service_rank.c
@@ -120,22 +114,21 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.py *.h *.c" {
   service_tpltroom.c
   service_uniqueol.c
   service_watchdog.c
-  service_auth.c
  }
  hall=hall{
-  playlogic.h
-  playlogic.c
   attrilogic.h
   awardlogic.h
   hall.h
   player.h
   playerdb.h
+  playlogic.h
   ringlogic.h
   rolelogic.h
   attrilogic.c
   awardlogic.c
   player.c
   playerdb.c
+  playlogic.c
   ringlogic.c
   rolelogic.c
  }

@@ -256,8 +256,20 @@ sh_service_send(int source, int dest, int type, const void *msg, int sz) {
 }
 
 int 
-sc_service_broadcast(int source, int dest, int type, const void *msg, int sz) {
-    return 0;
+sh_service_broadcast(int source, int dest, int type, const void *msg, int sz) {
+    struct _service *s;
+    int i, n=0;
+    if (dest & 0x10000) {
+        s = _get_service(dest);
+        if (s) {
+            for (i=0; i<s->sz; ++i) {
+                if (!service_send(R->handle, 0, source, s->phandle[i].id, type, msg, sz)) {
+                    n++;
+                }
+            }
+        }
+    }
+    return n;
 }
 
 int 
