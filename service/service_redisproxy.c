@@ -180,7 +180,9 @@ query(struct service *s, int source, struct UM_REDISQUERY *rq, int sz) {
         }
     }
     if (self->connid != -1) {
-        sc_net_send(self->connid, dataptr, datasz);
+        char *tmp = malloc(datasz);
+        memcpy(tmp, dataptr, datasz);
+        sc_net_send(self->connid, tmp, datasz);
     } else {
         if (rq->needrecord) {
             dataptr[datasz-1] = '\0';

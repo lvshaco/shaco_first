@@ -339,7 +339,20 @@ sc_service_has(int vhandle, int handle) {
 int 
 sh_handler(const char *name, int *handle) {
     *handle = sc_service_subscribe(name);
-    return (*handle != -1) ? 0 : 1;
+    if (*handle == -1) {
+        sc_error("Subscribe handle fail: %s", name);
+        return 1;
+    }
+    return 0;
+}
+
+int 
+sh_handle_publish(const char *name, int flag) {
+    if (sc_service_publish(name, flag)) {
+        sc_error("Publish handle fail: %s", name);
+        return 1;
+    }
+    return 0;
 }
 
 static void

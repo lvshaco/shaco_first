@@ -99,4 +99,4 @@ sh_monitor_fini() {
     _M = NULL;
 }
 
-SC_LIBRARY_INIT_PRIO(sh_monitor_init, sh_monitor_fini, 51)
+SC_LIBRARY_INIT_PRIO(sh_monitor_init, sh_monitor_fini, 40)

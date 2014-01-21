@@ -139,6 +139,6 @@ attribute_refresh(struct player *pr) {
 }
 
 void
-attribute_main(struct service *s, struct player *pr, const void *msg, int sz) {
+attrilogic_main(struct service *s, struct player *pr, const void *msg, int sz) {
     attribute_refresh(pr);
 }

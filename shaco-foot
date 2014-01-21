@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SERVERS="rpacc rpuser rprank world gateload game gate login"
+SERVERS="rpacc rpuser rprank gateload uniqueol match watchdog auth hall room gate route"
 
 ls() {
     ps -ef |grep shaco |grep config

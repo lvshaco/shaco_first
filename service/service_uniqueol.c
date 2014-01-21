@@ -1,4 +1,5 @@
 #include "sc_service.h"
+#include "sc_env.h"
 #include "sc_node.h"
 #include "user_message.h"
 #include <stdlib.h>
@@ -12,7 +13,7 @@ struct unique {
 };
 
 struct uniqueol {
-    int watchdog_handle;
+    int requester_handle;
     struct unique uni;
 };
 
@@ -88,7 +89,11 @@ int
 uniqueol_init(struct service *s) {
     struct uniqueol *self = SERVICE_SELF;
 
-    if (sh_handler("watchdog", &self->watchdog_handle)) {
+    if (sh_handle_publish(SERVICE_NAME, PUB_SER)) {
+        return 1;
+    }
+    if (sh_handler(sc_getstr("uniqueol_requester", ""), 
+                &self->requester_handle)) {
         return 1;
     }
     unique_init(&self->uni, UNIQUE_INIT);

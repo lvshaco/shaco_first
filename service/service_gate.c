@@ -264,6 +264,14 @@ errout:
     service_net(nm->ud, nm);
 }
 
+static inline void
+send_to_client(int connid, void *data, int sz) {
+    uint8_t *tmp = malloc(sz+2);
+    sh_to_littleendian16(sz, tmp);
+    memcpy(tmp+2, data, sz);
+    sc_net_send(connid, tmp, sz+2);
+}
+
 void
 gate_main(struct service* s, int session, int source, int type, const void *msg, int sz) {
     struct gate* self = SERVICE_SELF;
@@ -281,13 +289,13 @@ gate_main(struct service* s, int session, int source, int type, const void *msg,
             if (lo->err == SERR_OK) {
                 disconnect_client(s, c, true);
             } else {
-                sc_net_send(connid, lo, sizeof(*lo));
+                send_to_client(connid, lo, sizeof(*lo));
                 disconnect_client(s, c, false);
             }
             break;
             }
         default:
-            sc_net_send(connid, ga->wrap, sz-sizeof(*ga));
+            send_to_client(connid, ga->wrap, sz-sizeof(*ga));
             break;
         }
         break;

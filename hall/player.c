@@ -15,7 +15,7 @@ free_player(struct hall *self, struct player *pr) {
 int 
 player_init(struct hall *self) {
     sh_hash_init(&self->acc2player, 1);
-    return 1;
+    return 0;
 }
 
 void

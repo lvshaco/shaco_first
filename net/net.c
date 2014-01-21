@@ -147,7 +147,7 @@ _close_socket(struct net *self, struct socket *s) {
     while (s->head) {
         p = s->head;
         s->head = s->head->next;
-        free(p->data);
+        free(p->begin);
         free(p);
     }
     s->tail = NULL;
@@ -468,13 +468,16 @@ _send_buffer(struct net *self, struct socket *s) {
 int 
 net_send(struct net* self, int id, void* data, int sz, struct net_message* nm) {
     if (sz <= 0) {
+        free(data);
         return -1;
     }
     struct socket* s = _get_socket(self, id);
     if (s == NULL) {
+        free(data);
         return -1;
     }
     if (s->status == STATUS_HALFCLOSE) {
+        free(data);
         return -1; // do not send
     }
     int error;

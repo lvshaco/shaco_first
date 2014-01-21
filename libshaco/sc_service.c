@@ -280,16 +280,6 @@ service_prepareall() {
         sc_exit("service_prepareall fail");
     }
 }
-/*
-int 
-sh_handler(const char* name, int* handler) {
-    *handler = service_query_id(name);
-    if (*handler == SERVICE_INVALID) {
-        sc_error("lost %s service", name);
-        return 1;
-    }
-    return 0;
-}
-*/
+
 SC_LIBRARY_INIT_PRIO(service_init, service_fini, 11)
 SC_LIBRARY_INIT_PRIO(service_prepareall, NULL, 50)

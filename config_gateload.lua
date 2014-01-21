@@ -1,6 +1,6 @@
 require "config_base"
-def_node("gateload", 0)
+def_node("gateload", 2)
+sc_service=sc_service..",loadbalance"
 
-sc_service=sc_service..",load"
-load_source="login" 
-load_dest="gate" 
+loadbalance_target="gate"
+loadbalance_subscriber="route"

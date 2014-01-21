@@ -137,7 +137,7 @@ service_game.so: $(service_dir)/service_game.c \
 	game/genmap.c \
 	game/genmap.h
 	@rm -f $@
-	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Iinclude/libshaco -Inet -Ibase -Imessage -Igame -Itplt -Idatadefine -Wl,-rpath,. tplt.so
+	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Iinclude/libshaco -Inet -Ibase -Imessage -Igame -Itplt -Idatadefine -Wl,-rpath,. tplt.so mapdatamgr.so
 
 service_log.so: $(service_dir)/service_log.c
 	@rm -f $@
@@ -189,7 +189,7 @@ service_hall.so: $(service_dir)/service_hall.c \
 	hall/playlogic.c \
 	hall/playlogic.h
 	@rm -f $@
-	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Iinclude/libshaco -Inet -Ibase -Itplt -Idatadefine -Imessage -Iredis -Ihall -Wl,-rpath,. redis.so
+	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Iinclude/libshaco -Inet -Ibase -Itplt -Idatadefine -Imessage -Iredis -Ihall -Wl,-rpath,. redis.so tplt.so
 
 lur.so: $(lur_src)
 	@rm -f $@
@@ -211,7 +211,7 @@ tplt.so: $(tplt_src)
 	@rm -f $@
 	gcc $(CFLAGS) $(SHARED) -o $@ $^ -DUSE_HOSTLOG -Iinclude/libshaco
 
-mapdatamgr.so: game/mapdatamgr.c game/mapdatamgr.c
+mapdatamgr.so: game/mapdatamgr.c game/mapdatamgr.c game/roommap.c game/roommap.h
 	@rm -f $@
 	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Iinclude/libshaco -Itplt -Idatadefine -Igame
 

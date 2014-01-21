@@ -44,6 +44,7 @@ int sc_service_minload(int vhandle);
 int sc_service_nextload(int vhandle);
 
 int sh_handler(const char *name, int *handle);
+int sh_handle_publish(const char *name, int flag);
 
 static inline int
 sc_handleid(int nodeid, int serviceid) {
