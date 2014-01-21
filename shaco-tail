@@ -1,0 +1,29 @@
+#!/bin/sh
+clean()
+{
+  #echo $@;
+  #for file in "$@"; do ps -ef|grep $file|grep -v grep|awk '{print $2}'|xargs kill -9; done
+  jobs -p|xargs kill -9  
+}
+#files=$@
+ 
+# When this exits, exit all back ground process also.
+#trap "ps -ef|grep tail|grep -v grep|awk '{print "'$2'"}'|xargs kill -9" EXIT
+ 
+#trap "clean $files " EXIT
+ 
+# iterate through the each given file names,
+#for file in "$@"
+#do
+        # show tails of each in background.
+        #tail -f $1/$file &
+#done
+
+i=1
+until [ $i -eq 256 ]
+do
+    tail -f $1/$i.log &
+    i=$(( $i + 1 ))
+done
+# wait .. until CTRL+C
+wait

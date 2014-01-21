@@ -92,11 +92,6 @@ void
 centers_main(struct service *s, int session, int source, int type, const void *msg, int sz) {
     struct centers *self = SERVICE_SELF;
     struct args A;
-    char tmp[sz+1];
-    memcpy(tmp, msg, sz);
-    tmp[sz]='\0';
-    sc_debug(tmp);
-
     if (args_parsestrl(&A, 0, msg, sz) < 1)
         return;
     const char *cmd = A.argv[0];

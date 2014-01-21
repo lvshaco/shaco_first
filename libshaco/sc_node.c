@@ -231,9 +231,28 @@ sc_service_publish(const char *name, int flag) {
     return 0;
 }
 
+static inline void
+debug_msg(int source, int dest, int type, const void *msg, int sz) {
+    switch (type) {
+    case MT_TEXT: {
+        char tmp[sz+1];
+        memcpy(tmp, msg, sz);
+        tmp[sz] = '\0';
+        sc_debug("[%0x - %0x] [T] %s", source, dest, tmp);
+        break;
+        }
+    case MT_UM:
+        if (sz >= 2) {
+        uint16_t msgid = sh_from_littleendian16((uint8_t *)msg);
+        sc_debug("[%0x - %0x] [U] %u", source, dest, msgid);
+        }
+        break;
+    }
+}
+
+
 int 
 sh_service_send(int source, int dest, int type, const void *msg, int sz) {
-    sc_debug("Command from %0x to %0x", source, dest);
     if (dest & 0x10000) {
         struct _service *s = _get_service(dest);
         if (s == NULL) {
@@ -245,9 +264,11 @@ sh_service_send(int source, int dest, int type, const void *msg, int sz) {
             sc_error("No connect remote service %s:%d", s->name, dest);
             return 1;
         }
+        debug_msg(source, dest, type, msg, sz);
         return service_send(R->handle, 0, source, h, type, msg, sz);
     }
     if (dest & NODE_MASK) {
+        debug_msg(source, dest, type, msg, sz);
         return service_send(R->handle, 0, source, dest, type, msg, sz);
     } else {
         return service_main(dest, 0, source, type, msg, sz);
@@ -263,6 +284,7 @@ sh_service_broadcast(int source, int dest, int type, const void *msg, int sz) {
         s = _get_service(dest);
         if (s) {
             for (i=0; i<s->sz; ++i) {
+                debug_msg(source, dest, type, msg, sz);
                 if (!service_send(R->handle, 0, source, s->phandle[i].id, type, msg, sz)) {
                     n++;
                 }

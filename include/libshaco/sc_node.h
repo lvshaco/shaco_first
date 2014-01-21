@@ -3,11 +3,11 @@
 
 #include "sc_service.h"
 
-#define MT_SYS  0
+//#define MT_SYS  0
 #define MT_TEXT 1
 #define MT_UM   2
 #define MT_MONITOR 3
-//#define MT_GATE 4
+#define MT_LOG 4
 #define MT_USR1 5
 #define MT_USR2 6
 #define MT_USR3 7

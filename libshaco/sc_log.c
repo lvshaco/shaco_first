@@ -75,7 +75,7 @@ _log(int level, char* log, int sz) {
         fprintf(stderr, log);
         return;
     }
-    service_main(_LOG_SERVICE, level, 0, MT_TEXT, log, sz);
+    service_main(_LOG_SERVICE, level, 0, MT_LOG, log, sz);
 }
 
 static void

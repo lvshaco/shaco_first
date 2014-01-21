@@ -1,4 +1,5 @@
 #include "sc_service.h"
+#include "sc_node.h"
 #include "sc.h"
 #include "sh_util.h"
 #include "sc_init.h"
@@ -204,10 +205,30 @@ service_query_module_name(int serviceid) {
     return "";
 }
 
+static inline void
+debug_msg(int source, const char *dest, int type, const void *msg, int sz) {
+    switch (type) {
+    case MT_TEXT: {
+        char tmp[sz+1];
+        memcpy(tmp, msg, sz);
+        tmp[sz] = '\0';
+        sc_debug("[%0x - %s] [T] %s", source, dest, tmp);
+        break;
+        }
+    case MT_UM:
+        if (sz >= 2) {
+        uint16_t msgid = sh_from_littleendian16((uint8_t *)msg);
+        sc_debug("[%0x - %s] [U] %u", source, dest, msgid);
+        }
+        break;
+    }
+}
+
 int 
 service_main(int serviceid, int session, int source, int type, const void *msg, int sz) {
     struct service *s = array_get(S->sers, serviceid);
     if (s && s->dl.main) {
+        debug_msg(source, SERVICE_NAME, type, msg, sz);
         s->dl.main(s, session, source, type, msg, sz);
         return 0;
     }

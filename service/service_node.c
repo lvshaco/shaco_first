@@ -404,7 +404,7 @@ node_init(struct service* s) {
         if (_connect_to_center(s)) {
             return 1;
         }
-    } 
+    }
     return 0;
 }
 
@@ -502,11 +502,6 @@ node_main(struct service *s, int session, int source, int type, const void *msg,
     }
     struct remote *self = SERVICE_SELF;
     struct args A;
-    char tmp[sz+1];
-    memcpy(tmp, msg, sz);
-    tmp[sz]='\0';
-    sc_debug(tmp);
-    
     if (args_parsestrl(&A, 0, msg, sz) < 1)
         return;
 
