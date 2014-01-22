@@ -4,14 +4,12 @@
 #include <assert.h>
 #include <string.h>
 #include <time.h>
-/*
-#define TLOGIN 0
+
+#define TROUTE 0
 #define TGATE 1
-#define TGAME 2
-#define TMAX 3
+#define TMAX 2
 static int SERVER[TMAX];
-static struct UM_NOTIFYGAME GAMEADDR;
-static struct UM_NOTIFYGATE GATEADDR;
+static struct UM_GATEADDR GATEADDR;
 static struct chardata CHAR;
 static char ACCOUNT[ACCOUNT_NAME_MAX];
 static void
@@ -36,33 +34,19 @@ _server_set(int t, int id) {
     cnet_send(SERVER[t], msg, sz);
 
 static void
+_request_gate(int id) {
+    UM_DEFFIX(UM_GATEADDRREQ, req);
+    _server_send(TROUTE, req, sizeof(*req));
+    printf("request gate address \n");
+}
+
+static void
 _login_account(int id) {
     UM_DEFFIX(UM_LOGINACCOUNT, la);
     strncpy(la->account, ACCOUNT, sizeof(la->account)-1);
     strncpy(la->passwd, "123456", sizeof(la->passwd)-1);
-    _server_send(TLOGIN, la, sizeof(*la));
+    _server_send(TGATE, la, sizeof(*la));
     printf("request login account\n");
-}
-
-static void
-_login_gate(int id) {
-    UM_DEFFIX(UM_LOGIN, lo);
-    lo->accid = GATEADDR.accid;
-    lo->key = GATEADDR.key;
-    strcpy(lo->account, ACCOUNT);
-    _server_send(TGATE, lo, sizeof(*lo));
-    printf("request login gate\n");
-}
-
-static void
-_login_game(int id) {
-    UM_DEFFIX(UM_GAMELOGIN, gl);
-    gl->charid = CHAR.charid;
-    gl->roomid = GAMEADDR.roomid;
-    gl->roomkey = GAMEADDR.key;
-    _server_send(TGAME, gl, sizeof(*gl));
-    printf("request login game: charid %u, roomid %u, key %d\n", 
-            gl->charid, gl->roomid, gl->roomkey);
 }
 
 static void
@@ -75,14 +59,11 @@ _onconnect(struct net_message* nm) {
     cnet_subscribe(id, 1);
 
     switch (ut) {
-    case TLOGIN:
-        _login_account(id);
+    case TROUTE:
+        _request_gate(id);
         break;
     case TGATE:
-        _login_gate(id);
-        break;
-    case TGAME:
-        _login_game(id);
+        _login_account(id);
         break;
     }
 }
@@ -127,10 +108,18 @@ _play(int type) {
 }
 
 static void
+_loadok() {
+    UM_DEFFIX(UM_GAMELOADOK, ok);
+    _server_send(TGATE, ok, sizeof(*ok));
+    printf("notify load ok\n");
+
+}
+
+static void
 _useitem(uint32_t id) {
     UM_DEFFIX(UM_USEITEM, ui);
     ui->itemid = id;
-    _server_send(TGAME, ui, sizeof(*ui));
+    _server_send(TGATE, ui, sizeof(*ui));
     printf("requset use item: %u\n", id);
 }
 
@@ -145,34 +134,37 @@ _handleum(int id, int ut, struct UM_BASE* um) {
 //            cnet_disconnect(id);
 //        }
 //        break;
-    case IDUM_LOGINACCOUNTFAIL: {
-        UM_CAST(UM_LOGINACCOUNTFAIL, fail, um);
-        printf("accout login fail: error#%d\n", fail->error);
-        }
-        break;
-    case IDUM_NOTIFYGATE: {
-        //_login_account(id);
-        UM_CAST(UM_NOTIFYGATE, g, um);
-        printf("accid %u, gate address: %0x:%u, key: %llu\n", 
-                g->accid, g->addr, g->port, (unsigned long long int)g->key);
-        GATEADDR = *g;
-        if (cnet_connecti(GATEADDR.addr, GATEADDR.port, TGATE) < 0) {
+    case IDUM_GATEADDR: {
+        UM_CAST(UM_GATEADDR, addr, um);
+        GATEADDR = *addr;
+        printf("gate address: %s:%u\n", GATEADDR.ip, GATEADDR.port);
+        printf("connect to gate %s:%u\n", GATEADDR.ip, GATEADDR.port);
+        if (cnet_connect(GATEADDR.ip, GATEADDR.port, TGATE) < 0) {
             printf("connect gate fail\n");
         }
+        break;
+        }
+    case IDUM_GATEADDRFAIL: {
+        printf("request gate address fail\n");
+        break;
+        }
+    case IDUM_LOGINACCOUNTFAIL: {
+        UM_CAST(UM_LOGINACCOUNTFAIL, fail, um);
+        printf("accout login fail: error#%d\n", fail->err);
         }
         break;
     case IDUM_LOGOUT: {
         UM_CAST(UM_LOGOUT, lo, um);
-        printf("gate logout: error %d\n", lo->error);
+        printf("gate logout: error %d\n", lo->err);
         break;
         }
     case IDUM_LOGINFAIL: {
         UM_CAST(UM_LOGINFAIL, fail, um); 
-        if (fail->error == SERR_NOCHAR ||
-            fail->error == SERR_NAMEEXIST) {
+        if (fail->err == SERR_NOCHAR ||
+            fail->err == SERR_NAMEEXIST) {
             _createchar();
         } else {
-            printf("gate login fail: error %d\n", fail->error);
+            printf("gate login fail: error %d\n", fail->err);
         }
         }
         break;
@@ -185,7 +177,7 @@ _handleum(int id, int ut, struct UM_BASE* um) {
         }
     case IDUM_PLAYFAIL: {
         UM_CAST(UM_PLAYFAIL, pf, um);
-        printf("play fail: error %d\n", pf->error);
+        printf("play fail: error %d\n", pf->err);
         break;
         }
     case IDUM_PLAYWAIT: {
@@ -197,31 +189,17 @@ _handleum(int id, int ut, struct UM_BASE* um) {
         UM_CAST(UM_PLAYLOADING, pl, um);
         printf("play loading: leasttime: %d, other(%u,%s)\n",
                 pl->leasttime, pl->member.charid, pl->member.name);
-        break;
-        }
-    case IDUM_NOTIFYGAME: {
-        UM_CAST(UM_NOTIFYGAME, gn, um);
-        printf("game address: %0x:%u, key: %u\n", gn->addr, gn->port, gn->key);
-        GAMEADDR = *gn;
-        if (cnet_connecti(GAMEADDR.addr, GAMEADDR.port, TGAME) < 0) {
-            printf("connect game fail\n");
-        }
-        break;
-        }
-    case IDUM_GAMELOGINFAIL: {
-        UM_CAST(UM_GAMELOGINFAIL, fail, um);
-        printf("game login fail: error %d\n", fail->error);
-        break;
-        }
-    case IDUM_GAMELOGOUT: {
-        //UM_CAST(UM_GAMELOGOUT, lo, um);
-        printf("game logout\n");
+        _loadok();
         break;
         }
     case IDUM_GAMEINFO: {
         UM_CAST(UM_GAMEINFO, gi, um);
         printf("game info: nmember %d\n", gi->nmember);
         break;
+        }
+    case IDUM_GAMEMEMBER: {
+        UM_CAST(UM_GAMEMEMBER, gm, um);
+        printf("add member id %u, name %s\n", gm->member.charid, gm->member.name);
         }
     case IDUM_GAMEENTER: {
         //UM_CAST(UM_GAMEENTER, ge, um);
@@ -250,9 +228,8 @@ _handleum(int id, int ut, struct UM_BASE* um) {
         break;
     }
 }
-*/
+
 int main(int argc, char* argv[]) { 
-/*
     const char* ip;
     uint16_t port;
     if (argc > 1) {
@@ -279,9 +256,9 @@ int main(int argc, char* argv[]) {
             _onconnerr, 
             _onsockerr, 
             _handleum);
-    printf("connect to %s:%u\n", ip, port);
-    if (cnet_connect(ip, port, TLOGIN) < 0) {
-        printf("connect gate fail\n");
+    printf("connect to route %s:%u\n", ip, port);
+    if (cnet_connect(ip, port, TROUTE) < 0) {
+        printf("connect route fail\n");
         return 1;
     }
     for (;;) {
@@ -289,6 +266,5 @@ int main(int argc, char* argv[]) {
     }
     cnet_fini();
     system("pause"); 
-    */
     return 0;
 }

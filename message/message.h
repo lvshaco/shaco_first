@@ -32,7 +32,7 @@ struct UM_BASE {
 //#define UM_MAXDATA UM_MAXSZ - UM_BASE_SZ
 #define UM_DEF(um, n) \
     char um##data[n]; \
-    struct UM_BASE* um = (void*)um##data;
+    struct UM_BASE* um = (void*)(um##data);
 
 #define UM_DEFFIX(type, name) \
     struct type name##data; \
@@ -41,30 +41,31 @@ struct UM_BASE {
 
 #define UM_DEFVAR(type, name) \
     char name##data[UM_MAXSZ]; \
-    struct type* name = (void*)name##data; \
+    struct type* name = (void*)(name##data); \
     name->msgid = ID##type; \
 
 #define UM_DEFVAR2(type, name, sz) \
     char name##data[sz]; \
-    struct type* name = (void*)name##data; \
+    struct type* name = (void*)(name##data); \
     name->msgid = ID##type; \
 
 #define UM_DEFWRAP(type, name, wraptype, wrapname) \
     UM_DEFVAR2(type, name, sizeof(struct type)+sizeof(struct wraptype)) \
-    struct wraptype *wrapname = (struct wraptype*)(name->wrap);
+    struct wraptype *wrapname = (struct wraptype*)(name->wrap); \
+    wrapname->msgid = ID##wraptype;
 
 #define UM_DEFWRAP2(type, name, wrapsz) \
     UM_DEFVAR2(type, name, sizeof(struct type)+wrapsz)
 
 #define UM_CAST(type, name, um) \
-    struct type* name = (struct type*)um;
+    struct type* name = (struct type*)(um);
 
 #define UM_CASTCK(type, name, msg, sz) \
     if (sz < sizeof(struct type)) return; \
-    struct type *name = (struct type*)msg;
+    struct type *name = (struct type*)(msg);
 
 #define UD_CAST(type, name, data) \
-    struct type *name = (struct type*)data; \
+    struct type *name = (struct type*)(data); \
     name->msgid = ID##type;
 
 #pragma pack()

@@ -104,7 +104,6 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.py *.h *.c" {
   service_cmdctl.c
   service_cmds.c
   service_echo.c
-  service_game.c
   service_gate.c
   service_hall.c
   service_loadbalance.c
@@ -113,6 +112,7 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.py *.h *.c" {
   service_node.c
   service_rank.c
   service_redisproxy.c
+  service_room.c
   service_route.c
   service_tplthall.c
   service_tpltroom.c

@@ -9,8 +9,12 @@
 #define IDUM_CEND   2000
 
 #define IDUM_GATEB          IDUM_CBEGIN+0
-#define IDUM_LOGINACCOUNT   IDUM_CBEGIN+0
-#define IDUM_TEXT           IDUM_NBEGIN+1
+#define IDUM_TEXT           IDUM_CBEGIN+0
+// client -> server (route)
+#define IDUM_GATEADDRREQ    IDUM_CBEGIN+1
+
+// client -> server (auth)
+#define IDUM_LOGINACCOUNT   IDUM_CBEGIN+5
 
 // client -> server (hall)
 #define IDUM_HALLB          IDUM_CBEGIN+10  // hall begin
@@ -84,14 +88,14 @@
 #define IDUM_ITEMEFFECT     IDUM_CBEGIN+804
 #define IDUM_ROLEINFO       IDUM_CBEGIN+805
 #define IDUM_GAMEOVER       IDUM_CBEGIN+806
+#define IDUM_GAMEMEMBER     IDUM_CBEGIN+807
 
 // heartbeat
 #define IDUM_HEARTBEAT      IDUM_CBEGIN+900
 
 // route
-#define IDUM_GATEADDRREQ    IDUM_CBEGIN+901
-#define IDUM_GATEADDR       IDUM_CBEGIN+902
-#define IDUM_GATEADDRFAIL   IDUM_CBEGIN+903
+#define IDUM_GATEADDR       IDUM_CBEGIN+901
+#define IDUM_GATEADDRFAIL   IDUM_CBEGIN+902
 
 #pragma pack(1)
 ////////////////////////////////////////////////////////////
@@ -272,6 +276,11 @@ static inline uint16_t
 UM_GAMEINFO_size(struct UM_GAMEINFO* um) {
     return sizeof(*um) + sizeof(um->members[0])*um->nmember;
 }
+
+struct UM_GAMEMEMBER {
+    _UM_HEADER;
+    struct tmemberdetail member;
+};
 
 struct UM_GAMEENTER {
     _UM_HEADER;

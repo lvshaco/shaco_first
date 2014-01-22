@@ -164,6 +164,7 @@ _unregister(int handle) {
         s = &sers->p[i];
         for (j=0; j<s->sz; ++j) {
             if (!_rm_handle(s, handle)) {
+                sc_info("Handle(%s:%0x) exit", s->name, handle);
                 return 0x10000 | i;
             }
         }
@@ -175,6 +176,7 @@ int
 sc_service_start(const char *name, int handle, const struct sh_node_addr *addr) {
     int vhandle = _register(name, handle);
     if (vhandle != -1) {
+        sc_info("Handle(%s:%0x) start", name, handle);
         sh_monitor_trigger_start(vhandle, handle, addr);
         return 0;
     } else
@@ -193,6 +195,9 @@ sc_service_exit(int handle) {
 
 int 
 sc_service_subscribe(const char *name) {
+    if (name[0] == '\0') {
+        return 1;
+    }
     int handle = service_query_id(name);
     if (handle != -1) {
         return handle;
@@ -217,14 +222,14 @@ sc_service_publish(const char *name, int flag) {
     }
     if (flag & PUB_SER) {
         char msg[128];
-        int n = snprintf(msg, sizeof(msg), "PUB %s %d", name, handle);
+        int n = snprintf(msg, sizeof(msg), "PUB %s:%04x", name, handle);
         service_main(R->handle, 0, 0, MT_TEXT, msg, n);
     }
     if (flag & PUB_MOD) {
         const char *module_name = service_query_module_name(handle);
         if (!(flag & PUB_SER) || strcmp(module_name, name)) {
             char msg[128];
-            int n = snprintf(msg, sizeof(msg), "PUB %s %d", module_name, handle);
+            int n = snprintf(msg, sizeof(msg), "PUB %s:%04x", module_name, handle);
             service_main(R->handle, 0, 0, MT_TEXT, msg, n);
         }
     }
@@ -233,21 +238,25 @@ sc_service_publish(const char *name, int flag) {
 
 static inline void
 debug_msg(int source, int dest, int type, const void *msg, int sz) {
+    const char *name = "";
+    if (!(source >> 8)) {
+        name = service_query_module_name(source&0xff);
+    }
     switch (type) {
     case MT_TEXT: {
         char tmp[sz+1];
         memcpy(tmp, msg, sz);
         tmp[sz] = '\0';
-        sc_debug("[%0x - %0x] [T] %s", source, dest, tmp);
+        sc_debug("[%s - %0x] [T] %s", name, dest, tmp);
         break;
         }
     case MT_UM:
         if (sz >= 2) {
         uint16_t msgid = sh_from_littleendian16((uint8_t *)msg);
-        sc_debug("[%0x - %0x] [U] %u", source, dest, msgid);
+        sc_debug("[%s - %0x] [U] %u", name, dest, msgid);
         }
         break;
-    }
+    } 
 }
 
 
@@ -256,12 +265,12 @@ sh_service_send(int source, int dest, int type, const void *msg, int sz) {
     if (dest & 0x10000) {
         struct _service *s = _get_service(dest);
         if (s == NULL) {
-            sc_error("No subscribe remote service %d", dest);
+            sc_error("No subscribe remote service %04x", dest);
             return 1;
         }
         int h = _first_handle(s);
         if (h == -1) {
-            sc_error("No connect remote service %s:%d", s->name, dest);
+            sc_error("No connect remote service %s:%04x", s->name, dest);
             return 1;
         }
         debug_msg(source, dest, type, msg, sz);
@@ -295,7 +304,7 @@ sh_service_broadcast(int source, int dest, int type, const void *msg, int sz) {
 }
 
 int 
-sc_service_vsend(int source, int dest, const char *fmt, ...) {
+sh_service_vsend(int source, int dest, const char *fmt, ...) {
     char msg[1024];
     va_list ap;
     va_start(ap, fmt);
@@ -368,6 +377,15 @@ sh_handler(const char *name, int *handle) {
     return 0;
 }
 
+int 
+sh_monitor(const char *name, const struct sh_monitor_handle *h, int *handle) {
+    *handle = sh_monitor_register(name, h);
+    if (*handle == -1) {
+        sc_error("Monitor handle fail: %s", name);
+        return 1;
+    }
+    return 0;
+}
 int 
 sh_handle_publish(const char *name, int flag) {
     if (sc_service_publish(name, flag)) {

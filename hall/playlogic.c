@@ -44,11 +44,11 @@ play(struct service *s, struct player *pr, int type) {
         return;
     }
     pr->status = PS_WAITING;
-
-    UM_DEFWRAP(UM_CLIENT, cl, UM_APPLY, ap);
-    cl->uid = UID(pr);
+    UM_DEFWRAP(UM_HALL, ha, UM_APPLY, ap);
+    ha->uid = UID(pr);
     ap->type = type;
-    sh_service_send(SERVICE_ID, self->match_handle, MT_UM, cl, sizeof(*cl)+sizeof(*ap));
+    build_brief(pr, &ap->brief);
+    sh_service_send(SERVICE_ID, self->match_handle, MT_UM, ha, sizeof(*ha)+sizeof(*ap));
 }
 
 static void

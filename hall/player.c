@@ -46,8 +46,14 @@ login(struct service *s, int source, uint32_t accid) {
 static void 
 logout(struct service *s, struct player *pr) {
     struct hall *self = SERVICE_SELF;
- 
-    // todo notify match
+
+    if (pr->status == PS_WAITING ||
+        pr->status == PS_ROOM) {
+        UM_DEFWRAP(UM_HALL, ha, UM_LOGOUT, lo);
+        ha->uid = UID(pr);
+        lo->err = SERR_OK;
+        sh_service_send(SERVICE_ID, self->match_handle, MT_UM, ha, sizeof(*ha)+sizeof(*lo));
+    } 
     free_player(self, pr);
 }
 

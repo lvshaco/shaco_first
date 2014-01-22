@@ -2,6 +2,7 @@
 #include "sc_init.h"
 #include "sc_node.h"
 #include "sh_util.h"
+#include "sc_log.h"
 #include <stdlib.h>
 #include <assert.h>
 #include <string.h>
@@ -18,13 +19,13 @@ static struct {
 } *_M = NULL;
 
 static inline void
-_set_handle(struct sh_monitor *m, const struct sh_monitor_handle *h) {
+set_handle(struct sh_monitor *m, const struct sh_monitor_handle *h) {
     m->handle[MONITOR_START] = h->start_handle;
     m->handle[MONITOR_EXIT] = h->exit_handle;
 }
 
 static struct sh_monitor *
-_find(int vhandle) {
+find(int vhandle) {
     int i;
     for (i=0; i<_M->sz; ++i) {
         if (_M->p[i].tar_handle == vhandle) {
@@ -40,7 +41,7 @@ sh_monitor_register(const char *name, const struct sh_monitor_handle *h) {
     if (vhandle == -1) {
         return -1;
     }
-    struct sh_monitor *m = _find(vhandle);
+    struct sh_monitor *m = find(vhandle);
     if (m == NULL) {
         if (_M->sz >= _M->cap) {
             _M->cap *= 2;
@@ -51,22 +52,22 @@ sh_monitor_register(const char *name, const struct sh_monitor_handle *h) {
         m = &_M->p[_M->sz++];
         m->tar_handle = vhandle;
     }
-    _set_handle(m, h);
+    set_handle(m, h);
     return vhandle;
 }
 
 int 
 sh_monitor_trigger_start(int vhandle, int handle, const struct sh_node_addr *addr) {
-    struct sh_monitor *m = _find(vhandle);
+    struct sh_monitor *m = find(vhandle);
     if (m) {
         uint8_t msg[5 + sizeof(struct sh_node_addr)];
         uint8_t *p = msg;
         *p++ = MONITOR_START;
-        sh_to_bigendian32(vhandle, p); p+=4;
+        sh_to_littleendian32(vhandle, p); p+=4;
         memcpy(p, addr->naddr, sizeof(addr->naddr)); p+=sizeof(addr->naddr);
-        sh_to_bigendian16(addr->nport, p); p+=2;
+        sh_to_littleendian16(addr->nport, p); p+=2;
         memcpy(p, addr->gaddr, sizeof(addr->gaddr)); p+=sizeof(addr->gaddr);
-        sh_to_bigendian16(addr->gport, p); p+=2;
+        sh_to_littleendian16(addr->gport, p); p+=2;
         return sh_service_send(handle, m->handle[MONITOR_START], MT_MONITOR, msg, sizeof(msg));
     }
     return 1;
@@ -74,11 +75,11 @@ sh_monitor_trigger_start(int vhandle, int handle, const struct sh_node_addr *add
 
 int 
 sh_monitor_trigger_exit(int vhandle, int handle) {
-    struct sh_monitor *m = _find(vhandle);
+    struct sh_monitor *m = find(vhandle);
     if (m) {
         uint8_t msg[5];
         msg[0] = MONITOR_EXIT;
-        sh_to_bigendian32(vhandle, &msg[1]);
+        sh_to_littleendian32(vhandle, &msg[1]);
         return sh_service_send(handle, m->handle[MONITOR_EXIT], MT_MONITOR, msg, sizeof(msg));
     }
     return 1;

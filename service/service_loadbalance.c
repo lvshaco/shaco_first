@@ -45,7 +45,9 @@ int
 loadbalance_init(struct service *s) {
     struct loadbalance *self = SERVICE_SELF;
     struct sh_monitor_handle h = { SERVICE_ID, SERVICE_ID };
-
+    if (sh_handle_publish(SERVICE_NAME, PUB_SER)) {
+        return 1;
+    }
     const char *target = sc_getstr("loadbalance_target", ""); 
     self->target_vhandle = sh_monitor_register(target, &h);
     if (self->target_vhandle == -1) {
@@ -114,7 +116,7 @@ target_start(struct service *s, int handle, const void *msg, int sz) {
     struct service_info *one = find_or_insert_service(&self->targets, handle);
     assert(one);
     memcpy(one->ip, msg, 40);
-    one->port = sh_from_bigendian16(msg+40);
+    one->port = sh_from_littleendian16(msg+40);
 
     UM_DEFVAR(UM_SERVICEINFO, si);
     si->ninfo = 1;
@@ -162,7 +164,7 @@ loadbalance_main(struct service *s, int session, int source, int type, const voi
     case MT_MONITOR: {
         assert(sz >= 5);
         int type = ((uint8_t*)(msg))[0];
-        int vhandle = sh_from_bigendian32(msg+1);
+        int vhandle = sh_from_littleendian32(msg+1);
         if (vhandle == self->target_vhandle) {
             switch (type) {
             case MONITOR_START: {

@@ -31,7 +31,9 @@ hall_free(struct hall *self) {
 int
 hall_init(struct service *s) {
     struct hall *self = SERVICE_SELF;
-
+    if (sh_handle_publish(SERVICE_NAME, PUB_SER)) {
+        return 1;
+    }
     if (sh_handler("watchdog", &self->watchdog_handle) ||
         sh_handler("match", &self->match_handle) ||
         sh_handler("rpuser", &self->rpuser_handle) ||

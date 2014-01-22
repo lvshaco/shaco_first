@@ -104,6 +104,7 @@ struct item_tplt {
     int32_t effect3;         // 效果类型3
     int32_t valuet3;         // 效果值类型3
     int32_t value3;          // 效果值3
+    int32_t buffvalue;       // BUFF浮动
 
 };
 

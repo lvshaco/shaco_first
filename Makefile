@@ -116,7 +116,7 @@ all: \
 	robot \
 	service_log.so \
 	$(service_so) \
-	service_game.so \
+	service_room.so \
 	service_rank.so \
 	service_redisproxy.so \
 	service_tplthall.so \
@@ -131,7 +131,7 @@ $(service_so): %.so: $(service_dir)/%.c
 	@rm -f $@
 	gcc $(CFLAGS) $(SHARED) -o $@ $< -Iinclude/libshaco -Inet -Ibase -Imessage
 
-service_game.so: $(service_dir)/service_game.c \
+service_room.so: $(service_dir)/service_room.c \
 	game/fight.c \
 	game/fight.h \
 	game/genmap.c \

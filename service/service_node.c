@@ -94,6 +94,7 @@ _disconnect_node(struct remote *self, int connid) {
         }
     }
     if (no) {
+        sc_info("Node(%d) disconnect", (int)(no-self->nodes));
         for (i=0; i<no->handles.sz; ++i) {
             sc_service_exit(no->handles.pi[i]);
         }
@@ -110,7 +111,7 @@ _block_read(int id, int *msgsz, int *err) {
         if (*err == 0) {
             if (buf.sz > 6) {
                 void *msg = buf.ptr+6;
-                int sz = sh_from_bigendian16((uint8_t*)buf.ptr) + 2;
+                int sz = sh_from_littleendian16((uint8_t*)buf.ptr) + 2;
                 if (buf.sz >= sz) {
                     buf.ptr += sz;
                     buf.sz -= sz;
@@ -126,18 +127,25 @@ _block_read(int id, int *msgsz, int *err) {
 }
 
 static int
-_dsend(struct remote *self, int connid, int source, int dest, int type, const void *msg, size_t sz) {
+_dsend(struct remote *self, int connid, int source, int dest, int type, const void *msg, int sz) {
     if (sz <= UM_MAXSZ) {
+        /*if (type == MT_TEXT) {
+            char tmp[sz+1];
+            memcpy(tmp, msg, sz);
+            tmp[sz] = '\0';
+            sc_debug("send %s", tmp);
+        }
+       */ 
         int len = sz+6;
         source &= 0x00ff;
         source |= (self->myid << 8);
         dest   &= 0x00ff;
         dest   |= (type << 8);
-
+        //sc_debug("send connid %d, source %04x, dest %04x, type %d, sz %d", connid, source, dest, type, sz);
         uint8_t *tmp = malloc(len);
-        sh_to_bigendian16(len-2, tmp);
-        sh_to_bigendian16(source, tmp+2);
-        sh_to_bigendian16(dest, tmp+4);
+        sh_to_littleendian16(len-2, tmp);
+        sh_to_littleendian16(source, tmp+2);
+        sh_to_littleendian16(dest, tmp+4);
         memcpy(tmp+6, msg, sz);
         return sc_net_send(connid, tmp, len);
     } else {
@@ -167,13 +175,13 @@ _send(struct remote *self, int source, int dest, int type, const void *msg, size
     int id = sc_nodeid_from_handle(dest);
     struct _node *no = _get_node(self, id);
     if (no == NULL) {
-        sc_error("Invalid nodeid from dest %0x", dest);
+        sc_error("Invalid nodeid from dest %04x", dest);
         return 1;
     }
     if (no->connid != -1) {
         return _dsend(self, no->connid, source, dest, type, msg, sz);
     } else {
-        sc_error("Node %d has not connect", id);
+        sc_error("Node %d has not connect, by dest %04x", id, dest);
         return 1;
     } 
 }
@@ -194,11 +202,12 @@ _vsend(struct remote *self, int source, int dest, const char *fmt, ...) {
 }
 
 // service
-static int
-_publish_service(struct remote *self, const char *name, int handle) {
+static inline int
+_publish_service(struct service *s, const char *name, int handle) {
+    struct remote *self = SERVICE_SELF;
     handle &= 0xff;
     handle |= (self->myid << 8) & 0xff00;
-    return _vsend(self, 0, handle, "PUB %s:%d", name, handle);
+    return sh_service_vsend(SERVICE_ID, self->center_handle, "PUB %s:%04x", name, handle);
 }
 
 // initialize
@@ -272,11 +281,12 @@ _connect_node(struct service *s, struct _node *no) {
     int err; 
     int connid = sc_net_block_connect(addr->naddr, addr->nport, SERVICE_ID, 0, &err);
     if (connid < 0) {
-        sc_error("Connect node#%d@%s:%u fail: %s", 
+        sc_error("Connect node(%d) %s:%u fail: %s", 
                 id, addr->naddr, addr->nport, sc_net_error(err));
         return 1;
     }
     _bound_node_connection(no, connid);
+    sc_info("Connect to node(%d) %s:%u ok", id, addr->naddr, addr->nport);
     return 0;
 }
 
@@ -315,7 +325,7 @@ _broadcast_node(struct service *s, int id) {
         if (other->connid == -1) 
             continue;
         _vsend(self, SERVICE_ID, other->node_handle, "ADDR %d %s %u %s %u",
-                self->myid, no->addr.naddr, no->addr.nport, no->addr.gaddr, no->addr.gport);
+                id, no->addr.naddr, no->addr.nport, no->addr.gaddr, no->addr.gport);
     }
 
     // get other
@@ -366,7 +376,7 @@ _connect_to_center(struct service* s) {
         sc_error("Reg self to center fail");
         return 1;
     }
-    sc_info("Connect to center ok");
+    sc_info("Connect to center(%d) %s:%u ok", center_id, addr, port);
     return 0;
 }
 
@@ -428,7 +438,7 @@ _read(struct service *s, struct net_message *nm) {
             if (buf.sz < 6) {
                 break;
             }
-            uint16_t msgsz = sh_from_bigendian16((uint8_t*)buf.ptr) + 2;
+            uint16_t msgsz = sh_from_littleendian16((uint8_t*)buf.ptr) + 2;
             if (msgsz <= 6 || (msgsz-6) > UM_MAXSZ) {
                 err = NET_ERR_MSG;
                 break;
@@ -436,14 +446,14 @@ _read(struct service *s, struct net_message *nm) {
             if (buf.sz < msgsz) {
                 break;
             }
-            buf.ptr += msgsz;
-            buf.sz  -= msgsz;
-            uint16_t source = sh_from_bigendian16((uint8_t*)buf.ptr+2);
-            uint16_t dest = sh_from_bigendian16((uint8_t*)buf.ptr+4);
+            uint16_t source = sh_from_littleendian16((uint8_t*)buf.ptr+2);
+            uint16_t dest = sh_from_littleendian16((uint8_t*)buf.ptr+4);
             int type = (dest>>8) & 0xff;
             dest &= 0xff;
+            //sc_debug("+++++++READ: source %04x dest %04x type %d sz %d", source, dest, type, msgsz-6);
             sh_service_send(source, dest, type, buf.ptr+6, msgsz-6);
-
+            buf.ptr += msgsz;
+            buf.sz  -= msgsz;
             if (++step > 1000) {
                 sc_net_dropread(id, nread-buf.sz);
                 return;
@@ -500,13 +510,24 @@ node_main(struct service *s, int session, int source, int type, const void *msg,
     if (type != MT_TEXT) {
         return;
     }
+    /*
+    char tmp[sz+1];
+    if (tmp == NULL) {
+        sc_error("Invalid command");
+        return;
+    }
+    memcpy(tmp, msg, sz);
+    tmp[sz] = '\0';
+    sc_info("[NODE] %s", tmp);
+    */
     struct remote *self = SERVICE_SELF;
     struct args A;
     if (args_parsestrl(&A, 0, msg, sz) < 1)
         return;
 
     const char *cmd = A.argv[0];
-    if (strcmp(cmd, "REG")) {
+
+    if (!strcmp(cmd, "REG")) {
         if (A.argc != 7)
             return;
         int id = strtol(A.argv[1], NULL, 10);
@@ -522,7 +543,7 @@ node_main(struct service *s, int session, int source, int type, const void *msg,
             _bound_node_entry(no, node_handle);
             _connect_node(s, no);
         }
-    } else if (strcmp(cmd, "ADDR")) {
+    } else if (!strcmp(cmd, "ADDR")) {
         if (A.argc != 6)
             return;
         int id = strtol(A.argv[1], NULL, 10);
@@ -534,29 +555,33 @@ node_main(struct service *s, int session, int source, int type, const void *msg,
         if (no) {
             _update_node(no, naddr, nport, gaddr, gport);
         }
-    } else if (strcmp(cmd, "BROADCAST")) {
+    } else if (!strcmp(cmd, "BROADCAST")) {
         if (A.argc != 2)
             return;
         int id = strtol(A.argv[1], NULL, 10);
         _broadcast_node(s, id);
-    } else if (strcmp(cmd, "SUB")) {
+    } else if (!strcmp(cmd, "SUB")) {
         if (A.argc != 2)
             return;
         sh_service_send(SERVICE_ID, self->center_handle, MT_TEXT, msg, sz);
-    } else if (strcmp(cmd, "PUB")) {
-        if (A.argc != 3)
-            return;
-        const char *name = A.argv[1];
-        int handle = strtol(A.argv[2], NULL, 10);
-        _publish_service(self, name, handle);
-    } else if (strcmp(cmd, "HANDLE")) {
+    } else if (!strcmp(cmd, "PUB")) {
         if (A.argc != 2)
             return;
         const char *name = A.argv[1];
         char *p = strchr(name, ':');
         if (p) {
             p[0] = '\0';
-            int handle = strtol(p+1, NULL, 10); 
+            int handle = strtol(p+1, NULL, 16); 
+            _publish_service(s, name, handle);
+        }
+    } else if (!strcmp(cmd, "HANDLE")) {
+        if (A.argc != 2)
+            return;
+        const char *name = A.argv[1];
+        char *p = strchr(name, ':');
+        if (p) {
+            p[0] = '\0';
+            int handle = strtol(p+1, NULL, 16); 
             _connect_service(s, name, handle);
         }
     }

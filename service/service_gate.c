@@ -164,11 +164,13 @@ listen_gate(struct service* s) {
 int
 gate_init(struct service* s) {
     struct gate* self = SERVICE_SELF;
-    
+    if (sh_handle_publish(SERVICE_NAME, PUB_SER)) {
+        return 1;
+    }
     const char* hname = sc_getstr("gate_handler", ""); 
     if (sh_handler(hname, &self->handler))
         return 1;
-    self->need_load = sc_getint("gate_load", 0);
+    self->need_load = sc_getint("gate_need_load", 0);
     if (self->need_load) {
         const char *lname = sc_getstr("gate_load", "");
         if (sh_handler(lname, &self->load_handle)) {
@@ -185,7 +187,7 @@ gate_init(struct service* s) {
     init_clients(self, cmax, hmax);
     sc_info("gate_clientmax = %d", cmax);
 
-    self->need_verify = false;//sc_getint("gate_verify", 1);
+    self->need_verify = false;//sc_getint("gate_need_verify", 1);
     
     int live = sc_getint("gate_clientlive", 3);
     self->livetime = live * 1000;
@@ -239,12 +241,12 @@ read(struct service* s, struct client* c, struct net_message* nm) {
             if (buf.sz < sz) {
                 break;
             }
-            buf.ptr += sz;
-            buf.sz  -= sz;
             if (handle_client(s, c, buf.ptr+2, sz-2)) {
                 err = NET_ERR_MSG;
                 break;
             }
+            buf.ptr += sz;
+            buf.sz  -= sz;
             if (++step > 10) {
                 sc_net_dropread(id, nread-buf.sz);
                 return;
@@ -280,6 +282,7 @@ gate_main(struct service* s, int session, int source, int type, const void *msg,
         UM_CAST(UM_GATE, ga, msg); 
         int connid = ga->connid;
         UM_CAST(UM_BASE, sub, ga->wrap);
+        sc_debug("Send to client msgid %d", sub->msgid);
         switch (sub->msgid) {
         case IDUM_LOGOUT: {
             UM_CAST(UM_LOGOUT, lo, sub);

@@ -1,6 +1,5 @@
 #include "cnet.h"
 #include "net.h"
-//#include "message_reader.h"
 #include <stdio.h>
 #include <string.h>
 #ifndef WIN32
@@ -9,7 +8,7 @@
 #else
 #include <winsock2.h>
 #endif
-/*
+
 static struct net* N = NULL;
 static cnet_onconn     _onconnect = NULL;
 static cnet_onconnerr  _onconnerr = NULL;
@@ -42,48 +41,50 @@ static void
 _handleumdef(int id, int ut, struct UM_BASE* um) {
 }
 
-static inline void
-mread_throwerr(struct net_message* nm, int e) {
-    if (e) {
-        nm->type = NETE_SOCKERR;
-        nm->error = e;
-        _onsockerr(nm);
-    }
-}
-
 static void
 _read(struct net_message* nm) {
     int id = nm->connid;
     int step = 0;
     int drop = 1;
+    int err;
     for (;;) {
-        int e = 0;
         struct mread_buffer buf;
-        int nread = net_read(N, id, drop==0, &buf, &e);
+        int nread = net_read(N, id, drop==0, &buf, &err);
         if (nread <= 0) {
-            mread_throwerr(nm, e);
-            return;
+            if (!err)
+                return;
+            else
+                goto errout;
         }
-        struct UM_CLI_BASE* one;
-        while ((one = mread_cli_one(&buf, &e))) {
-            UM_DEF(msg, UM_CLI_MAXSZ); 
-            msg->nodeid = 0;
-            memcpy(&msg->cli_base, one, UM_CLI_SZ(one));
-
-            _handleum(id, nm->ut, msg);
+        for (;;) {
+            if (buf.sz < 2) {
+                break;
+            }
+            uint16_t sz = (buf.ptr[0] | buf.ptr[1] << 8) + 2;
+            if (buf.sz < sz) {
+                break;
+            }
+            UM_CAST(UM_BASE, um, buf.ptr+2);
+            printf("Recv id %d sz %d\n", um->msgid, sz-2);
+            _handleum(id, nm->ut, um);
+            buf.ptr += sz;
+            buf.sz  -= sz;
             if (++step > 10) {
                 net_dropread(N, id, nread-buf.sz);
                 return;
             }
         }
-        if (e) {
-            net_close_socket(N, id, true);
-            mread_throwerr(nm, e);
-            return;
-        }
+        //if (err) {
+            //net_close_socket(N, id, true);
+            //goto errout;
+        //}
         drop = nread - buf.sz;
         net_dropread(N, id, drop);       
     }
+errout:
+    nm->type = NETE_SOCKERR;
+    nm->error = err;
+    _onsockerr(nm);
 }
 
 static inline void
@@ -125,13 +126,8 @@ _dispatch() {
 
 int 
 cnet_connect(const char* ip, uint16_t port, int ut) {
-    uint32_t addr = inet_addr(ip);
-    return cnet_connecti(addr, port, ut);
-}
-int  
-cnet_connecti(uint32_t addr, uint16_t port, int ut) {
     int err;
-    int id = net_connect(N, addr, port, false, 0, 0, ut, &err);
+    int id = net_connect(N, ip, port, false, 0, 0, ut, &err);
     if (id >= 0) {
         struct net_message nm = {
             id, NETE_CONNECT, 0, 0, ut};
@@ -146,12 +142,15 @@ cnet_connecti(uint32_t addr, uint16_t port, int ut) {
         return 0;
     }
 }
+
 int
-cnet_send(int id, void* um, int sz) {
+cnet_send(int id, void* msg, int sz) {
+    uint8_t *tmp = malloc(sz+2);
+    tmp[0] = (sz & 0xff);
+    tmp[1] = (sz >> 8) & 0xff;
+    memcpy(tmp+2, msg, sz);
     struct net_message nm;
-    UM_CAST(UM_BASE, m, um);
-    m->msgsz = sz;
-    int n = net_send(N, id, (char*)m+UM_CLI_OFF, m->msgsz-UM_CLI_OFF, &nm);
+    int n = net_send(N, id, tmp, sz+2, &nm);
     if (n > 0) {
         _dispatch_one(&nm);
     }
@@ -198,4 +197,4 @@ int cnet_subscribe(int id, int read) {
 }
 int cnet_disconnect(int id) {
     return net_close_socket(N, id, true);
-}*/
+}

@@ -1,4 +1,6 @@
 #include "sc_service.h"
+#include "sh_monitor.h"
+#include "sh_util.h"
 #include "sc_log.h"
 #include "sc_node.h"
 #include "sh_hash.h"
@@ -56,18 +58,27 @@ void
 watchdog_free(struct watchdog *self) {
     if (self == NULL)
         return;
+    sh_hash64_fini(&self->conn2user);
+    sh_hash_fini(&self->acc2user);
     free(self);
 }
 
 int
 watchdog_init(struct service *s) {
     struct watchdog *self = SERVICE_SELF;
-
-    if (sh_handler("auth", &self->auth_handle) ||
+    if (sh_handle_publish(SERVICE_NAME, PUB_SER|PUB_MOD)) {
+        return 1;
+    }
+    struct sh_monitor_handle h = {SERVICE_ID, SERVICE_ID};
+    if (sh_monitor("uniqueol", &h, &self->uniqueol_handle) ||
+        sh_handler("gate", &self->auth_handle) ||
+        sh_handler("auth", &self->auth_handle) ||
         sh_handler("hall", &self->hall_handle) ||
         sh_handler("room", &self->room_handle)) {
         return 1;
     }
+    sh_hash64_init(&self->conn2user, 1);
+    sh_hash_init(&self->acc2user, 1);
     return 0;
 }
 
@@ -157,7 +168,7 @@ process_gate(struct service *s, int source, int connid, const void *msg, int sz)
     uint64_t conn = CONN_HASH(source, connid);
 
     UM_CAST(UM_BASE, base, msg); 
-
+    
     if (base->msgid == IDUM_LOGINACCOUNT) {
         UM_CASTCK(UM_LOGINACCOUNT, la, base, sz);
         struct user *ur = sh_hash64_find(&self->conn2user, conn);
@@ -173,7 +184,7 @@ process_gate(struct service *s, int source, int connid, const void *msg, int sz)
         ur = alloc_user(self, source, connid);
         assert(!sh_hash64_insert(&self->conn2user, conn, ur));
         ur->status = S_AUTH_VERIFY;
-        
+
         UM_DEFWRAP(UM_AUTH, w, UM_LOGINACCOUNT, wla);
         w->conn = conn;
         w->wsession = ur->wsession;
@@ -321,6 +332,16 @@ process_room(struct service *s, uint32_t accid, const void *msg, int sz) {
 }
 
 static inline void
+exit_hall(struct service *s, uint32_t accid, int err) {
+    struct watchdog *self = SERVICE_SELF;
+    struct user *ur = sh_hash_find(&self->acc2user, accid);
+    if (ur) {
+        ur->hall_handle = -1;
+        logout(s, ur, err, DISCONNECT);
+    }
+}
+
+static inline void
 login_room(struct service *s, struct UM_LOGINROOM *lr, int sz) {
     struct watchdog *self = SERVICE_SELF;
     uint32_t accid  = lr->detail.accid;
@@ -362,6 +383,7 @@ process_client(struct service *s, uint32_t accid, const void *msg, int sz) {
 
 void
 watchdog_main(struct service *s, int session, int source, int type, const void *msg, int sz) {
+    struct watchdog *self = SERVICE_SELF;
     switch (type) {
     case MT_UM: {
         UM_CAST(UM_BASE, base, msg); 
@@ -379,6 +401,11 @@ watchdog_main(struct service *s, int session, int source, int type, const void *
         case IDUM_UNIQUESTATUS: {
             UM_CAST(UM_UNIQUESTATUS, u, msg);
             process_unique(s, u->id, u->status);
+            break;
+            }
+        case IDUM_EXITHALL: {
+            UM_CAST(UM_EXITHALL, exit, msg);
+            exit_hall(s, exit->uid, exit->err);
             break;
             }
         case IDUM_HALL: {
@@ -404,8 +431,21 @@ watchdog_main(struct service *s, int session, int source, int type, const void *
         }
         break;
         }
-    case MT_MONITOR:
-        // todo
+    case MT_MONITOR: {
+        int type = ((uint8_t*)msg)[0];
+        int vhandle = sh_from_littleendian32(msg+1);
+        if (vhandle == self->uniqueol_handle) {
+            // todo
+            switch (type) {
+            case MONITOR_START:
+                self->is_uniqueol_ready = true;
+                break;
+            case MONITOR_EXIT:
+                self->is_uniqueol_ready = false;
+                break;
+            }
+        }
         break;
+        }
     }
 }

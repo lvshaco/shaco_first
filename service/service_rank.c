@@ -38,7 +38,9 @@ rank_free(struct rank* self) {
 int
 rank_init(struct service* s) {
     struct rank* self = SERVICE_SELF;
-   
+    if (sh_handle_publish(SERVICE_NAME, PUB_SER)) {
+        return 1;
+    }
     if (sh_handler("rprank", &self->rprank_handle))
         return 1;
     redis_initreply(&self->reply, 512, 0);

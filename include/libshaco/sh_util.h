@@ -83,6 +83,14 @@ sh_to_littleendian16(uint16_t n, uint8_t *buffer) {
     buffer[1] = (n >> 8) & 0xff;
 }
 
+static inline void
+sh_to_littleendian32(uint32_t n, uint8_t *buffer) {
+    buffer[0] = (n) & 0xff;
+    buffer[1] = (n >> 8) & 0xff;
+    buffer[2] = (n >> 16) & 0xff;
+    buffer[3] = (n >> 24) & 0xff;
+}
+
 static inline uint16_t 
 sh_from_bigendian16(const uint8_t *buffer) {
     return buffer[0] << 8 | buffer[1];

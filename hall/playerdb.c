@@ -243,7 +243,7 @@ playerdb_process_redis(struct service *s, struct UM_REDISREPLY *rep, int sz) {
     struct hall *self = SERVICE_SELF;
 
     int8_t type = 0; 
-    uint16_t accid = 0;
+    uint32_t accid = 0;
     struct memrw rw;
     memrw_init(&rw, rep->data, sz - sizeof(*rep));
     memrw_read(&rw, &type, sizeof(type));
@@ -426,8 +426,8 @@ playerdb_process_redis(struct service *s, struct UM_REDISREPLY *rep, int sz) {
         break;
     default: {
         UM_DEFFIX(UM_LOGOUT, lo);
-        player_main(s, 0, p, lo, sizeof(*lo));
         hall_notify_logout(s, p, serr);
+        player_main(s, 0, p, lo, sizeof(*lo));
         break;
         }
     }

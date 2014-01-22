@@ -1,4 +1,5 @@
 #include "sc_service.h"
+#include "sc_log.h"
 #include "sc_timer.h"
 #include "sc_node.h"
 #include "sh_hash.h"
@@ -48,6 +49,9 @@ auth_free(struct auth *self) {
 int
 auth_init(struct service *s) {
     struct auth *self = SERVICE_SELF;
+    if (sh_handle_publish(SERVICE_NAME, PUB_SER)) {
+        return 1;
+    }
     if (sh_handler("watchdog", &self->watchdog_handle) ||
         sh_handler("rpacc", &self->rpacc_handle)) {
         return 1;

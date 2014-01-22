@@ -37,6 +37,9 @@ route_free(struct route *self) {
 int
 route_init(struct service *s) {
     //struct route *self = SERVICE_SELF;
+    if (sh_handle_publish(SERVICE_NAME, PUB_SER)) {
+        return 1;
+    }
     return 0;
 }
 
@@ -150,11 +153,13 @@ route_main(struct service *s, int session, int source, int type, const void *msg
         UM_CAST(UM_SERVICEINFO, si, msg);
         struct service_info *one;
         int i;
-        for (i=0; i<si->ninfo; ++i) {
+        for (i=0; i<si->ninfo; ++i) {            
             one = find_or_insert_service(&self->gates, si->info[i].handle);
             assert(one);
             *one = si->info[i];
             one->ip[sizeof(one->ip)-1] = '\0';
+            sc_debug("SERVICEINFO %s:%u, handle %04x, load %d", 
+                    one->ip, one->port, one->handle, one->load);
         }
         }
         break;

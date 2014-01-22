@@ -61,6 +61,7 @@ block_connect_redis(struct service *s) {
         return 1;
     } else {
         self->connid = connid;
+        sc_net_subscribe(connid, true);
         sc_info("Connect to redis %s:%u ok", addr, port);
         return 0;
     }
@@ -127,8 +128,14 @@ auth(struct service *s) {
 int
 redisproxy_init(struct service* s) {
     struct redisproxy* self = SERVICE_SELF;
+    if (sh_handle_publish(SERVICE_NAME, PUB_SER)) {
+        return 1;
+    }
+    int handle;
+    if (sh_handler(sc_getstr("redis_requester", ""), &handle)) {
+        return 1;
+    }
     self->connid = -1;
-   
     if (block_connect_redis(s)) {
         return 1;
     }
@@ -217,12 +224,12 @@ handle_reply(struct service *s) {
     if (ql->needreply == 0) {
         return; // no need reply
     }
-    UM_DEFVAR(UM_REDISREPLY, rep);
+    UM_DEFVAR2(UM_REDISREPLY, rep, UM_MAXSZ);
     rep->cbsz = ql->cbsz;
    
     struct redis_reader* reader = &self->reply.reader;
     struct memrw rw;
-    memrw_init(&rw, rep->data, reader->pos - sizeof(*rep));
+    memrw_init(&rw, rep->data, UM_MAXSZ - sizeof(*rep));
     if (ql->cbsz) {
         memrw_write(&rw, ql->cb, ql->cbsz);
     }

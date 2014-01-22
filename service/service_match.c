@@ -1,4 +1,5 @@
 #include "sc_service.h"
+#include "sc_log.h"
 #include "sc_node.h"
 #include "sh_hash.h"
 #include "user_message.h"
@@ -62,7 +63,9 @@ match_free(struct match *self) {
 int
 match_init(struct service *s) {
     struct match *self = SERVICE_SELF;
-   
+    if (sh_handle_publish(SERVICE_NAME, PUB_SER)) {
+        return 1;
+    }
     if (sh_handler("hall", &self->hall_handle) ||
         sh_handler("room", &self->room_handle)) {
         return 1;
@@ -346,7 +349,7 @@ match_main(struct service *s, int session, int source, int type, const void *msg
             UM_CAST(UM_BASE, wrap, ha->wrap);
             switch (wrap->msgid) {
             case IDUM_APPLY: {
-                UM_CAST(UM_APPLY, ap, msg);
+                UM_CAST(UM_APPLY, ap, wrap);
                 apply(s, source, ha->uid, ap);
                 break;
                 }

@@ -63,6 +63,6 @@ function def_node(name, id)
         gate_handler = open.handler
 
         sc_connmax = sc_connmax + gate_clientmax
-        sc_service = sc_service .. ",gate"
+        --sc_service = sc_service .. ",gate"
     end
 end

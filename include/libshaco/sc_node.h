@@ -33,7 +33,7 @@ int sh_service_send(int source, int dest, int type, const void *msg, int sz);
 int sh_service_broadcast(int source, int dest, int type, const void *msg, int sz);
 
 #ifdef __GNUC__
-int sc_service_vsend(int source, int dest, const char *fmt, ...)
+int sh_service_vsend(int source, int dest, const char *fmt, ...)
 __attribute__((format(printf, 3, 4)))
 #endif
 ;
@@ -43,6 +43,8 @@ bool sc_service_has(int vhandle, int handle);
 int sc_service_minload(int vhandle);
 int sc_service_nextload(int vhandle);
 
+struct sh_monitor_handle;
+int sh_monitor(const char *name, const struct sh_monitor_handle *h, int *handle);
 int sh_handler(const char *name, int *handle);
 int sh_handle_publish(const char *name, int flag);
 

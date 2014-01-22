@@ -75,8 +75,8 @@ log_init(struct service* s) {
     self->el = el;
     
     char msg[128];
-    snprintf(msg, sizeof(msg), ">>> shaco sc log level %s\n", 
-            sc_getstr("sc_loglevel", ""));
+    snprintf(msg, sizeof(msg), ">>> shaco(%d) sc log level %s\n", 
+            sc_getint("node_id", 0), sc_getstr("sc_loglevel", ""));
     elog_append(self->el, msg, strlen(msg));
     return 0;
 }

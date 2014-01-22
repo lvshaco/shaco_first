@@ -45,6 +45,9 @@ cmds_free(struct server* self) {
 int
 cmds_init(struct service* s) {
     struct server* self = SERVICE_SELF;
+    if (sh_handle_publish(SERVICE_NAME, PUB_SER)) {
+        return 1;
+    }
     if (sh_handler("cmdctl", &self->ctl_handle)) {
         return 1;
     }

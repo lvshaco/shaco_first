@@ -173,7 +173,9 @@ cmdctl_free(struct cmdctl* self) {
 int
 cmdctl_init(struct service* s) {
     struct cmdctl* self = SERVICE_SELF;
-
+    if (sh_handle_publish(SERVICE_NAME, PUB_SER)) {
+        return 1;
+    }
     if (sh_handler("cmds", &self->cmds_handle)) {
         return 1;
     }
