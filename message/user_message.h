@@ -214,6 +214,7 @@ struct UM_ENTERROOM {
 
 struct UM_EXITROOM {
     _UM_HEADER;
+    uint32_t uid;
 };
 
 struct UM_LOGINROOM {

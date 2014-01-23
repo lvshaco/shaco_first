@@ -360,6 +360,18 @@ login_room(struct service *s, struct UM_LOGINROOM *lr, int sz) {
 }
 
 static inline void
+exit_room(struct service *s, struct UM_EXITROOM *exit, int sz) {
+    struct watchdog *self = SERVICE_SELF;
+    struct user *ur = sh_hash_find(&self->acc2user, exit->uid);
+    if (ur) {
+        ur->room_handle = -1;
+        if (ur->hall_handle != -1) {
+            sh_service_send(SERVICE_ID, ur->hall_handle, MT_UM, exit, sz);
+        }
+    }
+}
+
+static inline void
 process_client(struct service *s, uint32_t accid, const void *msg, int sz) {
     struct watchdog *self = SERVICE_SELF;
     struct user *ur = sh_hash_find(&self->acc2user, accid);
@@ -416,6 +428,11 @@ watchdog_main(struct service *s, int session, int source, int type, const void *
         case IDUM_LOGINROOM: {
             UM_CAST(UM_LOGINROOM, lr, msg);
             login_room(s, lr, sz);
+            break;
+            }
+        case IDUM_EXITROOM: {
+            UM_CAST(UM_EXITROOM, exit, msg);
+            exit_room(s, exit, sz);
             break;
             }
         case IDUM_ROOM: {

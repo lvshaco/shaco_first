@@ -188,6 +188,31 @@ multicast_msg(struct service *s, struct gameroom* ro, const void *msg, int sz, u
     }
 }
 
+static void
+logout(struct service *s, struct player *m) {
+    if (!m->online) {
+        return;
+    }
+    struct room *self = SERVICE_SELF;
+
+    struct gameroom *ro = member2gameroom(m);
+    uint32_t charid = m->detail.charid; 
+
+    UM_DEFFIX(UM_EXITROOM, exit);
+    exit->uid = UID(m);
+    sh_service_send(SERVICE_ID, m->watchdog_source, MT_UM, exit, sizeof(*exit));
+
+    if (ro->status == ROOMS_START) {
+        UM_DEFFIX(UM_GAMEUNJOIN, unjoin);
+        unjoin->charid = charid;
+        multicast_msg(s, ro, unjoin, sizeof(*unjoin), UID(m));
+    }
+    m->online = false;
+    member_free(m);
+    
+    sh_hash_remove(&self->players, UID(m));
+}
+
 //////////////////////////////////////////////////////////////////////
 // gameroom logic
 
@@ -261,9 +286,8 @@ gameroom_destroy(struct service *s, struct gameroom *ro) {
     for (i=0; i<ro->np; ++i) {
         struct player *m = &ro->p[i];
         if (m->online) {
-            // todo
+            logout(s, m);
         }
-        member_free(m);
     }
     if (ro->map) {
         genmap_free(ro->map);
@@ -539,7 +563,6 @@ check_over_gameroom(struct service *s, struct gameroom* ro) {
     }
     int n = count_onlinemember(ro);
     if (n == 0) {
-        // todo: destroy directly
         gameroom_destroy(s, ro);
         return true;
     }
@@ -1012,6 +1035,9 @@ login(struct service *s, int source, const struct UM_LOGINROOM *lo) {
     }
     m->detail = lo->detail;
     m->base = m->detail.attri;
+    m->detail.attri.oxygen = 0;
+    m->base.oxygen = 0;
+
     delay_init(&m->total_delay);
     effect_init(&m->total_effect);
     role_attri_build(&ro->gattri, &m->detail.attri);
@@ -1021,22 +1047,6 @@ login(struct service *s, int source, const struct UM_LOGINROOM *lo) {
     assert(!sh_hash_insert(&self->players, accid, m));
 
     notify_game_info(s, m, ro); 
-}
-
-static void
-logout(struct service *s, struct player *m) {
-    struct room *self = SERVICE_SELF;
-
-    struct gameroom *ro = member2gameroom(m);
-    
-    m->online = false;
-    member_free(m);
-
-    UM_DEFFIX(UM_GAMEUNJOIN, unjoin);
-    unjoin->charid = m->detail.charid;
-    multicast_msg(s, ro, unjoin, sizeof(*unjoin), 0);
-
-    sh_hash_remove(&self->players, UID(m));
 }
 
 static void

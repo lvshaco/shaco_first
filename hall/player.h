@@ -16,8 +16,7 @@
 #define PS_LOGIN 9
 #define PS_HALL  10
 #define PS_WAITING  11
-#define PS_LOADING 12
-#define PS_ROOM 13
+#define PS_ROOM 12
 
 // level grade
 #define LV_RUMEN   0

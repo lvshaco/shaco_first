@@ -80,6 +80,7 @@ static void
 delay_fini(struct delay_vector *D) {
     if (D == NULL) return;
     free(D->p);
+    D->p = NULL;
 }
 
 // buff effect
@@ -127,6 +128,7 @@ static inline void
 effect_fini(struct effect_vector *E) {
     if (E == NULL) return;
     free(E->p);
+    E->p = NULL;
 }
 
 #endif

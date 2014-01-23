@@ -57,6 +57,14 @@ hall_main(struct service *s, int session, int source, int type, const void *msg,
         case IDUM_ENTERHALL:
             player_main(s, source, NULL, msg, sz);
             break;
+        case IDUM_EXITROOM: {
+            UM_CAST(UM_EXITROOM, exit, msg);
+            struct player *pr = sh_hash_find(&self->acc2player, exit->uid);
+            if (pr) {
+                playlogic_main(s, pr, msg, sz);
+            }
+            break;
+            }
         case IDUM_HALL: {
             UM_CAST(UM_HALL, ha, msg);
             struct player *pr = sh_hash_find(&self->acc2player, ha->uid);
@@ -85,6 +93,7 @@ hall_main(struct service *s, int session, int source, int type, const void *msg,
                            (wrap->msgid >= IDUM_PLAYB2 && wrap->msgid <= IDUM_PLAYE2)) {
                     playlogic_main(s, pr, wrap, sz-sizeof(*ha));
                 }
+                break;
             }
             break;
             }
