@@ -11,7 +11,7 @@
 #include <unistd.h>
 #include <errno.h>
 
-#define TYPE 1001
+#define TYPE 1000
 
 struct client {
     int fd;
@@ -73,10 +73,10 @@ _write_one(int fd, const char* buf, int sz, int8_t mode) {
     assert(sz > 0);
     uint8_t head[4];
 
-    int l = sz + 7;
+    int l = sz + 3;
     head[0] = l & 0xff;
     head[1] = (l >> 8) & 0xff;
-    head[2] = TYPE && 0xff;
+    head[2] = TYPE & 0xff;
     head[3] = (TYPE >> 8) & 0xff;
     CHK(_write(fd, head, 4));
     CHK(_write(fd, &mode, 1));
@@ -90,9 +90,9 @@ _read_one(int fd) {
     uint8_t head[4];
     CHK(_read(fd, &head, 4));
     l = head[0] | (head[1] << 8);
-    char buf[l-5];
-    CHK(_read(fd, buf, l-6));
-    buf[l-6] = '\0';
+    char buf[l-2+1];
+    CHK(_read(fd, buf, l-2));
+    buf[l-2] = '\0';
     printf("%s\n", buf); 
     return 0;
 }

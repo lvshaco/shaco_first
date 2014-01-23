@@ -168,12 +168,12 @@ gate_init(struct service* s) {
         return 1;
     }
     const char* hname = sc_getstr("gate_handler", ""); 
-    if (sh_handler(hname, &self->handler))
+    if (sh_handler(hname, SUB_REMOTE, &self->handler))
         return 1;
     self->need_load = sc_getint("gate_need_load", 0);
     if (self->need_load) {
         const char *lname = sc_getstr("gate_load", "");
-        if (sh_handler(lname, &self->load_handle)) {
+        if (sh_handler(lname, SUB_REMOTE, &self->load_handle)) {
             return 1;
         }
     }
@@ -267,11 +267,11 @@ errout:
 }
 
 static inline void
-send_to_client(int connid, void *data, int sz) {
+send_to_client(struct client *cl, void *data, int sz) {
     uint8_t *tmp = malloc(sz+2);
     sh_to_littleendian16(sz, tmp);
     memcpy(tmp+2, data, sz);
-    sc_net_send(connid, tmp, sz+2);
+    sc_net_send(cl->connid, tmp, sz+2);
 }
 
 void
@@ -281,24 +281,25 @@ gate_main(struct service* s, int session, int source, int type, const void *msg,
     case MT_UM: {
         UM_CAST(UM_GATE, ga, msg); 
         int connid = ga->connid;
+        struct client *cl = get_client(self, connid);
+        if (cl == NULL) {
+            return;
+        }
         UM_CAST(UM_BASE, sub, ga->wrap);
         sc_debug("Send to client %d msgid %d, sz %d", connid, sub->msgid, sz-(int)sizeof(*ga));
         switch (sub->msgid) {
         case IDUM_LOGOUT: {
             UM_CAST(UM_LOGOUT, lo, sub);
-            struct client *c = get_client(self, connid);
-            if (c == NULL)
-                return;
             if (lo->err == SERR_OK) {
-                disconnect_client(s, c, true);
+                disconnect_client(s, cl, true);
             } else {
-                send_to_client(connid, lo, sizeof(*lo));
-                disconnect_client(s, c, false);
+                send_to_client(cl, lo, sizeof(*lo));
+                disconnect_client(s, cl, false);
             }
             break;
             }
         default:
-            send_to_client(connid, ga->wrap, sz-sizeof(*ga));
+            send_to_client(cl, ga->wrap, sz-sizeof(*ga));
             break;
         }
         break;

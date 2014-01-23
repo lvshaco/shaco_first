@@ -355,7 +355,7 @@ net_block_readto(struct net *self, int id, void *buf, int sz, int *err) {
     int n;
     int remain = sz;
     while (remain > 0) {
-        n = read(s->fd, buf, remain);
+        n = _socket_read(s->fd, buf, remain);
         if (n < 0) {
             *err = _socket_error;
             if (*err != SEINTR) {
@@ -556,7 +556,7 @@ net_block_send(struct net* self, int id, void* data, int sz, int *err) {
     int n;
     int remain = sz;
     while (remain > 0) {
-        n = write(s->fd, data, remain);
+        n = _socket_write(s->fd, data, remain);
         if (n < 0) {
             *err = _socket_error;
             if (*err != SEINTR) {

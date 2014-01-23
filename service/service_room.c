@@ -127,8 +127,8 @@ room_init(struct service* s) {
     if (sh_handle_publish(SERVICE_NAME, PUB_SER)) {
         return 1;
     }
-    if (sh_handler("watchdog", &self->watchdog_handle) ||
-        sh_handler("match", &self->match_handle))
+    if (sh_handler("watchdog", SUB_REMOTE, &self->watchdog_handle) ||
+        sh_handler("match", SUB_REMOTE, &self->match_handle))
         return 1;
     
     uint32_t now = sc_timer_now()/1000;
@@ -1035,8 +1035,6 @@ login(struct service *s, int source, const struct UM_LOGINROOM *lo) {
     }
     m->detail = lo->detail;
     m->base = m->detail.attri;
-    m->detail.attri.oxygen = 0;
-    m->base.oxygen = 0;
 
     delay_init(&m->total_delay);
     effect_init(&m->total_effect);

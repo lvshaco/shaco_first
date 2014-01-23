@@ -176,7 +176,7 @@ cmdctl_init(struct service* s) {
     if (sh_handle_publish(SERVICE_NAME, PUB_SER)) {
         return 1;
     }
-    if (sh_handler("cmds", &self->cmds_handle)) {
+    if (sh_handler("cmds", SUB_REMOTE, &self->cmds_handle)) {
         return 1;
     }
     return 0;
@@ -203,7 +203,7 @@ handle_command(struct service *s, int source, int connid, void *msg, int sz) {
         return; // null
     }
     UM_DEFVAR2(UM_CMDS, res, UM_MAXSZ);
-    UM_CAST(UM_TEXT, text, res->wrap);
+    UD_CAST(UM_TEXT, text, res->wrap);
     res->connid = connid;
     int headsz = sizeof(*res) + sizeof(*text);
     int msgsz;

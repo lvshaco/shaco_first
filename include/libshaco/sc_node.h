@@ -17,6 +17,10 @@
 #define PUB_MOD 2
 #define PUB_BOTH PUB_SER|PUB_MOD
 
+// subscribe flag
+#define SUB_LOCAL  0 
+#define SUB_REMOTE 1
+
 struct sh_node_addr {
     char naddr[40];
     char gaddr[40];
@@ -27,7 +31,7 @@ struct sh_node_addr {
 int sc_service_start(const char *name, int handle, const struct sh_node_addr *addr);
 int sc_service_exit(int handle);
 
-int sc_service_subscribe(const char *name);
+int sc_service_subscribe(const char *name, int flag);
 int sc_service_publish(const char *name, int flag);
 int sh_service_send(int source, int dest, int type, const void *msg, int sz);
 int sh_service_broadcast(int source, int dest, int type, const void *msg, int sz);
@@ -45,7 +49,7 @@ int sc_service_nextload(int vhandle);
 
 struct sh_monitor_handle;
 int sh_monitor(const char *name, const struct sh_monitor_handle *h, int *handle);
-int sh_handler(const char *name, int *handle);
+int sh_handler(const char *name, int flag, int *handle);
 int sh_handle_publish(const char *name, int flag);
 
 static inline int

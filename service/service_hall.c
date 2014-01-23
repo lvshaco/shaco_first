@@ -34,10 +34,10 @@ hall_init(struct service *s) {
     if (sh_handle_publish(SERVICE_NAME, PUB_SER)) {
         return 1;
     }
-    if (sh_handler("watchdog", &self->watchdog_handle) ||
-        sh_handler("match", &self->match_handle) ||
-        sh_handler("rpuser", &self->rpuser_handle) ||
-        sh_handler("rank", &self->rank_handle)) {
+    if (sh_handler("watchdog", SUB_REMOTE, &self->watchdog_handle) ||
+        sh_handler("match", SUB_REMOTE, &self->match_handle) ||
+        sh_handler("rpuser", SUB_REMOTE, &self->rpuser_handle) ||
+        sh_handler("rank", SUB_REMOTE, &self->rank_handle)) {
         return 1;
     }
     if (player_init(self))

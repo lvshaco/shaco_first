@@ -14,11 +14,7 @@
 #pragma pack(1)
 
 #define _UM_HEADER \
-union { \
-    struct { uint16_t head; }; \
-    uint16_t msgid; \
-}; \
-uint8_t body[0];
+    uint16_t msgid;
 
 struct UM_BASE {
     _UM_HEADER;

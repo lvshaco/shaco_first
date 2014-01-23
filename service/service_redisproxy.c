@@ -132,7 +132,7 @@ redisproxy_init(struct service* s) {
         return 1;
     }
     int handle;
-    if (sh_handler(sc_getstr("redis_requester", ""), &handle)) {
+    if (sh_handler(sc_getstr("redis_requester", ""), SUB_REMOTE, &handle)) {
         return 1;
     }
     self->connid = -1;

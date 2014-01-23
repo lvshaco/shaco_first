@@ -194,24 +194,24 @@ sc_service_exit(int handle) {
 }
 
 int 
-sc_service_subscribe(const char *name) {
+sc_service_subscribe(const char *name, int flag) {
     if (name[0] == '\0') {
         return 1;
     }
-    int handle = service_query_id(name);
-    if (handle != -1) {
+    if (flag == SUB_LOCAL) {
+        return service_query_id(name);
+    } else {
+        int handle = _subscribe(name);
+        if (handle == -1) {
+            return -1;
+        }
+        char msg[128];
+        int n = snprintf(msg, sizeof(msg), "SUB %s", name); 
+        if (service_main(R->handle, 0, 0, MT_TEXT, msg, n)) {
+            return -1;
+        }
         return handle;
     }
-    handle = _subscribe(name);
-    if (handle == -1) {
-        return -1;
-    }
-    char msg[128];
-    int n = snprintf(msg, sizeof(msg), "SUB %s", name); 
-    if (service_main(R->handle, 0, 0, MT_TEXT, msg, n)) {
-        return -1;
-    }
-    return handle;
 }
 
 int 
@@ -260,6 +260,16 @@ debug_msg(int source, int dest, int type, const void *msg, int sz) {
 }
 
 
+static inline int
+send(int source, int dest, int type, const void *msg, int sz) {
+    if (dest & NODE_MASK) {
+        debug_msg(source, dest, type, msg, sz);
+        return service_send(R->handle, 0, source, dest, type, msg, sz);
+    } else {
+        return service_main(dest, 0, source, type, msg, sz);
+    }
+}
+
 int 
 sh_service_send(int source, int dest, int type, const void *msg, int sz) {
     if (dest & 0x10000) {
@@ -273,16 +283,9 @@ sh_service_send(int source, int dest, int type, const void *msg, int sz) {
             sc_error("No connect remote service %s:%04x", s->name, dest);
             return 1;
         }
-        debug_msg(source, dest, type, msg, sz);
-        return service_send(R->handle, 0, source, h, type, msg, sz);
+        dest = h;
     }
-    if (dest & NODE_MASK) {
-        debug_msg(source, dest, type, msg, sz);
-        return service_send(R->handle, 0, source, dest, type, msg, sz);
-    } else {
-        return service_main(dest, 0, source, type, msg, sz);
-    }
-    return 0;
+    return send(source, dest, type, msg, sz);
 }
 
 int 
@@ -294,7 +297,7 @@ sh_service_broadcast(int source, int dest, int type, const void *msg, int sz) {
         if (s) {
             for (i=0; i<s->sz; ++i) {
                 debug_msg(source, dest, type, msg, sz);
-                if (!service_send(R->handle, 0, source, s->phandle[i].id, type, msg, sz)) {
+                if (!send(source, s->phandle[i].id, type, msg, sz)) {
                     n++;
                 }
             }
@@ -368,8 +371,8 @@ sc_service_has(int vhandle, int handle) {
 }
 
 int 
-sh_handler(const char *name, int *handle) {
-    *handle = sc_service_subscribe(name);
+sh_handler(const char *name, int flag, int *handle) {
+    *handle = sc_service_subscribe(name, flag);
     if (*handle == -1) {
         sc_error("Subscribe handle fail: %s", name);
         return 1;

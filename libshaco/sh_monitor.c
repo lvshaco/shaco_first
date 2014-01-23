@@ -37,8 +37,8 @@ find(int vhandle) {
 
 int 
 sh_monitor_register(const char *name, const struct sh_monitor_handle *h) {
-    int vhandle = sc_service_subscribe(name);
-    if (vhandle == -1) {
+    int vhandle;
+    if (sh_handler(name, SUB_REMOTE, &vhandle)) {
         return -1;
     }
     struct sh_monitor *m = find(vhandle);

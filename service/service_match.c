@@ -66,8 +66,8 @@ match_init(struct service *s) {
     if (sh_handle_publish(SERVICE_NAME, PUB_SER)) {
         return 1;
     }
-    if (sh_handler("hall", &self->hall_handle) ||
-        sh_handler("room", &self->room_handle)) {
+    if (sh_handler("hall", SUB_REMOTE, &self->hall_handle) ||
+        sh_handler("room", SUB_REMOTE, &self->room_handle)) {
         return 1;
     }
     sh_hash_init(&self->applyers, 1);

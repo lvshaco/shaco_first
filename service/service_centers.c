@@ -45,7 +45,7 @@ centers_free(struct centers* self) {
 int
 centers_init(struct service* s) {
     struct centers *self = SERVICE_SELF;
-    self->node_handle = sc_service_subscribe("node");
+    self->node_handle = service_query_id("node");
     if (self->node_handle == -1)
         return 1;
     return 0;
@@ -120,15 +120,16 @@ centers_main(struct service *s, int session, int source, int type, const void *m
         struct _pubsub_slot *slot = insert_pubsub_name(&self->ps, name);
         if (slot == NULL)
             return;
-        int nodeid = sc_nodeid_from_handle(source);
-        if (insert_int(&slot->subs, source)) {
-            sc_error("Subscribe %s repeat by node(%d)", name, nodeid);
+        if (insert_int(&slot->subs, source))
             return;
-        }
         int i;
         for (i=0; i<slot->pubs.sz; ++i) {
-            sh_service_vsend(SERVICE_ID, source, 
-                    "HANDLE %s:%04x", name, slot->pubs.p[i]);
+            int pub_handle = slot->pubs.p[i];
+            if (sc_nodeid_from_handle(pub_handle) !=
+                sc_nodeid_from_handle(source)) {
+                sh_service_vsend(SERVICE_ID, source, 
+                        "HANDLE %s:%04x", name, slot->pubs.p[i]);
+            }
         }
     } else if (!strcmp(cmd, "PUB")) {
         if (A.argc != 2)
@@ -142,15 +143,16 @@ centers_main(struct service *s, int session, int source, int type, const void *m
         struct _pubsub_slot *slot = insert_pubsub_name(&self->ps, name);
         if (slot == NULL)
             return;
-        int nodeid = sc_nodeid_from_handle(handle);
-        if (insert_int(&slot->pubs, handle)) {
-            sc_error("Publish %s repeat by node(%d)", name, nodeid);
+        if (insert_int(&slot->pubs, handle))
             return;
-        }
         int i;
         for (i=0; i<slot->subs.sz; ++i) {
-            sh_service_vsend(SERVICE_ID, slot->subs.p[i],
-                    "HANDLE %s:%04x", name, handle);
+            int sub_handle = slot->subs.p[i];
+            if (sc_nodeid_from_handle(sub_handle) !=
+                sc_nodeid_from_handle(source)) {
+                sh_service_vsend(SERVICE_ID, slot->subs.p[i],
+                        "HANDLE %s:%04x", name, handle);
+            }
         }
     }
 }

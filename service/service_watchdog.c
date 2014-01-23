@@ -71,10 +71,10 @@ watchdog_init(struct service *s) {
     }
     struct sh_monitor_handle h = {SERVICE_ID, SERVICE_ID};
     if (sh_monitor("uniqueol", &h, &self->uniqueol_handle) ||
-        sh_handler("gate", &self->auth_handle) ||
-        sh_handler("auth", &self->auth_handle) ||
-        sh_handler("hall", &self->hall_handle) ||
-        sh_handler("room", &self->room_handle)) {
+        sh_handler("gate", SUB_REMOTE, &self->auth_handle) ||
+        sh_handler("auth", SUB_REMOTE, &self->auth_handle) ||
+        sh_handler("hall", SUB_REMOTE, &self->hall_handle) ||
+        sh_handler("room", SUB_REMOTE, &self->room_handle)) {
         return 1;
     }
     sh_hash64_init(&self->conn2user, 1);

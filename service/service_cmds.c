@@ -48,7 +48,7 @@ cmds_init(struct service* s) {
     if (sh_handle_publish(SERVICE_NAME, PUB_SER)) {
         return 1;
     }
-    if (sh_handler("cmdctl", &self->ctl_handle)) {
+    if (sh_handler("cmdctl", SUB_REMOTE, &self->ctl_handle)) {
         return 1;
     }
     sh_hash_init(&self->clients, 1);
@@ -69,10 +69,11 @@ check_close_client(struct service *s, struct client* cl) {
     struct server *self = SERVICE_SELF;
     // CMDLINE mode, deal one command, then close
     if (cl->mode == MODE_CMDLINE) {
-        if (cl->nrecv >= cl->nsend) {
+        if (cl->nsend > 0 &&
+            cl->nrecv >= cl->nsend) {
             UM_DEFWRAP(UM_GATE, ga, UM_LOGOUT, lo);
             ga->connid = cl->connid;
-            lo->err = SERR_UNKNOW;
+            lo->err = SERR_OK;
             sh_service_send(SERVICE_ID, cl->gate_source, MT_UM, ga, sizeof(*ga)+sizeof(*lo));
 
             cl = sh_hash_remove(&self->clients, cl->connid);
@@ -91,10 +92,10 @@ handle_result(struct service *s, int source, int connid, void *msg, int sz) {
     char prefix[32];
     int npre = snprintf(prefix, sizeof(prefix), "[%08X] ", source);
     npre = min(npre, sizeof(prefix)-1);
-
     int len = sizeof(struct UM_TEXT) + sz + npre;
     UM_DEFWRAP2(UM_GATE, ga, len);
-    UM_CAST(UM_TEXT, text, ga->wrap);
+    UD_CAST(UM_TEXT, text, ga->wrap);
+    ga->connid = connid;
     memcpy(text->str, prefix, npre);
     memcpy(text->str+npre, msg, sz);
     sh_service_send(SERVICE_ID, cl->gate_source, MT_UM, ga, sizeof(*ga)+len);
@@ -112,9 +113,10 @@ handle_command(struct service *s, int source, int connid, void *msg, int sz) {
     struct client *cl = sh_hash_find(&self->clients, connid);
     if (cl == NULL) {
         cl = malloc(sizeof(*cl));
-        cl->gate_source = source;
         cl->connid = connid;
+        cl->gate_source = source;
         cl->mode = MODE_INTERACTIVE;
+        assert(!sh_hash_insert(&self->clients, connid, cl));
     }
     char* rptr = msg;
     cl->mode = *rptr++; sz--;
@@ -129,9 +131,9 @@ handle_command(struct service *s, int source, int connid, void *msg, int sz) {
     }*/
     int wrapsz = sizeof(struct UM_TEXT)+sz;
     UM_DEFWRAP2(UM_CMDS, cm, wrapsz);
-    UM_CAST(UM_TEXT, text, cm->wrap);
+    UD_CAST(UM_TEXT, text, cm->wrap);
     cm->connid = connid;
-    memcpy(text, rptr, sz);
+    memcpy(text->str, rptr, sz);
     int n = sh_service_broadcast(SERVICE_ID, self->ctl_handle, MT_UM, cm, sizeof(*cm)+wrapsz);
     cl->nsend = n;
     check_close_client(s, cl);

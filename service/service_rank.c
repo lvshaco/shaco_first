@@ -41,7 +41,7 @@ rank_init(struct service* s) {
     if (sh_handle_publish(SERVICE_NAME, PUB_SER)) {
         return 1;
     }
-    if (sh_handler("rprank", &self->rprank_handle))
+    if (sh_handler("rprank", SUB_REMOTE, &self->rprank_handle))
         return 1;
     redis_initreply(&self->reply, 512, 0);
     return 0;

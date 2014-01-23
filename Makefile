@@ -271,7 +271,7 @@ cnet_src=\
 	cnet/cnet.h
 
 cnet.dll: $(net_src) $(cnet_src)
-	gcc $(CFLAGS) -shared -o $@ $^ -Inet -Imessage -lws2_32 -lws2_32 \
+	gcc $(CFLAGS) -shared -o $@ $^ -Inet -Imessage -lws2_32 \
 		-Wl,--output-def,cnet.def,--out-implib,cnet.lib
 	LIB /MACHINE:IX86 /DEF:cnet.def
 

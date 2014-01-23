@@ -52,8 +52,8 @@ auth_init(struct service *s) {
     if (sh_handle_publish(SERVICE_NAME, PUB_SER)) {
         return 1;
     }
-    if (sh_handler("watchdog", &self->watchdog_handle) ||
-        sh_handler("rpacc", &self->rpacc_handle)) {
+    if (sh_handler("watchdog", SUB_REMOTE, &self->watchdog_handle) ||
+        sh_handler("rpacc", SUB_REMOTE, &self->rpacc_handle)) {
         return 1;
     }
     redis_initreply(&self->reply, 512, 0);
@@ -87,6 +87,7 @@ login(struct service *s, int source, uint64_t conn, uint32_t wsession, struct UM
     //memrw_write(&rw, &ur->wsession, sizeof(ur->wsession));
     memrw_write(&rw, ur->account, sizeof(ur->account));
     rq->cbsz = RW_CUR(&rw);
+    // eg : hmget acc:wa_account_1 id passwd
     int len = snprintf(rw.ptr, RW_SPACE(&rw), "hmget acc:%s id passwd\r\n", ur->account);
     memrw_pos(&rw, len);
     int msgsz = sizeof(*rq) + RW_CUR(&rw);

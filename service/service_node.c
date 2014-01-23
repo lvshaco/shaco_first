@@ -55,13 +55,13 @@ _bound_node_connection(struct _node *no, int connid) {
     no->connid = connid;
 }
 
-static void
+static int
 _bound_handle_to_node(struct _node *no, int handle) {
     struct _int_vector *handles = &no->handles;
     int i;
     for (i=0; i<handles->sz; ++i) {
         if (handles->pi[i] == handle) {
-            return;
+            return 1;
         }
     }
     if (handles->sz >= handles->cap) {
@@ -71,6 +71,7 @@ _bound_handle_to_node(struct _node *no, int handle) {
         handles->pi = realloc(handles->pi, sizeof(handles->pi[0]) * handles->cap);
     }
     handles->pi[handles->sz++] = handle;
+    return 0;
 }
 
 static inline struct _node *
@@ -201,15 +202,6 @@ _vsend(struct remote *self, int source, int dest, const char *fmt, ...) {
     return _send(self, source, dest, MT_TEXT, msg, n);
 }
 
-// service
-static inline int
-_publish_service(struct service *s, const char *name, int handle) {
-    struct remote *self = SERVICE_SELF;
-    handle &= 0xff;
-    handle |= (self->myid << 8) & 0xff00;
-    return sh_service_vsend(SERVICE_ID, self->center_handle, "PUB %s:%04x", name, handle);
-}
-
 // initialize
 static int
 _init_mynode(struct remote *self) {
@@ -293,16 +285,24 @@ _connect_node(struct service *s, struct _node *no) {
 static int
 _connect_service(struct service *s, const char *name, int handle) {
     struct remote *self = SERVICE_SELF;
-
-    int id = sc_nodeid_from_handle(handle);
-    struct _node *no = _get_node(self, id);
+    struct _node *no;
+    int id;
+    id = sc_nodeid_from_handle(handle);
+    if (id == 0)
+        id = self->myid;
+    no = _get_node(self, id);
     if (no == NULL) {
-        sc_error("Invalid node %d", id);
+        sc_error("Connect service %s:%d fail: Invalid node %d", name, handle, id);
         return 1;
     }
-    _connect_node(s, no);
-    _bound_handle_to_node(no, handle);
-    sc_service_start(name, handle, &no->addr);
+    if (id != self->myid) {
+        _connect_node(s, no);
+    } else {
+        handle = sc_serviceid_from_handle(handle);
+    }
+    if (!_bound_handle_to_node(no, handle)) {
+        sc_service_start(name, handle, &no->addr);
+    }
     return 0;
 }
 
@@ -378,6 +378,25 @@ _connect_to_center(struct service* s) {
     }
     sc_info("Connect to center(%d) %s:%u ok", center_id, addr, port);
     return 0;
+}
+
+// service
+static inline int
+_subscribe_service(struct service *s, const char *name) {
+    struct remote *self = SERVICE_SELF;
+    int handle = service_query_id(name);
+    if (handle != -1) {
+        _connect_service(s, name, handle);
+    }
+    return sh_service_vsend(SERVICE_ID, self->center_handle, "SUB %s", name);
+}
+
+static inline int
+_publish_service(struct service *s, const char *name, int handle) {
+    struct remote *self = SERVICE_SELF;
+    handle &= 0xff;
+    handle |= (self->myid << 8) & 0xff00;
+    return sh_service_vsend(SERVICE_ID, self->center_handle, "PUB %s:%04x", name, handle);
 }
 
 struct remote *
@@ -537,11 +556,14 @@ node_main(struct service *s, int session, int source, int type, const void *msg,
         int gport = strtol(A.argv[5], NULL, 10);
         int node_handle = strtol(A.argv[6], NULL, 10);
 
-        struct _node *no = _get_node(self, id);
-        if (no) {
-            _update_node(no, naddr, nport, gaddr, gport);
-            _bound_node_entry(no, node_handle);
-            _connect_node(s, no);
+        if (id > 0 &&
+            id != self->myid) {
+            struct _node *no = _get_node(self, id);
+            if (no) {
+                _update_node(no, naddr, nport, gaddr, gport);
+                _bound_node_entry(no, node_handle);
+                _connect_node(s, no);
+            }
         }
     } else if (!strcmp(cmd, "ADDR")) {
         if (A.argc != 6)
@@ -551,9 +573,11 @@ node_main(struct service *s, int session, int source, int type, const void *msg,
         int nport = strtol(A.argv[3], NULL, 10);
         const char *gaddr = A.argv[4];
         int gport = strtol(A.argv[5], NULL, 10);
-        struct _node *no = _get_node(self, id);
-        if (no) {
-            _update_node(no, naddr, nport, gaddr, gport);
+        if (id > 0) {
+            struct _node *no = _get_node(self, id);
+            if (no) {
+                _update_node(no, naddr, nport, gaddr, gport);
+            }
         }
     } else if (!strcmp(cmd, "BROADCAST")) {
         if (A.argc != 2)
@@ -563,7 +587,8 @@ node_main(struct service *s, int session, int source, int type, const void *msg,
     } else if (!strcmp(cmd, "SUB")) {
         if (A.argc != 2)
             return;
-        sh_service_send(SERVICE_ID, self->center_handle, MT_TEXT, msg, sz);
+        const char *name = A.argv[1];
+        _subscribe_service(s, name); 
     } else if (!strcmp(cmd, "PUB")) {
         if (A.argc != 2)
             return;

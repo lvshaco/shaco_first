@@ -3,8 +3,12 @@
 
 // include
 #ifdef WIN32                 
-#define WIN32_LEAN_AND_MEAN  
-#include <winsock2.h>        
+#define WIN32_LEAN_AND_MEAN
+#ifndef _WIN32_WINNT 
+#define _WIN32_WINNT 0x5001 // ws2tcpip.h need for getaddrinfo
+#endif
+#include <winsock2.h>
+#include <ws2tcpip.h>
 #include <windows.h>
 #else
 #include <sys/types.h>

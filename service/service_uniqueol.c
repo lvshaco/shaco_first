@@ -93,7 +93,7 @@ uniqueol_init(struct service *s) {
         return 1;
     }
     if (sh_handler(sc_getstr("uniqueol_requester", ""), 
-                &self->requester_handle)) {
+                SUB_REMOTE, &self->requester_handle)) {
         return 1;
     }
     unique_init(&self->uni, UNIQUE_INIT);
