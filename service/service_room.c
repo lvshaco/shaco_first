@@ -69,7 +69,7 @@ struct gameroom {
 
 #define member2gameroom(m) ({ \
     assert(m->index >=0 && m->index < MEMBER_MAX); \
-    ((struct gameroom*)((m) - offsetof(struct gameroom, p) + (m)->index * sizeof(*(m)))); \
+    ((struct gameroom*)((char*)(m) - (m)->index * sizeof(*(m)) - offsetof(struct gameroom, p))); \
 })
 
 #define UID(m) ((m)->detail.accid)
@@ -836,7 +836,6 @@ rand_trapitem(const struct map_tplt *mapt) {
 
 static void
 use_item(struct service *s, struct player *m, const struct UM_USEITEM *use) {
-    sc_debug("+++++++++++++++++++use item %u", use->itemid);
     struct room *self = SERVICE_SELF;
 
     struct gameroom *ro = member2gameroom(m);

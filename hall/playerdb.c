@@ -277,6 +277,7 @@ playerdb_process_redis(struct service *s, struct UM_REDISREPLY *rep, int sz) {
             //serr = SERR_WORLDFULL;
             //break;
         //}
+        p->data.charid = charid;
         p->status = PS_LOADCHAR;
         _db(s, p, PDB_LOAD);
         return;
@@ -347,6 +348,7 @@ playerdb_process_redis(struct service *s, struct UM_REDISREPLY *rep, int sz) {
             //serr = SERR_WORLDFULL;
             //break;
         //}
+        p->data.charid = charid;
         p->status = PS_CREATECHAR;
         _db(s, p, PDB_CREATE);
         return;
@@ -410,7 +412,7 @@ playerdb_process_redis(struct service *s, struct UM_REDISREPLY *rep, int sz) {
     switch (serr) {
     case SERR_OK:
         if (p->status == PS_LOGIN) {
-            p->status = PS_GAME;
+            p->status = PS_HALL;
             
             UM_DEFFIX(UM_ENTERHALL, enter);
             rolelogic_main(s, p, enter, sizeof(*enter));

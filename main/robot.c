@@ -4,6 +4,7 @@
 #include <assert.h>
 #include <string.h>
 #include <time.h>
+#include <stdarg.h>
 
 #define TROUTE 0
 #define TGATE 1
@@ -12,6 +13,20 @@ static int SERVER[TMAX];
 static struct UM_GATEADDR GATEADDR;
 static struct chardata CHAR;
 static char ACCOUNT[ACCOUNT_NAME_MAX];
+
+static void
+mylog(const char *fmt, ...) {
+    time_t now = time(NULL);
+    char buf[64];
+    strftime(buf, sizeof(buf), "%H:%M:%S ", localtime(&now));
+    fprintf(stderr, buf);
+    va_list ap;
+    va_start(ap, fmt);
+    vfprintf(stderr, fmt, ap);
+    va_end(ap);
+    fprintf(stderr, "\n");
+}
+
 static void
 _server_init() {
     int i;
@@ -37,7 +52,7 @@ static void
 _request_gate(int id) {
     UM_DEFFIX(UM_GATEADDRREQ, req);
     _server_send(TROUTE, req, sizeof(*req));
-    printf("request gate address \n");
+    mylog("request gate address");
 }
 
 static void
@@ -46,12 +61,12 @@ _login_account(int id) {
     strncpy(la->account, ACCOUNT, sizeof(la->account)-1);
     strncpy(la->passwd, "123456", sizeof(la->passwd)-1);
     _server_send(TGATE, la, sizeof(*la));
-    printf("request login account\n");
+    mylog("request login account");
 }
 
 static void
 _onconnect(struct net_message* nm) {
-    printf("onconnect\n");
+    mylog("onconnect");
     int ut = nm->ut;
     int id = nm->connid;
     _server_set(ut, id);
@@ -70,12 +85,12 @@ _onconnect(struct net_message* nm) {
 
 static void
 _onconnerr(struct net_message* nm) {
-    printf("onconnerr: %d, ut %d\n", nm->error, nm->ut);
+    mylog("onconnerr: %d, ut %d", nm->error, nm->ut);
     _server_set(nm->ut, -1);
 }
 static void
 _onsockerr(struct net_message* nm) {
-    printf("onsockerr: %d, ut %d\n", nm->error, nm->ut);
+    mylog("onsockerr: %d, ut %d", nm->error, nm->ut);
     _server_set(nm->ut, -1);
 }
 
@@ -92,7 +107,7 @@ _createchar() {
     }
     cre->name[i] = '\0';
     _server_send(TGATE, cre, sizeof(*cre));
-    printf("request create char: %s\n", cre->name);
+    mylog("request create char: %s", cre->name);
 }
 
 static void
@@ -104,14 +119,14 @@ _play(int type) {
     UM_DEFFIX(UM_PLAY, play);
     play->type = type;
     _server_send(TGATE, play, sizeof(*play));
-    printf("request play: %d\n", type);
+    mylog("request play: %d", type);
 }
 
 static void
 _loadok() {
     UM_DEFFIX(UM_GAMELOADOK, ok);
     _server_send(TGATE, ok, sizeof(*ok));
-    printf("notify load ok\n");
+    mylog("notify load ok");
 
 }
 
@@ -120,12 +135,12 @@ _useitem(uint32_t id) {
     UM_DEFFIX(UM_USEITEM, ui);
     ui->itemid = id;
     _server_send(TGATE, ui, sizeof(*ui));
-    printf("requset use item: %u\n", id);
+    mylog("requset use item: %u", id);
 }
 
 static void 
 _handleum(int id, int ut, struct UM_BASE* um) {
-    printf("handleum: %d\n", um->msgid);
+    mylog("handleum: %d", um->msgid);
     switch (um->msgid) {
 //    case 1500: {
 //        static int I = 0;
@@ -137,25 +152,25 @@ _handleum(int id, int ut, struct UM_BASE* um) {
     case IDUM_GATEADDR: {
         UM_CAST(UM_GATEADDR, addr, um);
         GATEADDR = *addr;
-        printf("gate address: %s:%u\n", GATEADDR.ip, GATEADDR.port);
-        printf("connect to gate %s:%u\n", GATEADDR.ip, GATEADDR.port);
+        mylog("gate address: %s:%u", GATEADDR.ip, GATEADDR.port);
+        mylog("connect to gate %s:%u", GATEADDR.ip, GATEADDR.port);
         if (cnet_connect(GATEADDR.ip, GATEADDR.port, TGATE) < 0) {
-            printf("connect gate fail\n");
+            mylog("connect gate fail");
         }
         break;
         }
     case IDUM_GATEADDRFAIL: {
-        printf("request gate address fail\n");
+        mylog("request gate address fail");
         break;
         }
     case IDUM_LOGINACCOUNTFAIL: {
         UM_CAST(UM_LOGINACCOUNTFAIL, fail, um);
-        printf("accout login fail: error#%d\n", fail->err);
+        mylog("accout login fail: error#%d", fail->err);
         }
         break;
     case IDUM_LOGOUT: {
         UM_CAST(UM_LOGOUT, lo, um);
-        printf("gate logout: error %d\n", lo->err);
+        mylog("gate logout: error %d", lo->err);
         break;
         }
     case IDUM_LOGINFAIL: {
@@ -164,51 +179,52 @@ _handleum(int id, int ut, struct UM_BASE* um) {
             fail->err == SERR_NAMEEXIST) {
             _createchar();
         } else {
-            printf("gate login fail: error %d\n", fail->err);
+            mylog("gate login fail: error %d", fail->err);
         }
         }
         break;
     case IDUM_CHARINFO: {
         UM_CAST(UM_CHARINFO, ci, um);
-        printf("charinfo: id %u, name %s\n", ci->data.charid, ci->data.name);
+        mylog("charinfo: id %u, name %s", ci->data.charid, ci->data.name);
         CHAR = ci->data;
         _play(0);
         break;
         }
     case IDUM_PLAYFAIL: {
         UM_CAST(UM_PLAYFAIL, pf, um);
-        printf("play fail: error %d\n", pf->err);
+        mylog("play fail: error %d", pf->err);
         break;
         }
     case IDUM_PLAYWAIT: {
         UM_CAST(UM_PLAYWAIT, pw, um);
-        printf("play wait: timeout %d\n", pw->timeout);
+        mylog("play wait: timeout %d", pw->timeout);
         break;
         }
     case IDUM_PLAYLOADING: {
         UM_CAST(UM_PLAYLOADING, pl, um);
-        printf("play loading: leasttime: %d, other(%u,%s)\n",
+        mylog("play loading: leasttime: %d, other(%u,%s)",
                 pl->leasttime, pl->member.charid, pl->member.name);
         _loadok();
         break;
         }
     case IDUM_GAMEINFO: {
         UM_CAST(UM_GAMEINFO, gi, um);
-        printf("game info: nmember %d\n", gi->nmember);
+        mylog("game info: nmember %d", gi->nmember);
         break;
         }
     case IDUM_GAMEMEMBER: {
         UM_CAST(UM_GAMEMEMBER, gm, um);
-        printf("add member id %u, name %s\n", gm->member.charid, gm->member.name);
+        mylog("add member id %u, name %s", gm->member.charid, gm->member.name);
+        break;
         }
     case IDUM_GAMEENTER: {
         //UM_CAST(UM_GAMEENTER, ge, um);
-        printf("game enter\n");
+        mylog("game enter");
         break;
         }
     case IDUM_GAMESTART: {
         //UM_CAST(UM_GAMESTART, gs, um);
-        printf("game start\n");
+        mylog("game start");
         if (CHAR.accid % 2 == 0) {
         //_useitem(2);
         _useitem(3);
@@ -218,14 +234,34 @@ _handleum(int id, int ut, struct UM_BASE* um) {
         break;
     case IDUM_ITEMEFFECT: {
         UM_CAST(UM_ITEMEFFECT, ie, um);
-        printf("item effect %u, to char %u\n", ie->itemid, ie->charid);
+        mylog("item effect %u, to char %u", ie->itemid, ie->charid);
         }
         break;
     case IDUM_ROLEINFO: {
         UM_CAST(UM_ROLEINFO, ri, um);
-        printf("update roleinfo: %u\n", ri->detail.charid);
+        mylog("update roleinfo: %u", ri->detail.charid);
         }
         break;
+    case IDUM_GAMEOVER: {
+        UM_CAST(UM_GAMEOVER, go, um);
+        mylog("****************GAME OVER*****************");
+        mylog("room type: %d, member count: %d", go->type, go->nmember);
+        mylog("rank charid depth oxygenitem item bao exp coin score");
+        int i;
+        for (i=0; i<go->nmember; ++i) {
+            mylog("%d. [%u] %u %u %u %u %u %u %u", i+1, 
+                    go->stats[i].charid,
+                    go->stats[i].depth,
+                    go->stats[i].noxygenitem,
+                    go->stats[i].nitem,
+                    go->stats[i].nbao,
+                    go->stats[i].exp,
+                    go->stats[i].coin,
+                    go->stats[i].score);
+        }
+        mylog("******************************************");
+        break;
+        }
     }
 }
 
@@ -249,16 +285,16 @@ int main(int argc, char* argv[]) {
     _server_init();
 
     if (cnet_init(10)) {
-        printf("cnet_init fail\n");
+        mylog("cnet_init fail");
         return 1;
     }
     cnet_cb(_onconnect, 
             _onconnerr, 
             _onsockerr, 
             _handleum);
-    printf("connect to route %s:%u\n", ip, port);
+    mylog("connect to route %s:%u", ip, port);
     if (cnet_connect(ip, port, TROUTE) < 0) {
-        printf("connect route fail\n");
+        mylog("connect route fail");
         return 1;
     }
     for (;;) {

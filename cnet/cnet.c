@@ -40,7 +40,7 @@ _onsockerrdef(struct net_message* nm) {
 static void
 _handleumdef(int id, int ut, struct UM_BASE* um) {
 }
-
+#include <assert.h>
 static void
 _read(struct net_message* nm) {
     int id = nm->connid;
@@ -60,12 +60,13 @@ _read(struct net_message* nm) {
             if (buf.sz < 2) {
                 break;
             }
-            uint16_t sz = (buf.ptr[0] | buf.ptr[1] << 8) + 2;
+            uint8_t *ptr = (uint8_t*)buf.ptr;
+            uint16_t sz = (ptr[0] | ptr[1] << 8) + 2;
             if (buf.sz < sz) {
+                assert(0);
                 break;
             }
-            UM_CAST(UM_BASE, um, buf.ptr+2);
-            printf("Recv id %d sz %d\n", um->msgid, sz-2);
+            UM_CAST(UM_BASE, um, ptr+2);
             _handleum(id, nm->ut, um);
             buf.ptr += sz;
             buf.sz  -= sz;
@@ -81,6 +82,7 @@ _read(struct net_message* nm) {
         drop = nread - buf.sz;
         net_dropread(N, id, drop);       
     }
+    return;
 errout:
     nm->type = NETE_SOCKERR;
     nm->error = err;

@@ -43,6 +43,7 @@
 
 #define IDUM_ENTERROOM    IDUM_NBEGIN+150
 #define IDUM_LOGINROOM    IDUM_NBEGIN+151
+#define IDUM_EXITROOM     IDUM_NBEGIN+152
 
 #define IDUM_MINLOADEND   IDUM_NBEGIN+199 // minload end
 
@@ -209,6 +210,10 @@ struct UM_ENTERROOM {
     _UM_HEADER;
     int room_handle;
     uint32_t roomid;
+};
+
+struct UM_EXITROOM {
+    _UM_HEADER;
 };
 
 struct UM_LOGINROOM {

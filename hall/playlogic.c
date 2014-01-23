@@ -56,7 +56,7 @@ play_fail(struct service *s, struct player *pr, struct UM_PLAYFAIL *fail) {
     if (pr->status != PS_WAITING) {
         return;
     }
-    pr->status = PS_GAME;
+    pr->status = PS_HALL;
 
     UM_DEFWRAP(UM_CLIENT, cl, UM_PLAYFAIL, pl);
     cl->uid = UID(pr);
@@ -98,6 +98,19 @@ loading(struct service *s, struct player *pr, struct UM_PLAYLOADING *loading) {
     sh_service_send(SERVICE_ID, pr->watchdog_source, MT_UM, cl, sizeof(*cl)+sizeof(*pl));
 }
 
+static void
+exit_room(struct service *s, struct player *pr) {
+    struct hall *self = SERVICE_SELF;
+    if (pr->status == PS_WAITING ||
+        pr->status == PS_ROOM) {
+        pr->status = PS_HALL;
+        UM_DEFWRAP(UM_HALL, ha, UM_LOGOUT, lo);
+        ha->uid = UID(pr);
+        lo->err = SERR_OK;
+        sh_service_send(SERVICE_ID, self->match_handle, MT_UM, ha, sizeof(*ha)+sizeof(*lo));
+    } 
+}
+
 //static void
 //login(struct player *pr) {
     // do someting
@@ -134,6 +147,10 @@ playlogic_main(struct service *s, struct player *pr, const void *msg, int sz) {
     case IDUM_PLAYLOADING: {
         UM_CASTCK(UM_PLAYLOADING, pl, base, sz);
         loading(s, pr, pl);
+        break;
+        }
+    case IDUM_EXITROOM: {
+        exit_room(s, pr);
         break;
         }
     }
