@@ -1,4 +1,5 @@
 #include "sc_service.h"
+#include "sc_timer.h"
 #include "sc_log.h"
 #include "sc_node.h"
 #include "sh_hash.h"
@@ -14,8 +15,9 @@
 
 struct applyer {
     uint32_t uid;
-    int hall_source;
+    int hall_source; // if isrobot is true, then this is robot_handle
     int8_t status;
+    bool isrobot;
     uint32_t roomid;
 
     struct tmemberbrief brief;
@@ -38,8 +40,11 @@ struct room {
 struct match {
     int hall_handle;
     int room_handle;
+    int robot_handle;
     uint32_t roomid_alloctor;
     uint32_t waiting; // todo, now just simple
+    uint64_t wait_time;
+    bool isrobot_wait;
     struct sh_hash applyers;
     struct sh_hash rooms;
 };
@@ -67,11 +72,13 @@ match_init(struct service *s) {
         return 1;
     }
     if (sh_handler("hall", SUB_REMOTE, &self->hall_handle) ||
-        sh_handler("room", SUB_REMOTE, &self->room_handle)) {
+        sh_handler("room", SUB_REMOTE, &self->room_handle) ||
+        sh_handler("robot", SUB_REMOTE, &self->robot_handle)) {
         return 1;
     }
     sh_hash_init(&self->applyers, 1);
     sh_hash_init(&self->rooms, 1);
+    sc_timer_register(SERVICE_ID, 1000);
     return 0;
 }
 
@@ -123,19 +130,19 @@ room_create(struct match *self, int8_t type, int room_handle) {
 
 static inline void
 response_play_fail(struct service *s, struct applyer *ar, int err) {
-    UM_DEFWRAP(UM_HALL, ha, UM_PLAYFAIL, pf);
-    ha->uid = ar->uid;
+    UM_DEFWRAP(UM_MATCH, ma, UM_PLAYFAIL, pf);
+    ma->uid = ar->uid;
     pf->err = err;
-    sh_service_send(SERVICE_ID, ar->hall_source, MT_UM, ha, sizeof(*ha)+sizeof(*pf));
+    sh_service_send(SERVICE_ID, ar->hall_source, MT_UM, ma, sizeof(*ma)+sizeof(*pf));
 }
 
 static inline void
 notify_enter_room(struct service *s, struct applyer *ar, struct room *ro) {
-    UM_DEFWRAP(UM_HALL, ha, UM_ENTERROOM, enter);
-    ha->uid = ar->uid;
+    UM_DEFWRAP(UM_MATCH, ma, UM_ENTERROOM, enter);
+    ma->uid = ar->uid;
     enter->room_handle = ro->room_handle;
     enter->roomid = ro->id;
-    sh_service_send(SERVICE_ID, ar->hall_source, MT_UM, ha, sizeof(*ha)+sizeof(*enter));
+    sh_service_send(SERVICE_ID, ar->hall_source, MT_UM, ma, sizeof(*ma)+sizeof(*enter));
 }
 
 static inline void
@@ -161,16 +168,16 @@ notify_create_room(struct service *s, struct room *ro) {
 
 static inline void
 notify_waiting(struct service *s, struct applyer *ar) {
-    UM_DEFWRAP(UM_HALL, ha, UM_PLAYWAIT, pw);
-    ha->uid = ar->uid;
+    UM_DEFWRAP(UM_MATCH, ma, UM_PLAYWAIT, pw);
+    ma->uid = ar->uid;
     pw->timeout = 60; // todo just test
-    sh_service_send(SERVICE_ID, ar->hall_source, MT_UM, ha, sizeof(*ha)+sizeof(*pw));
+    sh_service_send(SERVICE_ID, ar->hall_source, MT_UM, ma, sizeof(*ma)+sizeof(*pw));
 }
 
 static inline void
 notify_loading(struct service *s, struct applyer *ar, struct applyer *other) {
-    UM_DEFWRAP(UM_HALL, ha, UM_PLAYLOADING, pl);
-    ha->uid = ar->uid;
+    UM_DEFWRAP(UM_MATCH, ma, UM_PLAYLOADING, pl);
+    ma->uid = ar->uid;
     pl->leasttime = ROOM_LOAD_TIMELEAST;
     if (other) {
         pl->member = other->brief;
@@ -178,7 +185,7 @@ notify_loading(struct service *s, struct applyer *ar, struct applyer *other) {
         // maybe other == NULL, if other logout
         memset(&pl->member, 0, sizeof(pl->member));
     }
-    sh_service_send(SERVICE_ID, ar->hall_source, MT_UM, ha, sizeof(*ha)+sizeof(*pl));
+    sh_service_send(SERVICE_ID, ar->hall_source, MT_UM, ma, sizeof(*ma)+sizeof(*pl));
 }
 
 static void
@@ -237,6 +244,8 @@ static void
 join_waiting(struct match *self, struct applyer *ar) {
     ar->status = S_WAITING;
     self->waiting = ar->uid;
+    self->wait_time = sc_timer_now();
+    self->isrobot_wait = ar->isrobot;
 }
 
 static void
@@ -271,6 +280,7 @@ lookup(struct service *s, struct applyer *ar, int8_t type) {
             return 1;
         }
         struct room *ro = room_create(self, type, room_handle);
+        leave_waiting(self, other);
         join_room(ro, ar);
         join_room(ro, other);
         sh_hash_insert(&self->rooms, ro->id, ro);
@@ -282,26 +292,42 @@ lookup(struct service *s, struct applyer *ar, int8_t type) {
     return 0;
 }
 
-static void
-apply(struct service *s, int source, uint32_t uid, struct UM_APPLY *ap) {
+static int
+apply(struct service *s, int source, bool isrobot, int type, 
+        const struct tmemberbrief *brief) {
     struct match *self = SERVICE_SELF;
+
+    uint32_t uid = brief->accid;
     struct applyer *ar = sh_hash_find(&self->applyers, uid);
     if (ar) {
-        return; // applyers already
+        return 1; // applyers already
     }
     ar = alloc_applyer(self);
     ar->uid = uid;
     ar->hall_source = source;
     //ar->type = ap->type;
     ar->status = S_WAITING;
+    ar->isrobot = isrobot;
     ar->roomid = 0;
-    ar->brief = ap->brief;
-    if (!lookup(s, ar, ap->type)) {
+    ar->brief = *brief;
+    if (!lookup(s, ar, type)) {
         assert(!sh_hash_insert(&self->applyers, uid, ar));
+        return 0;
     } else {
         response_play_fail(s, ar, SERR_NOROOMS);
         free_applyer(self, ar);
+        return 1;
     }
+}
+
+static void
+player_apply(struct service *s, int source, struct UM_APPLY *ap) {
+    apply(s, source, false, ap->type, &ap->brief);
+}
+
+static void
+robot_apply(struct service *s, int source, struct UM_ROBOT_APPLY *ra) {
+    apply(s, source, true, 0, &ra->brief);
 }
 
 static void
@@ -344,21 +370,26 @@ match_main(struct service *s, int session, int source, int type, const void *msg
     case MT_UM: {
         UM_CAST(UM_BASE, base, msg);
         switch (base->msgid) {
-        case IDUM_HALL: {
-            UM_CAST(UM_HALL, ha, msg);
-            UM_CAST(UM_BASE, wrap, ha->wrap);
+        case IDUM_ROBOT_APPLY: {
+            UM_CAST(UM_ROBOT_APPLY, ra, msg);
+            robot_apply(s, source, ra);
+            break;
+        }
+        case IDUM_APPLY: {
+            UM_CAST(UM_APPLY, ap, msg);
+            player_apply(s, source, ap);
+            break;
+            }
+        case IDUM_MATCH: {
+            UM_CAST(UM_MATCH, ma, msg);
+            UM_CAST(UM_BASE, wrap, ma->wrap);
             switch (wrap->msgid) {
-            case IDUM_APPLY: {
-                UM_CAST(UM_APPLY, ap, wrap);
-                apply(s, source, ha->uid, ap);
-                break;
-                }
             case IDUM_APPLYCANCEL: {
-                apply_cancel(s, source, ha->uid);
+                apply_cancel(s, source, ma->uid);
                 break;
                 }
             case IDUM_LOGOUT: {
-                logout(s, ha->uid);
+                logout(s, ma->uid);
                 break;
                 }
             }
@@ -379,5 +410,18 @@ match_main(struct service *s, int session, int source, int type, const void *msg
     case MT_MONITOR:
         // todo
         break;
+    }
+}
+
+void
+match_time(struct service *s) {
+    struct match *self = SERVICE_SELF;
+    if (self->waiting != 0 && !self->isrobot_wait) {
+        //if (self->wait_time - sc_timer_now() > 15*1000) {
+        if (sc_timer_now() - self->wait_time > 5*1000) {
+            UM_DEFFIX(UM_ROBOT_PULL, rp);
+            rp->count = 1;
+            sh_service_send(SERVICE_ID, self->robot_handle, MT_UM, rp, sizeof(*rp));
+        }
     }
 }

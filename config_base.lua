@@ -3,9 +3,9 @@
 -- the key prefix by "_" will no be read
 
 local iip = "127.0.0.1"
-local oip = "192.168.1.145"
+local oip = "192.168.1.140"
 web_addr = "192.168.1.145"
-log_dir = "/home/game/log"
+log_dir = "/home/lvxiaojun/log"
 local hb = 60
 
 node_map = {
@@ -14,6 +14,7 @@ center   = {ip=iip, port=8000, conn=256},
 gateload = {ip=iip, port=8001, conn=256},
 uniqueol = {ip=iip, port=8002, conn=256},
 match    = {ip=iip, port=8003, conn=256},
+robot    = {ip=iip, port=8004, conn=256},
 --
 route    = {ip=iip, port=8100, conn=256},
 watchdog = {ip=iip, port=8130, conn=256},

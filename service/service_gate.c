@@ -288,7 +288,7 @@ gate_main(struct service* s, int session, int source, int type, const void *msg,
             return;
         }
         UM_CAST(UM_BASE, sub, ga->wrap);
-        sc_debug("Send to client %d msgid %d, sz %d", connid, sub->msgid, sz-(int)sizeof(*ga));
+        sc_error("Send to client %d msgid %d, sz %d", connid, sub->msgid, sz-(int)sizeof(*ga));
         switch (sub->msgid) {
         case IDUM_LOGOUT: {
             UM_CAST(UM_LOGOUT, lo, sub);

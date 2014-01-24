@@ -160,6 +160,12 @@ service_prepare(const char* name) {
     return 0;
 }
 
+bool 
+service_isprepared(const char *name) {
+    struct service *s = _find(name);
+    return s ? s->inited : false;
+}
+
 int
 service_reload(const char* name) {
     struct service* s = _find(name);

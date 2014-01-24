@@ -17,6 +17,7 @@
 #define IDUM_GATE       IDUM_NBEGIN+6
 #define IDUM_AUTH       IDUM_NBEGIN+8
 #define IDUM_ROOM       IDUM_NBEGIN+9
+#define IDUM_MATCH      IDUM_NBEGIN+10
 
 #define IDUM_CMDS       IDUM_NBEGIN+12
 //#define IDUM_FORWARD    IDUM_NBEGIN+12
@@ -59,6 +60,11 @@
 #define IDUM_APPLY          IDUM_NBEGIN+300
 #define IDUM_APPLYCANCEL    IDUM_NBEGIN+301
 
+//#define IDUM_ROBOTB         IDUM_NBEGIN+400
+#define IDUM_ROBOT_PULL     IDUM_NBEGIN+401
+#define IDUM_ROBOT_APPLY    IDUM_NBEGIN+402
+//#define IDUM_ROBOTE         IDUM_NBEGIN+450
+
 struct UM_DBRANK {
     _UM_HEADER;
     const char *type;
@@ -98,6 +104,12 @@ struct UM_HALL {
 
 // watchdog 对此类消息转发给room
 struct UM_ROOM {
+    _UM_HEADER;
+    uint32_t uid;
+    uint8_t wrap[0];
+};
+
+struct UM_MATCH {
     _UM_HEADER;
     uint32_t uid;
     uint8_t wrap[0];
@@ -270,6 +282,21 @@ struct UM_APPLY {
 struct UM_APPLYCANCEL {
     _UM_HEADER;
 };
+
+struct UM_ROBOT_PULL {
+    _UM_HEADER;
+    uint8_t count; 
+};
+
+struct UM_ROBOT_APPLY {
+    _UM_HEADER;
+    struct tmemberbrief brief;
+};
+
+//static inline uint16_t
+//UM_ROBOT_APPLY_size(struct UM_ROBOT_APPLY *ra) {
+    //return sizeof(*ra) + sizeof(ra->members[0]) * ra->nmember;
+//}
 
 #pragma pack()
 

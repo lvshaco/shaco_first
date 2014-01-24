@@ -49,10 +49,10 @@ logout(struct service *s, struct player *pr) {
 
     if (pr->status == PS_WAITING ||
         pr->status == PS_ROOM) {
-        UM_DEFWRAP(UM_HALL, ha, UM_LOGOUT, lo);
-        ha->uid = UID(pr);
+        UM_DEFWRAP(UM_MATCH, ma, UM_LOGOUT, lo);
+        ma->uid = UID(pr);
         lo->err = SERR_OK;
-        sh_service_send(SERVICE_ID, self->match_handle, MT_UM, ha, sizeof(*ha)+sizeof(*lo));
+        sh_service_send(SERVICE_ID, self->match_handle, MT_UM, ma, sizeof(*ma)+sizeof(*lo));
     } 
     free_player(self, pr);
 }

@@ -90,8 +90,7 @@ static void dump(struct chardata* cdata) {
 }
 */
 void
-attribute_refresh(struct player *pr) {
-    struct chardata* cdata = &pr->data; 
+attribute_refresh(struct chardata *cdata) {
     struct ringdata* rdata = &cdata->ringdata;
     struct char_attribute* cattri = &cdata->attri;
 
@@ -139,6 +138,6 @@ attribute_refresh(struct player *pr) {
 }
 
 void
-attrilogic_main(struct service *s, struct player *pr, const void *msg, int sz) {
-    attribute_refresh(pr);
+attrilogic_main(struct chardata *cdata) {
+    attribute_refresh(cdata);
 }

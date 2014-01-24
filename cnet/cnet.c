@@ -40,7 +40,6 @@ _onsockerrdef(struct net_message* nm) {
 static void
 _handleumdef(int id, int ut, struct UM_BASE* um) {
 }
-#include <assert.h>
 static void
 _read(struct net_message* nm) {
     int id = nm->connid;
@@ -63,7 +62,6 @@ _read(struct net_message* nm) {
             uint8_t *ptr = (uint8_t*)buf.ptr;
             uint16_t sz = (ptr[0] | ptr[1] << 8) + 2;
             if (buf.sz < sz) {
-                assert(0);
                 break;
             }
             UM_CAST(UM_BASE, um, ptr+2);
