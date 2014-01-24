@@ -175,7 +175,7 @@ process_useringpage(struct service *s, struct player *pr, const struct UM_RINGPA
     rdata->usepage = um->index;
 
     // refresh attribute
-    attrilogic_main(s, pr, NULL, 0);
+    attrilogic_main(&pr->data);
     
     playerdb_send(s, pr, PDB_SAVE);
     return;

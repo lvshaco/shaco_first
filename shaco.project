@@ -18,6 +18,7 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.py *.h *.c" {
  config_rpuser.lua
  config_uniqueol.lua
  config_watchdog.lua
+ config_robot.lua
  libshaco=libshaco{
   dlmodule.c
   sc_check.c
@@ -111,13 +112,13 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.py *.h *.c" {
   service_node.c
   service_rank.c
   service_redisproxy.c
+  service_robot.c
   service_room.c
   service_route.c
   service_tplthall.c
   service_tpltroom.c
   service_uniqueol.c
   service_watchdog.c
-  service_robot.c
  }
  hall=hall{
   attrilogic.h
@@ -158,7 +159,6 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.py *.h *.c" {
   user_message.h
  }
  datadefine=datadefine{
-  tplt_struct.h
  }
  tplt=tplt{
   tplt.h

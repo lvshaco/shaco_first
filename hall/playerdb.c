@@ -417,7 +417,7 @@ playerdb_process_redis(struct service *s, struct UM_REDISREPLY *rep, int sz) {
             UM_DEFFIX(UM_ENTERHALL, enter);
             rolelogic_main(s, p, enter, sizeof(*enter));
             ringlogic_main(s, p, enter, sizeof(*enter));
-            attrilogic_main(s, p, NULL, 0); 
+            attrilogic_main(&p->data); 
             
             hall_sync_role(s, p);
         }

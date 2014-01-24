@@ -84,7 +84,7 @@ process_userole(struct service *s, struct player *pr, const struct UM_USEROLE *u
     use_role(cdata, tplt);
   
     // refresh attribute
-    attrilogic_main(s, pr, NULL, 0);
+    attrilogic_main(&pr->data);
 
     hall_sync_role(s, pr);
 

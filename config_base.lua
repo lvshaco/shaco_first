@@ -14,6 +14,7 @@ center   = {ip=iip, port=8000, conn=256},
 gateload = {ip=iip, port=8001, conn=256},
 uniqueol = {ip=iip, port=8002, conn=256},
 match    = {ip=iip, port=8003, conn=256},
+robot    = {ip=iip, port=8004, conn=256},
 --
 route    = {ip=iip, port=8100, conn=256},
 watchdog = {ip=iip, port=8130, conn=256},

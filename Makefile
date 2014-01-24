@@ -122,7 +122,8 @@ all: \
 	service_tplthall.so \
 	service_tpltroom.so \
 	service_hall.so \
-	service_auth.so
+	service_auth.so \
+	service_robot.so
 
 release: CFLAGS += -O2 -fno-strict-aliasing
 release: all
@@ -190,6 +191,12 @@ service_hall.so: $(service_dir)/service_hall.c \
 	hall/playlogic.h
 	@rm -f $@
 	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Iinclude/libshaco -Inet -Ibase -Itplt -Idatadefine -Imessage -Iredis -Ihall -Wl,-rpath,. redis.so tplt.so
+
+service_robot.so: $(service_dir)/service_robot.c \
+	hall/attrilogic.c \
+	hall/attrilogic.h
+	@rm -f $@
+	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Iinclude/libshaco -Inet -Ibase -Imessage -Iredis -Itplt -Idatadefine -Ihall -Wl,-rpath,. redis.so tplt.so
 
 lur.so: $(lur_src)
 	@rm -f $@

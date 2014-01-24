@@ -37,6 +37,7 @@
 struct player {
     int watchdog_source;
     uint8_t index;
+    bool isrobot;
     bool login;
     bool online;
     bool loadok;
@@ -1019,9 +1020,19 @@ gameroom_update(struct service *s, struct gameroom *ro) {
 }
 
 static void
+loadok(struct service *s, struct player *m) {
+    if (!m->loadok) {
+        struct gameroom *ro = member2gameroom(m);
+        m->loadok = true;
+        check_enter_gameroom(s, ro);
+    }
+}
+
+static void
 login(struct service *s, int source, const struct UM_LOGINROOM *lo) {
     struct room *self = SERVICE_SELF;
 
+    bool isrobot = (lo->room_handle == -1);
     uint32_t accid  = lo->detail.accid;
     uint32_t roomid = lo->roomid;
 
@@ -1033,6 +1044,7 @@ login(struct service *s, int source, const struct UM_LOGINROOM *lo) {
     if (m == NULL || m->online) {
         return; // someting wrong
     }
+    m->isrobot = isrobot;
     m->detail = lo->detail;
     m->base = m->detail.attri;
 
@@ -1044,15 +1056,10 @@ login(struct service *s, int source, const struct UM_LOGINROOM *lo) {
    
     assert(!sh_hash_insert(&self->players, accid, m));
 
-    notify_game_info(s, m, ro); 
-}
-
-static void
-loadok(struct service *s, struct player *m) {
-    if (!m->loadok) {
-        struct gameroom *ro = member2gameroom(m);
-        m->loadok = true;
-        check_enter_gameroom(s, ro);
+    if (m->isrobot) {
+        loadok(s, m);
+    } else {
+        notify_game_info(s, m, ro); 
     }
 }
 

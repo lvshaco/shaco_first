@@ -44,11 +44,10 @@ play(struct service *s, struct player *pr, int type) {
         return;
     }
     pr->status = PS_WAITING;
-    UM_DEFWRAP(UM_HALL, ha, UM_APPLY, ap);
-    ha->uid = UID(pr);
+    UM_DEFFIX(UM_APPLY, ap);
     ap->type = type;
     build_brief(pr, &ap->brief);
-    sh_service_send(SERVICE_ID, self->match_handle, MT_UM, ha, sizeof(*ha)+sizeof(*ap));
+    sh_service_send(SERVICE_ID, self->match_handle, MT_UM, ap, sizeof(*ap));
 }
 
 static void
@@ -76,7 +75,7 @@ waiting(struct service *s, struct player *pr, struct UM_PLAYWAIT *wait) {
 }
 
 static void
-login_room(struct service *s, struct player *pr, struct UM_ENTERROOM *er) {
+enter_room(struct service *s, struct player *pr, struct UM_ENTERROOM *er) {
     if (pr->status != PS_WAITING) {
         return;
     }
@@ -103,10 +102,10 @@ exit_room(struct service *s, struct player *pr) {
     struct hall *self = SERVICE_SELF;
     if (pr->status == PS_ROOM) {
         pr->status = PS_HALL;
-        UM_DEFWRAP(UM_HALL, ha, UM_LOGOUT, lo);
-        ha->uid = UID(pr);
+        UM_DEFWRAP(UM_MATCH, ma, UM_LOGOUT, lo);
+        ma->uid = UID(pr);
         lo->err = SERR_OK;
-        sh_service_send(SERVICE_ID, self->match_handle, MT_UM, ha, sizeof(*ha)+sizeof(*lo));
+        sh_service_send(SERVICE_ID, self->match_handle, MT_UM, ma, sizeof(*ma)+sizeof(*lo));
     } 
 }
 
@@ -135,7 +134,7 @@ playlogic_main(struct service *s, struct player *pr, const void *msg, int sz) {
         }
     case IDUM_ENTERROOM: {
         UM_CASTCK(UM_ENTERROOM, er, base, sz);
-        login_room(s, pr, er);
+        enter_room(s, pr, er);
         break;
         }
     case IDUM_PLAYLOADING: {

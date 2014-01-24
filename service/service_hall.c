@@ -79,9 +79,6 @@ hall_main(struct service *s, int session, int source, int type, const void *msg,
             case IDUM_CHARCREATE:
                 player_main(s, source, pr, wrap, sz-sizeof(*ha));
                 break;
-            case IDUM_ENTERROOM:
-                playlogic_main(s, pr, wrap, sz-sizeof(*ha));
-                break;
             default:
                 if (wrap->msgid >= IDUM_AWARDB && wrap->msgid <= IDUM_AWARDE) {
                     awardlogic_main(s, pr, wrap, sz-sizeof(*ha)); 
@@ -89,12 +86,20 @@ hall_main(struct service *s, int session, int source, int type, const void *msg,
                     rolelogic_main(s, pr, wrap, sz-sizeof(*ha));
                 } else if (wrap->msgid >= IDUM_RINGB && wrap->msgid <= IDUM_RINGE) {
                     ringlogic_main(s, pr, wrap, sz-sizeof(*ha));
-                } else if ((wrap->msgid >= IDUM_PLAYB && wrap->msgid <= IDUM_PLAYE) ||
-                           (wrap->msgid >= IDUM_PLAYB2 && wrap->msgid <= IDUM_PLAYE2)) {
+                } else if (wrap->msgid >= IDUM_PLAYB && wrap->msgid <= IDUM_PLAYE) {
                     playlogic_main(s, pr, wrap, sz-sizeof(*ha));
                 }
                 break;
             }
+            break;
+            }
+        case IDUM_MATCH: {
+            UM_CAST(UM_MATCH, ma, msg);
+            struct player *pr = sh_hash_find(&self->acc2player, ma->uid);
+            if (pr == NULL)
+                return;
+            UM_CAST(UM_BASE, wrap, ma->wrap);
+            playlogic_main(s, pr, wrap, sz-sizeof(*ma));
             break;
             }
         case IDUM_REDISREPLY: {
