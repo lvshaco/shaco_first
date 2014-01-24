@@ -84,9 +84,9 @@ hall_main(struct service *s, int session, int source, int type, const void *msg,
                 break;
             default:
                 if (wrap->msgid >= IDUM_AWARDB && wrap->msgid <= IDUM_AWARDE) {
-                    rolelogic_main(s, pr, wrap, sz-sizeof(*ha));
+                    awardlogic_main(s, pr, wrap, sz-sizeof(*ha)); 
                 } else if (wrap->msgid >= IDUM_ROLEB && wrap->msgid <= IDUM_ROLEE) {
-                    awardlogic_main(s, pr, wrap, sz-sizeof(*ha));
+                    rolelogic_main(s, pr, wrap, sz-sizeof(*ha));
                 } else if (wrap->msgid >= IDUM_RINGB && wrap->msgid <= IDUM_RINGE) {
                     ringlogic_main(s, pr, wrap, sz-sizeof(*ha));
                 } else if ((wrap->msgid >= IDUM_PLAYB && wrap->msgid <= IDUM_PLAYE) ||

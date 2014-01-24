@@ -732,7 +732,7 @@ item_effect_member(struct service *s, struct gameroom *ro, struct player *m,
     } else {
         effectptr = tmp;
     }
-    if (effectptr == NULL) {
+    if (effectptr) {
 #define FILL_EFFECT(n) \
         if (n <= BUFF_EFFECT) { \
             effectptr[n-1].type  = item->effect##n; \
