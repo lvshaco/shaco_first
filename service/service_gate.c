@@ -328,9 +328,10 @@ gate_net(struct service* s, struct net_message* nm) {
         }
         break;
     case NETE_SOCKERR: {
+        sc_debug("Sockerr disconnect %d", id);
         c = get_client(self, id);
         assert(c);
-        if (c->status == S_LOGINED) {
+        if (c->status == S_LOGINED) { 
             UM_DEFWRAP(UM_GATE, ga, UM_NETDISCONN, nd);
             ga->connid = id;
             nd->type = NETE_SOCKERR;

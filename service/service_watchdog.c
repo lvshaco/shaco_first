@@ -364,6 +364,7 @@ exit_room(struct service *s, struct UM_EXITROOM *exit, int sz) {
     struct watchdog *self = SERVICE_SELF;
     struct user *ur = sh_hash_find(&self->acc2user, exit->uid);
     if (ur) {
+        ur->status = S_HALL;
         ur->room_handle = -1;
         if (ur->hall_handle != -1) {
             sh_service_send(SERVICE_ID, ur->hall_handle, MT_UM, exit, sz);
