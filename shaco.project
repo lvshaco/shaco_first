@@ -11,7 +11,6 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.py *.h *.c" {
  config_gateload.lua
  config_hall.lua
  config_match.lua
- config_node.lua
  config_room.lua
  config_route.lua
  config_rpacc.lua
@@ -203,6 +202,7 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.py *.h *.c" {
   }
  }
  main=main{
+  robot.h
   robot.c
   shaco.c
   test.c

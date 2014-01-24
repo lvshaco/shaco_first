@@ -112,7 +112,7 @@ _players(struct service* s, struct args* A, struct memrw* rw) {
 
 static int
 _reloadres(struct service* s, struct args* A, struct memrw* rw) {
-    int handle = service_query_id("tplt_handle");
+    int handle = service_query_id(sc_getstr("tplt_handle", ""));
     if (handle == -1) {
         return CTL_NOSERVICE;
     }
