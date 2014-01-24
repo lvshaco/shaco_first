@@ -415,7 +415,7 @@ match_main(struct service *s, int session, int source, int type, const void *msg
 
 void
 match_time(struct service *s) {
-    struct match *self = SERVICE_SELF;
+/*    struct match *self = SERVICE_SELF;
     if (self->waiting != 0 && !self->isrobot_wait) {
         //if (self->wait_time - sc_timer_now() > 15*1000) {
         if (sc_timer_now() - self->wait_time > 5*1000) {
@@ -424,4 +424,5 @@ match_time(struct service *s) {
             sh_service_send(SERVICE_ID, self->robot_handle, MT_UM, rp, sizeof(*rp));
         }
     }
+    */
 }
