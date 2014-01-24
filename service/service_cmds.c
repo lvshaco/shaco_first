@@ -56,12 +56,13 @@ cmds_init(struct service* s) {
 }
 
 static inline void
-notify_textinfo(struct service *s, int source, int connid, const char *text) {
-    int len = strlen(text);
-    UM_DEFWRAP2(UM_GATE, ga, len);
+notify_textinfo(struct service *s, int source, int connid, const char *info) {
+    int len = strlen(info);
+    UM_DEFWRAP2(UM_GATE, ga, sizeof(struct UM_TEXT)+len);
+    UD_CAST(UM_TEXT, text, ga->wrap);
     ga->connid = connid;
-    memcpy(ga->wrap, text, len);
-    sh_service_send(SERVICE_ID, source, MT_UM, ga, sizeof(*ga)+len);
+    memcpy(text->str, info, len);
+    sh_service_send(SERVICE_ID, source, MT_UM, ga, sizeof(*ga)+sizeof(*text)+len);
 }
 
 static inline void
