@@ -78,6 +78,7 @@ match_init(struct service *s) {
     }
     sh_hash_init(&self->applyers, 1);
     sh_hash_init(&self->rooms, 1);
+    sc_timer_register(SERVICE_ID, 1000);
     return 0;
 }
 
@@ -279,6 +280,7 @@ lookup(struct service *s, struct applyer *ar, int8_t type) {
             return 1;
         }
         struct room *ro = room_create(self, type, room_handle);
+        leave_waiting(self, other);
         join_room(ro, ar);
         join_room(ro, other);
         sh_hash_insert(&self->rooms, ro->id, ro);
@@ -415,7 +417,8 @@ void
 match_time(struct service *s) {
     struct match *self = SERVICE_SELF;
     if (self->waiting != 0 && !self->isrobot_wait) {
-        if (self->wait_time - sc_timer_now() > 15*1000) {
+        //if (self->wait_time - sc_timer_now() > 15*1000) {
+        if (sc_timer_now() - self->wait_time > 5*1000) {
             UM_DEFFIX(UM_ROBOT_PULL, rp);
             rp->count = 1;
             sh_service_send(SERVICE_ID, self->robot_handle, MT_UM, rp, sizeof(*rp));

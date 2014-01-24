@@ -1035,19 +1035,21 @@ login(struct service *s, int source, const struct UM_LOGINROOM *lo) {
     bool isrobot = (lo->room_handle == -1);
     uint32_t accid  = lo->detail.accid;
     uint32_t roomid = lo->roomid;
-
+sc_error("===========login handle %x, accid %u, roomid %u", lo->room_handle, accid, roomid);
     struct gameroom *ro = sh_hash_find(&self->gamerooms, roomid); 
     if (ro == NULL) {
         return; // someting wrong
     }
+sc_error("===========2login handle %x, accid %u, roomid %u", lo->room_handle, accid, roomid);
     struct player *m = member_get(ro, accid);
     if (m == NULL || m->online) {
         return; // someting wrong
     }
+sc_error("===========3login handle %x, accid %u, roomid %u", lo->room_handle, accid, roomid);
     m->isrobot = isrobot;
     m->detail = lo->detail;
     m->base = m->detail.attri;
-
+sc_error("============== oxygen %u", m->base.oxygen);
     delay_init(&m->total_delay);
     effect_init(&m->total_effect);
     role_attri_build(&ro->gattri, &m->detail.attri);

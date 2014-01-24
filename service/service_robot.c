@@ -1,4 +1,5 @@
 #include "sc_service.h"
+#include "sc_env.h"
 #include "sh_monitor.h"
 #include "sh_util.h"
 #include "sc.h"
@@ -93,6 +94,7 @@ init_agent_data(struct chardata *cdata, int idx) {
 
 static int
 init_agents(struct robot *self) {
+    sh_hash_init(&self->agents, 1);
     // todo
     int count = 100;
     if (count > ROBOT_MAX) {
@@ -106,6 +108,7 @@ init_agents(struct robot *self) {
         }
         init_agent_data(&ag->data, i);
         agent_rest(self, ag);
+        sh_hash_insert(&self->agents, UID(ag), ag);
     }
     self->nagent = count;
     return 0;
@@ -202,6 +205,12 @@ robot_free(struct robot* self) {
 int
 robot_init(struct service* s) {
     struct robot* self = SERVICE_SELF;
+    if (!service_isprepared(sc_getstr("tplt_handle", ""))) {
+        return 1;
+    }
+    if (sh_handle_publish(SERVICE_NAME, PUB_SER)) {
+        return 1;
+    }
     struct sh_monitor_handle h = {SERVICE_ID, SERVICE_ID};
     if (sh_monitor("match", &h, &self->match_handle) ||
         sh_monitor("room", &h, &self->room_handle)) {
@@ -209,8 +218,7 @@ robot_init(struct service* s) {
     }
     if (init_agents(self)) {
         return 1;
-    }
-    sh_hash_init(&self->agents, 1);
+    } 
     return 0;
 }
 
