@@ -277,15 +277,19 @@ gameroom_create(struct service *s, int source, const struct UM_CREATEROOM *creat
     sh_hash_insert(&self->gamerooms, ro->id, ro);
     notify_create_gameroom_result(s, source, create->id, SERR_OK);
     self->map_randseed++; 
+    sc_error("============== create room %u", ro->id);
 }
 
 static void
 gameroom_destroy(struct service *s, struct gameroom *ro) {
+sc_error("============== destroy room %u", ro->id);
+
     struct room *self = SERVICE_SELF;
     int i;
     for (i=0; i<ro->np; ++i) {
         struct player *m = &ro->p[i];
         if (m->online) {
+            sc_error("================ destroy logout %u", UID(m));
             logout(s, m);
         }
     }
@@ -307,6 +311,8 @@ gameroom_destroy_byid(struct service *s, uint32_t roomid) {
 
 static void
 gameroom_enter(struct service *s, struct gameroom* ro) {
+sc_error("==========game enter roomid %u", ro->id);
+
     ro->status = ROOMS_ENTER;
     ro->statustime = sc_timer_now();
     UM_DEFFIX(UM_GAMEENTER, enter);
@@ -315,6 +321,7 @@ gameroom_enter(struct service *s, struct gameroom* ro) {
 
 static void
 gameroom_start(struct service *s, struct gameroom* ro) {
+    sc_error("==========game start roomid %u", ro->id);
     ro->status = ROOMS_START; 
     ro->starttime = sc_timer_now();
     ro->statustime = ro->starttime;
@@ -500,7 +507,7 @@ static int
 count_onlinemember(struct gameroom* ro) {
     int i, n=0;
     for (i=0; i<ro->np; ++i) {
-        if (&ro->p[i].online)
+        if (ro->p[i].online)
             n++;
     }
     return n;
@@ -1045,6 +1052,7 @@ login(struct service *s, int source, const struct UM_LOGINROOM *lo) {
     assert(!sh_hash_insert(&self->players, accid, m));
 
     notify_game_info(s, m, ro); 
+    sc_error("============== login roomid %u, accid %u", roomid, accid);
 }
 
 static void
@@ -1053,6 +1061,8 @@ loadok(struct service *s, struct player *m) {
         struct gameroom *ro = member2gameroom(m);
         m->loadok = true;
         check_enter_gameroom(s, ro);
+sc_error("============== loadok roomid %u, accid %u", ro->id, UID(m));
+
     }
 }
 
@@ -1109,6 +1119,7 @@ room_main(struct service *s, int session, int source, int type, const void *msg,
             }
             switch (wrap->msgid) {
             case IDUM_LOGOUT:
+sc_error("================ IDUM logout %u", UID(m));
                 logout(s, m);
                 break;
             case IDUM_GAMELOADOK:
@@ -1153,10 +1164,11 @@ room_main(struct service *s, int session, int source, int type, const void *msg,
 
 static void
 timecb(void *pointer, void *ud) {
+    
     struct service *s = ud;
     struct room *self = SERVICE_SELF;
     struct gameroom *ro = pointer;
-    
+    sc_error("==============room timecb %u", ro->id);
     switch (ro->status) {
     case ROOMS_START:
         gameroom_update_delay(s, ro);
