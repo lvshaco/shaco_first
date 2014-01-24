@@ -117,6 +117,7 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.py *.h *.c" {
   service_tpltroom.c
   service_uniqueol.c
   service_watchdog.c
+  service_robot.c
  }
  hall=hall{
   attrilogic.h

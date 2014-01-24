@@ -59,6 +59,11 @@
 #define IDUM_APPLY          IDUM_NBEGIN+300
 #define IDUM_APPLYCANCEL    IDUM_NBEGIN+301
 
+#define IDUM_ROBOTB         IDUM_NBEGIN+400
+#define IDUM_ROBOT_PULL     IDUM_NBEGIN+401
+#define IDUM_ROBOT_APPLY    IDUM_NBEGIN+402
+#define IDUM_ROBOTE         IDUM_NBEGIN+450
+
 struct UM_DBRANK {
     _UM_HEADER;
     const char *type;
@@ -270,6 +275,22 @@ struct UM_APPLY {
 struct UM_APPLYCANCEL {
     _UM_HEADER;
 };
+
+struct UM_ROBOT_PULL {
+    _UM_HEADER;
+    uint8_t count; 
+};
+
+struct UM_ROBOT_APPLY {
+    _UM_HEADER;
+    uint8_t nmember;
+    struct tmemberbrief members[0];
+};
+
+static inline uint16_t
+UM_ROBOT_APPLY_size(struct UM_ROBOT_APPLY *ra) {
+    return sizeof(*ra) + sizeof(ra->members[0]) * ra->nmember;
+}
 
 #pragma pack()
 
