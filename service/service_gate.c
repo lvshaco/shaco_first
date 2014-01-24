@@ -49,7 +49,7 @@ update_load(struct service *s) {
     if (self->load_handle != -1) {
         UM_DEFFIX(UM_UPDATELOAD, load);
         load->value = self->used;
-        sc_debug("update load %d", load->value);
+        sc_debug("update load %d, to %0x", load->value, self->load_handle);
         sh_service_send(SERVICE_ID, self->load_handle, MT_UM, load, sizeof(*load));
     }
 }
@@ -137,6 +137,7 @@ get_client(struct gate *self, int connid) {
 struct gate*
 gate_create() {
     struct gate* self = malloc(sizeof(*self));
+    memset(self, 0, sizeof(*self));
     return self;
 }
 
@@ -170,6 +171,7 @@ gate_init(struct service* s) {
     const char* hname = sc_getstr("gate_handler", ""); 
     if (sh_handler(hname, SUB_REMOTE, &self->handler))
         return 1;
+    self->load_handle = -1;
     self->need_load = sc_getint("gate_need_load", 0);
     if (self->need_load) {
         const char *lname = sc_getstr("gate_load", "");

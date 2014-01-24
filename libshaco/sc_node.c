@@ -196,7 +196,7 @@ sc_service_exit(int handle) {
 int 
 sc_service_subscribe(const char *name, int flag) {
     if (name[0] == '\0') {
-        return 1;
+        return -1;
     }
     if (flag == SUB_LOCAL) {
         return service_query_id(name);
@@ -374,7 +374,7 @@ int
 sh_handler(const char *name, int flag, int *handle) {
     *handle = sc_service_subscribe(name, flag);
     if (*handle == -1) {
-        sc_error("Subscribe handle fail: %s", name);
+        sc_error("Subscribe handle %s fail", name);
         return 1;
     }
     return 0;
@@ -384,7 +384,7 @@ int
 sh_monitor(const char *name, const struct sh_monitor_handle *h, int *handle) {
     *handle = sh_monitor_register(name, h);
     if (*handle == -1) {
-        sc_error("Monitor handle fail: %s", name);
+        sc_error("Monitor handle %s fail", name);
         return 1;
     }
     return 0;
@@ -392,7 +392,7 @@ sh_monitor(const char *name, const struct sh_monitor_handle *h, int *handle) {
 int 
 sh_handle_publish(const char *name, int flag) {
     if (sc_service_publish(name, flag)) {
-        sc_error("Publish handle fail: %s", name);
+        sc_error("Publish handle %s fail", name);
         return 1;
     }
     return 0;
