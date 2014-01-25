@@ -76,8 +76,8 @@ struct gameroom {
 #define UID(m) ((m)->detail.accid)
 
 struct room {
-    int watchdog_handle;
-    int match_handle;
+    //int watchdog_handle;
+    //int match_handle;
     int tick;
     uint32_t randseed;
     uint32_t map_randseed;
@@ -128,8 +128,10 @@ room_init(struct service* s) {
     if (sh_handle_publish(SERVICE_NAME, PUB_SER)) {
         return 1;
     }
-    if (sh_handler("watchdog", SUB_REMOTE, &self->watchdog_handle) ||
-        sh_handler("match", SUB_REMOTE, &self->match_handle))
+    int handle;
+    if (sh_handler("robot", SUB_REMOTE, &handle) ||
+        sh_handler("watchdog", SUB_REMOTE, &handle) ||
+        sh_handler("match", SUB_REMOTE, &handle))
         return 1;
     
     uint32_t now = sc_timer_now()/1000;

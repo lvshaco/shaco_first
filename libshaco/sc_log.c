@@ -19,7 +19,7 @@ static int _LEVEL = LOG_INFO;
 static int _LOG_SERVICE = SERVICE_INVALID;
 
 static const char* STR_LEVELS[LOG_MAX] = {
-    "DEBUG", "INFO", "WARNING", "ERROR", "REC", "EXIT", "PANIC",
+    "DEBUG", "TRACE", "INFO", "WARNING", "ERROR", "REC", "EXIT", "PANIC",
 };
 
 static inline const char*
@@ -122,6 +122,16 @@ sc_info(const char* fmt, ...) {
     va_list ap;
     va_start(ap, fmt);
     sc_logv(LOG_INFO, fmt, ap);
+    va_end(ap);
+}
+
+void 
+sc_trace(const char* fmt, ...) {
+    if (_LEVEL > LOG_TRACE)
+        return;
+    va_list ap;
+    va_start(ap, fmt);
+    sc_logv(LOG_TRACE, fmt, ap);
     va_end(ap);
 }
 

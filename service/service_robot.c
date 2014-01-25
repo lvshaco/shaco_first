@@ -145,6 +145,7 @@ pull(struct service *s, int source, int count) {
     UM_DEFFIX(UM_ROBOT_APPLY, ra);
     struct agent *ag = agent_pull(self);
     if (ag) {
+        sc_trace("=======robot %u status %d pull", ag->data.accid, ag->status);
         build_brief(ag, &ra->brief);
         sh_service_send(SERVICE_ID, source, MT_UM, ra, sizeof(*ra)); 
     }
@@ -153,14 +154,17 @@ pull(struct service *s, int source, int count) {
 static void
 play_fail(struct service *s, struct agent *ag) {
     struct robot *self = SERVICE_SELF;
+    sc_trace("=======robot %u status %d play fail", ag->data.accid, ag->status);
     if (ag->status == S_WAIT) {
         agent_rest(self, ag);
     }
+    sc_trace("=======2robot %u status %d play fail", ag->data.accid, ag->status);
 }
 
 static void
 enter_room(struct service *s, struct agent *ag, struct UM_ENTERROOM *er) {
     struct robot *self = SERVICE_SELF;
+    sc_trace("=======robot %u status %d enter room", ag->data.accid, ag->status);
     if (ag->status != S_WAIT) {
         return;
     }
@@ -174,14 +178,25 @@ enter_room(struct service *s, struct agent *ag, struct UM_ENTERROOM *er) {
     } else {
         agent_rest(self, ag);
     }
+    sc_trace("=======2robot %u status %d enter room", ag->data.accid, ag->status);
 }
 
 static void
-exit_room(struct service *s, struct agent *ag) {
+exit_room(struct service *s, uint32_t uid) {
     struct robot *self = SERVICE_SELF;
+    struct agent *ag = sh_hash_find(&self->agents, uid);
+    if (ag == NULL) {
+        return;
+    }
+    sc_trace("=======robot %u status %d exit room", ag->data.accid, ag->status);
     if (ag->status == S_FIGHT) {
         agent_rest(self, ag);
+        UM_DEFWRAP(UM_MATCH, ma, UM_LOGOUT, lo);
+        ma->uid = UID(ag);
+        lo->err = SERR_OK;
+        sh_service_send(SERVICE_ID, self->match_handle, MT_UM, ma, sizeof(*ma)+sizeof(*lo));
     }
+    sc_trace("=======2robot %u status %d exit room", ag->data.accid, ag->status);
 }
 
 struct robot*
@@ -250,10 +265,12 @@ robot_main(struct service *s, int session, int source, int type, const void *msg
                 enter_room(s, ag, er);
                 break;
                 }
-            case IDUM_EXITROOM:
-                exit_room(s, ag);
-                break;
             }
+            break;
+            }
+        case IDUM_EXITROOM: {
+            UM_CAST(UM_EXITROOM, exit, msg);
+            exit_room(s, exit->uid);
             break;
             }
         }

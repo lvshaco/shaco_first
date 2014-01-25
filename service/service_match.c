@@ -138,6 +138,7 @@ response_play_fail(struct service *s, struct applyer *ar, int err) {
 
 static inline void
 notify_enter_room(struct service *s, struct applyer *ar, struct room *ro) {
+    sc_trace("++++++ notify %u enter room %u", ar->uid, ro->id);
     UM_DEFWRAP(UM_MATCH, ma, UM_ENTERROOM, enter);
     ma->uid = ar->uid;
     enter->room_handle = ro->room_handle;
@@ -147,6 +148,7 @@ notify_enter_room(struct service *s, struct applyer *ar, struct room *ro) {
 
 static inline void
 notify_destroy_room(struct service *s, struct room *ro) {
+    sc_trace("++++++ notify destroy room %u", ro->id);
     UM_DEFFIX(UM_DESTROYROOM, des);
     des->id = ro->id;
     sh_service_send(SERVICE_ID, ro->room_handle, MT_UM, des, sizeof(*des));
@@ -154,6 +156,7 @@ notify_destroy_room(struct service *s, struct room *ro) {
 
 static inline void
 notify_create_room(struct service *s, struct room *ro) {
+    sc_trace("++++++ notify create room %u", ro->id);
     UM_DEFVAR(UM_CREATEROOM, create);
     create->type = ro->type;
     create->mapid = 1;//sc_rand(self->randseed) % 2 + 1; // 1,2 todo
@@ -168,6 +171,9 @@ notify_create_room(struct service *s, struct room *ro) {
 
 static inline void
 notify_waiting(struct service *s, struct applyer *ar) {
+    sc_trace("++++++ notify waiting %u", ar->uid);
+    if (ar->isrobot)
+        return;
     UM_DEFWRAP(UM_MATCH, ma, UM_PLAYWAIT, pw);
     ma->uid = ar->uid;
     pw->timeout = 60; // todo just test
@@ -176,6 +182,9 @@ notify_waiting(struct service *s, struct applyer *ar) {
 
 static inline void
 notify_loading(struct service *s, struct applyer *ar, struct applyer *other) {
+    sc_trace("++++++ notify loading %u", ar->uid);
+    if (ar->isrobot)
+        return;
     UM_DEFWRAP(UM_MATCH, ma, UM_PLAYLOADING, pl);
     ma->uid = ar->uid;
     pl->leasttime = ROOM_LOAD_TIMELEAST;
@@ -187,11 +196,31 @@ notify_loading(struct service *s, struct applyer *ar, struct applyer *other) {
     }
     sh_service_send(SERVICE_ID, ar->hall_source, MT_UM, ma, sizeof(*ma)+sizeof(*pl));
 }
-
+/*
+static void
+notify_status(struct service *s, struct applyer *ar) {
+    switch (ar->status) {
+    case S_WAITING:
+        notify_waiting(s, ar);
+        break;
+    case S_CREATING:
+        // do noting
+        break;
+    case S_GAMING: {
+        struct room *ro = sh_hash_find(&self->rooms, ar->roomid);
+        if (ro) {
+            notify_enter_room(s, ar, ro);
+        }
+        notify_loading(s, ar, NULL);
+        break;
+        }
+    }
+}
+*/
 static void
 room_create_ok(struct service *s, uint32_t id) {
     struct match *self = SERVICE_SELF;
-
+    sc_trace("++++++ room %u create ok", id);
     struct room *ro = sh_hash_find(&self->rooms, id);
     if (ro == NULL) {
         return;
@@ -202,19 +231,16 @@ room_create_ok(struct service *s, uint32_t id) {
     struct applyer *all[MEMBER_MAX];
     memset(all, 0, sizeof(all));
 
-    int i;
+    int i, other;
     for (i=0; i<ro->nmember; ++i) {
         all[i] = sh_hash_find(&self->applyers, ro->members[i].uid);
-        if (all[i]) {
-            all[i]->status = S_GAMING;
-            notify_enter_room(s, all[i], ro);
-        }
     }
     for (i=0; i<ro->nmember; ++i) {
         if (all[i]) {
             all[i]->status = S_GAMING;
             notify_enter_room(s, all[i], ro);
-            notify_loading(s, all[i], all[ro->nmember-1-i]);
+            other = ro->nmember-1-i;
+            notify_loading(s, all[i], (other != i) ? all[other] : NULL);
         }
     }
 }
@@ -242,6 +268,7 @@ room_create_fail(struct service *s, uint32_t id, int err) {
 
 static void
 join_waiting(struct match *self, struct applyer *ar) {
+    sc_trace("++++++ new applyer %u join waiting", ar->uid);
     ar->status = S_WAITING;
     self->waiting = ar->uid;
     self->wait_time = sc_timer_now();
@@ -250,6 +277,7 @@ join_waiting(struct match *self, struct applyer *ar) {
 
 static void
 leave_waiting(struct match *self, struct applyer *ar) {
+    sc_trace("++++++ applyer %u leave waiting %u", ar->uid, self->waiting);
     if (self->waiting == ar->uid) {
         self->waiting = 0;
     }
@@ -257,8 +285,9 @@ leave_waiting(struct match *self, struct applyer *ar) {
 
 static void
 join_room(struct room *ro, struct applyer *ar) {
+    sc_trace("++++++ applyer %u join room %u", ar->uid, ro->id);
     assert(ro->nmember < MEMBER_MAX);
-    ar->status = S_CREATING;
+    ar->status = ro->status;
     ar->roomid = ro->id;
     ro->members[ro->nmember++].uid = ar->uid;
 }
@@ -285,7 +314,7 @@ lookup(struct service *s, struct applyer *ar, int8_t type) {
         join_room(ro, other);
         sh_hash_insert(&self->rooms, ro->id, ro);
         notify_create_room(s, ro);
-    } else { 
+    } else {
         join_waiting(self, ar);
         notify_waiting(s, ar);
     }
@@ -300,7 +329,8 @@ apply(struct service *s, int source, bool isrobot, int type,
     uint32_t uid = brief->accid;
     struct applyer *ar = sh_hash_find(&self->applyers, uid);
     if (ar) {
-        return 1; // applyers already
+        //notify_status(s, ar);
+        return 1; 
     }
     ar = alloc_applyer(self);
     ar->uid = uid;
@@ -314,6 +344,7 @@ apply(struct service *s, int source, bool isrobot, int type,
         assert(!sh_hash_insert(&self->applyers, uid, ar));
         return 0;
     } else {
+        sc_trace("++++++ applyer %u apply fail", brief->accid);
         response_play_fail(s, ar, SERR_NOROOMS);
         free_applyer(self, ar);
         return 1;
@@ -322,11 +353,13 @@ apply(struct service *s, int source, bool isrobot, int type,
 
 static void
 player_apply(struct service *s, int source, struct UM_APPLY *ap) {
+    sc_trace("++++++ player %u apply", ap->brief.accid);
     apply(s, source, false, ap->type, &ap->brief);
 }
 
 static void
 robot_apply(struct service *s, int source, struct UM_ROBOT_APPLY *ra) {
+    sc_trace("++++++ robot %u apply", ra->brief.accid);
     apply(s, source, true, 0, &ra->brief);
 }
 
@@ -344,17 +377,20 @@ apply_cancel(struct service *s, int source, uint32_t uid) {
 
 static void
 logout(struct service *s, uint32_t uid) {
+    sc_trace("++++++ applyer logout %u", uid);
     struct match *self = SERVICE_SELF;
     struct applyer *ar = sh_hash_find(&self->applyers, uid);
     if (ar == NULL) {
         return;
     }
+    sc_trace("++++++2 applyer logout %u, status %d", ar->uid, ar->status);
     if (ar->status != S_WAITING) {
         struct room *ro = sh_hash_find(&self->rooms, ar->roomid);
         if (ro) {
             ro->nlogin--;
             if (ro->nlogin == 0) {
-                notify_destroy_room(s, ro);                
+                sc_trace("++++++ applyer logout, then room %u destroy", ro->id);
+                notify_destroy_room(s, ro);
                 sh_hash_remove(&self->rooms, ro->id);
                 free_room(self, ro);
             }
@@ -415,14 +451,14 @@ match_main(struct service *s, int session, int source, int type, const void *msg
 
 void
 match_time(struct service *s) {
-/*    struct match *self = SERVICE_SELF;
+    struct match *self = SERVICE_SELF;
     if (self->waiting != 0 && !self->isrobot_wait) {
         //if (self->wait_time - sc_timer_now() > 15*1000) {
         if (sc_timer_now() - self->wait_time > 5*1000) {
+            sc_trace("++++++ wait %u, timeout", self->waiting);
             UM_DEFFIX(UM_ROBOT_PULL, rp);
             rp->count = 1;
             sh_service_send(SERVICE_ID, self->robot_handle, MT_UM, rp, sizeof(*rp));
         }
     }
-    */
 }
