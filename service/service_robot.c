@@ -10,6 +10,8 @@
 #include "user_message.h"
 #include "cli_message.h"
 #include "attrilogic.h"
+#include "tplt_include.h"
+#include "tplt_struct.h"
 #include <string.h>
 #include <assert.h>
 #include <stdio.h>
@@ -48,7 +50,8 @@ struct robot {
     int match_handle;
     int room_handle;
     int nagent;
-    struct agent* rest_agents; 
+    struct agent *rest_head; 
+    struct agent *rest_tail;
     struct sh_hash agents;
 };
 
@@ -62,12 +65,12 @@ alloc_agent(struct robot *self) {
 
 static struct agent *
 agent_pull(struct robot *self) {
-    struct agent *ag = self->rest_agents;
+    struct agent *ag = self->rest_head;
     if (ag == NULL)
         return NULL;
     assert(ag->status == S_REST);
     ag->status = S_WAIT;
-    self->rest_agents = self->rest_agents->next;
+    self->rest_head = self->rest_head->next;
     return ag;
 }
 
@@ -80,8 +83,29 @@ agent_fight(struct robot *self, struct agent *ag) {
 static void
 agent_rest(struct robot *self, struct agent *ag) {
     ag->status = S_REST;
-    ag->next = self->rest_agents;
-    self->rest_agents = ag;
+    if (self->rest_head) {
+        assert(self->rest_tail != NULL);
+        assert(self->rest_tail->next == NULL);
+        self->rest_tail->next = ag;
+    } else {
+        self->rest_head = ag;
+    }
+    self->rest_tail = ag;
+    ag->next = NULL;
+}
+
+static inline uint32_t
+rand_role() {
+    const struct tplt_holder* holder = tplt_get_holder(TPLT_ROLE);
+    if (holder) {
+        int n = TPLT_HOLDER_NELEM(holder);
+        if (n > 0) {
+            int idx = rand()%n;
+            const struct role_tplt *tplt = TPLT_HOLDER_FIRSTELEM(role_tplt, holder); 
+            return tplt[idx].id;
+        }
+    }
+    return 0;
 }
 
 static inline void
@@ -89,7 +113,7 @@ init_agent_data(struct chardata *cdata, int idx) {
     cdata->charid = CHARID_BEGIN+idx;
     snprintf(cdata->name, sizeof(cdata->name), "wabao_%d", cdata->charid);
     cdata->accid = ACCID_BEGIN+idx;
-    cdata->role = 10;
+    cdata->role = rand_role();
     attrilogic_main(cdata);
 }
 
@@ -214,7 +238,7 @@ robot_free(struct robot* self) {
         return;
     sh_hash_foreach(&self->agents, free);
     sh_hash_fini(&self->agents);
-    self->rest_agents = NULL;
+    self->rest_head = NULL;
     self->nagent = 0;
     free(self);
 }
