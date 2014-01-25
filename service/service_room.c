@@ -78,6 +78,8 @@ struct player {
     int16_t ntrap;
     int16_t nbao;
     int16_t nbedamage;
+    float speed_new;
+    float speed_old;
     struct AI_brain *brain;
 };
 
@@ -1148,6 +1150,27 @@ sync_press(struct service *s, struct player *m, const struct UM_ROLEPRESS *press
 }
 
 //-------------------------------------------------------------------------------
+static struct player *
+get_front_player(struct gameroom *ro, struct player *pr) {
+    struct player *m;
+    int i;
+    for (i=0; i<ro->np; ++i) { 
+        m = &ro->p[i];
+        if (m->online &&
+            m != pr &&
+            m->depth > pr->depth) {
+            return m;
+        }
+    }
+    return NULL;
+}
+
+static float 
+fall_speed(struct player *pr) {
+    const struct char_attribute *attr = &pr->base;
+    return attr->charfallspeed * (1+attr->charfallspeedadd);
+}
+
 static int
 AI_lookup(struct gameroom *ro, struct player *pr, int type, struct AI_target *target) {
     struct AI_brain *brain = pr->brain;
@@ -1222,13 +1245,46 @@ AI_dir(struct player *pr) {
     }
 }
 
+static inline float
+AI_standard_speed(struct AI_brain *brain) {
+    return (60+brain->level*20)/100.f;
+}
+
+static int
+AI_down_block(struct gameroom *ro, int depth) {
+    struct genmap *map = ro->map;
+    int h = depth;
+    if (h < 0 || h >= map->height) {
+        return 0;
+    }
+    int i, n=0;
+    for (i=h*map->width; i<(h+1)*map->width; ++i) {
+        if (CELL_IS_SHI(map->cells[i].cellid)) {
+            n++;
+        }
+    }
+    return n;
+}
+
 static float
-AI_speed(struct player *pr) {
+AI_speed(struct gameroom *ro, struct player *pr) {
     struct AI_brain *brain = pr->brain;
     if (brain->dir < 1)
         return 1;
-    // todo
-    return (60+brain->level*20)/100.f;
+    float speed;
+    struct player *front = get_front_player(ro, pr);
+    if (front) {
+        if (front->speed_new > front->speed_old) {
+            speed = AI_standard_speed(brain);
+        } else {
+            speed = fall_speed(pr);
+        }
+    } else {
+        speed = AI_standard_speed(brain);
+    }
+    int buff_value = 0; // todo
+    int down_block = AI_down_block(ro, pr->depth);
+    return speed * (1+buff_value/100.f - down_block/100.f);
 }
 
 static uint64_t
@@ -1384,7 +1440,7 @@ AI_main(struct service *s, struct gameroom *ro, struct player *pr) {
         brain->last_execute_time > now) {
         brain->last_execute_time = now;
         brain->dir = 0;
-        brain->speed = AI_speed(pr);
+        brain->speed = AI_speed(ro, pr);
         return;
     } 
     float elapsed = (now-brain->last_execute_time)/1000.f;
@@ -1395,11 +1451,9 @@ AI_main(struct service *s, struct gameroom *ro, struct player *pr) {
     sc_trace("AI %u level %d elapsed %f", UID(pr), brain->level, elapsed);
     int buff_value = 0; // todo
 
-    const struct char_attribute *attr = &pr->base;
     bool trans = pr->depth%100 > 94;
     if (trans) { 
-        float trans_speed = attr->charfallspeed * (1+attr->charfallspeedadd);
-        trans_speed *= (1+buff_value/100.f);
+        float trans_speed = fall_speed(pr) * (1+buff_value/100.f);
         brain->dir = 1;
         brain->speed = trans_speed;
         sc_trace("AI %u [trans] speed %f depth %d", UID(pr), brain->speed, pr->depth);
@@ -1440,7 +1494,7 @@ AI_main(struct service *s, struct gameroom *ro, struct player *pr) {
     
     if (true/*brain->tick % 2 == 0*/) {
         brain->dir = AI_dir(pr);
-        brain->speed = AI_speed(pr);
+        brain->speed = AI_speed(ro, pr);
     }
     AI_update_move(s, pr, elapsed);
 
@@ -1453,7 +1507,6 @@ AI_end:
     brain->last_execute_time = now;
     brain->tick++;
 }
-
 
 //-------------------------------------------------------------------------------
 void
@@ -1541,6 +1594,12 @@ gameroom_update(struct service *s, struct gameroom *ro) {
             on_refresh_attri(s, m, ro);
             if (m->brain) {
                 AI_main(s, ro, m);
+            } else {
+                uint64_t elapsed = sc_timer_now() - ro->starttime;
+                if (elapsed > 0) {
+                    m->speed_old = m->speed_new;
+                    m->speed_new = m->depth / (elapsed/1000.f);
+                }
             }
         }
     }

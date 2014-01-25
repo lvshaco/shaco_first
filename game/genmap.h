@@ -20,6 +20,8 @@ struct genmap {
 #define CELL_SHI 8  // 石块
 #define CELL_YAN 9  // 岩块
 
+#define CELL_IS_SHI(cellid) (((cellid)%1000)/100 == 8)
+
 struct map_tplt;
 struct roommap;
 
