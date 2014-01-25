@@ -38,6 +38,7 @@
 
 struct agent { 
     int status;
+    int level;
     struct chardata data;
     uint32_t last_change_role_time;
     struct agent *next;
@@ -106,6 +107,7 @@ init_agents(struct robot *self) {
         if (ag == NULL) {
             return 1;
         }
+        ag->level = rand()%10+1;
         init_agent_data(&ag->data, i);
         agent_rest(self, ag);
         sh_hash_insert(&self->agents, UID(ag), ag);
@@ -170,9 +172,9 @@ enter_room(struct service *s, struct agent *ag, struct UM_ENTERROOM *er) {
     }
     if (sc_service_has(self->room_handle, er->room_handle)) {
         agent_fight(self, ag);
-        UM_DEFFIX(UM_LOGINROOM, lr);
-        lr->room_handle = -1;
+        UM_DEFFIX(UM_ROBOT_LOGINROOM, lr);
         lr->roomid = er->roomid;
+        lr->level = ag->level;
         build_detail(ag, &lr->detail);
         sh_service_send(SERVICE_ID, er->room_handle, MT_UM, lr, sizeof(*lr));
     } else {

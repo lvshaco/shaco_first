@@ -61,6 +61,7 @@ _randcell(const struct map_tplt* tplt, struct roommap* m, uint16_t h) {
 static void
 _gencell(const struct map_tplt* tplt, struct roommap* m, uint16_t h, 
          struct roommap_cell* in, struct genmap_cell* out) {
+    out->block = in->block;
     if (in->isassign) {
         if (in->cellrate == 0) {
             out->cellid = 0;

@@ -63,6 +63,7 @@
 //#define IDUM_ROBOTB         IDUM_NBEGIN+400
 #define IDUM_ROBOT_PULL     IDUM_NBEGIN+401
 #define IDUM_ROBOT_APPLY    IDUM_NBEGIN+402
+#define IDUM_ROBOT_LOGINROOM IDUM_NBEGIN+403
 //#define IDUM_ROBOTE         IDUM_NBEGIN+450
 
 struct UM_DBRANK {
@@ -293,10 +294,12 @@ struct UM_ROBOT_APPLY {
     struct tmemberbrief brief;
 };
 
-//static inline uint16_t
-//UM_ROBOT_APPLY_size(struct UM_ROBOT_APPLY *ra) {
-    //return sizeof(*ra) + sizeof(ra->members[0]) * ra->nmember;
-//}
+struct UM_ROBOT_LOGINROOM {
+    _UM_HEADER;
+    uint32_t roomid;
+    uint8_t level;
+    struct tmemberdetail detail;
+};
 
 #pragma pack()
 

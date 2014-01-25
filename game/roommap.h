@@ -32,6 +32,7 @@ struct roommap_cell {
     uint8_t  itemrate;
     uint32_t cellid;
     uint32_t itemid;
+    uint16_t block;
 };
 
 struct roommap {
@@ -48,7 +49,7 @@ struct roommap {
 #define ROOMMAP_TID_ENTRY(m)    ((m)->typeid_entry)
 #define ROOMMAP_CELL_ENTRY(m)   ((m)->cell_entry)
 #define ROOMMAP_NCELL(m)        ((m)->header.height*(m)->header.width)
-
+#define ROOMMAP_CELL(m, w, h)   &(ROOMMAP_CELL_ENTRY(m)[(m)->header.width*h+w])
 static inline struct roommap_typeidlist 
 roommap_gettypeidlist(struct roommap* self, uint16_t index) {
     struct roommap_typeidlist tilist;

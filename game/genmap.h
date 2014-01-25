@@ -6,6 +6,7 @@
 struct genmap_cell {
     uint32_t cellid;
     uint32_t itemid;
+    uint16_t block;
 };
 
 struct genmap {
@@ -24,5 +25,7 @@ struct roommap;
 
 struct genmap* genmap_create(const struct map_tplt* tplt, struct roommap* m, uint32_t randseed);
 void genmap_free(struct genmap* self);
+
+#define GENMAP_CELL(m, w, h) (&((m)->cells[h*(m)->width +w]))
 
 #endif

@@ -75,6 +75,7 @@ def parse_blocksheet(infile, map_config, outfile):
         uint8_t  itemrate;   // if 0, then itemid is done
         uint32_t cellid;
         uint32_t itemid;
+        uint16_t block;
     }
     """
     op.write(struct.pack("H", width))
@@ -124,11 +125,13 @@ def parse_blocksheet(infile, map_config, outfile):
                     cellrate = 0
                     itemid   = int(cell_config[2]) if lcell > 2 else 0
                     itemrate = int(cell_config[3]) if lcell > 3 else 0
+                    block    = int(cell_config[4]) if lcell > 4 else 0
                 elif ctype == CTYPE_CELL:
                     typeid   = int(cell_config[2]) if lcell > 2 else 0
                     cellrate = int(cell_config[3]) if lcell > 3 else 0
                     itemid   = int(cell_config[4]) if lcell > 4 else 0
                     itemrate = int(cell_config[5]) if lcell > 5 else 0
+                    block    = 0
                 else:
                     log.write("unkown ctype, in (%d,%d)\n"%(cw,ch))
                     exit(1)
@@ -138,7 +141,7 @@ def parse_blocksheet(infile, map_config, outfile):
                 cellrate = 0
                 itemid   = 0
                 itemrate = 0
-
+                block    = 0
             if ctype == CTYPE_CELL:
                 if typeid >= 7:
                     texid = spectex[typeid-7]
@@ -166,9 +169,11 @@ def parse_blocksheet(infile, map_config, outfile):
             op.write(struct.pack("B", itemrate))
             op.write(struct.pack("I", cellid))
             op.write(struct.pack("I", itemid))
-            #log.write("isassign %d, ctype %d, cellrate %d, itemrate %d, cellid %d, \
-                    #itemid %d, in(%d,%d)\n"%
-                    #(isassign, ctype, cellrate, itemrate, cellid, itemid, cw,ch))
+            op.write(struct.pack("H", block))
+            #if block > 0:
+                #log.write("isassign %d, ctype %d, cellrate %d, itemrate %d, cellid %d, \
+                    #itemid %d, in(%d,%d), block(%d)\n"%
+                    #(isassign, ctype, cellrate, itemrate, cellid, itemid, cw,ch, block))
     op.close()
     log.write(outfile)
 

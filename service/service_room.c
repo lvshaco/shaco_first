@@ -34,6 +34,31 @@
 #define REFRESH_SPEED 1 
 #define REFRESH_ATTRI 2
 
+#define AI_S_MOVE 0
+#define AI_S_FOCUS 1
+
+struct AI_target {
+    uint32_t id;
+    uint16_t w;
+    uint16_t h;
+    uint16_t block;
+};
+
+struct AI_brain {
+    int level;
+    uint64_t last_execute_time;
+    float accu_depth; // 累积的距离
+    int status;
+    uint64_t status_intv;
+    uint64_t status_time;
+    int dir;
+    float speed;
+    struct AI_target target;
+    struct AI_target target2;
+    uint64_t press_time;
+    int tick;
+};
+
 struct player {
     int watchdog_source;
     uint8_t index;
@@ -53,6 +78,7 @@ struct player {
     int16_t ntrap;
     int16_t nbao;
     int16_t nbedamage;
+    struct AI_brain *brain;
 };
 
 struct gameroom { 
@@ -75,6 +101,11 @@ struct gameroom {
 
 #define UID(m) ((m)->detail.accid)
 
+static inline float
+oxygen_percent(struct player *pr) {
+    return pr->detail.attri.oxygen / (float)pr->base.oxygen;
+}
+
 struct room {
     //int watchdog_handle;
     //int match_handle;
@@ -96,6 +127,10 @@ static void
 member_free(struct player* m) {
     delay_fini(&m->total_delay);
     effect_fini(&m->total_effect);
+    if (m->brain) {
+        free(m->brain);
+        m->brain = NULL;
+    }
 }
 
 static void
@@ -184,7 +219,8 @@ multicast_msg(struct service *s, struct gameroom* ro, const void *msg, int sz, u
     for (i=0; i<ro->np; ++i) {
         struct player *m = &ro->p[i];
         if (UID(m) != except &&
-            m->online) {
+            m->online &&
+            m->brain == NULL) {
             cl->uid = UID(m);
             sh_service_send(SERVICE_ID, m->watchdog_source, MT_UM, cl, sizeof(*cl)+sz);
         }
@@ -457,13 +493,14 @@ game_over(struct service *s, struct gameroom* ro, bool death) {
     build_awards(ro, sortm, ro->np, awards);
     for (i=0; i<ro->np; ++i) {
         m = sortm[i];
-        if (m->online)
-            continue;
-        UM_DEFWRAP(UM_HALL, ha, UM_GAMEAWARD, ga);
-        ha->uid  = UID(m);
-        ga->type = ro->type;
-        ga->award = awards[i];
-        sh_service_send(SERVICE_ID, m->watchdog_source, MT_UM, ha, sizeof(*ha)+sizeof(*ga));
+        if (m->online &&
+            m->brain == NULL) {
+            UM_DEFWRAP(UM_HALL, ha, UM_GAMEAWARD, ga);
+            ha->uid  = UID(m);
+            ga->type = ro->type;
+            ga->award = awards[i];
+            sh_service_send(SERVICE_ID, m->watchdog_source, MT_UM, ha, sizeof(*ha)+sizeof(*ga));
+        }
     }
 
     // overinfo to client
@@ -486,7 +523,8 @@ game_over(struct service *s, struct gameroom* ro, bool death) {
     for (i=0; i<ro->np; ++i) {
         m = &ro->p[i];
         umro->uid = UID(m);
-        if (m->online) {
+        if (m->online &&
+            m->brain == NULL) {
             sh_service_send(SERVICE_ID, m->watchdog_source, MT_UM, umro, sizeof(*umro)+oversz);
         }
     }
@@ -598,24 +636,27 @@ check_destroy_gameroom(struct service *s, struct gameroom *ro) {
 
 //////////////////////////////////////////////////////////////////////
 static void
-notify_game_info(struct service *s, struct player *m, struct gameroom* ro) {
-    UM_DEFVAR(UM_CLIENT, cl); 
-    UD_CAST(UM_GAMEINFO, gi, cl->wrap);
-    cl->uid = UID(m);
-    gi->status = ro->status;
-    gi->gattri = ro->gattri;
-    
-    int i, n=0;
-    for (i=0; i<ro->np; ++i) {
-        if (ro->p[i].online) {
-            gi->members[i] = ro->p[i].detail;
-            n++;
-        }
-    }
-    gi->nmember = n;
-    int sz = UM_GAMEINFO_size(gi);
-    sh_service_send(SERVICE_ID, m->watchdog_source, MT_UM, cl, sizeof(*cl) + sz);
+notify_game_info(struct service *s, struct player *m) {
+    struct gameroom *ro = member2gameroom(m);
 
+    if (m->brain == NULL) {
+        UM_DEFVAR(UM_CLIENT, cl); 
+        UD_CAST(UM_GAMEINFO, gi, cl->wrap);
+        cl->uid = UID(m);
+        gi->status = ro->status;
+        gi->gattri = ro->gattri;
+        
+        int i, n=0;
+        for (i=0; i<ro->np; ++i) {
+            if (ro->p[i].online) {
+                gi->members[i] = ro->p[i].detail;
+                n++;
+            }
+        }
+        gi->nmember = n;
+        int sz = UM_GAMEINFO_size(gi);
+        sh_service_send(SERVICE_ID, m->watchdog_source, MT_UM, cl, sizeof(*cl) + sz);
+    }
     UM_DEFFIX(UM_GAMEMEMBER, gm);
     gm->member = m->detail;
     multicast_msg(s, ro, gm, sizeof(*gm), UID(m));
@@ -1013,22 +1054,6 @@ member_update_effect(struct player *m) {
 }
 
 static void
-gameroom_update(struct service *s, struct gameroom *ro) {
-    int i;
-    for (i=0; i<ro->np; ++i) {
-        struct player *m = &ro->p[i];
-        if (m->online) {
-            int oxygen = role_oxygen_time_consume(&m->detail.attri);
-            if (reduce_oxygen(m, oxygen) > 0) {
-                m->refresh_flag |= REFRESH_ATTRI;
-            }
-            member_update_effect(m);
-            on_refresh_attri(s, m, ro);
-        }
-    }
-}
-
-static void
 loadok(struct service *s, struct player *m) {
     if (!m->loadok) {
         struct gameroom *ro = member2gameroom(m);
@@ -1039,47 +1064,64 @@ loadok(struct service *s, struct player *m) {
     }
 }
 
-static void
-login(struct service *s, int source, const struct UM_LOGINROOM *lo) {
+static struct player *
+login(struct service *s, int source, uint32_t roomid, const struct tmemberdetail *detail) {
     struct room *self = SERVICE_SELF;
 
-    bool isrobot = (lo->room_handle == -1);
-    uint32_t accid  = lo->detail.accid;
-    uint32_t roomid = lo->roomid;
+    uint32_t accid  = detail->accid;
 //sc_error("===========login handle %x, accid %u, roomid %u", lo->room_handle, accid, roomid);
     struct gameroom *ro = sh_hash_find(&self->gamerooms, roomid); 
     if (ro == NULL) {
-        return; // someting wrong
+        return NULL; // someting wrong
     }
 //sc_error("===========2login handle %x, accid %u, roomid %u", lo->room_handle, accid, roomid);
     struct player *m = member_get(ro, accid);
     if (m == NULL || m->online) {
-        return; // someting wrong
+        return NULL; // someting wrong
     }
 //sc_error("===========3login handle %x, accid %u, roomid %u", lo->room_handle, accid, roomid);
-    m->isrobot = isrobot;
-    m->detail = lo->detail;
+    m->detail = *detail; 
+    role_attri_build(&ro->gattri, &m->detail.attri);
     m->base = m->detail.attri;
-//sc_error("============== oxygen %u", m->base.oxygen);
     delay_init(&m->total_delay);
     effect_init(&m->total_effect);
-    role_attri_build(&ro->gattri, &m->detail.attri);
+
     m->online = true;
     m->watchdog_source = source;
-   
+    m->brain = NULL; 
     assert(!sh_hash_insert(&self->players, accid, m));
+    return m;
+}
 
-    if (m->isrobot) {
+static void
+player_login(struct service *s, int source, const struct UM_LOGINROOM *lr) {
+    struct player *m = login(s, source, lr->roomid, &lr->detail);
+    if (m) {
+        m->brain = NULL;
+        notify_game_info(s, m);
+    }
+}
+
+static void
+robot_login(struct service *s, int source, const struct UM_ROBOT_LOGINROOM *lr) {
+    struct player *m = login(s, source, lr->roomid, &lr->detail);
+    if (m) {
+        struct AI_brain *brain = malloc(sizeof(*brain));
+        memset(brain, 0, sizeof(*brain));
+        brain->level = lr->level;
+        m->brain = brain;
+
+        notify_game_info(s, m);
         loadok(s, m);
-    } else {
-        notify_game_info(s, m, ro); 
     }
 }
 
 static void
 sync_position(struct service *s, struct player *m, const struct UM_GAMESYNC *sync) {
     struct gameroom *ro = member2gameroom(m);
-
+    if (m->depth == sync->depth) {
+        return;
+    }
     m->depth = sync->depth;
     multicast_msg(s, ro, sync, sizeof(*sync), UID(m));
 
@@ -1105,6 +1147,315 @@ sync_press(struct service *s, struct player *m, const struct UM_ROLEPRESS *press
     }
 }
 
+//-------------------------------------------------------------------------------
+static int
+AI_lookup(struct gameroom *ro, struct player *pr, int type, struct AI_target *target) {
+    struct AI_brain *brain = pr->brain;
+    assert(brain);
+
+    struct genmap *map = ro->map;
+    int32_t depth = pr->depth + 2; 
+    if (depth <= 0 || depth > map->height) {
+        return 1;
+    }
+    struct genmap_cell *cell;
+    struct item_tplt *item;
+    int i, start = (depth-1)*map->width;
+    for (i=0; i<map->width; ++i) {
+        cell = &map->cells[start+i];
+        if (cell->cellid == 0 && cell->itemid > 0) {
+            item = itemtplt_find(cell->itemid);
+            if (item->type == type) {
+                target->id = item->id;
+                target->h = depth-1;
+                target->w = i;
+                target->block = cell->block;
+                return 0;
+            }
+        }
+    }
+    return 1;
+}
+
+static inline bool
+AI_rand(int level, int rateup, int levelup, int ratedown, int leveldown) {
+    float rate = (ratedown + 
+                  (level - leveldown) * 
+                  (float)(rateup-ratedown) / 
+                  (float)(levelup-leveldown)) / 
+        (float)(rand()%100);
+    return rate >= 1;
+}
+
+static inline struct AI_target *
+AI_current_target(struct AI_brain *brain) {
+    if (brain->target.id > 0) {
+        return &brain->target;
+    }
+    if (brain->target2.id > 0) {
+        return &brain->target2;
+    }
+    return NULL;
+}
+
+static inline int
+AI_target_depth(struct AI_target *target) {
+    return target->h+1;
+}
+
+static int
+AI_dir(struct player *pr) {
+    struct AI_brain *brain = pr->brain;
+    struct AI_target *target = AI_current_target(brain);
+    if (target) {
+        if (AI_target_depth(target) > pr->depth) {
+            return 1;
+        } else {
+            return rand()%3 - 1;
+        }
+    } else {
+        if (AI_rand(brain->level, 10, 1, 0, 10)) {
+            return rand()%2 - 1;
+        } else {
+            return 1;
+        }
+    }
+}
+
+static float
+AI_speed(struct player *pr) {
+    struct AI_brain *brain = pr->brain;
+    if (brain->dir < 1)
+        return 1;
+    // todo
+    return (60+brain->level*20)/100.f;
+}
+
+static uint64_t
+AI_wander_time(int level, int block) {
+    return block * (1 - level/40.f);
+}
+
+static void
+AI_update_move(struct service *s, struct player *pr, float elapsed) {
+    struct AI_brain *brain = pr->brain;
+    sc_trace("AI %u update move (%d, %f)", UID(pr), brain->dir, brain->speed);
+    if (brain->dir == 0) {
+        return;
+    }
+    float dist = brain->dir * brain->speed * elapsed;
+    brain->accu_depth += dist;
+    int depth = brain->accu_depth;
+    if (abs(depth) >= 1) {
+        brain->accu_depth -= depth;
+        depth += pr->depth;
+        if (depth < 0)
+            depth = 0;
+        UM_DEFFIX(UM_GAMESYNC, sync);
+        sync->charid = pr->detail.charid;
+        sync->depth = depth;
+        sync_position(s, pr, sync);
+        sc_trace("AI %u update depth (%d, cur %d)", UID(pr), depth, pr->depth);
+    } 
+}
+
+static inline void
+AI_focus_target(struct player *pr, const struct AI_target *target) {
+    struct AI_brain *brain = pr->brain;
+    brain->status = AI_S_FOCUS;
+    brain->status_time = sc_timer_now();
+    brain->status_intv = AI_wander_time(brain->level, target->block); 
+    sc_trace("AI %u switch to focus (%u in %u,%u b %u)", UID(pr), 
+            target->id, 
+            target->w, 
+            target->h, 
+            target->block);
+}
+
+static inline bool
+AI_can_pick(struct player *pr) {
+    struct AI_brain *brain = pr->brain;
+    if (brain->target.id > 0) {
+        int rate = 110 - (pr->depth - AI_target_depth(&brain->target)) / 0.4;
+        sc_trace("AI %u pick target1 rate %d", UID(pr), rate);
+        if (rate >= 100 ||
+            rand()%100 <= rate) {
+            return true;
+        }
+    } else if (brain->target2.id > 0) {
+        sc_trace("AI %u pick target2 rate 100", UID(pr));
+        return true;
+    }
+    return false;
+
+}
+static void
+AI_pick_target(struct service *s, struct gameroom *ro, struct player *pr) {
+    struct AI_brain *brain = pr->brain;
+    struct AI_target *target = AI_current_target(brain);
+    if (target) {
+        sc_trace("AI %u rand pick target (%u in %u,%u)", UID(pr), 
+            brain->target.id, 
+            brain->target.w, 
+            brain->target.h);
+        if (AI_can_pick(pr)) {
+            sc_trace("AI %u pick target %u ok", UID(pr), target->id);
+            UM_DEFFIX(UM_USEITEM, use);
+            use->itemid = target->id;
+            use_item(s, pr, use);
+        }
+        // clear
+        struct genmap_cell *cell = GENMAP_CELL(ro->map, target->w, target->h);
+        cell->itemid = 0;
+        target->id = 0;
+    }
+    if (brain->target2.id > 0) {
+        AI_focus_target(pr, &brain->target2);
+    } else {
+        brain->status = AI_S_MOVE;
+        brain->status_time = 0;
+        brain->status_intv = 0; 
+        sc_trace("AI %u switch to move", UID(pr));
+    }
+}
+
+static int
+AI_lookup_oxygen(struct gameroom *ro, struct player *pr) {
+    struct AI_brain *brain = pr->brain;
+    struct AI_target target;
+    if (!AI_lookup(ro, pr, ITEM_T_OXYGEN, &target)) {
+        float limit_per = 0.8 + 0.2*(1.2 - min(1.2, brain->level/7.0));
+        float oxygen_per = oxygen_percent(pr);
+        sc_trace("AI %u lookup oxygen (%u in %u,%u b %u) oxygen_per %f limit_per %f", 
+                UID(pr), 
+                target.id,
+                target.w,
+                target.h,
+                target.block,
+                oxygen_per,
+                limit_per);
+        if (oxygen_per <= limit_per) {
+            brain->target = target;  
+            return 0;
+        }
+    }
+    return 1;
+}
+
+static int
+AI_lookup_item(struct gameroom *ro, struct player *pr) {
+    struct AI_brain *brain = pr->brain;
+    struct AI_target target;
+    if (!AI_lookup(ro, pr, ITEM_T_FIGHT, &target)) {
+        sc_trace("AI %u lookup item (%u in %u,%u b %u)",
+                UID(pr), 
+                target.id,
+                target.w,
+                target.h,
+                target.block);
+        if (AI_rand(brain->level, 100, 6, 50, 1)) {
+            brain->target = target; 
+            return 0;
+        }
+    }
+    return 1;
+}
+
+static void
+AI_press(struct service *s, struct player *pr, uint64_t now, int press_time) {
+    struct AI_brain *brain = pr->brain;
+    brain->press_time = now;
+    if (brain->status == AI_S_FOCUS) {
+        brain->status_intv += press_time;
+    }
+    UM_DEFFIX(UM_ROLEPRESS, press);
+    press->charid = pr->detail.charid;
+    sync_press(s, pr, press);
+    sc_trace("AI %u press begin", UID(pr));
+}
+
+static void
+AI_main(struct service *s, struct gameroom *ro, struct player *pr) {
+    struct AI_brain *brain = pr->brain;
+    assert(brain);
+    
+    uint64_t now = sc_timer_now();
+    if (brain->last_execute_time == 0 ||
+        brain->last_execute_time > now) {
+        brain->last_execute_time = now;
+        brain->dir = 0;
+        brain->speed = AI_speed(pr);
+        return;
+    } 
+    float elapsed = (now-brain->last_execute_time)/1000.f;
+    if (elapsed == 0) {
+        return;
+    }
+
+    sc_trace("AI %u level %d elapsed %f", UID(pr), brain->level, elapsed);
+    int buff_value = 0; // todo
+
+    const struct char_attribute *attr = &pr->base;
+    bool trans = pr->depth%100 > 94;
+    if (trans) { 
+        float trans_speed = attr->charfallspeed * (1+attr->charfallspeedadd);
+        trans_speed *= (1+buff_value/100.f);
+        brain->dir = 1;
+        brain->speed = trans_speed;
+        sc_trace("AI %u [trans] speed %f depth %d", UID(pr), brain->speed, pr->depth);
+        AI_update_move(s, pr, elapsed);
+        goto AI_end;
+    }
+
+    if (brain->target.id == 0 && brain->target2.id == 0) {
+        if (!AI_lookup_oxygen(ro, pr) ||
+            !AI_lookup_item(ro, pr)) {
+            AI_focus_target(pr, &brain->target);
+        } 
+    }
+    if (brain->target2.id == 0) {
+        if (!AI_lookup(ro, pr, ITEM_T_BAO, &brain->target2)) {
+            if (brain->target.id == 0) {
+                AI_focus_target(pr, &brain->target2);
+            }
+        }
+    }
+
+    if (brain->tick % 10 == 0) { 
+        int press_time = pr->detail.attri.rebirthtime;
+        if (brain->press_time == 0) {
+            sc_trace("AI %u press rand", UID(pr));
+            if (AI_rand(brain->level, 20, 1, 0, 8)) { 
+                AI_press(s, pr, now, press_time);
+                goto AI_end;
+            }
+        } else { 
+            if (press_time <= (int)(now - brain->press_time)) {
+                brain->press_time = 0;
+                sc_trace("AI %u press end", UID(pr));
+            }
+            goto AI_end;
+        } 
+    }
+    
+    if (true/*brain->tick % 2 == 0*/) {
+        brain->dir = AI_dir(pr);
+        brain->speed = AI_speed(pr);
+    }
+    AI_update_move(s, pr, elapsed);
+
+    if (brain->status == AI_S_FOCUS) {
+        if (now - brain->status_time >= brain->status_intv) {
+            AI_pick_target(s, ro, pr);
+        }
+    }
+AI_end:
+    brain->last_execute_time = now;
+    brain->tick++;
+}
+
+
+//-------------------------------------------------------------------------------
 void
 room_main(struct service *s, int session, int source, int type, const void *msg, int sz) {
     struct room *self = SERVICE_SELF;
@@ -1116,7 +1467,12 @@ room_main(struct service *s, int session, int source, int type, const void *msg,
         switch (base->msgid) {
         case IDUM_LOGINROOM: {
             UM_CAST(UM_LOGINROOM, lo, msg);
-            login(s, source, lo);
+            player_login(s, source, lo);
+            break;
+            }
+        case IDUM_ROBOT_LOGINROOM: {
+            UM_CAST(UM_ROBOT_LOGINROOM, rlo, msg);
+            robot_login(s, source, rlo);
             break;
             }
         case IDUM_ROOM: {
@@ -1129,7 +1485,6 @@ room_main(struct service *s, int session, int source, int type, const void *msg,
             }
             switch (wrap->msgid) {
             case IDUM_LOGOUT:
-//sc_error("================ IDUM logout %u", UID(m));
                 logout(s, m);
                 break;
             case IDUM_GAMELOADOK:
@@ -1173,6 +1528,25 @@ room_main(struct service *s, int session, int source, int type, const void *msg,
 }
 
 static void
+gameroom_update(struct service *s, struct gameroom *ro) {
+    int i;
+    for (i=0; i<ro->np; ++i) {
+        struct player *m = &ro->p[i];
+        if (m->online) {
+            int oxygen = role_oxygen_time_consume(&m->detail.attri);
+            if (reduce_oxygen(m, oxygen) > 0) {
+                m->refresh_flag |= REFRESH_ATTRI;
+            }
+            member_update_effect(m);
+            on_refresh_attri(s, m, ro);
+            if (m->brain) {
+                AI_main(s, ro, m);
+            }
+        }
+    }
+}
+
+static void
 timecb(void *pointer, void *ud) {
     struct service *s = ud;
     struct room *self = SERVICE_SELF;
@@ -1182,7 +1556,7 @@ timecb(void *pointer, void *ud) {
         gameroom_update_delay(s, ro);
         break;
     }
-    if (self->tick == 0) {
+    if (self->tick % 10 == 0) {
         switch (ro->status) {
         case ROOMS_CREATE:
             check_enter_gameroom(s, ro);
@@ -1204,8 +1578,6 @@ timecb(void *pointer, void *ud) {
 void
 room_time(struct service* s) {
     struct room* self = SERVICE_SELF;
-    if (++self->tick == 10) {
-        self->tick = 0;
-    }
     sh_hash_foreach2(&self->gamerooms, timecb, s);
+    self->tick++;
 }
