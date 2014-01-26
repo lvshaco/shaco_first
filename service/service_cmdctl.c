@@ -64,10 +64,14 @@ static int
 _reload(struct service* s, struct args* A, struct memrw* rw) {
     if (A->argc <= 1)
         return CTL_ARGLESS;
-    if (sc_reload_prepare(A->argv[1])) {
+    int nload = sc_reload_prepare(A->argv[1]);
+    if (nload > 0) {
+        int n = snprintf(rw->ptr, RW_SPACE(rw), "reload %d", nload);
+        memrw_pos(rw, n); 
+        return CTL_OK;
+    } else {
         return CTL_ARGINVALID;
     }
-    return CTL_OK;
 }
 
 static int

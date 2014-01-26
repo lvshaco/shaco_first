@@ -1,8 +1,9 @@
 #include "sc_reload.h"
 #include "sc_init.h"
 #include "sc_service.h"
-#include "args.h"
+#include "sh_util.h"
 #include <stdlib.h>
+#include <string.h>
 
 #define CACHE_MAX 10
 
@@ -15,23 +16,22 @@ static struct reload_cache* C = NULL;
 
 int
 sc_reload_prepare(const char* names) {
-    struct args A;
-    args_parsestr(&A, CACHE_MAX, names);
-    if (A.argc == 0)
-        return 1;
+    char tmp[1024];
+    sc_strncpy(tmp, names, sizeof(tmp));
+
     int sz = 0;
     int id;
-    int i;
-    for (i=0; i<A.argc; ++i) {
-        id = service_query_id(A.argv[i]);
-        if (id != SERVICE_INVALID) {
+    char* saveptr = NULL;
+    char* one = strtok_r(tmp, ",", &saveptr);
+    while (one) {
+        id = service_query_id(one);
+        if (id != -1) {
             C->services[sz++] = id;
-        } else {
-            return 1;
         }
+        one = strtok_r(NULL, ",", &saveptr);
     }
     C->size = sz;
-    return 0;
+    return sz;
 }
 
 void

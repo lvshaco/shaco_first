@@ -109,9 +109,11 @@ rand_role() {
 }
 
 static inline void
-init_agent_data(struct chardata *cdata, int idx) {
+init_agent_data(struct agent *ag, int idx, int level) {
+    struct chardata *cdata = &ag->data;
+    ag->level = level;
     cdata->charid = CHARID_BEGIN+idx;
-    snprintf(cdata->name, sizeof(cdata->name), "wabao_%d", cdata->charid);
+    snprintf(cdata->name, sizeof(cdata->name), "wabao%02d_%d", level, cdata->charid);
     cdata->accid = ACCID_BEGIN+idx;
     cdata->role = rand_role();
     attrilogic_main(cdata);
@@ -131,8 +133,7 @@ init_agents(struct robot *self) {
         if (ag == NULL) {
             return 1;
         }
-        ag->level = rand()%10+1;
-        init_agent_data(&ag->data, i);
+        init_agent_data(ag, i, rand()%10+1);
         agent_rest(self, ag);
         sh_hash_insert(&self->agents, UID(ag), ag);
     }
