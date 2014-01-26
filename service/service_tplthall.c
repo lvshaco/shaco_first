@@ -35,7 +35,7 @@ tplthall_main(struct service *s, int session, int source, int type, const void *
     if (type != MT_TEXT)
         return;
 
-    if (strncmp("reload", msg, sz)) {
+    if (!strncmp("reload", msg, sz)) {
         if (!load_tplt()) {
             sc_info("reload tplt ok");
         } else {

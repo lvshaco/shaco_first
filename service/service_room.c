@@ -276,9 +276,10 @@ member_place(struct player *m, uint32_t accid, uint8_t index) {
 }
 
 static void
-gameroom_create(struct service *s, int source, const struct UM_CREATEROOM *create) {
+gameroom_create(struct service *s, int source, struct UM_CREATEROOM *create) {
     sc_trace("Room %u recevie create from mapid %u", create->id, create->mapid);
     struct room* self = SERVICE_SELF;
+    create->mapid = 1;
     struct gameroom *ro = sh_hash_find(&self->gamerooms, create->id);
     if (ro) {
         notify_create_gameroom_result(s, source, create->id, SERR_ROOMIDCONFLICT);
@@ -730,9 +731,19 @@ item_effectone(struct player* m, struct one_effect* effect) {
     }
     return 0;
 }
-/*
-static void dump(uint32_t charid, const char* name, struct char_attribute* attri) {
-    sc_rec("char: id %u, name %s", charid, name);
+
+static void dump_ground(const struct groundattri *ga) {
+    /*sc_rec("mapid: %u", ga->mapid);
+    sc_rec("difficulty: %d", ga->difficulty);
+    sc_rec("shaketime: %d", ga->shaketime);
+    sc_rec("cellfallspeed: %f", ga->cellfallspeed);
+    sc_rec("waitdestroy: %d", ga->waitdestroy);
+    sc_rec("destroytime: %d", ga->destroytime);
+    */
+}
+
+static void dump(uint32_t accid, const char* name, struct char_attribute* attri) {
+    /*sc_rec("accid: id %u, name %s", accid, name);
     sc_rec("oxygen: %d", attri->oxygen);     // 氧气
     sc_rec("body: %d", attri->body);       // 体能
     sc_rec("quick: %d", attri->quick);      // 敏捷
@@ -765,8 +776,9 @@ static void dump(uint32_t charid, const char* name, struct char_attribute* attri
     sc_rec("item_oxygenadd: %f", attri->item_oxygenadd);
     sc_rec("lucky: %d", attri->lucky);
     sc_rec("prices: %d", attri->prices);
+    */
 }
-*/
+
 
 static void
 item_effect_member(struct service *s, struct gameroom *ro, struct player *m, 
@@ -1082,6 +1094,8 @@ login(struct service *s, int source, uint32_t roomid, const struct tmemberdetail
     m->detail = *detail; 
     role_attri_build(&ro->gattri, &m->detail.attri);
     m->base = m->detail.attri;
+dump_ground(&ro->gattri);
+dump(accid, m->detail.name, &m->detail.attri);
     delay_init(&m->total_delay);
     effect_init(&m->total_effect);
 

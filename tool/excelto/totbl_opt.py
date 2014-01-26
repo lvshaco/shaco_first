@@ -55,8 +55,8 @@ def _serialize_to_file(table, field_map, outfile):
                     op.write(struct.pack("I", subv[vi] if vi < nsub else 0))
             else:
                 log.write("\n[error : unknow field type, \
-                name#%s, vname#%s, type#%s, len#%s ]\n"%
-                (fname, fvname, ftype, flen))
+                name#%s, vname#%s, type#%s, len#%s val#%s]\n"%
+                (fname, fvname, ftype, flen, val))
                 exit(1)
     op.close() 
 
