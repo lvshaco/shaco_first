@@ -3,6 +3,7 @@
 #include "sc_log.h"
 #include "sc_node.h"
 #include "sh_hash.h"
+#include "sh_util.h"
 #include "user_message.h"
 #include "cli_message.h"
 #include <stdlib.h>
@@ -42,6 +43,7 @@ struct match {
     int room_handle;
     int robot_handle;
     uint32_t roomid_alloctor;
+    uint32_t randseed;
     uint32_t waiting; // todo, now just simple
     uint64_t wait_time;
     bool isrobot_wait;
@@ -76,6 +78,7 @@ match_init(struct service *s) {
         sh_handler("robot", SUB_REMOTE, &self->robot_handle)) {
         return 1;
     }
+    self->randseed = sc_timer_now()/1000;
     sh_hash_init(&self->applyers, 1);
     sh_hash_init(&self->rooms, 1);
     sc_timer_register(SERVICE_ID, 1000);
@@ -157,10 +160,11 @@ notify_destroy_room(struct service *s, struct room *ro) {
 
 static inline void
 notify_create_room(struct service *s, struct room *ro) {
+    struct match *self = SERVICE_SELF;
     sc_trace("Match notify create room %u", ro->id);
     UM_DEFVAR(UM_CREATEROOM, create);
     create->type = ro->type;
-    create->mapid = 1;//sc_rand(self->randseed) % 2 + 1; // 1,2 todo
+    create->mapid = sc_rand(self->randseed) % 2 + 1; // 1,2 todo
     create->id = ro->id;
     create->nmember = ro->nmember;
     int i;

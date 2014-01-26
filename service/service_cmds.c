@@ -130,6 +130,12 @@ handle_command(struct service *s, int source, int connid, void *msg, int sz) {
         check_close_client(s, cl);
         return;
     }*/
+    char tmp[1024];
+    int l = min(sizeof(tmp)-1, sz);
+    memcpy(tmp, rptr, l);
+    tmp[l] = '\0';
+    sc_rec("Cmd from %d: %s", connid, tmp);
+
     int wrapsz = sizeof(struct UM_TEXT)+sz;
     UM_DEFWRAP2(UM_CMDS, cm, wrapsz);
     UD_CAST(UM_TEXT, text, cm->wrap);
