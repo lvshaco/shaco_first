@@ -26,10 +26,14 @@
 // Rank score
 // Rank reset
 
-#define ACCID_BEGIN 1001
-#define ACCID_END 1000000
-#define CHARID_BEGIN 1001
-#define CHARID_END 1000000
+//#define ACCID_BEGIN 1001
+//#define ACCID_END 1000000
+//#define CHARID_BEGIN 1001
+//#define CHARID_END 1000000
+#define ACCID_BEGIN  2000000
+#define ACCID_END    3000000
+#define CHARID_BEGIN 2000000
+#define CHARID_END   3000000
 #define ROBOT_MAX       min((CHARID_END-CHARID_BEGIN+1), (ACCID_END-ACCID_BEGIN+1))
 
 #define S_REST   0

@@ -33,7 +33,7 @@ login(struct service *s, int source, uint32_t accid) {
         return; // relogin
     }
     pr = malloc(sizeof(*pr));
-    memset(pr, 0, sizeof(pr));
+    memset(pr, 0, sizeof(*pr));
     pr->watchdog_source = source;
     pr->status = PS_QUERYCHAR;
     pr->data.accid = accid;
