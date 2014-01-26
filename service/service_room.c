@@ -479,6 +479,9 @@ build_awards(struct gameroom *ro, struct player **sortm, int n, struct memberawa
 
 static void
 game_over(struct service *s, struct gameroom* ro, bool death) {
+    if (ro->status == ROOMS_OVER) {
+        return;
+    }
     sc_trace("Room %u over, by death? %d", ro->id, death); 
     struct player* m;
     struct player* sortm[MEMBER_MAX];
