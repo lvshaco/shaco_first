@@ -1,7 +1,7 @@
 #ifndef __redis_h__
 #define __redis_h__
 
-#include "util.h"
+#include "sh_util.h"
 #include <stdint.h>
 #include <stdbool.h>
 #include <string.h>
@@ -100,7 +100,9 @@ redis_bulkitem_toul(struct redis_replyitem* item) {
     if (redis_bulkitem_isnull(item))
         return 0;
     char tmp[16];
-    strncpychk(tmp, sizeof(tmp), item->value.p, item->value.len);
+    int l = min(sizeof(tmp)-1, item->value.len);
+    memcpy(tmp, item->value.p, l);
+    tmp[l] = '\0';
     return strtoul(tmp, NULL, 10); 
 }
 
@@ -109,7 +111,9 @@ redis_to_int64(struct redis_replyitem* item) {
     if (redis_bulkitem_isnull(item))
         return 0;
     char tmp[32];
-    strncpychk(tmp, sizeof(tmp), item->value.p, item->value.len);
+    int l = min(sizeof(tmp)-1, item->value.len);
+    memcpy(tmp, item->value.p, l);
+    tmp[l] = '\0';
     return strtold(tmp, NULL);
 }
 

@@ -12,7 +12,6 @@
 #include "playerdb.h"
 #include "sharetype.h"
 #include "memrw.h"
-#include "util.h"
 #include "rolelogic.h"
 #include "ringlogic.h"
 #include "attrilogic.h"
@@ -205,13 +204,14 @@ _loadpdb(struct player* p, struct redis_replyitem* item) {
 
     struct ringdata* rdata = &cdata->ringdata;
     struct redis_replyitem* si = item->child;
-    struct redis_replyitem* end = si + item->value.i; 
-    CHECK(
-    if (strncpychk(cdata->name, sizeof(cdata->name), si->value.p, si->value.len)) {
+    struct redis_replyitem* end = si + item->value.i;
+    if (redis_bulkitem_isnull(si)) {
         return SERR_DBDATAERR; // maybe no char, this is a empty item, all value is "-1"
     }
+    int l = min(sizeof(cdata->name)-1, si->value.len);
+    memcpy(cdata->name, si->value.p, l);
+    cdata->name[l] = '\0';
     si++;
-    )
     CHECK(cdata->level = redis_bulkitem_toul(si++));
     CHECK(cdata->exp = redis_bulkitem_toul(si++));
     CHECK(cdata->coin = redis_bulkitem_toul(si++));

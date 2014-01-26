@@ -11,6 +11,7 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.py *.h *.c" {
  config_gateload.lua
  config_hall.lua
  config_match.lua
+ config_robot.lua
  config_room.lua
  config_route.lua
  config_rpacc.lua
@@ -18,7 +19,6 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.py *.h *.c" {
  config_rpuser.lua
  config_uniqueol.lua
  config_watchdog.lua
- config_robot.lua
  libshaco=libshaco{
   dlmodule.c
   sc_check.c
@@ -70,7 +70,6 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.py *.h *.c" {
   mpool.h
   stringsplice.h
   stringtable.h
-  util.h
   args.c
   hmap.c
   map.c
@@ -150,15 +149,12 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.py *.h *.c" {
  }
  message=message{
   cli_message.h
-  client_type.h
   message.h
-  message_helper.h
-  message_reader.h
-  node_type.h
   sharetype.h
   user_message.h
  }
  datadefine=datadefine{
+  tplt_struct.h
  }
  tplt=tplt{
   tplt.h

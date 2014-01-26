@@ -9,7 +9,6 @@
 #include "user_message.h"
 #include "sharetype.h"
 #include "memrw.h"
-#include "util.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -159,7 +158,14 @@ _get_replystringitem(struct redis_reply* reply) {
 static time_t
 _get_timevalue(struct redis_replyitem* si) {
     char strtime[24];
-    strncpychk(strtime, sizeof(strtime), si->value.p, si->value.len);
+
+    if (redis_bulkitem_isnull(si)) {
+        return SERR_DBDATAERR; // maybe no char, this is a empty item, all value is "-1"
+    }
+    int l = min(sizeof(strtime)-1, si->value.len);
+    memcpy(strtime, si->value.p, l);
+    strtime[l] = '\0';
+    
     struct tm tmlast; 
     //strptime(strtime, "%Y%m%d-%H:%M:%S", &tmlast);
     sscanf(strtime, "%4d%2d%2d-%2d:%2d:%2d", 

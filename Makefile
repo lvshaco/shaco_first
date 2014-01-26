@@ -56,7 +56,6 @@ base_src=\
 	base/hashid.h \
 	base/stringsplice.h \
 	base/stringtable.h \
-	base/util.h \
 	base/args.c \
 	base/args.h
 
@@ -208,7 +207,7 @@ net.so: $(net_src)
 
 redis.so: $(redis_src)
 	@rm -f $@
-	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Ibase
+	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Ibase -Iinclude/libshaco
 
 base.so: $(base_src)
 	@rm -f $@
