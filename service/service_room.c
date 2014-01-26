@@ -1168,7 +1168,7 @@ get_front_player(struct gameroom *ro, struct player *pr) {
 static float 
 fall_speed(struct player *pr) {
     const struct char_attribute *attr = &pr->base;
-    return attr->charfallspeed * (1+attr->charfallspeedadd);
+    return attr->charfallspeed; 
 }
 
 static int
