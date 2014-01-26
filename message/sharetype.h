@@ -221,7 +221,7 @@ struct tmemberbrief {
     uint32_t accid;
     uint32_t charid;
     char name[CHAR_NAME_MAX];
-
+    uint16_t level;
     uint32_t role;
     uint32_t skin;
     int32_t oxygen; 

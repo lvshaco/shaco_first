@@ -147,6 +147,7 @@ build_brief(struct agent *ag, struct tmemberbrief *brief) {
     brief->accid = cdata->accid;
     brief->charid = cdata->charid;
     memcpy(brief->name, cdata->name, sizeof(cdata->name));
+    brief->level = cdata->level;
     brief->role = cdata->role;
     brief->skin = cdata->skin;
     brief->oxygen = cdata->attri.oxygen;
