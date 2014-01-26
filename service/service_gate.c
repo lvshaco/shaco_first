@@ -49,7 +49,7 @@ update_load(struct service *s) {
     if (self->load_handle != -1) {
         UM_DEFFIX(UM_UPDATELOAD, load);
         load->value = self->used;
-        sc_debug("update load %d, to %0x", load->value, self->load_handle);
+        sc_trace("Load value %d update to %0x", load->value, self->load_handle);
         sh_service_send(SERVICE_ID, self->load_handle, MT_UM, load, sizeof(*load));
     }
 }
@@ -213,7 +213,7 @@ handle_client(struct service *s, struct client* c, const void *msg, int sz) {
         ga->connid = c->connid;
         memcpy(ga->wrap, msg, sz);
 
-        sc_debug("Receive msg:%u", um->msgid);
+        sc_trace("Client %d receive msg: %u", c->connid, um->msgid);
         sh_service_send(SERVICE_ID, self->handler, MT_UM, ga, sizeof(*ga)+sz);
     }
     return 0;
@@ -282,13 +282,16 @@ gate_main(struct service* s, int session, int source, int type, const void *msg,
     switch (type) {
     case MT_UM: {
         UM_CAST(UM_GATE, ga, msg); 
-        int connid = ga->connid;
+        UM_CAST(UM_BASE, sub, ga->wrap);
+        int connid = ga->connid; 
         struct client *cl = get_client(self, connid);
         if (cl == NULL) {
+            sc_trace("Send to close client %d msgid %d, sz %d", 
+                    connid, sub->msgid, sz-(int)sizeof(*ga));
             return;
         }
-        UM_CAST(UM_BASE, sub, ga->wrap);
-        sc_error("Send to client %d msgid %d, sz %d", connid, sub->msgid, sz-(int)sizeof(*ga));
+        sc_trace("Send to active client %d msgid %d, sz %d", 
+                connid, sub->msgid, sz-(int)sizeof(*ga));
         switch (sub->msgid) {
         case IDUM_LOGOUT: {
             UM_CAST(UM_LOGOUT, lo, sub);
@@ -324,13 +327,13 @@ gate_net(struct service* s, struct net_message* nm) {
     case NETE_ACCEPT:
         // do not forward to handler
         c = accept_client(s, id);
-        sc_debug("accept %d", id);
+        sc_trace("Client %d accepted", id);
         if (!self->need_verify && c) {
             login_client(c);
         }
         break;
     case NETE_SOCKERR: {
-        sc_debug("Sockerr disconnect %d", id);
+        sc_trace("Client %d sockerr disconnect %d", id, nm->error);
         c = get_client(self, id);
         assert(c);
         if (c->status == S_LOGINED) { 
@@ -347,6 +350,7 @@ gate_net(struct service* s, struct net_message* nm) {
         // donot forward to handler
         c = get_client(self, id);
         assert(c);
+        sc_trace("Client %d writedone close", id);
         disconnect_client(s, c, true); 
         }
         break;
@@ -364,14 +368,14 @@ gate_time(struct service* s) {
         switch (c->status) {
         case S_CONNECTED:
             if (now - c->active_time > 10*1000) {
-                sc_debug("login timeout");
+                sc_trace("Client %d login timeout", c->connid);
                 disconnect_client(s, c, true);
             }
             break;
         case S_LOGINED:
             if (self->livetime > 0 &&
                 self->livetime < now - c->active_time) {
-                sc_debug("heartbeat timeout");
+                sc_trace("Client %d heartbeat timeout", c->connid);
                 
                 UM_DEFWRAP(UM_GATE, ga, UM_NETDISCONN, nd);
                 ga->connid = c->connid;
@@ -384,7 +388,7 @@ gate_time(struct service* s) {
             break;
         case S_LOGOUTED:
             if (now - c->active_time > 5*1000) {
-                sc_debug("logout timeout");
+                sc_trace("Client %d logout timeout", c->connid);
                 disconnect_client(s, c, true);
             }
             break;

@@ -171,27 +171,30 @@ pull(struct service *s, int source, int count) {
     UM_DEFFIX(UM_ROBOT_APPLY, ra);
     struct agent *ag = agent_pull(self);
     if (ag) {
-        sc_trace("=======robot %u status %d pull", ag->data.accid, ag->status);
         build_brief(ag, &ra->brief);
         sh_service_send(SERVICE_ID, source, MT_UM, ra, sizeof(*ra)); 
+        sc_trace("Robot %u pull", UID(ag));
+    } else {
+        sc_trace("Robot none to pull");
     }
 }
 
 static void
 play_fail(struct service *s, struct agent *ag) {
     struct robot *self = SERVICE_SELF;
-    sc_trace("=======robot %u status %d play fail", ag->data.accid, ag->status);
-    if (ag->status == S_WAIT) {
+    if (ag->status == S_WAIT) { 
         agent_rest(self, ag);
+        sc_trace("Robot %u rest, because play fail", UID(ag));
+    } else {
+        sc_trace("Robot %u rest, because play fail, but status %d", UID(ag), ag->status);
     }
-    sc_trace("=======2robot %u status %d play fail", ag->data.accid, ag->status);
 }
 
 static void
 enter_room(struct service *s, struct agent *ag, struct UM_ENTERROOM *er) {
     struct robot *self = SERVICE_SELF;
-    sc_trace("=======robot %u status %d enter room", ag->data.accid, ag->status);
     if (ag->status != S_WAIT) {
+        sc_trace("Robot %u receive enter room, but status %d", UID(ag), ag->status);
         return;
     }
     if (sc_service_has(self->room_handle, er->room_handle)) {
@@ -201,10 +204,11 @@ enter_room(struct service *s, struct agent *ag, struct UM_ENTERROOM *er) {
         lr->level = ag->level;
         build_detail(ag, &lr->detail);
         sh_service_send(SERVICE_ID, er->room_handle, MT_UM, lr, sizeof(*lr));
+        sc_trace("Robot %u send enter room to handle %x", UID(ag), er->room_handle);
     } else {
         agent_rest(self, ag);
+        sc_trace("Robot %u receive enter handle %x not exist", UID(ag), er->room_handle);
     }
-    sc_trace("=======2robot %u status %d enter room", ag->data.accid, ag->status);
 }
 
 static void
@@ -214,15 +218,16 @@ exit_room(struct service *s, uint32_t uid) {
     if (ag == NULL) {
         return;
     }
-    sc_trace("=======robot %u status %d exit room", ag->data.accid, ag->status);
     if (ag->status == S_FIGHT) {
         agent_rest(self, ag);
         UM_DEFWRAP(UM_MATCH, ma, UM_LOGOUT, lo);
         ma->uid = UID(ag);
         lo->err = SERR_OK;
         sh_service_send(SERVICE_ID, self->match_handle, MT_UM, ma, sizeof(*ma)+sizeof(*lo));
+        sc_trace("Robot %u notify match exit room", UID(ag));
+    } else {
+        sc_trace("Robot %u receive exit room, but status %d", UID(ag), ag->status);
     }
-    sc_trace("=======2robot %u status %d exit room", ag->data.accid, ag->status);
 }
 
 struct robot*

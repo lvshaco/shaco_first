@@ -242,7 +242,7 @@ struct UM_CREATEROOM {
     _UM_HEADER; 
     int8_t type;  // see ROOM_TYPE*
     uint32_t mapid;
-    int id;
+    uint32_t id;
     int8_t nmember;
     uint32_t members[0];
 };

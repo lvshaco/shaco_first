@@ -40,52 +40,59 @@ build_detail(struct player *pr, struct tmemberdetail *detail) {
 static void
 play(struct service *s, struct player *pr, int type) {
     struct hall *self = SERVICE_SELF;
-    if (pr->status == PS_WAITING) {
-        return;
+    if (pr->status == PS_HALL) { 
+        pr->status = PS_WAITING;
+        UM_DEFFIX(UM_APPLY, ap);
+        ap->type = type;
+        build_brief(pr, &ap->brief);
+        sh_service_send(SERVICE_ID, self->match_handle, MT_UM, ap, sizeof(*ap));
+        sc_trace("Play %u send play to match", UID(pr));
+    } else {
+        sc_trace("Play %u request play, but status %d", UID(pr), pr->status);
     }
-    pr->status = PS_WAITING;
-    UM_DEFFIX(UM_APPLY, ap);
-    ap->type = type;
-    build_brief(pr, &ap->brief);
-    sh_service_send(SERVICE_ID, self->match_handle, MT_UM, ap, sizeof(*ap));
 }
 
 static void
 play_fail(struct service *s, struct player *pr, struct UM_PLAYFAIL *fail) {
-    if (pr->status != PS_WAITING) {
-        return;
+    if (pr->status == PS_WAITING) { 
+        pr->status = PS_HALL;
+        UM_DEFWRAP(UM_CLIENT, cl, UM_PLAYFAIL, pl);
+        cl->uid = UID(pr);
+        *pl = *fail;
+        sh_service_send(SERVICE_ID, pr->watchdog_source, MT_UM, cl, sizeof(*cl)+sizeof(*pl));
+        sc_trace("Play %u notify client play fail", UID(pr));
+    } else {
+        sc_trace("Play %u receive play fail, but status %d", UID(pr), pr->status);
     }
-    pr->status = PS_HALL;
-
-    UM_DEFWRAP(UM_CLIENT, cl, UM_PLAYFAIL, pl);
-    cl->uid = UID(pr);
-    *pl = *fail;
-    sh_service_send(SERVICE_ID, pr->watchdog_source, MT_UM, cl, sizeof(*cl)+sizeof(*pl));
 }
 
 static void
 waiting(struct service *s, struct player *pr, struct UM_PLAYWAIT *wait) {
-    if (pr->status != PS_WAITING) {
-        return;
+    if (pr->status == PS_WAITING) {
+        UM_DEFWRAP(UM_CLIENT, cl, UM_PLAYWAIT, wt);
+        cl->uid = UID(pr);
+        *wt = *wait;
+        sh_service_send(SERVICE_ID, pr->watchdog_source, MT_UM, cl, sizeof(*cl)+sizeof(*wt));
+        sc_trace("Play %u notify client waiting", UID(pr));
+    } else {
+        sc_trace("Play %u receive waiting, but status %d", UID(pr), pr->status);
     }
-    UM_DEFWRAP(UM_CLIENT, cl, UM_PLAYWAIT, wt);
-    cl->uid = UID(pr);
-    *wt = *wait;
-    sh_service_send(SERVICE_ID, pr->watchdog_source, MT_UM, cl, sizeof(*cl)+sizeof(*wt));
 }
 
 static void
 enter_room(struct service *s, struct player *pr, struct UM_ENTERROOM *er) {
-    if (pr->status != PS_WAITING) {
-        return;
-    }
-    pr->status = PS_ROOM;
+    if (pr->status == PS_WAITING) { 
+        pr->status = PS_ROOM;
 
-    UM_DEFFIX(UM_LOGINROOM, lr);
-    lr->room_handle = er->room_handle;
-    lr->roomid = er->roomid;
-    build_detail(pr, &lr->detail);
-    sh_service_send(SERVICE_ID, pr->watchdog_source, MT_UM, lr, sizeof(*lr));
+        UM_DEFFIX(UM_LOGINROOM, lr);
+        lr->room_handle = er->room_handle;
+        lr->roomid = er->roomid;
+        build_detail(pr, &lr->detail);
+        sh_service_send(SERVICE_ID, pr->watchdog_source, MT_UM, lr, sizeof(*lr));
+        sc_trace("Play %u notify client enter room", UID(pr));
+    } else {
+        sc_trace("Play %u receive enter room, but status %d", UID(pr), pr->status);
+    }
 }
 
 static void
@@ -95,6 +102,7 @@ loading(struct service *s, struct player *pr, struct UM_PLAYLOADING *loading) {
     cl->uid = UID(pr);
     *pl = *loading;
     sh_service_send(SERVICE_ID, pr->watchdog_source, MT_UM, cl, sizeof(*cl)+sizeof(*pl));
+    sc_trace("Play %u notify client loading", UID(pr));
 }
 
 static void
@@ -106,7 +114,10 @@ exit_room(struct service *s, struct player *pr) {
         ma->uid = UID(pr);
         lo->err = SERR_OK;
         sh_service_send(SERVICE_ID, self->match_handle, MT_UM, ma, sizeof(*ma)+sizeof(*lo));
-    } 
+        sc_trace("Play %u notify match exit room", UID(pr));
+    } else {
+        sc_trace("Play %u receive exit room, but status %d", UID(pr), pr->status);
+    }
 }
 
 void 

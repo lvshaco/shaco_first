@@ -84,7 +84,7 @@ struct player {
 };
 
 struct gameroom { 
-    int id;
+    uint32_t id;
     int8_t type; // ROOM_TYPE*
     //uint32_t key;
     int status; // ROOMS_*
@@ -206,7 +206,8 @@ maptplt_find(uint32_t mapid) {
 }
 
 static inline void
-notify_create_gameroom_result(struct service *s, int dest_handle, int roomid, int err) {
+notify_create_gameroom_result(struct service *s, int dest_handle, uint32_t roomid, int err) {
+    sc_trace("Room %u notify match create result %d", roomid, err);
     UM_DEFFIX(UM_CREATEROOMRES, result);
     result->id = roomid;
     result->err = err;
@@ -276,6 +277,7 @@ member_place(struct player *m, uint32_t accid, uint8_t index) {
 
 static void
 gameroom_create(struct service *s, int source, const struct UM_CREATEROOM *create) {
+    sc_trace("Room %u recevie create from mapid %u", create->id, create->mapid);
     struct room* self = SERVICE_SELF;
     struct gameroom *ro = sh_hash_find(&self->gamerooms, create->id);
     if (ro) {
@@ -318,19 +320,18 @@ gameroom_create(struct service *s, int source, const struct UM_CREATEROOM *creat
     assert(!sh_hash_insert(&self->gamerooms, ro->id, ro));
     notify_create_gameroom_result(s, source, create->id, SERR_OK);
     self->map_randseed++; 
-    //sc_error("============== create room %u", ro->id);
+    sc_trace("Room %u mapid %u create ok", create->id, create->mapid);
 }
 
 static void
 gameroom_destroy(struct service *s, struct gameroom *ro) {
-//sc_error("============== destroy room %u", ro->id);
-
+    sc_trace("Room %u destroy", ro->id);
     struct room *self = SERVICE_SELF;
     int i;
     for (i=0; i<ro->np; ++i) {
         struct player *m = &ro->p[i];
         if (m->online) {
-            //sc_error("================ destroy logout %u", UID(m));
+            sc_trace("Room %u destroy, then logout member %u", ro->id, UID(m));
             logout(s, m);
         }
     }
@@ -343,6 +344,7 @@ gameroom_destroy(struct service *s, struct gameroom *ro) {
 
 static void
 gameroom_destroy_byid(struct service *s, uint32_t roomid) {
+    sc_trace("Room %u destroy by id", roomid);
     struct room *self = SERVICE_SELF;
     struct gameroom *ro = sh_hash_find(&self->gamerooms, roomid);
     if (ro) {
@@ -352,8 +354,7 @@ gameroom_destroy_byid(struct service *s, uint32_t roomid) {
 
 static void
 gameroom_enter(struct service *s, struct gameroom* ro) {
-//sc_error("==========game enter roomid %u", ro->id);
-
+    sc_trace("Room %u multi enter", ro->id); 
     ro->status = ROOMS_ENTER;
     ro->statustime = sc_timer_now();
     UM_DEFFIX(UM_GAMEENTER, enter);
@@ -362,7 +363,7 @@ gameroom_enter(struct service *s, struct gameroom* ro) {
 
 static void
 gameroom_start(struct service *s, struct gameroom* ro) {
-    //sc_error("==========game start roomid %u", ro->id);
+    sc_trace("Room %u multi start", ro->id); 
     ro->status = ROOMS_START; 
     ro->starttime = sc_timer_now();
     ro->statustime = ro->starttime;
@@ -477,6 +478,7 @@ build_awards(struct gameroom *ro, struct player **sortm, int n, struct memberawa
 
 static void
 game_over(struct service *s, struct gameroom* ro, bool death) {
+    sc_trace("Room %u over, by death? %d", ro->id, death); 
     struct player* m;
     struct player* sortm[MEMBER_MAX];
     struct memberaward awards[MEMBER_MAX];
@@ -1061,8 +1063,6 @@ loadok(struct service *s, struct player *m) {
         struct gameroom *ro = member2gameroom(m);
         m->loadok = true;
         check_enter_gameroom(s, ro);
-//sc_error("============== loadok roomid %u, accid %u", ro->id, UID(m));
-
     }
 }
 
@@ -1071,17 +1071,14 @@ login(struct service *s, int source, uint32_t roomid, const struct tmemberdetail
     struct room *self = SERVICE_SELF;
 
     uint32_t accid  = detail->accid;
-//sc_error("===========login handle %x, accid %u, roomid %u", lo->room_handle, accid, roomid);
     struct gameroom *ro = sh_hash_find(&self->gamerooms, roomid); 
     if (ro == NULL) {
         return NULL; // someting wrong
     }
-//sc_error("===========2login handle %x, accid %u, roomid %u", lo->room_handle, accid, roomid);
     struct player *m = member_get(ro, accid);
     if (m == NULL || m->online) {
         return NULL; // someting wrong
     }
-//sc_error("===========3login handle %x, accid %u, roomid %u", lo->room_handle, accid, roomid);
     m->detail = *detail; 
     role_attri_build(&ro->gattri, &m->detail.attri);
     m->base = m->detail.attri;
@@ -1096,11 +1093,14 @@ login(struct service *s, int source, uint32_t roomid, const struct tmemberdetail
 }
 
 static void
-player_login(struct service *s, int source, const struct UM_LOGINROOM *lr) {
+player_login(struct service *s, int source, const struct UM_LOGINROOM *lr) { 
     struct player *m = login(s, source, lr->roomid, &lr->detail);
     if (m) {
+        sc_trace("Room %u player %u login ok", lr->roomid, lr->detail.accid);
         m->brain = NULL;
         notify_game_info(s, m);
+    } else {
+        sc_trace("Room %u player %u login fail", lr->roomid, lr->detail.accid);
     }
 }
 
@@ -1108,6 +1108,7 @@ static void
 robot_login(struct service *s, int source, const struct UM_ROBOT_LOGINROOM *lr) {
     struct player *m = login(s, source, lr->roomid, &lr->detail);
     if (m) {
+        sc_trace("Room %u robot %u login ok", lr->roomid, lr->detail.accid);
         struct AI_brain *brain = malloc(sizeof(*brain));
         memset(brain, 0, sizeof(*brain));
         brain->level = lr->level;
@@ -1115,6 +1116,8 @@ robot_login(struct service *s, int source, const struct UM_ROBOT_LOGINROOM *lr) 
 
         notify_game_info(s, m);
         loadok(s, m);
+    } else {
+        sc_trace("Room %u robot %u login fail", lr->roomid, lr->detail.accid);
     }
 }
 
