@@ -286,12 +286,12 @@ gate_main(struct service* s, int session, int source, int type, const void *msg,
         int connid = ga->connid; 
         struct client *cl = get_client(self, connid);
         if (cl == NULL) {
-            sc_trace("Send to close client %d msgid %d, sz %d", 
+            sc_trace("Client %d send %d sz %d, but closed", 
                     connid, sub->msgid, sz-(int)sizeof(*ga));
             return;
         }
-        sc_trace("Send to active client %d msgid %d, sz %d", 
-                connid, sub->msgid, sz-(int)sizeof(*ga));
+        sc_trace("Client %d send %d sz %d", 
+                    connid, sub->msgid, sz-(int)sizeof(*ga));
         switch (sub->msgid) {
         case IDUM_LOGOUT: {
             UM_CAST(UM_LOGOUT, lo, sub);

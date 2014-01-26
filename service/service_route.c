@@ -123,10 +123,13 @@ handle_gate(struct service *s, int source, int connid, const void *msg, int sz) 
         memcpy(ok->ip, one->ip, sizeof(one->ip));
         ok->port = one->port;
         sh_service_send(SERVICE_ID, source, MT_UM, ga, sizeof(*ga) + sizeof(*ok));
+        sc_trace("Route client %d get %s:%u handle %x load %d", 
+                connid, one->ip, one->port, one->handle, one->load);
     } else {
         UM_DEFWRAP(UM_GATE, ga, UM_GATEADDRFAIL, fail);
         ga->connid = connid;
         sh_service_send(SERVICE_ID, source, MT_UM, ga, sizeof(*ga) + sizeof(*fail));
+        sc_trace("Route client %d get fail", connid);
     } 
     {
         UM_DEFWRAP(UM_GATE, ga, UM_LOGOUT, lo);
@@ -158,14 +161,15 @@ route_main(struct service *s, int session, int source, int type, const void *msg
             assert(one);
             *one = si->info[i];
             one->ip[sizeof(one->ip)-1] = '\0';
-            sc_debug("SERVICEINFO %s:%u, handle %04x, load %d", 
-                    one->ip, one->port, one->handle, one->load);
+            sc_trace("Route handle %x info %s:%u load %d", 
+                    one->handle, one->ip, one->port, one->load);
         }
         }
         break;
     case IDUM_SERVICEDEL: {
         UM_CAST(UM_SERVICEDEL, sd, msg);
         remove_service(&self->gates, sd->handle);
+        sc_trace("Route handle %x remove", sd->handle);
         }
         break;
     case IDUM_SERVICELOAD: {
@@ -173,6 +177,7 @@ route_main(struct service *s, int session, int source, int type, const void *msg
         struct service_info *one = find_or_insert_service(&self->gates, sl->handle);
         assert(one);
         one->load = sl->load;
+        sc_trace("Route handle %x load %d update_load %d", sl->handle, one->load, sl->load);
         }
         break;
     }

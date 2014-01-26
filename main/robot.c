@@ -13,6 +13,7 @@ static int SERVER[TMAX];
 static struct UM_GATEADDR GATEADDR;
 static struct chardata CHAR;
 static char ACCOUNT[ACCOUNT_NAME_MAX];
+static uint32_t LAST_SEND_TIME;
 
 static void
 mylog(const char *fmt, ...) {
@@ -92,6 +93,12 @@ static void
 _onsockerr(struct net_message* nm) {
     mylog("onsockerr: %d, ut %d", nm->error, nm->ut);
     _server_set(nm->ut, -1);
+}
+
+static void
+_heartbeat() {
+    UM_DEFFIX(UM_HEARTBEAT, hb);
+    _server_send(TGATE, hb, sizeof(*hb));
 }
 
 static void
@@ -283,6 +290,7 @@ int main(int argc, char* argv[]) {
     
     srand(time(NULL));
     _server_init();
+    LAST_SEND_TIME = 0;
 
     if (cnet_init(10)) {
         mylog("cnet_init fail");
@@ -299,6 +307,9 @@ int main(int argc, char* argv[]) {
     }
     for (;;) {
         cnet_poll(1);
+        if (time(NULL) - LAST_SEND_TIME >= 3) {
+            _heartbeat();
+        }
     }
     cnet_fini();
     system("pause"); 

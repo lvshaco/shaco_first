@@ -4,6 +4,7 @@
 #include "user_message.h"
 #include "cli_message.h"
 #include "sh_util.h"
+#include "sc_log.h"
 #include <assert.h>
 
 static inline void
@@ -28,6 +29,7 @@ login(struct service *s, int source, uint32_t accid) {
     struct hall *self = SERVICE_SELF;
     struct player *pr = sh_hash_find(&self->acc2player, accid);
     if (pr) {
+        sc_trace("Player %u relogin", accid);
         return; // relogin
     }
     pr = malloc(sizeof(*pr));
@@ -38,30 +40,34 @@ login(struct service *s, int source, uint32_t accid) {
     assert(!sh_hash_insert(&self->acc2player, accid, pr));
 
     if (playerdb_send(s, pr, PDB_QUERY)) {
+        sc_trace("Player %u login fail, no db", accid);
         hall_notify_logout(s, pr, SERR_NODB);
         free_player(self, pr);
+    } else {
+        sc_trace("Player %u login", accid);
     }
 }
 
 static void 
 logout(struct service *s, struct player *pr) {
     struct hall *self = SERVICE_SELF;
-
+    sc_trace("Player %u logout, status %d", UID(pr), pr->status);
     if (pr->status == PS_WAITING ||
         pr->status == PS_ROOM) {
         UM_DEFWRAP(UM_MATCH, ma, UM_LOGOUT, lo);
         ma->uid = UID(pr);
         lo->err = SERR_OK;
-        sh_service_send(SERVICE_ID, self->match_handle, MT_UM, ma, sizeof(*ma)+sizeof(*lo));
+        sh_service_send(SERVICE_ID, self->match_handle, MT_UM, ma, sizeof(*ma)+sizeof(*lo)); 
     } 
-    free_player(self, pr);
+    free_player(self, pr); 
 }
 
 static void 
 create_char(struct service *s, struct player *pr, const char *name) {
     struct hall *self = SERVICE_SELF;
-    if (pr->status == PS_WAITCREATECHAR) {
+    if (pr->status == PS_WAITCREATECHAR) { 
         sc_strncpy(pr->data.name, name, sizeof(pr->data.name));
+        sc_trace("Player %u create character %s", UID(pr), pr->data.name);
         if (playerdb_send(s, pr, PDB_CHECKNAME)) {
             hall_notify_logout(s, pr, SERR_NODB);
             free_player(self, pr);
