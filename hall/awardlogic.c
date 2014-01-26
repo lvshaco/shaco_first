@@ -96,12 +96,14 @@ process_award(struct service *s, struct player* pr, int8_t type, const struct me
             updated = true;
         }
         break;
-    case ROOM_TYPE_DASHI:
-        if (award->score > 0) {
-            cdata->score_dashi += award->score;
-            _rank(s, pr, "dashi", "", 
-            _get_score(cdata, cdata->score_dashi));
-            updated = true;
+    case ROOM_TYPE_DASHI: {
+        int score = (int)cdata->score_dashi + award->score;
+        if (score < 0)
+            score = 0;
+        cdata->score_dashi = score;
+        _rank(s, pr, "dashi", "", 
+        _get_score(cdata, cdata->score_dashi));
+        updated = true;
         }
         break;
     }

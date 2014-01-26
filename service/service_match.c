@@ -360,13 +360,15 @@ apply(struct service *s, int source, bool isrobot, int type,
 static void
 player_apply(struct service *s, int source, struct UM_APPLY *ap) {
     sc_trace("Match player %u apply", ap->brief.accid);
-    apply(s, source, false, ap->type, &ap->brief);
+    // todo, type
+    apply(s, source, false, ROOM_TYPE_DASHI, &ap->brief);
 }
 
 static void
 robot_apply(struct service *s, int source, struct UM_ROBOT_APPLY *ra) {
     sc_trace("Match robot %u apply", ra->brief.accid);
-    apply(s, source, true, 0, &ra->brief);
+    // todo, type
+    apply(s, source, true, ROOM_TYPE_DASHI, &ra->brief);
 }
 /*
 static void
