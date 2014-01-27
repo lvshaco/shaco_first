@@ -114,12 +114,13 @@ sh_hash_remove(struct sh_hash *h, uint32_t key) {
     void *pointer;
     uint32_t hash = key & (h->cap-1);
     struct sh_hash_slot **p = &h->slots[hash];
+    struct sh_hash_slot *tmp;
     while (*p) {
         if ((*p)->key == key) {
             pointer = (*p)->pointer;
-            free(*p);
+            tmp = *p;
             *p = (*p)->next;
-
+            free(tmp);
             h->used--;
             return pointer;
         }
@@ -130,26 +131,28 @@ sh_hash_remove(struct sh_hash *h, uint32_t key) {
 
 void
 sh_hash_foreach(struct sh_hash *h, void (*cb)(void *pointer)) {
-    struct sh_hash_slot *one;
+    struct sh_hash_slot *one, *next;
     int i;
     for (i=0; i<h->cap; ++i) {
         one = h->slots[i];
         while (one) {
+            next = one->next;
             (cb)(one->pointer);
-            one = one->next;
+            one = next;
         }
     }
 }
 
 void
 sh_hash_foreach2(struct sh_hash *h, void (*cb)(void *pointer, void *ud), void *ud) {
-    struct sh_hash_slot *one;
+    struct sh_hash_slot *one, *next;
     int i;
     for (i=0; i<h->cap; ++i) {
         one = h->slots[i];
         while (one) {
+            next = one->next;
             (cb)(one->pointer, ud);
-            one = one->next;
+            one = next;
         }
     }
 }
@@ -242,12 +245,13 @@ sh_hash64_remove(struct sh_hash64 *h, uint64_t key) {
     void *pointer;
     uint64_t hash = key & (h->cap-1);
     struct sh_hash64_slot **p = &h->slots[hash];
+    struct sh_hash64_slot *tmp;
     while (*p) {
         if ((*p)->key == key) {
             pointer = (*p)->pointer;
-            free(*p);
+            tmp = *p;
             *p = (*p)->next;
-
+            free(tmp);
             h->used--;
             return pointer;
         }
@@ -258,26 +262,28 @@ sh_hash64_remove(struct sh_hash64 *h, uint64_t key) {
 
 void
 sh_hash64_foreach(struct sh_hash64 *h, void (*cb)(void *pointer)) {
-    struct sh_hash64_slot *one;
+    struct sh_hash64_slot *one, *next;
     int i;
     for (i=0; i<h->cap; ++i) {
         one = h->slots[i];
         while (one) {
+            next = one->next;
             (cb)(one->pointer);
-            one = one->next;
+            one = next;
         }
     }
 }
 
 void
 sh_hash64_foreach2(struct sh_hash64 *h, void (*cb)(void *pointer, void *ud), void *ud) {
-    struct sh_hash64_slot *one;
+    struct sh_hash64_slot *one, *next;
     int i;
     for (i=0; i<h->cap; ++i) {
         one = h->slots[i];
         while (one) {
+            next = one->next;
             (cb)(one->pointer, ud);
-            one = one->next;
+            one = next;
         }
     }
 }

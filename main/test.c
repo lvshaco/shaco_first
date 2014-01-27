@@ -1362,6 +1362,21 @@ test_hash64(int times) {
     // ---------------------------------
 }
 
+void forcb(void *pointer, void *ud) {
+    struct sh_hash *h = ud;
+    sh_hash_remove(h, 5);
+}
+void 
+test_hash32_for(int times) {
+    struct sh_hash h;
+    sh_hash_init(&h, 2);
+
+    sh_hash_insert(&h, 3, NULL);
+    sh_hash_insert(&h, 5, NULL);
+    sh_hash_foreach2(&h, forcb, &h);
+    sh_hash_fini(&h);
+}
+
 
 int 
 main(int argc, char* argv[]) {
@@ -1396,5 +1411,6 @@ main(int argc, char* argv[]) {
     //test_redis_command(times);
     test_hash32(times);
     test_hash64(times);
+    test_hash32_for(times);
     return 0;
 }
