@@ -146,6 +146,7 @@ free_gameroom(void *pointer) {
     for (i=0; i<ro->np; ++i) {
         member_free(&ro->p[i]);
     }
+    free(ro);
 }
 
 void
@@ -336,11 +337,8 @@ gameroom_destroy(struct service *s, struct gameroom *ro) {
             logout(s, m);
         }
     }
-    if (ro->map) {
-        genmap_free(ro->map);
-        ro->map = NULL;
-    }
     sh_hash_remove(&self->gamerooms, ro->id);
+    free_gameroom(ro);
 }
 
 static void

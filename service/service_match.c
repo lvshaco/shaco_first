@@ -264,6 +264,7 @@ room_create_fail(struct service *s, uint32_t id, int err) {
         ar = sh_hash_find(&self->applyers, ro->members[i].uid);
         if (ar) {
             response_play_fail(s, ar, err);
+            sh_hash_remove(&self->applyers, ar->uid);
             free_applyer(self, ar);
         }
     }
