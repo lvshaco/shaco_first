@@ -198,10 +198,15 @@ sc_service_subscribe(const char *name, int flag) {
     if (name[0] == '\0') {
         return -1;
     }
-    if (flag == SUB_LOCAL) {
-        return service_query_id(name);
-    } else {
-        int handle = _subscribe(name);
+    int handle;
+    if (flag & SUB_LOCAL) {
+        handle = service_query_id(name);
+        if (handle != -1) {
+            return handle;
+        }
+    }
+    if (flag & SUB_REMOTE) {
+        handle = _subscribe(name);
         if (handle == -1) {
             return -1;
         }
@@ -210,8 +215,8 @@ sc_service_subscribe(const char *name, int flag) {
         if (service_main(R->handle, 0, 0, MT_TEXT, msg, n)) {
             return -1;
         }
-        return handle;
     }
+    return handle;
 }
 
 int 
@@ -247,13 +252,13 @@ debug_msg(int source, int dest, int type, const void *msg, int sz) {
         char tmp[sz+1];
         memcpy(tmp, msg, sz);
         tmp[sz] = '\0';
-        sc_debug("[%s - %0x] [T] %s", name, dest, tmp);
+        sc_debug("[%s - %04x] [T] %s", name, dest, tmp);
         break;
         }
     case MT_UM:
         if (sz >= 2) {
         uint16_t msgid = sh_from_littleendian16((uint8_t *)msg);
-        sc_debug("[%s - %0x] [U] %u", name, dest, msgid);
+        sc_debug("[%s - %04x] [U] %u", name, dest, msgid);
         }
         break;
     } 
@@ -421,7 +426,16 @@ sc_node_fini() {
     if (R == NULL) {
         return;
     }
-    free(R->sers.p);
+    if (R->sers.p) {
+        int i;
+        for (i=0; i<R->sers.sz; ++i) {
+            free(R->sers.p[i].phandle);
+        }
+        free(R->sers.p);
+        R->sers.p = NULL;
+        R->sers.sz = 0;
+        R->sers.cap = 0;
+    }
     free(R);
     R = NULL;
 }

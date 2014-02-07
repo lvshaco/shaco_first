@@ -19,6 +19,8 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.py *.h *.c" {
  config_rpuser.lua
  config_uniqueol.lua
  config_watchdog.lua
+ config_benchmarklog.lua
+ config_gamelog.lua
  libshaco=libshaco{
   dlmodule.c
   sc_check.c
@@ -118,6 +120,8 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.py *.h *.c" {
   service_tpltroom.c
   service_uniqueol.c
   service_watchdog.c
+  service_benchmarklog.c
+  service_gamelog.c
  }
  hall=hall{
   attrilogic.h

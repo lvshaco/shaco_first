@@ -17,6 +17,7 @@
 #include <stdlib.h>
 #include <time.h>
 #include <unistd.h>
+#include <syslog.h>
 
 static uint64_t
 _elapsed() {
@@ -796,7 +797,7 @@ test_elog3(int times) {
     }
     data[sizeof(data)-1] = '\0';
 
-    struct elog* el = elog_create("/home/lvxiaojun/log/testfilelog.log");
+    struct elog* el = elog_create("/tmp/testfilelog.log");
     elog_set_appender(el, &g_elog_appender_file);
     t1 = _elapsed();
     for (i=0; i<times; ++i) {
@@ -846,11 +847,11 @@ test_log(int times) {
         data[i] = '0';
     }
     data[sizeof(data)-1] = '\0';
-    FILE* fp = fopen("/home/lvxiaojun/log/test1.log", "w+");
+    FILE* fp = fopen("/tmp/test1.log", "w+");
     setbuf(fp, NULL);
 
-    FILE* fp2 = fopen("/home/lvxiaojun/log/test2.log", "w+");
-    setbuf(fp2, NULL);
+    //FILE* fp2 = fopen("/tmp/test2.log", "w+");
+    //setbuf(fp2, NULL);
 
     t1 = _elapsed();
     for (i=0; i<times; ++i) {
@@ -1377,6 +1378,14 @@ test_hash32_for(int times) {
     sh_hash_fini(&h);
 }
 
+void
+test_syslog(int times) {
+    int i;
+    scanf("%d\n", &i);
+    openlog("testlog", LOG_CONS|LOG_PID, 0);
+    syslog(LOG_DEBUG, "this is a test syslog");
+    closelog();
+}
 
 int 
 main(int argc, char* argv[]) {
@@ -1402,6 +1411,7 @@ main(int argc, char* argv[]) {
     //test_freelist();
     //test_map();
     //test_elog2();
+    test_elog3(times);
     //test_log(times);
     //test_elog4(times);
     //test_redisnew(times);
@@ -1409,8 +1419,9 @@ main(int argc, char* argv[]) {
     //test_encode();
     //test(times);
     //test_redis_command(times);
-    test_hash32(times);
-    test_hash64(times);
-    test_hash32_for(times);
+    //test_hash32(times);
+    //test_hash64(times);
+    //test_hash32_for(times);
+    //test_syslog(times);
     return 0;
 }

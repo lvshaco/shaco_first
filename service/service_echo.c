@@ -1,4 +1,4 @@
-#include "sc_log.h"
+#include "sc.h"
 #include "user_message.h"
 
 void

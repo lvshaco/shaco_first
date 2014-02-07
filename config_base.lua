@@ -32,7 +32,7 @@ rprank   = {ip=iip, port=8502, conn=256},
 open_node_map = {
 center = {ip=iip, port=18000, handler="cmds", clientmax=100, clientlive=6, wbuffer=0, verify=0},
 route  = {ip=oip, port=18100, handler="route", clientmax=10000, clientlive=0, wbuffer=0},
-gate   = {ip=oip, port=18200, handler="watchdog",clientmax=10000, clientlive=hb, wbuffer=128*1024, load=1},
+gate   = {ip=oip, port=18200, handler="watchdog",clientmax=10000, clientlive=hb, wbuffer=128*1024, load="gate_load"},
 }
 
 function def_node(name, id)
@@ -59,7 +59,8 @@ function def_node(name, id)
         gate_wbuffermax = open.wbuffer
         gate_clientmax  = open.clientmax
         gate_clientlive = open.clientlive
-        gate_need_load  = open.load
+        gate_publish = 1
+        gate_load  = open.load
         gate_need_verify = open.verify
         gate_handler = open.handler
 

@@ -1,6 +1,20 @@
 #ifndef __sc_h__
 #define __sc_h__
 
+#include "sc_env.h"
+#include "sc_init.h"
+#include "sc_log.h"
+#include "sc_net.h"
+#include "sc_node.h"
+#include "sc_reload.h"
+#include "sc_service.h"
+#include "sc_timer.h"
+#include "sh_monitor.h"
+#include "sh_util.h"
+
+#include <stdlib.h>
+#include <string.h>
+
 void sc_init();
 void sc_start();
 void sc_stop();

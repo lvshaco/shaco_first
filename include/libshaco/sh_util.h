@@ -4,6 +4,8 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
+#include <stdarg.h>
+#include <stdio.h>
 
 // const cstring to int32, eg: "GMAP"
 #define sc_cstr_to_int32(cstr) ({ \
@@ -109,6 +111,33 @@ sh_from_littleendian16(const uint8_t *buffer) {
 static inline uint32_t
 sh_from_littleendian32(const uint8_t *buffer) {
     return buffer[0] | buffer[1] << 8 | buffer[2] << 16 | buffer[3] << 24;
+}
+
+static int sh_vsnprintf(char *str, size_t size, const char *format, va_list ap);
+static int sh_snprintf(char *str, size_t size, const char *format, ...)
+#ifdef __GNUC__
+__attribute__((format(printf, 3, 4)))
+#endif
+;
+
+static inline int 
+sh_vsnprintf(char *str, size_t size, const char *format, va_list ap) {
+    int n = vsnprintf(str, size, format, ap);
+    if (n <= 0)
+        return 0;
+    if (n < (int)size)
+        return n;
+    return (int)(size-1);
+}
+
+static inline int 
+sh_snprintf(char *str, size_t size, const char *format, ...) {
+    va_list ap;
+    int n;
+    va_start(ap, format);
+    n = sh_vsnprintf(str, size, format, ap);
+    va_end(ap);
+    return n;
 }
 
 #endif

@@ -1,4 +1,5 @@
 #include "sc_log.h"
+#include "sh_util.h"
 #include "sc.h"
 #include "sc_node.h"
 #include "sc_env.h"
@@ -63,9 +64,9 @@ _prefix(int level, char* buf, int sz) {
     time_t sec = now / 1000;
     uint32_t msec = now % 1000;
     int n;
-    n  = snprintf(buf, sz, "[%d ", (int)getpid());
+    n  = sh_snprintf(buf, sz, "[%d ", (int)getpid());
     n += strftime(buf+n, sz-n, "%y%m%d-%H:%M:%S.", localtime(&sec));
-    n += snprintf(buf+n, sz-n, "%03d] %s: ", msec, _levelstr(level));
+    n += sh_snprintf(buf+n, sz-n, "%03d] %s: ", msec, _levelstr(level));
     return n;
 }
 
@@ -83,8 +84,8 @@ sc_logv(int level, const char* fmt, va_list ap) {
     char buf[1024] = {0};
     int n;
     n = _prefix(level, buf, sizeof(buf));
-    n += vsnprintf(buf+n, sizeof(buf)-n, fmt, ap);
-    n += snprintf(buf+n, sizeof(buf)-n, "\n");
+    n += sh_vsnprintf(buf+n, sizeof(buf)-n, fmt, ap);
+    n += sh_snprintf(buf+n, sizeof(buf)-n, "\n");
     _log(level, buf, n);
 }
 
@@ -93,7 +94,7 @@ sc_log(int level, const char* log) {
     char buf[1024] = {0};
     int n;
     n = _prefix(level, buf, sizeof(buf));
-    n += snprintf(buf+n, sizeof(buf)-n, "%s\n", log);
+    n += sh_snprintf(buf+n, sizeof(buf)-n, "%s\n", log);
     _log(level, buf, n);
 }
 

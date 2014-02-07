@@ -84,8 +84,14 @@ _my_node(struct remote *self) {
     return _get_node(self, self->myid);
 }
 
+static bool
+_is_center(struct remote *self) {
+    return sc_nodeid_from_handle(self->center_handle) == 0;
+}
+
 static void
-_disconnect_node(struct remote *self, int connid) {
+_disconnect_node(struct service *s, int connid) {
+    struct remote *self = SERVICE_SELF;
     struct _node *no = NULL;
     int i;
     for (i=0; i<NODE_MAX; ++i) {
@@ -95,11 +101,17 @@ _disconnect_node(struct remote *self, int connid) {
         }
     }
     if (no) {
-        sc_info("Node(%d) disconnect", (int)(no-self->nodes));
+        int id = no-self->nodes;
+        sc_info("Node(%d:%d) disconnect", id, connid);
+        no->connid = -1;
+        no->node_handle = -1;
         for (i=0; i<no->handles.sz; ++i) {
             sc_service_exit(no->handles.pi[i]);
         }
         no->handles.sz = 0;
+        if (_is_center(self)) {
+            sh_service_vsend(SERVICE_ID, self->center_handle, "UNREG %d", id);
+        }
     }
 }
 
@@ -173,6 +185,10 @@ _vdsend(struct remote *self, int connid, int source, int dest, const char *fmt, 
 
 static int
 _send(struct remote *self, int source, int dest, int type, const void *msg, size_t sz) {
+    if (dest <= 0) {
+        sc_error("Invalid dest %04x", dest);
+        return 1;
+    }
     int id = sc_nodeid_from_handle(dest);
     struct _node *no = _get_node(self, id);
     if (no == NULL) {
@@ -182,7 +198,7 @@ _send(struct remote *self, int source, int dest, int type, const void *msg, size
     if (no->connid != -1) {
         return _dsend(self, no->connid, source, dest, type, msg, sz);
     } else {
-        sc_error("Node %d has not connect, by dest %04x", id, dest);
+        sc_error("Node(%d) has not connect, by dest %04x", id, dest);
         return 1;
     } 
 }
@@ -265,11 +281,12 @@ _block_read_center_entry(int id, int *center_handle, int *node_handle) {
 static int
 _connect_node(struct service *s, struct _node *no) {
     struct remote *self = SERVICE_SELF;
+    int id = no - self->nodes;
     if (no->connid != -1) {
+        sc_error("Node(%d:%d) has connected", id, no->connid);
         return 0;
     }
-    struct sh_node_addr *addr = &no->addr;
-    int id = no - self->nodes;
+    struct sh_node_addr *addr = &no->addr; 
     int err; 
     int connid = sc_net_block_connect(addr->naddr, addr->nport, SERVICE_ID, 0, &err);
     if (connid < 0) {
@@ -277,8 +294,9 @@ _connect_node(struct service *s, struct _node *no) {
                 id, addr->naddr, addr->nport, sc_net_error(err));
         return 1;
     }
+    sc_net_subscribe(connid, true);
     _bound_node_connection(no, connid);
-    sc_info("Connect to node(%d) %s:%u ok", id, addr->naddr, addr->nport);
+    sc_info("Connect to node(%d:%d) %s:%u ok", id, connid, addr->naddr, addr->nport);
     return 0;
 }
 
@@ -292,7 +310,7 @@ _connect_service(struct service *s, const char *name, int handle) {
         id = self->myid;
     no = _get_node(self, id);
     if (no == NULL) {
-        sc_error("Connect service %s:%d fail: Invalid node %d", name, handle, id);
+        sc_error("Connect service %s:%d fail: Invalid node(%d)", name, handle, id);
         return 1;
     }
     if (id != self->myid) {
@@ -333,7 +351,8 @@ _broadcast_node(struct service *s, int id) {
         struct _node *other = &self->nodes[i];
         if (i == id)
             continue;
-        if (other->connid == -1)
+        if (other->connid == -1 ||
+            no->connid == -1)
             continue;
         _vsend(self, SERVICE_ID, no->node_handle, "ADDR %d %s %u %s %u",
                 i, other->addr.naddr, other->addr.nport, other->addr.gaddr, other->addr.gport);
@@ -416,6 +435,17 @@ void
 node_free(struct remote* self) {
     if (self == NULL)
         return;
+    struct _node *no;
+    int i;
+    for (i=0; i<NODE_MAX; ++i) {
+        no = &self->nodes[i];
+        if (no->handles.pi) {
+            free(no->handles.pi);
+            no->handles.pi = NULL;
+            no->handles.sz = 0;
+            no->handles.cap = 0;
+        }
+    }
     free(self);
 }
 
@@ -506,20 +536,20 @@ node_net(struct service* s, struct net_message* nm) {
         _read(s, nm);
         break;
     case NETE_ACCEPT:
-        if (sc_nodeid_from_handle(self->center_handle) == 0) {
+        if (_is_center(self)) {
             _send_center_entry(s, nm->connid);
         }
         sc_net_subscribe(nm->connid, true);
         break;
-    case NETE_CONNECT:
-        sc_info("connect to node ok, %d", nm->connid);
-        break;
-    case NETE_CONNERR:
-        sc_error("connect to node fail: %s", sc_net_error(nm->error));
-        break;
+    //case NETE_CONNECT:
+        //sc_info("connect to node ok, %d", nm->connid);
+        //break;
+    //case NETE_CONNERR:
+        //sc_error("connect to node fail: %s", sc_net_error(nm->error));
+        //break;
     case NETE_SOCKERR:
         sc_error("node disconnect: %s, %d", sc_net_error(nm->error), nm->connid);
-        _disconnect_node(self, nm->connid);
+        _disconnect_node(s, nm->connid);
         break;
     }
 }
@@ -555,7 +585,6 @@ node_main(struct service *s, int session, int source, int type, const void *msg,
         const char *gaddr = A.argv[4];
         int gport = strtol(A.argv[5], NULL, 10);
         int node_handle = strtol(A.argv[6], NULL, 10);
-
         if (id > 0 &&
             id != self->myid) {
             struct _node *no = _get_node(self, id);

@@ -35,7 +35,6 @@ struct gate {
     int  load_handle;
     int  livetime;
     bool need_verify;
-    bool need_load;
 
     int  cmax;
     int  used;
@@ -165,16 +164,17 @@ listen_gate(struct service* s) {
 int
 gate_init(struct service* s) {
     struct gate* self = SERVICE_SELF;
-    if (sh_handle_publish(SERVICE_NAME, PUB_SER)) {
-        return 1;
+    
+    if (sc_getint("gate_publish", 1)) {
+        if (sh_handle_publish(SERVICE_NAME, PUB_SER))
+            return 1;
     }
     const char* hname = sc_getstr("gate_handler", ""); 
-    if (sh_handler(hname, SUB_REMOTE, &self->handler))
+    if (sh_handler(hname, SUB_LOCAL|SUB_REMOTE, &self->handler)) {
         return 1;
-    self->load_handle = -1;
-    self->need_load = sc_getint("gate_need_load", 0);
-    if (self->need_load) {
-        const char *lname = sc_getstr("gate_load", "");
+    }
+    const char *lname = sc_getstr("gate_load", "");
+    if (lname[0] != '\0') {
         if (sh_handler(lname, SUB_REMOTE, &self->load_handle)) {
             return 1;
         }

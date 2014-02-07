@@ -98,6 +98,7 @@ service_so=\
 	service_watchdog.so \
 	service_uniqueol.so \
 	service_match.so \
+	service_benchmarklog.so \
 	service_benchmark.so
 
 all: \
@@ -114,6 +115,7 @@ all: \
 	t \
 	robot \
 	service_log.so \
+	service_gamelog.so \
 	$(service_so) \
 	service_room.so \
 	service_rank.so \
@@ -140,6 +142,10 @@ service_room.so: $(service_dir)/service_room.c \
 	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Iinclude/libshaco -Inet -Ibase -Imessage -Igame -Itplt -Idatadefine -Wl,-rpath,. tplt.so mapdatamgr.so
 
 service_log.so: $(service_dir)/service_log.c
+	@rm -f $@
+	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Iinclude/libshaco -Inet -Ibase -Imessage -Ielog -Wl,-rpath,. elog.so
+
+service_gamelog.so: $(service_dir)/service_gamelog.c
 	@rm -f $@
 	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Iinclude/libshaco -Inet -Ibase -Imessage -Ielog -Wl,-rpath,. elog.so
 

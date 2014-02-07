@@ -39,6 +39,17 @@ void
 centers_free(struct centers* self) {
     if (self == NULL)
         return;
+    struct _pubsub_slot *slot;
+    int i;
+    for (i=0; i<self->ps.sz; ++i) {
+        slot = &self->ps.p[i];
+        free(slot->pubs.p);
+        free(slot->subs.p);
+    }
+    free(self->ps.p);
+    self->ps.p = NULL;
+    self->ps.sz = 0;
+    self->ps.cap = 0;
     free(self);
 }
 
@@ -72,6 +83,9 @@ insert_pubsub_name(struct _pubsub_array *ps, const char *name) {
 
 static int
 insert_int(struct _int_array *inta, int value) {
+    if (value < 0)
+        return 1;
+
     int i;
     for (i=0; i<inta->sz; ++i) {
         if (inta->p[i] == value)
@@ -86,6 +100,29 @@ insert_int(struct _int_array *inta, int value) {
     }
     inta->p[inta->sz++] = value;
     return 0;
+}
+
+static void
+remove_int(struct _int_array *inta, int nodeid) {
+    int i,j;
+    for (i=0; i<inta->sz; ++i) {
+        if (sc_nodeid_from_handle(inta->p[i]) == nodeid) {
+            for (j=i; j<inta->sz-1; ++j) {
+                inta->p[i] = inta->p[i+1];
+            }
+            inta->sz--;
+        }
+    }
+}
+
+static void
+unreg_node(struct centers *self, int nodeid) {
+    struct _pubsub_array* ps = &self->ps;
+    int i;
+    for (i=0; i<ps->sz; ++i) {
+        remove_int(&ps->p[i].pubs, nodeid);
+        remove_int(&ps->p[i].subs, nodeid);
+    }
 }
 
 void
@@ -113,6 +150,11 @@ centers_main(struct service *s, int session, int source, int type, const void *m
         sh_service_send(SERVICE_ID, self->node_handle, MT_TEXT, msg, sz);
         int nodeid = strtol(A.argv[1], NULL, 10);
         sh_service_vsend(SERVICE_ID, self->node_handle, "BROADCAST %d", nodeid);
+    } else if (!strcmp(cmd, "UNREG")) {
+        if (A.argc != 2)
+            return;
+        int nodeid = strtol(A.argv[1], NULL, 10);
+        unreg_node(self, nodeid);
     } else if (!strcmp(cmd, "SUB")) {
         if (A.argc != 2)
             return;

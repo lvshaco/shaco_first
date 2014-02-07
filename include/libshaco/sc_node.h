@@ -18,8 +18,8 @@
 #define PUB_BOTH PUB_SER|PUB_MOD
 
 // subscribe flag
-#define SUB_LOCAL  0 
-#define SUB_REMOTE 1
+#define SUB_LOCAL  1
+#define SUB_REMOTE 2
 
 struct sh_node_addr {
     char naddr[40];
