@@ -173,6 +173,7 @@ gate_init(struct service* s) {
     if (sh_handler(hname, SUB_LOCAL|SUB_REMOTE, &self->handler)) {
         return 1;
     }
+    self->load_handle = -1;
     const char *lname = sc_getstr("gate_load", "");
     if (lname[0] != '\0') {
         if (sh_handler(lname, SUB_REMOTE, &self->load_handle)) {
@@ -281,31 +282,37 @@ gate_main(struct service* s, int session, int source, int type, const void *msg,
     struct gate* self = SERVICE_SELF;
     switch (type) {
     case MT_UM: {
-        UM_CAST(UM_GATE, ga, msg); 
-        UM_CAST(UM_BASE, sub, ga->wrap);
-        int connid = ga->connid; 
-        struct client *cl = get_client(self, connid);
-        if (cl == NULL) {
-            sc_trace("Client %d send %d sz %d, but closed", 
-                    connid, sub->msgid, sz-(int)sizeof(*ga));
-            return;
-        }
-        sc_trace("Client %d send %d sz %d", 
-                    connid, sub->msgid, sz-(int)sizeof(*ga));
-        switch (sub->msgid) {
-        case IDUM_LOGOUT: {
-            UM_CAST(UM_LOGOUT, lo, sub);
-            if (lo->err == SERR_OK) {
-                disconnect_client(s, cl, true);
-            } else {
-                send_to_client(cl, lo, sizeof(*lo));
-                disconnect_client(s, cl, false);
+        UM_CAST(UM_BASE, base, msg);
+        switch (base->msgid) {
+        case IDUM_GATE: {
+            UM_CAST(UM_GATE, ga, msg); 
+            UM_CAST(UM_BASE, sub, ga->wrap);
+            int connid = ga->connid; 
+            struct client *cl = get_client(self, connid);
+            if (cl == NULL) {
+                sc_trace("Client %d send %d sz %d, but closed", 
+                        connid, sub->msgid, sz-(int)sizeof(*ga));
+                return;
+            }
+            sc_trace("Client %d send %d sz %d", 
+                        connid, sub->msgid, sz-(int)sizeof(*ga));
+            switch (sub->msgid) {
+            case IDUM_LOGOUT: {
+                UM_CAST(UM_LOGOUT, lo, sub);
+                if (lo->err == SERR_OK) {
+                    disconnect_client(s, cl, true);
+                } else {
+                    send_to_client(cl, lo, sizeof(*lo));
+                    disconnect_client(s, cl, false);
+                }
+                break;
+                }
+            default:
+                send_to_client(cl, ga->wrap, sz-sizeof(*ga));
+                break;
             }
             break;
-            }
-        default:
-            send_to_client(cl, ga->wrap, sz-sizeof(*ga));
-            break;
+            } 
         }
         break;
         }
@@ -325,9 +332,9 @@ gate_net(struct service* s, struct net_message* nm) {
         }
         break;
     case NETE_ACCEPT:
-        // do not forward to handler
-        c = accept_client(s, id);
         sc_trace("Client %d accepted", id);
+        // do not forward to handler
+        c = accept_client(s, id); 
         if (!self->need_verify && c) {
             login_client(c);
         }

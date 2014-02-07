@@ -183,7 +183,7 @@ _handle_redis(struct service *s, struct UM_REDISREPLY *rep, int sz) {
         
     struct memrw rw;
     memrw_init(&rw, rep->data, sz - sizeof(*rep));
-    uint8_t len; 
+    uint8_t len = 0; 
     memrw_read(&rw, &len, sizeof(len));
     char type[(int)len+1];
     memrw_read(&rw, type, len);

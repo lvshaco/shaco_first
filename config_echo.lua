@@ -1,4 +1,4 @@
-sc_loglevel="DEBUG"
+sc_loglevel="INFO"
 sc_connmax=11000
 sc_service="gate,echo"
 

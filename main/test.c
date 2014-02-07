@@ -1382,9 +1382,14 @@ void
 test_syslog(int times) {
     int i;
     scanf("%d\n", &i);
-    openlog("testlog", LOG_CONS|LOG_PID, 0);
-    syslog(LOG_DEBUG, "this is a test syslog");
-    closelog();
+    struct elog* el = elog_create("/tmp/testfprintf.log");
+    elog_set_appender(el, &g_elog_appender_file);
+    elog_append(el, "1234", 4); 
+    elog_free(el);
+
+    //openlog("testlog", LOG_CONS|LOG_PID, 0);
+    //syslog(LOG_DEBUG, "this is a test syslog");
+    //closelog();
 }
 
 int 

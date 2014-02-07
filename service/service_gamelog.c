@@ -51,7 +51,7 @@ gamelog_main(struct service *s, int session, int source, int type, const void *m
     int size = min(sz, sizeof(tmp)-1);
     memcpy(tmp, msg, size);
     tmp[size] = '\0';
-    elog_append(self->logger, msg, size);
+    elog_append(self->logger, tmp, size);
 
     self->count++;
     if (self->last_time == 0) {
