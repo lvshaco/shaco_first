@@ -1,5 +1,5 @@
 #include "cnet.h"
-#include "cli_message.h"
+#include "msg_client.h"
 #include <stdio.h>
 #include <assert.h>
 #include <string.h>

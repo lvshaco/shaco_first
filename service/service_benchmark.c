@@ -1,17 +1,8 @@
-#include "sc_service.h"
-#include "sc_env.h"
-#include "sc_net.h"
-#include "sc_log.h"
-#include "sh_util.h"
-#include "sc_timer.h"
 #include "sc.h"
 #include "hashid.h"
 #include "freeid.h"
-#include "user_message.h"
-#include "cli_message.h"
-#include <stdlib.h>
-#include <unistd.h>
-#include <stdio.h>
+#include "msg_server.h"
+#include "msg_client.h"
 
 struct client {
     int connid;

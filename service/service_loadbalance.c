@@ -1,13 +1,5 @@
-#include "sc_service.h"
-#include "sh_monitor.h"
-#include "sc_node.h"
-#include "sc_env.h"
-#include "sc_log.h"
-#include "sh_util.h"
-#include "user_message.h"
-#include <stdlib.h>
-#include <assert.h>
-#include <string.h>
+#include "sc.h"
+#include "msg_server.h"
 
 /*
 loadbalance_target : 负载均衡目标

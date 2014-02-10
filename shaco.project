@@ -4,9 +4,11 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.py *.h *.c" {
  config_auth.lua
  config_base.lua
  config_benchmark.lua
+ config_benchmarklog.lua
  config_bmdb.lua
  config_center.lua
  config_echo.lua
+ config_gamelog.lua
  config_gate.lua
  config_gateload.lua
  config_hall.lua
@@ -19,8 +21,6 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.py *.h *.c" {
  config_rpuser.lua
  config_uniqueol.lua
  config_watchdog.lua
- config_benchmarklog.lua
- config_gamelog.lua
  libshaco=libshaco{
   dlmodule.c
   sc_check.c
@@ -64,17 +64,12 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.py *.h *.c" {
   array.h
   freeid.h
   freelist.h
-  gfreeid.h
   hashid.h
-  hmap.h
-  map.h
   memrw.h
   mpool.h
   stringsplice.h
   stringtable.h
   args.c
-  hmap.c
-  map.c
   mpool.c
  }
  net=net{
@@ -97,14 +92,15 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.py *.h *.c" {
   cnet.c
  }
  service=service{
-  cmdctl.h
   service_auth.c
   service_benchmark.c
   service_benchmarkdb.c
+  service_benchmarklog.c
   service_centers.c
   service_cmdctl.c
   service_cmds.c
   service_echo.c
+  service_gamelog.c
   service_gate.c
   service_hall.c
   service_loadbalance.c
@@ -116,46 +112,52 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.py *.h *.c" {
   service_robot.c
   service_room.c
   service_route.c
-  service_tplthall.c
-  service_tpltroom.c
   service_uniqueol.c
   service_watchdog.c
-  service_benchmarklog.c
-  service_gamelog.c
  }
- hall=hall{
-  attrilogic.h
-  awardlogic.h
+ mod_hall=mod_hall{
   hall.h
-  player.h
-  playerdb.h
-  playlogic.h
-  ringlogic.h
-  rolelogic.h
-  attrilogic.c
-  awardlogic.c
-  player.c
-  playerdb.c
-  playlogic.c
-  ringlogic.c
-  rolelogic.c
+  hall_attribute.h
+  hall_award.h
+  hall_play.h
+  hall_player.h
+  hall_playerdb.h
+  hall_ring.h
+  hall_role.h
+  hall_tplt.h
+  hall_attribute.c
+  hall_award.c
+  hall_play.c
+  hall_player.c
+  hall_playerdb.c
+  hall_ring.c
+  hall_role.c
+  hall_tplt.c
  }
- game=game{
+ mod_room=mod_room{
   buff.h
   fight.h
   genmap.h
   mapdatamgr.h
+  room.h
+  room_tplt.h
   roommap.h
   fight.c
   genmap.c
   mapdatamgr.c
+  room_tplt.c
   roommap.c
  }
- message=message{
-  cli_message.h
-  message.h
-  sharetype.h
-  user_message.h
+ mod_robot=mod_robot{
+  robot.h
+  robot_tplt.h
+  robot_tplt.c
+ }
+ msg=msg{
+  msg.h
+  msg_client.h
+  msg_server.h
+  msg_sharetype.h
  }
  datadefine=datadefine{
   tplt_struct.h
@@ -203,11 +205,9 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.py *.h *.c" {
   }
  }
  main=main{
-  robot.h
   robot.c
   shaco.c
   test.c
-  testclient.c
  }
  web=web{
   rank.lua

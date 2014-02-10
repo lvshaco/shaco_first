@@ -1,14 +1,6 @@
-#include "sc_service.h"
-#include "sc_timer.h"
-#include "sc_log.h"
-#include "sc_node.h"
-#include "sh_hash.h"
-#include "sh_util.h"
-#include "user_message.h"
-#include "cli_message.h"
-#include <stdlib.h>
-#include <string.h>
-#include <assert.h>
+#include "sc.h"
+#include "msg_server.h"
+#include "msg_client.h"
 
 #define S_WAITING 0
 #define S_CREATING 1

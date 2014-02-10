@@ -1,8 +1,4 @@
-#include "sc_service.h"
-#include "sc_env.h"
-#include "sc_node.h"
-#include "sc_log.h"
-#include "sh_util.h"
+#include "sc.h"
 #include "args.h"
 
 struct _int_array {

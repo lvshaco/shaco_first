@@ -1,4 +1,4 @@
-.PHONY: all t clean cleanall res thirdlib
+.PHONY: all t robot clean cleanall res thirdlib
  #-Wpointer-arith -Winline
 CFLAGS=-g -Wall -Werror 
 SHARED=-fPIC -shared
@@ -47,10 +47,6 @@ elog_src=\
 base_src=\
 	base/mpool.c \
 	base/mpool.h \
-	base/map.c \
-	base/map.h \
-	base/hmap.c \
-	base/hmap.h \
 	base/array.h \
 	base/freeid.h \
 	base/hashid.h \
@@ -108,7 +104,6 @@ all: \
 	base.so \
 	redis.so \
 	tplt.so \
-	mapdatamgr.so \
 	elog.so \
 	shaco \
 	shaco-cli \
@@ -120,8 +115,6 @@ all: \
 	service_room.so \
 	service_rank.so \
 	service_redisproxy.so \
-	service_tplthall.so \
-	service_tpltroom.so \
 	service_hall.so \
 	service_auth.so \
 	service_robot.so
@@ -131,77 +124,76 @@ release: all
 
 $(service_so): %.so: $(service_dir)/%.c
 	@rm -f $@
-	gcc $(CFLAGS) $(SHARED) -o $@ $< -Iinclude/libshaco -Inet -Ibase -Imessage
+	gcc $(CFLAGS) $(SHARED) -o $@ $< -Iinclude/libshaco -Inet -Ibase -Imsg
 
 service_room.so: $(service_dir)/service_room.c \
-	game/fight.c \
-	game/fight.h \
-	game/genmap.c \
-	game/genmap.h
+	mod_room/room_tplt.c \
+	mod_room/room_tplt.h \
+	mod_room/fight.c \
+	mod_room/fight.h \
+	mod_room/genmap.c \
+	mod_room/genmap.h \
+	mod_room/mapdatamgr.c \
+	mod_room/mapdatamgr.h \
+	mod_room/roommap.c \
+	mod_room/roommap.h
 	@rm -f $@
-	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Iinclude/libshaco -Inet -Ibase -Imessage -Igame -Itplt -Idatadefine -Wl,-rpath,. tplt.so mapdatamgr.so
+	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Iinclude/libshaco -Inet -Ibase -Imsg -Imod_room -Itplt -Idatadefine -Wl,-rpath,. tplt.so 
 
 service_log.so: $(service_dir)/service_log.c
 	@rm -f $@
-	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Iinclude/libshaco -Inet -Ibase -Imessage -Ielog -Wl,-rpath,. elog.so
+	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Iinclude/libshaco -Inet -Ibase -Imsg -Ielog -Wl,-rpath,. elog.so
 
 service_gamelog.so: $(service_dir)/service_gamelog.c
 	@rm -f $@
-	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Iinclude/libshaco -Inet -Ibase -Imessage -Ielog -Wl,-rpath,. elog.so
+	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Iinclude/libshaco -Inet -Ibase -Imsg -Ielog -Wl,-rpath,. elog.so
 
-
-service_playerdb.so: $(service_dir)/service_playerdb.c
-	@rm -f $@
-	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Iinclude/libshaco -Inet -Ibase -Imessage -Iworld -Iredis -Wl,-rpath,. redis.so
 
 service_rank.so: $(service_dir)/service_rank.c
 	@rm -f $@
-	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Iinclude/libshaco -Inet -Ibase -Imessage -Iworld -Iredis -Wl,-rpath,. redis.so
+	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Iinclude/libshaco -Inet -Ibase -Imsg -Iworld -Iredis -Wl,-rpath,. redis.so
 
 
 service_benchmarkdb.so: $(service_dir)/service_benchmarkdb.c
 	@rm -f $@
-	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Iinclude/libshaco -Inet -Ibase -Imessage -Iredis -Wl,-rpath,. redis.so
+	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Iinclude/libshaco -Inet -Ibase -Imsg -Iredis -Wl,-rpath,. redis.so
 
 service_redisproxy.so: $(service_dir)/service_redisproxy.c
 	@rm -f $@
-	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Iinclude/libshaco -Inet -Ibase -Imessage -Iredis -Wl,-rpath,. redis.so
+	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Iinclude/libshaco -Inet -Ibase -Imsg -Iredis -Wl,-rpath,. redis.so
 
 service_auth.so: $(service_dir)/service_auth.c
 	@rm -f $@
-	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Iinclude/libshaco -Inet -Ibase -Imessage -Iredis -Wl,-rpath,. redis.so
-
-service_tplthall.so: $(service_dir)/service_tplthall.c
-	@rm -f $@
-	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Iinclude/libshaco -Itplt -Idatadefine -Wl,-rpath,. tplt.so
-
-service_tpltroom.so: $(service_dir)/service_tpltroom.c
-	@rm -f $@
-	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Iinclude/libshaco -Itplt -Idatadefine -Igame -Wl,-rpath,. tplt.so mapdatamgr.so
+	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Iinclude/libshaco -Inet -Ibase -Imsg -Iredis -Wl,-rpath,. redis.so
 
 service_hall.so: $(service_dir)/service_hall.c \
-	hall/player.c \
-	hall/player.h \
-	hall/playerdb.c \
-	hall/playerdb.h \
-	hall/rolelogic.c \
-	hall/rolelogic.h \
-	hall/ringlogic.c \
-	hall/ringlogic.h \
-	hall/awardlogic.c \
-	hall/awardlogic.h \
-	hall/attrilogic.c \
-	hall/attrilogic.h \
-	hall/playlogic.c \
-	hall/playlogic.h
+	mod_hall/hall_tplt.c \
+	mod_hall/hall_tplt.h \
+	mod_hall/hall_player.c \
+	mod_hall/hall_player.h \
+	mod_hall/hall_playerdb.c \
+	mod_hall/hall_playerdb.h \
+	mod_hall/hall_role.c \
+	mod_hall/hall_role.h \
+	mod_hall/hall_ring.c \
+	mod_hall/hall_ring.h \
+	mod_hall/hall_award.c \
+	mod_hall/hall_award.h \
+	mod_hall/hall_attribute.c \
+	mod_hall/hall_attribute.h \
+	mod_hall/hall_play.c \
+	mod_hall/hall_play.h
 	@rm -f $@
-	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Iinclude/libshaco -Inet -Ibase -Itplt -Idatadefine -Imessage -Iredis -Ihall -Wl,-rpath,. redis.so tplt.so
+	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Iinclude/libshaco -Inet -Ibase -Itplt -Idatadefine -Imsg -Iredis -Imod_hall -Wl,-rpath,. redis.so tplt.so
 
 service_robot.so: $(service_dir)/service_robot.c \
-	hall/attrilogic.c \
-	hall/attrilogic.h
+	mod_hall/hall_attribute.c \
+	mod_hall/hall_attribute.h \
+	mod_robot/robot.h \
+	mod_robot/robot_tplt.c \
+	mod_robot/robot_tplt.h
 	@rm -f $@
-	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Iinclude/libshaco -Inet -Ibase -Imessage -Iredis -Itplt -Idatadefine -Ihall -Wl,-rpath,. redis.so tplt.so
+	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Iinclude/libshaco -Inet -Ibase -Imsg -Iredis -Itplt -Idatadefine -Imod_hall -Imod_robot -Wl,-rpath,. redis.so tplt.so
 
 lur.so: $(lur_src)
 	@rm -f $@
@@ -223,10 +215,6 @@ tplt.so: $(tplt_src)
 	@rm -f $@
 	gcc $(CFLAGS) $(SHARED) -o $@ $^ -DUSE_HOSTLOG -Iinclude/libshaco
 
-mapdatamgr.so: game/mapdatamgr.c game/mapdatamgr.c game/roommap.c game/roommap.h
-	@rm -f $@
-	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Iinclude/libshaco -Itplt -Idatadefine -Igame
-
 elog.so: $(elog_src)
 	@rm -f $@
 	gcc $(CFLAGS) $(SHARED) -o $@ $^
@@ -244,7 +232,7 @@ t: main/test.c shaco.so net.so lur.so base.so redis.so elog.so
 	gcc $(CFLAGS) -o $@ $^ -Iinclude/libshaco -Ilur -Inet -Ibase -Iredis -Ielog $(LDFLAGS) redis.so 
 
 robot: main/robot.c cnet/cnet.c cnet/cnet.h net.so
-	gcc $(CFLAGS) -o $@ $^ -Ilur -Icnet -Inet -Ibase -Imessage -Wl,-rpath,. net.so
+	gcc $(CFLAGS) -o $@ $^ -Ilur -Icnet -Inet -Ibase -Imsg -Wl,-rpath,. net.so
 
 # res
 res:
@@ -283,7 +271,7 @@ cnet_src=\
 	cnet/cnet.h
 
 cnet.dll: $(net_src) $(cnet_src)
-	gcc $(CFLAGS) -shared -o $@ $^ -Inet -Imessage -lws2_32 \
+	gcc $(CFLAGS) -shared -o $@ $^ -Inet -Imsg -lws2_32 \
 		-Wl,--output-def,cnet.def,--out-implib,cnet.lib
 	LIB /MACHINE:IX86 /DEF:cnet.def
 
@@ -307,14 +295,14 @@ install:
 	cp -r cnet $(source_dir)
 	cp -r main/robot.c $(source_dir)/cnet
 	mkdir .game
-	for file in `ls game`; do iconv -f utf-8 -t gbk game/$$file > .game/$$file; done 
-	cp -r .game/* $(source_dir)/map
+	for file in `ls game`; do iconv -f utf-8 -t gbk mod_room/$$file > .mod_room/$$file; done 
+	cp -r .mod_room/* $(source_dir)/map
 	rm -rf .game
-	#cp -r message $(source_dir)
-	mkdir .message
-	for file in `ls message`; do iconv -f utf-8 -t gbk message/$$file > .message/$$file; done 
-	cp -r .message/* $(source_dir)/message
-	rm -rf .message
+	#cp -r msg $(source_dir)
+	mkdir .msg
+	for file in `ls msg`; do iconv -f utf-8 -t gbk msg/$$file > .msg/$$file; done 
+	cp -r .msg/* $(source_dir)/msg
+	rm -rf .msg
 	cp -r tplt $(source_dir)
 	cp -r tool/concat.py tool/convert_excel.py tool/excelto $(tool_dir)
 

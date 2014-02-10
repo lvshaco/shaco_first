@@ -1,9 +1,5 @@
-#include "sc_service.h"
-#include "sc_env.h"
-#include "sc_node.h"
-#include "user_message.h"
-#include <stdlib.h>
-#include <string.h>
+#include "sc.h"
+#include "msg_server.h"
 
 #define UNIQUE_INIT 1
 

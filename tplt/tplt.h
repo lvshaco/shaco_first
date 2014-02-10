@@ -16,10 +16,10 @@ struct tplt_desc {
     const struct tplt_visitor_ops* vist;
 };
 
-int tplt_init(const struct tplt_desc* desc, int sz);
-void tplt_fini();
-const struct tplt_holder* tplt_get_holder(int type);
-const struct tplt_visitor* tplt_get_visitor(int type);
-void* tplt_find(int type, uint32_t key);
+struct tplt* tplt_create(const struct tplt_desc* desc, int sz);
+void tplt_free(struct tplt *self);
+const struct tplt_holder* tplt_get_holder(struct tplt *self, int type);
+const struct tplt_visitor* tplt_get_visitor(struct tplt *self, int type);
+void* tplt_find(struct tplt *self, int type, uint32_t key);
 
 #endif

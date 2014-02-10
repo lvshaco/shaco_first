@@ -2,7 +2,7 @@
 #define __cnet_h__
 
 #include "net_message.h"
-#include "cli_message.h"
+#include "msg_client.h"
 
 typedef void (*cnet_onconn)(struct net_message* nm);
 typedef void (*cnet_onconnerr)(struct net_message* nm);

@@ -1,5 +1,5 @@
 #include "sc.h"
-#include "user_message.h"
+#include "msg_server.h"
 
 void
 echo_main(struct service *s, int session, int source, int type, const void *msg, int sz) {

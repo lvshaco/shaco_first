@@ -1,14 +1,6 @@
-#include "sc_service.h"
-#include "sh_monitor.h"
-#include "sh_util.h"
-#include "sc_log.h"
-#include "sc_node.h"
-#include "sh_hash.h"
-#include "user_message.h"
-#include "cli_message.h"
-#include <string.h>
-#include <stdlib.h>
-#include <assert.h>
+#include "sc.h"
+#include "msg_server.h"
+#include "msg_client.h"
 
 // status
 #define S_ALLOC 0

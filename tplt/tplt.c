@@ -17,12 +17,10 @@ struct tplt {
     struct tplt_one* p;
 };
 
-static struct tplt* self = NULL;
-
-int
-tplt_init(const struct tplt_desc* desc, int sz) {
+struct tplt*
+tplt_create(const struct tplt_desc* desc, int sz) {
     if (sz <= 0)
-        return 1;
+        return NULL;
 
     int maxtype = 0;
     const struct tplt_desc* d;
@@ -35,7 +33,7 @@ tplt_init(const struct tplt_desc* desc, int sz) {
     } 
 
     maxtype += 1;
-    self = malloc(sizeof(*self));
+    struct tplt *self = malloc(sizeof(*self));
     self->sz = maxtype;
     self->p = malloc(sizeof(struct tplt_one) * maxtype);
     memset(self->p, 0, sizeof(struct tplt_one) * maxtype);
@@ -53,24 +51,24 @@ tplt_init(const struct tplt_desc* desc, int sz) {
             holder = tplt_holder_loadfromstream(d->stream, d->streamsz, d->size);
         }
         if (holder == NULL) {
-            tplt_fini();
-            return 1;
+            tplt_free(self);
+            return NULL;
         }
         assert(d->vist);
         visitor = tplt_visitor_create(d->vist, holder);
         if (visitor == NULL) {
             free(holder);
-            tplt_fini();
-            return 1;
+            tplt_free(self);
+            return NULL;
         }
         self->p[d->type].holder = holder;
         self->p[d->type].visitor = visitor;
     }
-    return 0;
+    return self;
 }
 
 void 
-tplt_fini() {
+tplt_free(struct tplt *self) {
     if (self == NULL)
         return;
     
@@ -93,22 +91,22 @@ tplt_fini() {
 }
 
 const struct tplt_holder* 
-tplt_get_holder(int type) {
+tplt_get_holder(struct tplt *self, int type) {
     if (self && type >= 0 && type < self->sz)
         return self->p[type].holder;
     return NULL;
 }
 
 const struct tplt_visitor* 
-tplt_get_visitor(int type) {
+tplt_get_visitor(struct tplt *self, int type) {
     if (self && type >= 0 && type < self->sz)
         return self->p[type].visitor;
     return NULL;
 }
 
 void* 
-tplt_find(int type, uint32_t key) {
-    const struct tplt_visitor* vist = tplt_get_visitor(type);
+tplt_find(struct tplt *self, int type, uint32_t key) {
+    const struct tplt_visitor* vist = tplt_get_visitor(self, type);
     if (vist) {
         return tplt_visitor_find(vist, key);
     }

@@ -1,13 +1,5 @@
-#include "sc_service.h"
-#include "sc_env.h"
-#include "sc_timer.h"
-#include "sc_log.h"
 #include "sc.h"
 #include "elog_include.h"
-#include <stdlib.h>
-#include <limits.h>
-#include <stdio.h>
-#include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <errno.h>

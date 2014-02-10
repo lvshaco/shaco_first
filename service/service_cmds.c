@@ -1,15 +1,7 @@
-#include "sc_service.h"
-#include "sh_util.h"
 #include "sc.h"
-#include "sc_log.h"
-#include "sh_hash.h"
-#include "user_message.h"
-#include "cli_message.h"
+#include "msg_server.h"
+#include "msg_client.h"
 #include "args.h"
-#include <stdio.h>
-#include <assert.h>
-#include <limits.h>
-#include <string.h>
 
 #define MODE_INTERACTIVE 0
 #define MODE_CMDLINE 1

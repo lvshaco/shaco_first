@@ -3,11 +3,8 @@
 #include "args.h"
 #include "freeid.h"
 #include "hashid.h"
-#include "gfreeid.h"
 #include "freelist.h"
 #include "redis.h"
-#include "map.h"
-#include "hmap.h"
 #include "elog_include.h"
 #include "sh_hash.h"
 #include <stdint.h>
@@ -177,31 +174,6 @@ void test_hashid() {
     assert(hashid_free(&fi, 133) == 1);
     assert(hashid_free(&fi, 141) == 2);
     hashid_fini(&fi);
-}
-
-struct idtest{
-    int id;
-    int used;
-};
-struct gftest {
-    GFREEID_FIELDS(idtest);
-};
-void test_gfreeid() {
-    struct gftest gf;
-    GFREEID_INIT(idtest, &gf, 1);
-    struct idtest* i1 = GFREEID_ALLOC(idtest, &gf);
-    assert(i1-gf.p == 0);
-    assert(gf.cap == 1);
-    struct idtest* i2 = GFREEID_ALLOC(idtest, &gf);
-    assert(i2-gf.p == 1);
-    assert(gf.cap == 2);
-    struct idtest* i3 = GFREEID_ALLOC(idtest, &gf);
-    assert(i3-gf.p == 2);
-    assert(gf.cap == 4);
-    GFREEID_FREE(idtest, &gf, GFREEID_SLOT(&gf, 0));
-    GFREEID_FREE(idtest, &gf, GFREEID_SLOT(&gf, 1));
-    GFREEID_FREE(idtest, &gf, GFREEID_SLOT(&gf, 2));
-    GFREEID_FINI(idtest, &gf);
 }
 
 static void
@@ -628,128 +600,6 @@ void test_freelist() {
     d2->data.tag = 2;
     assert(fl.sz == 2);
     FREELIST_FINI(flink, &fl);
-}
-
-struct mapvalue {
-    uint32_t id;
-    uint32_t value;
-};
-
-struct strvalue {
-    char id[40];
-    uint32_t value;
-};
-
-void _mapcb(const char* key, void* value, void* ud) {
-    struct strvalue* v = value;
-    static uint64_t n = 0;
-    n += v->value;
-}
-void test_map() {
-    srand(time(NULL));
-    uint32_t i, j;
-    uint32_t cap = 1000000;
-    uint32_t randmod = 1000000;
-
-    // generate data
-    struct mapvalue* all = malloc(sizeof(struct mapvalue) * cap);
-    memset(all, 0, sizeof(struct mapvalue) * cap);
-  
-    
-    bool* rands = malloc(sizeof(bool) * randmod);
-    memset(rands, 0, sizeof(bool) * randmod);
-
-    uint64_t t1, t2;
-    t1 = _elapsed(); 
-    for (i=0; i<cap; ++i) {
-        uint32_t r = rand() % randmod;
-        while (rands[r]) {
-            r = rand() % randmod;
-        }
-        rands[r] = true;
-
-        all[i].id = r;
-        all[i].value = r;
-    }
-    t2 = _elapsed();
-    printf("generate data use time: %d\n", (int)(t2-t1));
-
-    uint32_t init = 1024;
-    struct idmap* idm = idmap_create(init);
-    t1 = _elapsed();
-    for (i=0; i<cap; ++i) {
-        assert(idmap_find(idm, all[i].id) == NULL);
-        idmap_insert(idm, all[i].id, &all[i]);
-    }
-    for (i=0; i<cap; ++i) {
-        assert(idmap_remove(idm, all[i].id) == &all[i]);
-    }
-    t2 = _elapsed();
-    printf("idmap use time: %d\n", (int)(t2-t1));
-    
-    //idmap_free(idm);
-
-    t1 = _elapsed(); 
-    struct strvalue* psv = malloc(sizeof(struct strvalue) * cap);
-    for (i=0; i<cap; ++i) {
-        psv[i].value = i+1;
-        for (j=0; j<39; ++j) {
-            psv[i].id[j] = rand()%127+1;
-        }
-        psv[i].id[39] = '\0';
-    }
-    t2 = _elapsed();
-    printf("generate strmap value use time: %d\n", (int)(t2-t1));
-
-    struct strmap* strm = strmap_create(init);
-    t1 = _elapsed();
-    for (i=0; i<cap; ++i) {
-        assert(strmap_find(strm, psv[i].id) == NULL);
-        strmap_insert(strm, psv[i].id, &psv[i]);
-    }
-    t2 = _elapsed();
-    /*for (i=0; i<cap; ++i) {
-        assert(strmap_remove(strm, psv[i].id) == &psv[i]);
-    }*/
-    //t2 = _elapsed();
-    printf("strmap use time: %d\n", (int)(t2-t1));
-    t1 = _elapsed();
-    strmap_foreach(strm, _mapcb, NULL);
-    t2 = _elapsed();
-    printf("strmap foreach use time: %d\n", (int)(t2-t1));
-    //strmap_free(strm);
-
-    struct strhmap* m = strhmap_create(init);
-    t1 = _elapsed();
-    for (i=0; i<cap; ++i) {
-        assert(strhmap_find(m, psv[i].id) == NULL);
-        strhmap_insert(m, psv[i].id, &psv[i]);
-    }
-    t2 = _elapsed();
-    /*for (i=0; i<cap; ++i) {
-        void* p = strhmap_remove(m, psv[i].id);
-        printf("i %u, remove %p\n", i, p);
-        assert(p == &psv[i]);
-    }*/
-    //t2 = _elapsed();
-    printf("strhmap use time: %d\n", (int)(t2-t1));
-   
-    t1 = _elapsed();
-    strhmap_foreach(m, _mapcb, NULL);
-    t2 = _elapsed();
-    printf("strhmap foreach use time: %d\n", (int)(t2-t1));
-/*
-    extern uint64_t I;
-    extern uint64_t I2;
-    extern uint64_t MAXKK;
-    printf("MAXKK %llu, I %llu, I2 %llu, A %f\n", 
-            (unsigned long long int)MAXKK,
-            (unsigned long long int)I, 
-            (unsigned long long int)I2,
-            (float)I/(float)I2
-            ); 
-            */
-    strhmap_free(m);
 }
 
 void
@@ -1411,10 +1261,8 @@ main(int argc, char* argv[]) {
     //test_args();
     //test_freeid();
     //test_hashid();
-    //test_gfreeid();
     //test_redis();
     //test_freelist();
-    //test_map();
     //test_elog2();
     test_elog3(times);
     //test_log(times);

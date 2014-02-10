@@ -1,19 +1,7 @@
-#include "sc_service.h"
 #include "sc.h"
-#include "sh_util.h"
-#include "sc_env.h"
-#include "sc_log.h"
-#include "sc_net.h"
-#include "sc_node.h"
 #include "args.h"
-#include "message.h"
-#include <string.h>
-#include <stdbool.h>
-#include <stdlib.h>
+#include "msg.h"
 #include <arpa/inet.h>
-#include <assert.h>
-#include <stdarg.h>
-#include <stdio.h>
 
 #define NODE_MAX 256
 

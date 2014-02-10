@@ -1,18 +1,7 @@
-#include "sc_service.h"
-#include "sh_util.h"
-#include "sc_env.h"
 #include "sc.h"
-#include "sc_dispatcher.h"
-#include "sc_log.h"
-#include "sc_net.h"
-#include "sc_timer.h"
 #include "redis.h"
-#include "user_message.h"
-#include "node_type.h"
+#include "msg_server.h"
 #include "memrw.h"
-#include <stdlib.h>
-#include <string.h>
-#include <stdio.h>
 
 #define MODE_TEST  0
 #define MODE_ACCA  1

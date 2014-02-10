@@ -1,29 +1,14 @@
-#include "sc_service.h"
 #include "sc.h"
-#include "sc_log.h"
-#include "sh_util.h"
-#include "sc_node.h"
-#include "sc_timer.h"
-#include "sh_hash.h"
-
-#include "tplt_include.h"
-#include "tplt_struct.h"
-
-#include "sharetype.h"
-#include "cli_message.h"
-#include "user_message.h"
-
+#include "msg_client.h"
+#include "msg_server.h"
+#include "room.h"
+#include "room_tplt.h"
 #include "fight.h"
-#include "map.h"
 #include "roommap.h"
 #include "genmap.h"
 #include "mapdatamgr.h"
 #include "buff.h"
-
-#include <stdlib.h>
-#include <string.h>
 #include <math.h>
-#include <assert.h>
 
 #define ENTER_TIMELEAST (ROOM_LOAD_TIMELEAST*1000)
 #define ENTER_TIMEOUT (5000+ENTER_TIMELEAST)
@@ -108,16 +93,6 @@ oxygen_percent(struct player *pr) {
     return pr->detail.attri.oxygen / (float)pr->base.oxygen;
 }
 
-struct room {
-    //int watchdog_handle;
-    //int match_handle;
-    int tick;
-    uint32_t randseed;
-    uint32_t map_randseed;
-    struct sh_hash players;
-    struct sh_hash gamerooms;
-};
-
 struct room*
 room_create() {
     struct room* self = malloc(sizeof(*self));
@@ -171,7 +146,10 @@ room_init(struct service* s) {
         sh_handler("watchdog", SUB_REMOTE, &handle) ||
         sh_handler("match", SUB_REMOTE, &handle))
         return 1;
-    
+   
+    if (room_tplt_init(self)) {
+        return 1;
+    }
     uint32_t now = sc_timer_now()/1000;
     self->randseed = now;
     self->map_randseed = now;
@@ -190,17 +168,17 @@ elapsed(uint64_t t, uint64_t elapse) {
 }
 
 static inline struct item_tplt*
-itemtplt_find(uint32_t itemid) {
-    const struct tplt_visitor* vist = tplt_get_visitor(TPLT_ITEM);
-    if (vist) {
-        return tplt_visitor_find(vist, itemid);
+itemtplt_find(struct room *self, uint32_t itemid) {
+    const struct tplt_visitor* visitor = tplt_get_visitor(self->T, TPLT_ITEM);
+    if (visitor) {
+        return tplt_visitor_find(visitor, itemid);
     }
     return NULL;
 }
 
 static inline const struct map_tplt*
-maptplt_find(uint32_t mapid) {
-    const struct tplt_visitor* visitor = tplt_get_visitor(TPLT_MAP);
+maptplt_find(struct room *self, uint32_t mapid) {
+    const struct tplt_visitor* visitor = tplt_get_visitor(self->T, TPLT_MAP);
     if (visitor) 
         return tplt_visitor_find(visitor, mapid);
     return NULL; 
@@ -286,7 +264,7 @@ gameroom_create(struct service *s, int source, struct UM_CREATEROOM *create) {
         notify_create_gameroom_result(s, source, create->id, SERR_ROOMIDCONFLICT);
         return;
     }
-    const struct map_tplt *mapt = maptplt_find(create->mapid); 
+    const struct map_tplt *mapt = maptplt_find(self, create->mapid); 
     if (mapt == NULL) {
         notify_create_gameroom_result(s, source, create->id, SERR_CRENOTPLT);
         return;
@@ -910,15 +888,15 @@ rand_baoitem(struct room *self, const struct item_tplt *item, const struct map_t
 }
 
 static inline const struct item_tplt*
-rand_fightitem(const struct map_tplt *mapt) {
+rand_fightitem(struct room *self, const struct map_tplt *mapt) {
     uint32_t randid = mapt->fightitem[rand()%mapt->nfightitem];
-    return itemtplt_find(randid);
+    return itemtplt_find(self, randid);
 }
 
 static inline const struct item_tplt*
-rand_trapitem(const struct map_tplt *mapt) {
+rand_trapitem(struct room *self, const struct map_tplt *mapt) {
     uint32_t randid = mapt->trapitem[rand()%mapt->ntrapitem];
-    const struct item_tplt* item = itemtplt_find(randid);
+    const struct item_tplt* item = itemtplt_find(self, randid);
     if (item == NULL) {
         sc_debug("not found rand item %u", randid);
     }
@@ -931,13 +909,13 @@ use_item(struct service *s, struct player *m, const struct UM_USEITEM *use) {
 
     struct gameroom *ro = member2gameroom(m);
 
-    const struct item_tplt* item = itemtplt_find(use->itemid);
+    const struct item_tplt* item = itemtplt_find(self, use->itemid);
     if (item == NULL) {
         sc_debug("not found use item: %u", use->itemid);
         return;
     }
     const struct item_tplt* oriitem = item;
-    const struct map_tplt* tmap = maptplt_find(ro->gattri.mapid); 
+    const struct map_tplt* tmap = maptplt_find(self, ro->gattri.mapid); 
     if (tmap == NULL) {
         return;
     }
@@ -948,7 +926,7 @@ use_item(struct service *s, struct player *m, const struct UM_USEITEM *use) {
         break;
     case ITEM_T_FIGHT:
         if (item->subtype == 0) {
-            item = rand_fightitem(tmap);
+            item = rand_fightitem(self, tmap);
             if (item == NULL) {
                 return;
             }
@@ -957,7 +935,7 @@ use_item(struct service *s, struct player *m, const struct UM_USEITEM *use) {
         break;
     case ITEM_T_TRAP:
         if (item->subtype == 0) {
-            item = rand_trapitem(tmap);
+            item = rand_trapitem(self, tmap);
             if (item == NULL) {
                 return;
             }
@@ -1014,6 +992,7 @@ reduce_oxygen(struct player* m, int oxygen) {
 
 static void
 member_update_delay(struct service *s, struct gameroom *ro, struct player *m, uint64_t now) {
+    struct room *self = SERVICE_SELF;
     struct buff_delay *delay;
     struct item_tplt *item;
     int i;
@@ -1025,7 +1004,7 @@ member_update_delay(struct service *s, struct gameroom *ro, struct player *m, ui
         if (delay->first_effect_time > sc_timer_now()) {
             continue;
         }
-        item = itemtplt_find(delay->id);
+        item = itemtplt_find(self, delay->id);
         if (item) {
             int add_time = 
                 delay->last_effect_time > delay->first_effect_time ?
@@ -1190,7 +1169,7 @@ fall_speed(struct player *pr) {
 }
 
 static int
-AI_lookup(struct gameroom *ro, struct player *pr, int type, struct AI_target *target) {
+AI_lookup(struct room *self, struct gameroom *ro, struct player *pr, int type, struct AI_target *target) {
     struct AI_brain *brain = pr->brain;
     assert(brain);
 
@@ -1205,7 +1184,7 @@ AI_lookup(struct gameroom *ro, struct player *pr, int type, struct AI_target *ta
     for (i=0; i<map->width; ++i) {
         cell = &map->cells[start+i];
         if (cell->cellid == 0 && cell->itemid > 0) {
-            item = itemtplt_find(cell->itemid);
+            item = itemtplt_find(self, cell->itemid);
             if (item->type == type) {
                 target->id = item->id;
                 target->h = depth-1;
@@ -1394,10 +1373,10 @@ AI_pick_target(struct service *s, struct gameroom *ro, struct player *pr) {
 }
 
 static int
-AI_lookup_oxygen(struct gameroom *ro, struct player *pr) {
+AI_lookup_oxygen(struct room *self, struct gameroom *ro, struct player *pr) {
     struct AI_brain *brain = pr->brain;
     struct AI_target target;
-    if (!AI_lookup(ro, pr, ITEM_T_OXYGEN, &target)) {
+    if (!AI_lookup(self, ro, pr, ITEM_T_OXYGEN, &target)) {
         float limit_per = 0.8 + 0.2*(1.2 - min(1.2, brain->level/7.0));
         float oxygen_per = oxygen_percent(pr);
         sc_trace("AI %u lookup oxygen (%u in %u,%u b %u) oxygen_per %f limit_per %f", 
@@ -1417,10 +1396,10 @@ AI_lookup_oxygen(struct gameroom *ro, struct player *pr) {
 }
 
 static int
-AI_lookup_item(struct gameroom *ro, struct player *pr) {
+AI_lookup_item(struct room *self, struct gameroom *ro, struct player *pr) {
     struct AI_brain *brain = pr->brain;
     struct AI_target target;
-    if (!AI_lookup(ro, pr, ITEM_T_FIGHT, &target)) {
+    if (!AI_lookup(self, ro, pr, ITEM_T_FIGHT, &target)) {
         sc_trace("AI %u lookup item (%u in %u,%u b %u)",
                 UID(pr), 
                 target.id,
@@ -1450,6 +1429,7 @@ AI_press(struct service *s, struct player *pr, uint64_t now, int press_time) {
 
 static void
 AI_main(struct service *s, struct gameroom *ro, struct player *pr) {
+    struct room *self = SERVICE_SELF;
     struct AI_brain *brain = pr->brain;
     assert(brain);
     
@@ -1480,13 +1460,13 @@ AI_main(struct service *s, struct gameroom *ro, struct player *pr) {
     }
 
     if (brain->target.id == 0 && brain->target2.id == 0) {
-        if (!AI_lookup_oxygen(ro, pr) ||
-            !AI_lookup_item(ro, pr)) {
+        if (!AI_lookup_oxygen(self, ro, pr) ||
+            !AI_lookup_item(self, ro, pr)) {
             AI_focus_target(pr, &brain->target);
         } 
     }
     if (brain->target2.id == 0) {
-        if (!AI_lookup(ro, pr, ITEM_T_BAO, &brain->target2)) {
+        if (!AI_lookup(self, ro, pr, ITEM_T_BAO, &brain->target2)) {
             if (brain->target.id == 0) {
                 AI_focus_target(pr, &brain->target2);
             }
@@ -1592,6 +1572,9 @@ room_main(struct service *s, int session, int source, int type, const void *msg,
         }
         break;
         }
+    case MT_TEXT:
+        room_tplt_main(s, session, source, type, msg, sz);
+        break;
     case MT_MONITOR:
         // todo
         break;

@@ -1,19 +1,8 @@
-#include "cmdctl.h"
-#include "sc_service.h"
-#include "sh_util.h"
-#include "sc_env.h"
 #include "sc.h"
-#include "sc_timer.h"
-#include "sc_log.h"
-#include "sc_node.h"
-#include "sc_reload.h"
-#include "user_message.h"
-#include "cli_message.h"
+#include "msg_server.h"
+#include "msg_client.h"
 #include "args.h"
 #include "memrw.h"
-#include <stdlib.h>
-#include <string.h>
-#include <stdio.h>
 #include <time.h>
 
 struct cmdctl {
@@ -21,6 +10,18 @@ struct cmdctl {
 };
 
 ///////////////////
+
+struct ctl_command {
+    const char* name;
+    int (*fun)(struct service *s, struct args* A, struct memrw* rw);
+};
+
+#define CTL_OK 0
+#define CTL_NOCOMMAND 1
+#define CTL_FAIL 2
+#define CTL_ARGLESS 3
+#define CTL_ARGINVALID 4
+#define CTL_NOSERVICE 5
 
 static const char* STRERROR[] = {
     "execute ok",

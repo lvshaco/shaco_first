@@ -1,6 +1,5 @@
 #include "sc.h"
 #include "elog_include.h"
-#include <assert.h>
 
 struct gamelog {
     struct elog *logger; 

@@ -1,18 +1,9 @@
-#include "sc_service.h"
-#include "sc_env.h"
 #include "sc.h"
-#include "sc_timer.h"
-#include "sc_log.h"
-#include "sc_net.h"
-#include "user_message.h"
+#include "msg_server.h"
 #include "redis.h"
 #include "freelist.h"
 #include "memrw.h"
-#include <stdlib.h>
 #include <stdbool.h>
-#include <string.h>
-#include <assert.h>
-#include <stdio.h>
 
 struct querylink {
     struct querylink* next;

@@ -11,9 +11,15 @@
 #include "sc_timer.h"
 #include "sh_monitor.h"
 #include "sh_util.h"
+#include "sh_hash.h"
 
+#include <stdbool.h>
 #include <stdlib.h>
+#include <stdarg.h>
 #include <string.h>
+#include <assert.h>
+#include <stdio.h>
+#include <limits.h>
 
 void sc_init();
 void sc_start();

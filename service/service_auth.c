@@ -1,16 +1,9 @@
-#include "sc_service.h"
-#include "sc_log.h"
-#include "sc_timer.h"
-#include "sc_node.h"
+#include "sc.h"
 #include "sh_hash.h"
 #include "redis.h"
-#include "cli_message.h"
-#include "user_message.h"
+#include "msg_client.h"
+#include "msg_server.h"
 #include "memrw.h"
-#include <stdlib.h>
-#include <assert.h>
-#include <stdio.h>
-#include <string.h>
 
 struct user {
     uint64_t conn;

@@ -1,17 +1,7 @@
-#include "sc_service.h"
-#include "sc_node.h"
-#include "sh_util.h"
 #include "sc.h"
-#include "sc_log.h"
-#include "sc_net.h"
-#include "sc_timer.h"
 #include "redis.h"
-#include "user_message.h"
-#include "sharetype.h"
+#include "msg_server.h"
 #include "memrw.h"
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 #include <time.h>
 
 struct rank {

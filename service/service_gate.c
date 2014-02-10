@@ -1,18 +1,7 @@
-#include "sc_service.h"
-#include "sc_node.h"
-#include "sc_env.h"
-#include "sc_net.h"
-#include "sc_log.h"
-#include "sc_timer.h"
 #include "sc.h"
-#include "sh_util.h"
 #include "freeid.h"
-#include "user_message.h"
-#include "message.h"
-#include "cli_message.h"
-#include <stdlib.h>
-#include <assert.h>
-#include <string.h>
+#include "msg_client.h"
+#include "msg_server.h"
 
 /*
  * control the client connect, login, heartbeat, and logout, 

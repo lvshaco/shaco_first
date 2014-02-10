@@ -1,63 +1,9 @@
-#include "sc_service.h"
-#include "sc_env.h"
-#include "sh_monitor.h"
-#include "sh_util.h"
 #include "sc.h"
-#include "sc_log.h"
-#include "sc_node.h"
-#include "sc_timer.h"
-#include "sh_hash.h"
-#include "user_message.h"
-#include "cli_message.h"
-#include "attrilogic.h"
-#include "tplt_include.h"
-#include "tplt_struct.h"
-#include <string.h>
-#include <assert.h>
-#include <stdio.h>
-
-// Accid  reserve 1001~1000000, create from 1000001
-// Charid reserve 1001~1000000, create from 1000001
-// Create robot, insert to db
-// Load  robot to memory
-// Apply robot to match
-// Login robot to room
-// Award score, exp
-// Rank score
-// Rank reset
-
-//#define ACCID_BEGIN 1001
-//#define ACCID_END 1000000
-//#define CHARID_BEGIN 1001
-//#define CHARID_END 1000000
-#define ACCID_BEGIN  2000000
-#define ACCID_END    3000000
-#define CHARID_BEGIN 2000000
-#define CHARID_END   3000000
-#define ROBOT_MAX       min((CHARID_END-CHARID_BEGIN+1), (ACCID_END-ACCID_BEGIN+1))
-
-#define S_REST   0
-#define S_WAIT   1
-#define S_FIGHT  2
-
-#define UID(ag) ((ag)->data.accid)
-
-struct agent { 
-    int status;
-    int level;
-    struct chardata data;
-    uint32_t last_change_role_time;
-    struct agent *next;
-};
-
-struct robot {
-    int match_handle;
-    int room_handle;
-    int nagent;
-    struct agent *rest_head; 
-    struct agent *rest_tail;
-    struct sh_hash agents;
-};
+#include "hall_attribute.h"
+#include "robot.h"
+#include "robot_tplt.h"
+#include "msg_server.h"
+#include "msg_client.h"
 
 static struct agent *
 alloc_agent(struct robot *self) {
@@ -99,8 +45,8 @@ agent_rest(struct robot *self, struct agent *ag) {
 }
 
 static inline uint32_t
-rand_role() {
-    const struct tplt_holder* holder = tplt_get_holder(TPLT_ROLE);
+rand_role(struct robot *self) {
+    const struct tplt_holder* holder = tplt_get_holder(self->T, TPLT_ROLE);
     if (holder) {
         int n = TPLT_HOLDER_NELEM(holder);
         if (n > 0) {
@@ -113,18 +59,20 @@ rand_role() {
 }
 
 static inline void
-init_agent_data(struct agent *ag, int idx, int level) {
+init_agent_data(struct service *s, struct agent *ag, int idx, int level) {
+    struct robot *self = SERVICE_SELF;
     struct chardata *cdata = &ag->data;
     ag->level = level;
     cdata->charid = CHARID_BEGIN+idx;
     snprintf(cdata->name, sizeof(cdata->name), "wabao%02d_%d", level, cdata->charid);
     cdata->accid = ACCID_BEGIN+idx;
-    cdata->role = rand_role();
-    attrilogic_main(cdata);
+    cdata->role = rand_role(self);
+    hall_attribute_main(self->T, cdata);
 }
 
 static int
-init_agents(struct robot *self) {
+init_agents(struct service *s) {
+    struct robot *self = SERVICE_SELF;
     sh_hash_init(&self->agents, 1);
     // todo
     int count = 100;
@@ -137,7 +85,7 @@ init_agents(struct robot *self) {
         if (ag == NULL) {
             return 1;
         }
-        init_agent_data(ag, i, rand()%10+1);
+        init_agent_data(s, ag, i, rand()%10+1);
         agent_rest(self, ag);
         sh_hash_insert(&self->agents, UID(ag), ag);
     }
@@ -251,15 +199,13 @@ robot_free(struct robot* self) {
     sh_hash_fini(&self->agents);
     self->rest_head = NULL;
     self->nagent = 0;
+    robot_tplt_fini(self);
     free(self);
 }
 
 int
 robot_init(struct service* s) {
     struct robot* self = SERVICE_SELF;
-    if (!service_isprepared(sc_getstr("tplt_handle", ""))) {
-        return 1;
-    }
     if (sh_handle_publish(SERVICE_NAME, PUB_SER)) {
         return 1;
     }
@@ -268,7 +214,10 @@ robot_init(struct service* s) {
         sh_monitor("room", &h, &self->room_handle)) {
         return 1;
     }
-    if (init_agents(self)) {
+    if (robot_tplt_init(self)) {
+        return 1;
+    }
+    if (init_agents(s)) {
         return 1;
     } 
     return 0;
@@ -313,5 +262,8 @@ robot_main(struct service *s, int session, int source, int type, const void *msg
         }
         break;
         }
+    case MT_TEXT:
+        robot_tplt_main(s, session, source, type, msg, sz);
+        break;
     }
 }
