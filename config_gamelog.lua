@@ -4,6 +4,6 @@ node_port = 8007
 center_ip   = "127.0.0.1"
 center_port = 8000
 
-sc_loglevel = "INFO"
-sc_connmax = 256
-sc_service = "log,node,cmdctl,gamelog"
+sh_loglevel = "INFO"
+sh_connmax = 256
+sh_module = "log,node,cmdctl,gamelog"

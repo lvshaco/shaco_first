@@ -1,35 +1,30 @@
+#include "hall.h"
 #include "hall_ring.h"
-#include "sc_service.h"
-#include "sh_util.h"
-#include "sc_log.h"
-#include "sc_node.h"
-#include "sc_timer.h"
 #include "hall_player.h"
 #include "hall_playerdb.h"
+#include "hall_attribute.h"
 #include "msg_server.h"
 #include "msg_client.h"
-#include "hall_attribute.h"
-#include "hall.h"
-#include <string.h>
+#include "sc.h"
 
 #define RING_NPAGE_INIT 1
 /////////////////////////////////////////////////////////////////////
 
 static void
-sync_money(struct service *s, struct player* pr) {
+sync_money(struct module *s, struct player* pr) {
     UM_DEFWRAP(UM_CLIENT, cl, UM_SYNCMONEY, sm);
     cl->uid = UID(pr);
     sm->coin = pr->data.coin;
     sm->diamond = pr->data.diamond;
-    sh_service_send(SERVICE_ID, pr->watchdog_source, MT_UM, cl, sizeof(*cl) + sizeof(*sm));
+    sh_module_send(MODULE_ID, pr->watchdog_source, MT_UM, cl, sizeof(*cl) + sizeof(*sm));
 }
 
 static void
-sync_ringpage(struct service *s, struct player* pr) {
+sync_ringpage(struct module *s, struct player* pr) {
     UM_DEFWRAP(UM_CLIENT, cl, UM_RINGPAGESYNC, sy);
     cl->uid = UID(pr);
     sy->curpage = pr->data.ringdata.npage;
-    sh_service_send(SERVICE_ID, pr->watchdog_source, MT_UM, cl, sizeof(*cl) + sizeof(*sy));
+    sh_module_send(MODULE_ID, pr->watchdog_source, MT_UM, cl, sizeof(*cl) + sizeof(*sy));
 }
 
 static struct ringpage*
@@ -85,7 +80,7 @@ reduce_ringobj(struct ringobj* robj, uint8_t n) {
 }
 */
 static void
-process_equipring(struct service *s, struct player *pr, const struct UM_RINGEQUIP *um) {
+process_equipring(struct module *s, struct player *pr, const struct UM_RINGEQUIP *um) {
     struct chardata* cdata = &pr->data;
     struct ringdata* rdata = &cdata->ringdata;
 
@@ -120,7 +115,7 @@ process_salering(struct hall_ring* self, struct player_message* pm) {
 */
 
 static void
-process_renameringpage(struct service *s, struct player *pr, const struct UM_RINGPAGERENAME *um) {
+process_renameringpage(struct module *s, struct player *pr, const struct UM_RINGPAGERENAME *um) {
     struct chardata* cdata = &pr->data;
     struct ringdata* rdata = &cdata->ringdata;
 
@@ -138,7 +133,7 @@ process_renameringpage(struct service *s, struct player *pr, const struct UM_RIN
 }
 
 static void
-process_buyringpage(struct service *s, struct player *pr, const struct UM_RINGPAGEBUY *um) {
+process_buyringpage(struct module *s, struct player *pr, const struct UM_RINGPAGEBUY *um) {
     struct chardata* cdata = &pr->data;
     struct ringdata* rdata = &cdata->ringdata;
 
@@ -159,8 +154,8 @@ process_buyringpage(struct service *s, struct player *pr, const struct UM_RINGPA
 }
 
 static void
-process_useringpage(struct service *s, struct player *pr, const struct UM_RINGPAGEUSE *um) {
-    struct hall *self = SERVICE_SELF;
+process_useringpage(struct module *s, struct player *pr, const struct UM_RINGPAGEUSE *um) {
+    struct hall *self = MODULE_SELF;
 
     struct chardata* cdata = &pr->data;
     struct ringdata* rdata = &cdata->ringdata;
@@ -195,7 +190,7 @@ login(struct player* pr) {
 }
 
 void
-hall_ring_main(struct service *s, struct player *pr, const void *msg, int sz) {
+hall_ring_main(struct module *s, struct player *pr, const void *msg, int sz) {
     UM_CAST(UM_BASE, base, msg);
     switch (base->msgid) {
     case IDUM_ENTERHALL:

@@ -30,16 +30,16 @@ robot_tplt_fini(struct robot *self) {
 }
 
 void
-robot_tplt_main(struct service *s, int session, int source, int type, const void *msg, int sz) {
-    struct robot *self = SERVICE_SELF;
+robot_tplt_main(struct module *s, int session, int source, int type, const void *msg, int sz) {
+    struct robot *self = MODULE_SELF;
     if (type != MT_TEXT)
         return;
 
     if (!strncmp("reload", msg, sz)) {
         if (!load_tplt(self)) {
-            sc_info("reload tplt ok");
+            sh_info("reload tplt ok");
         } else {
-            sc_error("reload tplt fail");
+            sh_error("reload tplt fail");
         }
     }
 }

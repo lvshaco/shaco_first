@@ -3,9 +3,6 @@
 #include "hall_playerdb.h"
 #include "msg_server.h"
 #include "msg_client.h"
-#include "sh_util.h"
-#include "sc_log.h"
-#include <assert.h>
 
 static inline void
 free_player(struct hall *self, struct player *pr) {
@@ -25,11 +22,11 @@ hall_player_fini(struct hall *self) {
 }
 
 static void 
-login(struct service *s, int source, uint32_t accid) {
-    struct hall *self = SERVICE_SELF;
+login(struct module *s, int source, uint32_t accid) {
+    struct hall *self = MODULE_SELF;
     struct player *pr = sh_hash_find(&self->acc2player, accid);
     if (pr) {
-        sc_trace("Player %u relogin", accid);
+        sh_trace("Player %u relogin", accid);
         return; // relogin
     }
     pr = malloc(sizeof(*pr));
@@ -40,34 +37,34 @@ login(struct service *s, int source, uint32_t accid) {
     assert(!sh_hash_insert(&self->acc2player, accid, pr));
 
     if (hall_playerdb_send(s, pr, PDB_QUERY)) {
-        sc_trace("Player %u login fail, no db", accid);
+        sh_trace("Player %u login fail, no db", accid);
         hall_notify_logout(s, pr, SERR_NODB);
         free_player(self, pr);
     } else {
-        sc_trace("Player %u login", accid);
+        sh_trace("Player %u login", accid);
     }
 }
 
 static void 
-logout(struct service *s, struct player *pr) {
-    struct hall *self = SERVICE_SELF;
-    sc_trace("Player %u logout, status %d", UID(pr), pr->status);
+logout(struct module *s, struct player *pr) {
+    struct hall *self = MODULE_SELF;
+    sh_trace("Player %u logout, status %d", UID(pr), pr->status);
     if (pr->status == PS_WAITING ||
         pr->status == PS_ROOM) {
         UM_DEFWRAP(UM_MATCH, ma, UM_LOGOUT, lo);
         ma->uid = UID(pr);
         lo->err = SERR_OK;
-        sh_service_send(SERVICE_ID, self->match_handle, MT_UM, ma, sizeof(*ma)+sizeof(*lo)); 
+        sh_module_send(MODULE_ID, self->match_handle, MT_UM, ma, sizeof(*ma)+sizeof(*lo)); 
     } 
     free_player(self, pr); 
 }
 
 static void 
-create_char(struct service *s, struct player *pr, const char *name) {
-    struct hall *self = SERVICE_SELF;
+create_char(struct module *s, struct player *pr, const char *name) {
+    struct hall *self = MODULE_SELF;
     if (pr->status == PS_WAITCREATECHAR) { 
-        sc_strncpy(pr->data.name, name, sizeof(pr->data.name));
-        sc_trace("Player %u create character %s", UID(pr), pr->data.name);
+        sh_strncpy(pr->data.name, name, sizeof(pr->data.name));
+        sh_trace("Player %u create character %s", UID(pr), pr->data.name);
         if (hall_playerdb_send(s, pr, PDB_CHECKNAME)) {
             hall_notify_logout(s, pr, SERR_NODB);
             free_player(self, pr);
@@ -76,7 +73,7 @@ create_char(struct service *s, struct player *pr, const char *name) {
 }
 
 void 
-hall_player_main(struct service *s, int source, struct player *pr, const void *msg, int sz) {
+hall_player_main(struct module *s, int source, struct player *pr, const void *msg, int sz) {
     UM_CAST(UM_BASE, base, msg);
     switch (base->msgid) {
     case IDUM_ENTERHALL: {

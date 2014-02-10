@@ -41,16 +41,16 @@ function def_node(name, id)
     node_ip   = node.ip
     node_port = node.port
 
-    sc_loglevel = "DEBUG"
-    sc_connmax = node.conn
-    sc_service = "log,node"
+    sh_loglevel = "DEBUG"
+    sh_connmax = node.conn
+    sh_module = "log,node"
     if name == "center" then
-        sc_service = sc_service .. ",centers,cmdctl,cmds"
+        sh_module = sh_module .. ",centers,cmdctl,cmds"
     else
         local center = node_map["center"]
         center_ip   = center.ip
         center_port = center.port
-        sc_service = sc_service .. ",cmdctl"
+        sh_module = sh_module .. ",cmdctl"
     end
     local open = open_node_map[name]
     if open then
@@ -64,7 +64,7 @@ function def_node(name, id)
         gate_need_verify = open.verify
         gate_handler = open.handler
 
-        sc_connmax = sc_connmax + gate_clientmax
-        --sc_service = sc_service .. ",gate"
+        sh_connmax = sh_connmax + gate_clientmax
+        --sh_module = sh_module .. ",gate"
     end
 end

@@ -1,6 +1,6 @@
-sc_loglevel="INFO"
-sc_connmax=11000
-sc_service="benchmark"
+sh_loglevel="INFO"
+sh_connmax=11000
+sh_module="benchmark"
 
 echo_ip="127.0.0.1"
 --echo_ip="192.168.1.145"

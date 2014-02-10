@@ -2,8 +2,7 @@
 #include "roommap.h"
 #include "tplt_include.h"
 #include "tplt_struct.h"
-#include "sh_hash.h"
-#include "sc_log.h"
+#include "sc.h"
 #include <limits.h>
 #include <stdio.h>
 
@@ -30,10 +29,10 @@ mapdatamgr_init(struct tplt *T, const char *path) {
     sz   = TPLT_HOLDER_NELEM(holder);
     for (i=0; i<sz; ++i) {
         snprintf(fname, sizeof(fname), "%s/map%d.map", path, tplt[i].id);
-        sc_info("load map: %s", fname);
+        sh_info("load map: %s", fname);
         m = roommap_create(fname);
         if (m == NULL) {
-            sc_error("load map fail");
+            sh_error("load map fail");
             goto err;
         }
         sh_hash_insert(H, tplt[i].id, m);

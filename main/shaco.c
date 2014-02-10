@@ -1,5 +1,5 @@
 #include "sc.h"
-#include "sc_env.h"
+#include "sh_env.h"
 #include "lua.h"
 #include "lualib.h"
 #include "lauxlib.h"
@@ -26,10 +26,10 @@ _init_env(lua_State *L) {
         switch (lua_type(L, -1)) {
         case LUA_TBOOLEAN:
         case LUA_TNUMBER:
-            sc_setnumenv(key, lua_tonumber(L, -1));
+            sh_setnumenv(key, lua_tonumber(L, -1));
             break;
         case LUA_TSTRING:
-            sc_setenv(key, lua_tostring(L, -1));
+            sh_setenv(key, lua_tostring(L, -1));
             break;
         default:
             //fprintf(stderr, "Invalid config table key %s\n", key);
@@ -42,7 +42,7 @@ _init_env(lua_State *L) {
 }
 
 static void
-sc_env_load(const char* file) {
+sh_env_load(const char* file) {
     lua_State* L = luaL_newstate();
     luaL_openlibs(L);
     if (luaL_dofile(L, file) != LUA_OK) {
@@ -65,8 +65,8 @@ main(int argc, char* argv[]) {
         file = argv[1];
     }
     
-    sc_env_init();
-    sc_env_load(file);
+    sh_env_init();
+    sh_env_load(file);
 
     int lastarg;
     int i;
@@ -75,7 +75,7 @@ main(int argc, char* argv[]) {
         if (!strncmp(argv[i], "--", 2) && 
              argv[i][2] != '\0' &&
             !lastarg) {
-            sc_setenv(&(argv[i][2]), argv[i+1]);
+            sh_setenv(&(argv[i][2]), argv[i+1]);
             i++;
         } else {
             usage(argv[0]);
@@ -83,12 +83,12 @@ main(int argc, char* argv[]) {
         }
     }
 
-    if (sc_getint("sc_daemon", 0)) {
+    if (sh_getint("sh_daemon", 0)) {
         daemon(1, 1);
     }
     
-    sc_init();
-    sc_start();
-    sc_env_fini();
+    sh_init();
+    sh_start();
+    sh_env_fini();
     return 0;
 }

@@ -1,4 +1,4 @@
-sc_service=sc_service.."benchmarkdb"
+sh_module=sh_module.."benchmarkdb"
 
 benchmark_query=100000
 benchmark_query_init=1000

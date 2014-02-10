@@ -59,7 +59,7 @@ struct player {
     struct chardata data;
 };
 
-struct service;
+struct module;
 struct hall;
 
 #define TOCLIENT 1
@@ -69,6 +69,6 @@ struct hall;
 
 int hall_player_init(struct hall *self);
 void hall_player_fini(struct hall *self);
-void hall_player_main(struct service *s, int source, struct player *pr, const void *msg, int sz);
+void hall_player_main(struct module *s, int source, struct player *pr, const void *msg, int sz);
 
 #endif

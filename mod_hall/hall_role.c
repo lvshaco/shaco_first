@@ -1,17 +1,11 @@
-#include "sc_service.h"
-#include "sc.h"
-#include "sc_log.h"
-#include "sc_node.h"
-#include "sc_timer.h"
-#include "hall_player.h"
-#include "hall_playerdb.h"
-#include "msg_server.h"
-#include "msg_client.h"
-#include "hall_attribute.h"
 #include "hall.h"
 #include "hall_tplt.h"
-#include <string.h>
-#include <stdlib.h>
+#include "hall_player.h"
+#include "hall_playerdb.h"
+#include "hall_attribute.h"
+#include "msg_server.h"
+#include "msg_client.h"
+#include "sc.h"
 
 #define ROLE_DEF 10 // 默认给予ID
 
@@ -41,20 +35,20 @@ add_role(struct chardata* cdata, uint32_t roleid) {
 }
 
 static void
-sync_money(struct service *s, struct player* pr) {
+sync_money(struct module *s, struct player* pr) {
     UM_DEFWRAP(UM_CLIENT, cl, UM_SYNCMONEY, sm);
     cl->uid  = UID(pr);
     sm->coin = pr->data.coin;
     sm->diamond = pr->data.diamond;
-    sh_service_send(SERVICE_ID, pr->watchdog_source, MT_UM, cl, sizeof(*cl) + sizeof(*sm));
+    sh_module_send(MODULE_ID, pr->watchdog_source, MT_UM, cl, sizeof(*cl) + sizeof(*sm));
 }
 
 static void
-sync_addrole(struct service *s, struct player* pr, uint32_t roleid) {
+sync_addrole(struct module *s, struct player* pr, uint32_t roleid) {
     UM_DEFWRAP(UM_CLIENT, cl, UM_ADDROLE, ar);
     cl->uid  = UID(pr);
     ar->roleid = roleid;
-    sh_service_send(SERVICE_ID, pr->watchdog_source, MT_UM, cl, sizeof(*cl) + sizeof(*ar));
+    sh_module_send(MODULE_ID, pr->watchdog_source, MT_UM, cl, sizeof(*cl) + sizeof(*ar));
 }
 
 static inline void
@@ -63,8 +57,8 @@ use_role(struct chardata* cdata, const struct role_tplt* tplt) {
 }
 
 static void
-process_userole(struct service *s, struct player *pr, const struct UM_USEROLE *use) {
-    struct hall *self = SERVICE_SELF;
+process_userole(struct module *s, struct player *pr, const struct UM_USEROLE *use) {
+    struct hall *self = MODULE_SELF;
 
     struct chardata* cdata = &pr->data;
     uint32_t roleid  = use->roleid;
@@ -91,8 +85,8 @@ process_userole(struct service *s, struct player *pr, const struct UM_USEROLE *u
 }
 
 static void
-process_buyrole(struct service *s, struct player *pr, const struct UM_BUYROLE *buy) {
-    struct hall *self = SERVICE_SELF;
+process_buyrole(struct module *s, struct player *pr, const struct UM_BUYROLE *buy) {
+    struct hall *self = MODULE_SELF;
     struct chardata* cdata = &pr->data;
     uint32_t roleid  = buy->roleid;
    
@@ -125,8 +119,8 @@ process_buyrole(struct service *s, struct player *pr, const struct UM_BUYROLE *b
 }
 
 static void
-login(struct service *s, struct player* pr) {
-    struct hall *self = SERVICE_SELF;
+login(struct module *s, struct player* pr) {
+    struct hall *self = MODULE_SELF;
     struct chardata* cdata = &pr->data;
     const struct role_tplt* tplt;
     if (cdata->role == 0) {
@@ -145,12 +139,12 @@ login(struct service *s, struct player* pr) {
         }
         use_role(cdata, tplt);
     } else {
-        sc_error("can not found role %d, charid %u", cdata->role, cdata->charid);
+        sh_error("can not found role %d, charid %u", cdata->role, cdata->charid);
     }
 }
 
 void
-hall_role_main(struct service *s, struct player *pr, const void *msg, int sz) {
+hall_role_main(struct module *s, struct player *pr, const void *msg, int sz) {
     UM_CAST(UM_BASE, base, msg);
     switch (base->msgid) {
     case IDUM_ENTERHALL:

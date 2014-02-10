@@ -1,6 +1,6 @@
-sc_loglevel="INFO"
-sc_connmax=11000
-sc_service="gate,echo"
+sh_loglevel="INFO"
+sh_connmax=11000
+sh_module="gate,echo"
 
 gate_ip="127.0.0.1"
 --gate_ip="192.168.1.140"

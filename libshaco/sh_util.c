@@ -33,7 +33,7 @@ static const unsigned char DEC_T[256] = {
 };
 
 int
-sc_bytestr_encode(const uint8_t* bytes, int nbyte, char* str, int n) {
+sh_bytestr_encode(const uint8_t* bytes, int nbyte, char* str, int n) {
     uint8_t lastoff = 0;
     int i, j = 0;
     for (i=0; i<nbyte; ) {
@@ -64,7 +64,7 @@ sc_bytestr_encode(const uint8_t* bytes, int nbyte, char* str, int n) {
 }
 
 int
-sc_bytestr_decode(const char* str, int len, uint8_t* bytes, int nbyte) {
+sh_bytestr_decode(const char* str, int len, uint8_t* bytes, int nbyte) {
     uint8_t c;
     uint8_t lastoff = 0;
     int i, j = 0;
@@ -97,7 +97,7 @@ sc_bytestr_decode(const char* str, int len, uint8_t* bytes, int nbyte) {
 */
 
 int
-sc_bytestr_encode(const uint8_t* bytes, int nbyte, char* str, int n) {
+sh_bytestr_encode(const uint8_t* bytes, int nbyte, char* str, int n) {
     uint8_t lastoff = 0;
     int i, j = 0;
     for (i=0; i<nbyte; ) {
@@ -130,7 +130,7 @@ sc_bytestr_encode(const uint8_t* bytes, int nbyte, char* str, int n) {
 }
 
 int
-sc_bytestr_decode(const char* str, int len, uint8_t* bytes, int nbyte) {
+sh_bytestr_decode(const char* str, int len, uint8_t* bytes, int nbyte) {
     uint8_t c;
     uint8_t lastoff = 0;
     int i, j = 0;

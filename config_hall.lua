@@ -1,4 +1,4 @@
 require "config_base"
 def_node("hall", 80)
-sc_service=sc_service..",hall"
+sh_module=sh_module..",hall"
 tplt_handle="hall"

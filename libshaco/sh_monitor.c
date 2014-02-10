@@ -1,8 +1,9 @@
 #include "sh_monitor.h"
-#include "sc_init.h"
-#include "sc_node.h"
+#include "sh_init.h"
+#include "sh_node.h"
 #include "sh_util.h"
-#include "sc_log.h"
+#include "sh_log.h"
+#include "sh_module.h"
 #include <stdlib.h>
 #include <assert.h>
 #include <string.h>
@@ -68,7 +69,7 @@ sh_monitor_trigger_start(int vhandle, int handle, const struct sh_node_addr *add
         sh_to_littleendian16(addr->nport, p); p+=2;
         memcpy(p, addr->gaddr, sizeof(addr->gaddr)); p+=sizeof(addr->gaddr);
         sh_to_littleendian16(addr->gport, p); p+=2;
-        return sh_service_send(handle, m->handle[MONITOR_START], MT_MONITOR, msg, sizeof(msg));
+        return sh_module_send(handle, m->handle[MONITOR_START], MT_MONITOR, msg, sizeof(msg));
     }
     return 1;
 }
@@ -80,7 +81,7 @@ sh_monitor_trigger_exit(int vhandle, int handle) {
         uint8_t msg[5];
         msg[0] = MONITOR_EXIT;
         sh_to_littleendian32(vhandle, &msg[1]);
-        return sh_service_send(handle, m->handle[MONITOR_EXIT], MT_MONITOR, msg, sizeof(msg));
+        return sh_module_send(handle, m->handle[MONITOR_EXIT], MT_MONITOR, msg, sizeof(msg));
     }
     return 1;
 }
@@ -100,4 +101,4 @@ sh_monitor_fini() {
     _M = NULL;
 }
 
-SC_LIBRARY_INIT_PRIO(sh_monitor_init, sh_monitor_fini, 40)
+SH_LIBRARY_INIT_PRIO(sh_monitor_init, sh_monitor_fini, 40)

@@ -15,14 +15,14 @@
 #define PDB_CREATE 7
 #define PDB_BINDCHARID 8
 
-struct service;
+struct module;
 struct hall;
 struct player;
 struct UM_REDISREPLY;
 
 int hall_playerdb_init(struct hall *self);
 void hall_playerdb_fini(struct hall *self);
-int hall_playerdb_send(struct service *s, struct player *pr, int type);
-void hall_playerdb_process_redis(struct service *s, struct UM_REDISREPLY *rep, int sz);
+int hall_playerdb_send(struct module *s, struct player *pr, int type);
+void hall_playerdb_process_redis(struct module *s, struct UM_REDISREPLY *rep, int sz);
 
 #endif

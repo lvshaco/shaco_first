@@ -23,35 +23,35 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.py *.h *.c" {
  config_watchdog.lua
  libshaco=libshaco{
   dlmodule.c
-  sc_check.c
-  sc_env.c
-  sc_init.c
-  sc_log.c
-  sc_net.c
-  sc_node.c
-  sc_reload.c
-  sc_service.c
-  sc_sig.c
-  sc_start.c
-  sc_timer.c
+  sh_check.c
+  sh_env.c
   sh_hash.c
+  sh_init.c
+  sh_log.c
+  sh_module.c
   sh_monitor.c
+  sh_net.c
+  sh_node.c
+  sh_reload.c
+  sh_sig.c
+  sh_start.c
+  sh_timer.c
   sh_util.c
  }
  include=include{
   libshaco=libshaco{
    dlmodule.h
    sc.h
-   sc_env.h
-   sc_init.h
-   sc_log.h
-   sc_net.h
-   sc_node.h
-   sc_reload.h
-   sc_service.h
-   sc_timer.h
+   sh_env.h
    sh_hash.h
+   sh_init.h
+   sh_log.h
+   sh_module.h
    sh_monitor.h
+   sh_net.h
+   sh_node.h
+   sh_reload.h
+   sh_timer.h
    sh_util.h
   }
  }
@@ -91,29 +91,29 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.py *.h *.c" {
   cnet.h
   cnet.c
  }
- service=service{
-  service_auth.c
-  service_benchmark.c
-  service_benchmarkdb.c
-  service_benchmarklog.c
-  service_centers.c
-  service_cmdctl.c
-  service_cmds.c
-  service_echo.c
-  service_gamelog.c
-  service_gate.c
-  service_hall.c
-  service_loadbalance.c
-  service_log.c
-  service_match.c
-  service_node.c
-  service_rank.c
-  service_redisproxy.c
-  service_robot.c
-  service_room.c
-  service_route.c
-  service_uniqueol.c
-  service_watchdog.c
+ mod=mod{
+  mod_auth.c
+  mod_benchmark.c
+  mod_benchmarkdb.c
+  mod_benchmarklog.c
+  mod_centers.c
+  mod_cmdctl.c
+  mod_cmds.c
+  mod_echo.c
+  mod_gamelog.c
+  mod_gate.c
+  mod_hall.c
+  mod_loadbalance.c
+  mod_log.c
+  mod_match.c
+  mod_node.c
+  mod_rank.c
+  mod_redisproxy.c
+  mod_robot.c
+  mod_room.c
+  mod_route.c
+  mod_uniqueol.c
+  mod_watchdog.c
  }
  mod_hall=mod_hall{
   hall.h

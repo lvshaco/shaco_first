@@ -1,17 +1,9 @@
-#include "sc_service.h"
-#include "sc_node.h"
-#include "sh_util.h"
 #include "sc.h"
-#include "sc_log.h"
-#include "sc_timer.h"
+#include "hall.h"
+#include "hall_tplt.h"
 #include "hall_player.h"
 #include "hall_playerdb.h"
 #include "msg_server.h"
-#include "hall.h"
-#include "hall_tplt.h"
-#include <stdlib.h>
-#include <string.h>
-#include <limits.h>
 
 static void
 _levelup(struct hall *self, uint32_t* exp, uint16_t* level) {
@@ -44,9 +36,9 @@ _get_score(struct chardata* cdata, uint32_t score) {
 }
 
 static inline void
-_rank(struct service *s, struct player* pr, 
+_rank(struct module *s, struct player* pr, 
       const char* type, const char* type_old, uint64_t score) {
-    struct hall *self = SERVICE_SELF;
+    struct hall *self = MODULE_SELF;
 
     // todo do not pointer
     UM_DEFFIX(UM_DBRANK, dr);
@@ -54,12 +46,12 @@ _rank(struct service *s, struct player* pr,
     dr->type_old = type_old;
     dr->charid = pr->data.charid;
     dr->score = score;
-    sh_service_send(SERVICE_ID, self->rank_handle, MT_UM, dr, sizeof(*dr));
+    sh_module_send(MODULE_ID, self->rank_handle, MT_UM, dr, sizeof(*dr));
 }
 
 static void
-process_award(struct service *s, struct player* pr, int8_t type, const struct memberaward* award) {
-    struct hall *self = SERVICE_SELF;
+process_award(struct module *s, struct player* pr, int8_t type, const struct memberaward* award) {
+    struct hall *self = MODULE_SELF;
     struct chardata* cdata = &pr->data;
     bool updated = false;
     // coin
@@ -70,7 +62,7 @@ process_award(struct service *s, struct player* pr, int8_t type, const struct me
     // exp
     int old_grade = 0, new_grade = 0;
     if (award->exp > 0) {
-        sc_limitadd(award->exp, &cdata->exp, UINT_MAX);
+        sh_limitadd(award->exp, &cdata->exp, UINT_MAX);
         uint16_t old_level = cdata->level;
         _levelup(self, &cdata->exp, &cdata->level);
         if (old_level != cdata->level){
@@ -113,7 +105,7 @@ process_award(struct service *s, struct player* pr, int8_t type, const struct me
 }
 
 void
-hall_award_main(struct service *s, struct player *pr, const void *msg, int sz) {
+hall_award_main(struct module *s, struct player *pr, const void *msg, int sz) {
     UM_CAST(UM_BASE, base, msg);
     switch (base->msgid) {
     case IDUM_GAMEAWARD: {

@@ -1,22 +1,14 @@
 #include "hall_playerdb.h"
 #include "hall.h"
-#include "sc_service.h"
-#include "sh_util.h"
-#include "sc.h"
-#include "sc_log.h"
-#include "sc_net.h"
-#include "sc_timer.h"
-#include "redis.h"
-#include "msg_server.h"
 #include "hall_player.h"
 #include "hall_playerdb.h"
-#include "memrw.h"
 #include "hall_role.h"
 #include "hall_ring.h"
 #include "hall_attribute.h"
-#include <stdlib.h>
-#include <string.h>
-#include <stdio.h>
+#include "sc.h"
+#include "msg_server.h"
+#include "redis.h"
+#include "memrw.h"
 
 int
 hall_playerdb_init(struct hall *self) {
@@ -30,8 +22,8 @@ hall_playerdb_fini(struct hall *self) {
 }
 
 static int
-_db(struct service *s, struct player* p, int8_t type) {
-    struct hall *self = SERVICE_SELF;
+_db(struct module *s, struct player* p, int8_t type) {
+    struct hall *self = MODULE_SELF;
 
     struct chardata* cdata = &p->data;
     struct ringdata* rdata = &cdata->ringdata;
@@ -133,14 +125,14 @@ _db(struct service *s, struct player* p, int8_t type) {
         rq->needrecord = 1;
         uint32_t charid = cdata->charid;
 
-        char strownrole[sc_bytestr_encode_leastn(sizeof(cdata->ownrole))];
-        sc_bytestr_encode((uint8_t*)cdata->ownrole, sizeof(cdata->ownrole), 
+        char strownrole[sh_bytestr_encode_leastn(sizeof(cdata->ownrole))];
+        sh_bytestr_encode((uint8_t*)cdata->ownrole, sizeof(cdata->ownrole), 
                           strownrole, sizeof(strownrole));
-        char strpages[sc_bytestr_encode_leastn(sizeof(rdata->pages))];
-        sc_bytestr_encode((uint8_t*)rdata->pages, min(rdata->npage, sizeof(rdata->pages)), 
+        char strpages[sh_bytestr_encode_leastn(sizeof(rdata->pages))];
+        sh_bytestr_encode((uint8_t*)rdata->pages, min(rdata->npage, sizeof(rdata->pages)), 
                           strpages, sizeof(strpages));
-        char strrings[sc_bytestr_encode_leastn(sizeof(rdata->rings))];
-        sc_bytestr_encode((uint8_t*)rdata->rings, min(rdata->nring, sizeof(rdata->rings)), 
+        char strrings[sh_bytestr_encode_leastn(sizeof(rdata->rings))];
+        sh_bytestr_encode((uint8_t*)rdata->rings, min(rdata->nring, sizeof(rdata->rings)), 
                           strrings, sizeof(strrings));
         int len = snprintf(rw.ptr, RW_SPACE(&rw), "hmset user:%u"
                 " level %u"
@@ -181,11 +173,11 @@ _db(struct service *s, struct player* p, int8_t type) {
     default:
         return 1;
     }
-    return sh_service_send(SERVICE_ID, self->rpuser_handle, MT_UM, rq, sizeof(*rq) + RW_CUR(&rw)); 
+    return sh_module_send(MODULE_ID, self->rpuser_handle, MT_UM, rq, sizeof(*rq) + RW_CUR(&rw)); 
 }
 
 int 
-hall_playerdb_send(struct service *s, struct player *pr, int type) {
+hall_playerdb_send(struct module *s, struct player *pr, int type) {
     return _db(s, pr, type);
 }
 
@@ -221,25 +213,25 @@ _loadpdb(struct player* p, struct redis_replyitem* item) {
     CHECK(cdata->score_normal = redis_bulkitem_toul(si++));
     CHECK(cdata->score_dashi = redis_bulkitem_toul(si++));
     CHECK(
-    sc_bytestr_decode(si->value.p, si->value.len, (uint8_t*)cdata->ownrole, sizeof(cdata->ownrole));
+    sh_bytestr_decode(si->value.p, si->value.len, (uint8_t*)cdata->ownrole, sizeof(cdata->ownrole));
     si++;)
     CHECK(rdata->usepage = redis_bulkitem_toul(si++));
     CHECK(rdata->npage = redis_bulkitem_toul(si++));
     CHECK(
-    sc_bytestr_decode(si->value.p, si->value.len, (uint8_t*)rdata->pages, sizeof(rdata->pages));
+    sh_bytestr_decode(si->value.p, si->value.len, (uint8_t*)rdata->pages, sizeof(rdata->pages));
     si++;
     );
     CHECK(rdata->nring = redis_bulkitem_toul(si++));
     CHECK(
-    sc_bytestr_decode(si->value.p, si->value.len, (uint8_t*)rdata->rings, sizeof(rdata->rings));
+    sh_bytestr_decode(si->value.p, si->value.len, (uint8_t*)rdata->rings, sizeof(rdata->rings));
     si++;
     );
     return SERR_OK;
 }
 
 void 
-hall_playerdb_process_redis(struct service *s, struct UM_REDISREPLY *rep, int sz) {
-    struct hall *self = SERVICE_SELF;
+hall_playerdb_process_redis(struct module *s, struct UM_REDISREPLY *rep, int sz) {
+    struct hall *self = MODULE_SELF;
 
     int8_t type = 0; 
     uint32_t accid = 0;

@@ -39,21 +39,21 @@ room_tplt_fini(struct room *self) {
 }
 
 void
-room_tplt_main(struct service *s, int session, int source, int type, const void *msg, int sz) {
-    struct room *self = SERVICE_SELF;
+room_tplt_main(struct module *s, int session, int source, int type, const void *msg, int sz) {
+    struct room *self = MODULE_SELF;
     if (type != MT_TEXT)
         return;
 
     if (!strncmp("reload", msg, sz)) {
         if (!load_tplt(self)) {
-            sc_info("reload tplt ok");
+            sh_info("reload tplt ok");
             if (!load_mapdata(self)) {
-                sc_info("reload mapdata ok");
+                sh_info("reload mapdata ok");
             } else {
-                sc_error("reload mapdata fail");
+                sh_error("reload mapdata fail");
             } 
         } else {
-            sc_error("reload tplt ok");
+            sh_error("reload tplt ok");
         }
     }
 }

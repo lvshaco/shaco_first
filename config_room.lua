@@ -1,4 +1,4 @@
 require "config_base"
 def_node("room", 100)
-sc_service=sc_service..",room"
+sh_module=sh_module..",room"
 tplt_handle="room"

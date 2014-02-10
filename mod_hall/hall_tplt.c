@@ -1,7 +1,6 @@
 #include "hall_tplt.h"
 #include "hall.h"
-#include "sc_log.h"
-#include <string.h>
+#include "sc.h"
 
 static int
 load_tplt(struct hall *self) {
@@ -33,16 +32,16 @@ hall_tplt_fini(struct hall *self) {
 }
 
 void
-hall_tplt_main(struct service *s, int session, int source, int type, const void *msg, int sz) {
-    struct hall *self = SERVICE_SELF;
+hall_tplt_main(struct module *s, int session, int source, int type, const void *msg, int sz) {
+    struct hall *self = MODULE_SELF;
     if (type != MT_TEXT)
         return;
 
     if (!strncmp("reload", msg, sz)) {
         if (!load_tplt(self)) {
-            sc_info("reload tplt ok");
+            sh_info("reload tplt ok");
         } else {
-            sc_error("reload tplt fail");
+            sh_error("reload tplt fail");
         }
     }
 }

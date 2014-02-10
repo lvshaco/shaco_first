@@ -10,7 +10,7 @@ startone() {
     if [ $MEMCHECK -eq 0 ]
     then
         echo "start ${1}"
-        ./shaco config_${1}.lua --sc_daemon 1
+        ./shaco config_${1}.lua --sh_daemon 1
     else
         echo "start-memcheck ${1}"
         valgrind -v \
@@ -18,7 +18,7 @@ startone() {
         --show-reachable=yes \
         --suppressions=shaco.supp \
         --log-file=$HOME/log/${1}.vallog \
-        ./shaco config_${1}.lua --sc_daemon 1
+        ./shaco config_${1}.lua --sh_daemon 1
     fi
     sleep ${2}
 }
@@ -28,6 +28,7 @@ startcmdd() {
 }
 startall() {
     startone center 2
+    echo "abcdef"
     for S in $SERVERS;do
         startone $S 0.5
     done

@@ -3,9 +3,9 @@
 CFLAGS=-g -Wall -Werror 
 SHARED=-fPIC -shared
 
-service_dir=service
-#service_src=$(wildcard $(service_dir)/*.c)
-#service_so=$(patsubst %.c,%.so,$(notdir $(service_src)))
+mod_dir=mod
+#mod_src=$(wildcard $(mod_dir)/*.c)
+#mod_so=$(patsubst %.c,%.so,$(notdir $(mod_src)))
 
 lur_src=\
 	lur/lur.c \
@@ -56,17 +56,17 @@ base_src=\
 	base/args.h
 
 libshaco_src=\
-	libshaco/sc_init.c \
-	libshaco/sc_start.c \
-	libshaco/sc_sig.c \
-	libshaco/sc_check.c \
-	libshaco/sc_env.c \
- 	libshaco/sc_net.c \
- 	libshaco/sc_service.c \
- 	libshaco/sc_timer.c \
- 	libshaco/sc_log.c \
-	libshaco/sc_reload.c \
-	libshaco/sc_node.c \
+	libshaco/sh_init.c \
+	libshaco/sh_start.c \
+	libshaco/sh_sig.c \
+	libshaco/sh_check.c \
+	libshaco/sh_env.c \
+ 	libshaco/sh_net.c \
+ 	libshaco/sh_module.c \
+ 	libshaco/sh_timer.c \
+ 	libshaco/sh_log.c \
+	libshaco/sh_reload.c \
+	libshaco/sh_node.c \
 	libshaco/sh_monitor.c \
  	libshaco/dlmodule.c \
 	libshaco/sh_util.c \
@@ -80,22 +80,22 @@ LDFLAGS=-Wl,-rpath,. \
 		shaco.so net.so lur.so base.so -llua -lm -ldl -lrt -rdynamic# -Wl,-E
 
 
-#service_benchmarkdb.so
+#mod_benchmarkdb.so
 
-service_so=\
-	service_echo.so \
-	service_centers.so \
-	service_node.so \
-	service_cmds.so \
-	service_cmdctl.so \
-	service_gate.so \
-	service_route.so \
-	service_loadbalance.so \
-	service_watchdog.so \
-	service_uniqueol.so \
-	service_match.so \
-	service_benchmarklog.so \
-	service_benchmark.so
+mod_so=\
+	mod_echo.so \
+	mod_centers.so \
+	mod_node.so \
+	mod_cmds.so \
+	mod_cmdctl.so \
+	mod_gate.so \
+	mod_route.so \
+	mod_loadbalance.so \
+	mod_watchdog.so \
+	mod_uniqueol.so \
+	mod_match.so \
+	mod_benchmarklog.so \
+	mod_benchmark.so
 
 all: \
 	shaco.so \
@@ -109,24 +109,24 @@ all: \
 	shaco-cli \
 	t \
 	robot \
-	service_log.so \
-	service_gamelog.so \
-	$(service_so) \
-	service_room.so \
-	service_rank.so \
-	service_redisproxy.so \
-	service_hall.so \
-	service_auth.so \
-	service_robot.so
+	mod_log.so \
+	mod_gamelog.so \
+	$(mod_so) \
+	mod_room.so \
+	mod_rank.so \
+	mod_redisproxy.so \
+	mod_hall.so \
+	mod_auth.so \
+	mod_robot.so
 
 release: CFLAGS += -O2 -fno-strict-aliasing
 release: all
 
-$(service_so): %.so: $(service_dir)/%.c
+$(mod_so): %.so: $(mod_dir)/%.c
 	@rm -f $@
 	gcc $(CFLAGS) $(SHARED) -o $@ $< -Iinclude/libshaco -Inet -Ibase -Imsg
 
-service_room.so: $(service_dir)/service_room.c \
+mod_room.so: $(mod_dir)/mod_room.c \
 	mod_room/room_tplt.c \
 	mod_room/room_tplt.h \
 	mod_room/fight.c \
@@ -140,33 +140,33 @@ service_room.so: $(service_dir)/service_room.c \
 	@rm -f $@
 	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Iinclude/libshaco -Inet -Ibase -Imsg -Imod_room -Itplt -Idatadefine -Wl,-rpath,. tplt.so 
 
-service_log.so: $(service_dir)/service_log.c
+mod_log.so: $(mod_dir)/mod_log.c
 	@rm -f $@
 	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Iinclude/libshaco -Inet -Ibase -Imsg -Ielog -Wl,-rpath,. elog.so
 
-service_gamelog.so: $(service_dir)/service_gamelog.c
+mod_gamelog.so: $(mod_dir)/mod_gamelog.c
 	@rm -f $@
 	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Iinclude/libshaco -Inet -Ibase -Imsg -Ielog -Wl,-rpath,. elog.so
 
 
-service_rank.so: $(service_dir)/service_rank.c
+mod_rank.so: $(mod_dir)/mod_rank.c
 	@rm -f $@
 	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Iinclude/libshaco -Inet -Ibase -Imsg -Iworld -Iredis -Wl,-rpath,. redis.so
 
 
-service_benchmarkdb.so: $(service_dir)/service_benchmarkdb.c
+mod_benchmarkdb.so: $(mod_dir)/mod_benchmarkdb.c
 	@rm -f $@
 	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Iinclude/libshaco -Inet -Ibase -Imsg -Iredis -Wl,-rpath,. redis.so
 
-service_redisproxy.so: $(service_dir)/service_redisproxy.c
+mod_redisproxy.so: $(mod_dir)/mod_redisproxy.c
 	@rm -f $@
 	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Iinclude/libshaco -Inet -Ibase -Imsg -Iredis -Wl,-rpath,. redis.so
 
-service_auth.so: $(service_dir)/service_auth.c
+mod_auth.so: $(mod_dir)/mod_auth.c
 	@rm -f $@
 	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Iinclude/libshaco -Inet -Ibase -Imsg -Iredis -Wl,-rpath,. redis.so
 
-service_hall.so: $(service_dir)/service_hall.c \
+mod_hall.so: $(mod_dir)/mod_hall.c \
 	mod_hall/hall_tplt.c \
 	mod_hall/hall_tplt.h \
 	mod_hall/hall_player.c \
@@ -186,7 +186,7 @@ service_hall.so: $(service_dir)/service_hall.c \
 	@rm -f $@
 	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Iinclude/libshaco -Inet -Ibase -Itplt -Idatadefine -Imsg -Iredis -Imod_hall -Wl,-rpath,. redis.so tplt.so
 
-service_robot.so: $(service_dir)/service_robot.c \
+mod_robot.so: $(mod_dir)/mod_robot.c \
 	mod_hall/hall_attribute.c \
 	mod_hall/hall_attribute.h \
 	mod_robot/robot.h \

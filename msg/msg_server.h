@@ -3,8 +3,8 @@
 
 #include "msg.h"
 #include "msg_sharetype.h"
-#include "sc_net.h"
-#include "sc_node.h"
+#include "sh_net.h"
+#include "sh_node.h"
 
 #define IDUM_NBEGIN 0
 #define IDUM_NEND   999 
@@ -122,7 +122,7 @@ struct UM_NETDISCONN {
     int err;
 };
 
-struct service_info {
+struct module_info {
     int32_t handle;
     char ip[40];
     uint16_t port;
@@ -132,7 +132,7 @@ struct service_info {
 struct UM_SERVICEINFO {
     _UM_HEADER;
     uint8_t ninfo;
-    struct service_info info[0];
+    struct module_info info[0];
 };
 static inline uint16_t
 UM_SERVICEINFO_size(struct UM_SERVICEINFO *um) {

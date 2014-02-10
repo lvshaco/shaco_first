@@ -1,4 +1,4 @@
-#include "sc_service.h"
+#include "sh_module.h"
 #include <stdlib.h>
 
 struct tmp {
@@ -14,19 +14,19 @@ tmp_free(struct tmp *self) {
 }
 
 int
-tmp_init(struct service *s) {
-    //struct tmp *self = SERVICE_SELF;
+tmp_init(struct module *s) {
+    //struct tmp *self = MODULE_SELF;
     return 0;
 }
 
 void
-tmp_time(struct service *s) {
-    //struct tmp *self = SERVICE_SELF;
+tmp_time(struct module *s) {
+    //struct tmp *self = MODULE_SELF;
 }
 
 void
-tmp_main(struct service *s, int session, int source, int type, const void *msg, int sz) {
-    //struct tmp *self = SERVICE_SELF;
+tmp_main(struct module *s, int session, int source, int type, const void *msg, int sz) {
+    //struct tmp *self = MODULE_SELF;
     switch (type) {
     case MT_UM: {
         UM_CAST(UM_BASE, base, msg);

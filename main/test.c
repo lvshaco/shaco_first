@@ -26,7 +26,7 @@ _elapsed() {
 
 /*
 void 
-sc_log(int level, const char* fmt, ...) {
+sh_log(int level, const char* fmt, ...) {
     va_list ap;
     va_start(ap, fmt);
     char log[1024];
@@ -38,7 +38,7 @@ sc_log(int level, const char* fmt, ...) {
     if (n >= sizeof(log)) {
         // truncate
     }
-    // notify service_log handle
+    // notify module_log handle
     //printf("n %d.\n", n);
     //printf(log);
 }
@@ -723,112 +723,6 @@ test_log(int times) {
 */
 }
 
-# ifdef __GNUC__
-#  define PH_GCC_VERSION (__GNUC__ * 10000 \
-            + __GNUC_MINOR__ * 100 \
-            + __GNUC_PATCHLEVEL__)
-# else
-#  define PH_GCC_VERSION 0
-#endif
-
-# if PH_GCC_VERSION >= 40600
-#  define ph_static_assert(expr, msg) #_Static_assert(expr, #msg)
-# else
-#  define ph_static_assert(expr, msg) \
-    typedef struct { \
-        int static_assertion_failed_##msg : !!(expr); \
-    } static_assertion_failed##__LINE__;
-#endif
-
-struct sc_library_init_entry {
-    int prio;
-    void (*init)();
-    void (*fini)();
-};
-
-struct sc_library {
-    struct sc_library_init_entry* p;
-    int cap;
-    int sz;
-};
-
-static struct sc_library* L = NULL;
-void
-sc_library_init_entry_register(struct sc_library_init_entry* entry) {
-    if (L == NULL) {
-        L = malloc(sizeof(*L));
-        memset(L, 0, sizeof(*L));
-    }
-    if (L->sz >= L->cap) {
-        L->cap *= 2;
-        if (L->cap == 0)
-            L->cap = 1;
-        L->p = realloc(L->p, sizeof(struct sc_library_init_entry) * L->cap);
-    }
-    L->p[L->sz] = *entry;
-    L->sz++;
-}
-
-#define SC_LIBRARY_INIT(initfn, finifn, prio) \
-    __attribute__((constructor)) \
-    void _sc_library_init_##initfn() { \
-        printf("%s\n", __FUNCTION__); \
-        struct sc_library_init_entry entry = { prio, initfn, finifn }; \
-        sc_library_init_entry_register(&entry); \
-    }
-
-static int _compare_library_init_entry(const void* p1, const void* p2) {
-    const struct sc_library_init_entry* e1 = p1;
-    const struct sc_library_init_entry* e2 = p2;
-    return e1->prio - e2->prio;
-}
-
-void
-sc_library_init() {
-    qsort(L->p, L->sz, sizeof(L->p[0]), _compare_library_init_entry);
-    if (L == NULL)
-        return;
-    struct sc_library_init_entry* entry;
-    int i;
-    for (i=0; i<L->sz; ++i) {
-        entry = &L->p[i];
-        if (entry->init) {
-            entry->init();
-        }
-    }
-}
-
-void
-sc_library_fini() {
-    if (L == NULL)
-        return;
-    struct sc_library_init_entry* entry;
-    int i;
-    for (i=L->sz-1; i>=0; --i) {
-        entry = &L->p[i];
-        if (entry->fini) {
-            entry->fini();
-        }
-    }
-    free(L->p);
-    free(L);
-}
-
-static void init1() {
-    printf("init1\n");
-}
-static void fini1() {
-    printf("fini1\n");
-}
-static void init2() {
-    printf("init2\n");
-}
-static void fini2() {
-    printf("fini2\n");
-}
-SC_LIBRARY_INIT(init1, fini1, 100)
-SC_LIBRARY_INIT(init2, fini2, 101)
-
 void
 test_copy(int times) {
     char src[4*1024];
@@ -862,14 +756,14 @@ dump_str(const char* str) {
 
 void
 _encode(const uint8_t* bytes, int nbyte) {
-    char str[sc_bytestr_encode_leastn(nbyte)];
-    assert(sc_bytestr_encode(bytes, nbyte, str, sizeof(str)) == nbyte);
+    char str[sh_bytestr_encode_leastn(nbyte)];
+    assert(sh_bytestr_encode(bytes, nbyte, str, sizeof(str)) == nbyte);
     //dump_str(str);
     int len = strlen(str);
     printf("encode: %s, len: %d, size: %d\n", str, len, (int)sizeof(str)-1);
     uint8_t byt[nbyte];
     
-    int delen = sc_bytestr_decode(str, len, byt, sizeof(byt));
+    int delen = sh_bytestr_decode(str, len, byt, sizeof(byt));
     printf("decode: len %d, ", delen);
     assert(delen == len);
     int i;
@@ -1248,14 +1142,14 @@ main(int argc, char* argv[]) {
     if (argc > 1)
         times = strtol(argv[1], NULL, 10);
    
-    //int32_t r = sc_cstr_to_int32("RES");
+    //int32_t r = sh_cstr_to_int32("RES");
     //printf("r = %d\n", r);
-    //int ret = sc_cstr_compare_int32("RES", r);
+    //int ret = sh_cstr_compare_int32("RES", r);
     //printf("ret = %d\n", ret);
     //printf("%d\n",  memcmp(&r, "RES", 3));
     //printf("%c\n","RES"[0]);
-    //sc_library_init();
-    //sc_library_fini();
+    //sh_library_init();
+    //sh_library_fini();
     //ph_static_assert(sizeof(int)==1, intsize_must4);
     //test_lur();
     //test_args();

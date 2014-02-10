@@ -1,6 +1,6 @@
 #include "dlmodule.h"
 #include "sh_util.h"
-#include "sc_log.h"
+#include "sh_log.h"
 #include <stdlib.h>
 #include <dlfcn.h>
 #include <string.h>
@@ -12,16 +12,16 @@ static int
 _open(struct dlmodule* dl) {
     assert(dl->handle == NULL);
     char tmp[64];
-    int n = snprintf(tmp, sizeof(tmp), "service_%s.so", dl->name);
+    int n = snprintf(tmp, sizeof(tmp), "mod_%s.so", dl->name);
     if (n >= sizeof(tmp)) {
-        sc_error("dlmodule %s, name is too long", dl->name);
+        sh_error("dlmodule %s, name is too long", dl->name);
         return 1;
     }
     char fname[PATH_MAX];
     snprintf(fname, sizeof(fname), "./%s", tmp);
     void* handle = dlopen(fname, RTLD_NOW | RTLD_GLOBAL);
     if (handle == NULL) {
-        sc_error("dlmodule %s open error: %s", dl->name, dlerror());
+        sh_error("dlmodule %s open error: %s", dl->name, dlerror());
         return 1;
     } 
     size_t len = strlen(dl->name);
@@ -45,7 +45,7 @@ _open(struct dlmodule* dl) {
         dl->send == NULL &&
         dl->net == NULL &&
         dl->time == NULL) {
-        sc_error("dlmodule %s no symbol", dl->name);
+        sh_error("dlmodule %s no symbol", dl->name);
         return 1;
     }
     dl->handle = handle;
@@ -74,7 +74,7 @@ _dlclose(struct dlmodule* dl) {
 int
 dlmodule_load(struct dlmodule* dl, const char* name) {
     memset(dl, 0, sizeof(*dl));
-    sc_strncpy(dl->name, name, sizeof(dl->name));
+    sh_strncpy(dl->name, name, sizeof(dl->name));
     
     if (_open(dl)) {
         dlmodule_close(dl);

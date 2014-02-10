@@ -1,12 +1,8 @@
-#include "sc_service.h"
-#include "sc_node.h"
-#include "sc_log.h"
+#include "sc.h"
 #include "hall.h"
 #include "hall_tplt.h"
 #include "hall_player.h"
 #include "msg_server.h"
-#include <stdlib.h>
-#include <string.h>
 
 static void
 effect(struct char_attribute* cattri, const struct role_tplt* base, 
@@ -51,41 +47,41 @@ effect(struct char_attribute* cattri, const struct role_tplt* base,
 
 /*
 static void dump(struct chardata* cdata) {
-    sc_rec("char: accid%u, id %u, name %s", cdata->accid, cdata->charid, cdata->name);
+    sh_rec("char: accid%u, id %u, name %s", cdata->accid, cdata->charid, cdata->name);
     struct char_attribute* attri = &cdata->attri;
-    sc_rec("role: %d", cdata->role);
-    sc_rec("oxygen: %d", attri->oxygen);     // 氧气
-    sc_rec("body: %d", attri->body);       // 体能
-    sc_rec("quick: %d", attri->quick);      // 敏捷
+    sh_rec("role: %d", cdata->role);
+    sh_rec("oxygen: %d", attri->oxygen);     // 氧气
+    sh_rec("body: %d", attri->body);       // 体能
+    sh_rec("quick: %d", attri->quick);      // 敏捷
     
-    sc_rec("movespeed: %f", attri->movespeed);     // 移动速度
-    sc_rec("movespeedadd: %f", attri->movespeedadd);
-    sc_rec("charfallspeed: %f", attri->charfallspeed); // 坠落速度
-    sc_rec("charfallspeedadd: %f", attri->charfallspeedadd);
-    sc_rec("jmpspeed: %f", attri->jmpspeed);      // 跳跃速度--
-    sc_rec("jmpacctime: %d", attri->jmpacctime);  // 跳跃准备时间--
-    sc_rec("rebirthtime: %d", attri->rebirthtime); // 复活时间
-    sc_rec("rebirthtimeadd: %f", attri->rebirthtimeadd);
-    sc_rec("dodgedistance: %f", attri->dodgedistance); // 闪避距离
-    sc_rec("dodgedistanceadd: %f", attri->dodgedistanceadd);
-    sc_rec("jump_range: %d", attri->jump_range);  // 跳跃高度
-    sc_rec("sence_range: %d", attri->sence_range); // 感知范围
-    sc_rec("view_range: %d", attri->view_range);  // 视野范围
+    sh_rec("movespeed: %f", attri->movespeed);     // 移动速度
+    sh_rec("movespeedadd: %f", attri->movespeedadd);
+    sh_rec("charfallspeed: %f", attri->charfallspeed); // 坠落速度
+    sh_rec("charfallspeedadd: %f", attri->charfallspeedadd);
+    sh_rec("jmpspeed: %f", attri->jmpspeed);      // 跳跃速度--
+    sh_rec("jmpacctime: %d", attri->jmpacctime);  // 跳跃准备时间--
+    sh_rec("rebirthtime: %d", attri->rebirthtime); // 复活时间
+    sh_rec("rebirthtimeadd: %f", attri->rebirthtimeadd);
+    sh_rec("dodgedistance: %f", attri->dodgedistance); // 闪避距离
+    sh_rec("dodgedistanceadd: %f", attri->dodgedistanceadd);
+    sh_rec("jump_range: %d", attri->jump_range);  // 跳跃高度
+    sh_rec("sence_range: %d", attri->sence_range); // 感知范围
+    sh_rec("view_range: %d", attri->view_range);  // 视野范围
    
-    sc_rec("attack_power: %d", attri->attack_power);
-    sc_rec("attack_distance: %d", attri->attack_distance);
-    sc_rec("attack_range: %d", attri->attack_range);
-    sc_rec("attack_speed: %d", attri->attack_speed);
+    sh_rec("attack_power: %d", attri->attack_power);
+    sh_rec("attack_distance: %d", attri->attack_distance);
+    sh_rec("attack_range: %d", attri->attack_range);
+    sh_rec("attack_speed: %d", attri->attack_speed);
 
-    sc_rec("coin_profit: %f", attri->coin_profit);
-    sc_rec("wincoin_profit: %f", attri->wincoin_profit);
-    sc_rec("score_profit: %f", attri->score_profit);
-    sc_rec("winscore_profit: %f", attri->winscore_profit);
-    sc_rec("exp_profit: %f", attri->exp_profit);
-    sc_rec("item_timeadd: %f", attri->item_timeadd);
-    sc_rec("item_oxygenadd: %f", attri->item_oxygenadd);
-    sc_rec("lucky: %d", attri->lucky);
-    sc_rec("prices: %d", attri->prices);
+    sh_rec("coin_profit: %f", attri->coin_profit);
+    sh_rec("wincoin_profit: %f", attri->wincoin_profit);
+    sh_rec("score_profit: %f", attri->score_profit);
+    sh_rec("winscore_profit: %f", attri->winscore_profit);
+    sh_rec("exp_profit: %f", attri->exp_profit);
+    sh_rec("item_timeadd: %f", attri->item_timeadd);
+    sh_rec("item_oxygenadd: %f", attri->item_oxygenadd);
+    sh_rec("lucky: %d", attri->lucky);
+    sh_rec("prices: %d", attri->prices);
 }
 */
 void
