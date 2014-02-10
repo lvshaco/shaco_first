@@ -143,8 +143,8 @@ struct char_attribute {
 
     float   coin_profit;    // 金币收益
     float   wincoin_profit; // 胜利金币收益
-    float   score_profit;   // 得分收益
-    float   winscore_profit;// 胜利得分收益
+    float   shore_profit;   // 得分收益
+    float   winshore_profit;// 胜利得分收益
     float   exp_profit;     // 经验收益
     float   item_timeadd;   // 物品时长加成
     float   item_oxygenadd; // 物品氧气效果加成
@@ -167,8 +167,8 @@ struct chardata {
     uint32_t role;    // 使用的角色
     uint32_t skin;    // 使用的服装 (废弃)
 
-    uint32_t score_normal;  // 普通赛得分
-    uint32_t score_dashi;   // 大师赛积分
+    uint32_t shore_normal;  // 普通赛得分
+    uint32_t shore_dashi;   // 大师赛积分
     struct   char_attribute attri;
     uint8_t  ownrole[ROLE_MAX]; // 拥有的角色
     struct   ringdata ringdata; // 戒指信息
@@ -212,7 +212,7 @@ struct tmemberdetail {
 
     uint32_t role;
     uint32_t skin;
-    uint32_t score_dashi; // 大师赛积分
+    uint32_t shore_dashi; // 大师赛积分
     struct char_attribute attri;
 };
 
@@ -237,7 +237,7 @@ struct tmemberstat {
     int16_t nbao;
     int32_t exp;
     int32_t coin;
-    int32_t score;
+    int32_t shore;
 };
 
 #pragma pack()

@@ -5,7 +5,7 @@
 #include "hall_role.h"
 #include "hall_ring.h"
 #include "hall_attribute.h"
-#include "sc.h"
+#include "sh.h"
 #include "msg_server.h"
 #include "redis.h"
 #include "memrw.h"
@@ -74,8 +74,8 @@ _db(struct module *s, struct player* p, int8_t type) {
                 " package"
                 " role"
                 " skin"
-                " score1"
-                " score2"
+                " shore1"
+                " shore2"
                 " ownrole"
                 " usepage"
                 " npage"
@@ -142,8 +142,8 @@ _db(struct module *s, struct player* p, int8_t type) {
                 " package %u"
                 " role %u"
                 " skin %u"
-                " score1 %u"
-                " score2 %u"
+                " shore1 %u"
+                " shore2 %u"
                 " ownrole %s"
                 " usepage %u"
                 " npage %u"
@@ -158,8 +158,8 @@ _db(struct module *s, struct player* p, int8_t type) {
                 cdata->package,
                 cdata->role,
                 cdata->skin,
-                cdata->score_normal,
-                cdata->score_dashi,
+                cdata->shore_normal,
+                cdata->shore_dashi,
                 strownrole,
                 rdata->usepage,
                 rdata->npage,
@@ -210,8 +210,8 @@ _loadpdb(struct player* p, struct redis_replyitem* item) {
     CHECK(cdata->package = redis_bulkitem_toul(si++));
     CHECK(cdata->role = redis_bulkitem_toul(si++));
     CHECK(cdata->skin = redis_bulkitem_toul(si++));
-    CHECK(cdata->score_normal = redis_bulkitem_toul(si++));
-    CHECK(cdata->score_dashi = redis_bulkitem_toul(si++));
+    CHECK(cdata->shore_normal = redis_bulkitem_toul(si++));
+    CHECK(cdata->shore_dashi = redis_bulkitem_toul(si++));
     CHECK(
     sh_bytestr_decode(si->value.p, si->value.len, (uint8_t*)cdata->ownrole, sizeof(cdata->ownrole));
     si++;)
@@ -242,7 +242,7 @@ hall_playerdb_process_redis(struct module *s, struct UM_REDISREPLY *rep, int sz)
 
     struct player* p = sh_hash_find(&self->acc2player, accid);
     if (p == NULL) {
-        return; // maybe disconnect
+        return; // maybe dishonnect
     }
 
     int32_t serr = SERR_UNKNOW;

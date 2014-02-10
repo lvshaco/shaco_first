@@ -1,4 +1,4 @@
-#include "sc.h"
+#include "sh.h"
 #include "msg_server.h"
 #include "msg_client.h"
 
@@ -10,7 +10,7 @@
 #define S_MATCH 4
 #define S_ROOM 5
 
-// disconnect
+// dishonnect
 #define DISCONNECT 1
 #define NODISCONNECT 0
 
@@ -109,7 +109,7 @@ free_user(struct user *ur) {
 }
 
 static void
-disconnect_client(struct module *s, int gate_source, int connid, int err) {
+dishonnect_client(struct module *s, int gate_source, int connid, int err) {
     UM_DEFWRAP(UM_GATE, g, UM_LOGOUT, lo);
     g->connid = connid;
     lo->err = err;
@@ -118,7 +118,7 @@ disconnect_client(struct module *s, int gate_source, int connid, int err) {
 }
 
 static void
-logout(struct module *s, struct user *ur, int8_t err, int disconn) {
+logout(struct module *s, struct user *ur, int8_t err, int dishonn) {
     struct watchdog *self = MODULE_SELF;
 
     uint64_t conn = CONN_HASH(ur->gate_source, ur->connid);
@@ -147,8 +147,8 @@ logout(struct module *s, struct user *ur, int8_t err, int disconn) {
         int sz = sizeof(*ro) + sizeof(*lo);
         sh_module_send(MODULE_ID, ur->room_handle, MT_UM, ro, sz);
     } 
-    if (disconn == DISCONNECT) {
-        disconnect_client(s, ur->gate_source, ur->connid, err);
+    if (dishonn == DISCONNECT) {
+        dishonnect_client(s, ur->gate_source, ur->connid, err);
     } 
     free_user(ur);
 }
@@ -165,12 +165,12 @@ process_gate(struct module *s, int source, int connid, const void *msg, int sz) 
         UM_CASTCK(UM_LOGINACCOUNT, la, base, sz);
         struct user *ur = sh_hash64_find(&self->conn2user, conn);
         if (ur) {
-            disconnect_client(s, source, connid, SERR_RELOGIN);
+            dishonnect_client(s, source, connid, SERR_RELOGIN);
             return;
         }
         int auth = sh_module_nextload(self->auth_handle);
         if (auth == -1) {
-            disconnect_client(s, source, connid, SERR_NOAUTHS);
+            dishonnect_client(s, source, connid, SERR_NOAUTHS);
             return;
         }
         ur = alloc_user(self, source, connid);
@@ -186,7 +186,7 @@ process_gate(struct module *s, int source, int connid, const void *msg, int sz) 
     } 
     struct user *ur = sh_hash64_find(&self->conn2user, conn);
     if (ur == NULL) {
-        disconnect_client(s, source, connid, SERR_NOLOGIN);
+        dishonnect_client(s, source, connid, SERR_NOLOGIN);
         return;
     }
     if (base->msgid >= IDUM_HALLB && base->msgid <= IDUM_HALLE) {
@@ -206,8 +206,8 @@ process_gate(struct module *s, int source, int connid, const void *msg, int sz) 
     } else {
         switch (base->msgid) {
         case IDUM_NETDISCONN: {
-            UM_CAST(UM_NETDISCONN, disc, base);
-            logout(s, ur, disc->err, NODISCONNECT);
+            UM_CAST(UM_NETDISCONN, dish, base);
+            logout(s, ur, dish->err, NODISCONNECT);
             break;
             }
         }

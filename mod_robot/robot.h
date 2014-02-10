@@ -10,8 +10,8 @@
 // Load  robot to memory
 // Apply robot to match
 // Login robot to room
-// Award score, exp
-// Rank score
+// Award shore, exp
+// Rank shore
 // Rank reset
 
 //#define ACCID_BEGIN 1001

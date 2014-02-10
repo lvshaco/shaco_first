@@ -71,7 +71,7 @@ struct UM_DBRANK {
     const char *type;
     const char *type_old;
     uint32_t charid;
-    uint64_t score;
+    uint64_t shore;
 };
 
 #pragma pack(1)
@@ -265,7 +265,7 @@ struct UM_CREATEROOMRES {
 struct memberaward {
     int32_t exp;
     int32_t coin;
-    int32_t score;
+    int32_t shore;
 };
 
 struct UM_GAMEAWARD {

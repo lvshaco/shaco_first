@@ -1,4 +1,4 @@
-#include "sc.h"
+#include "sh.h"
 #include "hall.h"
 #include "hall_tplt.h"
 #include "hall_player.h"

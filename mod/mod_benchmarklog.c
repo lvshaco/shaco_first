@@ -1,4 +1,4 @@
-#include "sc.h"
+#include "sh.h"
 
 struct benchmarklog {
     int log_handle;

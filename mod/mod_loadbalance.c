@@ -1,9 +1,9 @@
-#include "sc.h"
+#include "sh.h"
 #include "msg_server.h"
 
 /*
 loadbalance_target : 负载均衡目标
-loadbalance_subscriber : 负载均衡目标的订阅者
+loadbalance_subshriber : 负载均衡目标的订阅者
 */
 
 struct target_vector {
@@ -14,7 +14,7 @@ struct target_vector {
 
 struct loadbalance {
     int target_vhandle;
-    int subscriber_vhandle;
+    int subshriber_vhandle;
     struct target_vector targets;
 };
 
@@ -45,13 +45,13 @@ loadbalance_init(struct module *s) {
     if (self->target_vhandle == -1) {
         return 1;
     }
-    const char *subscriber = sh_getstr("loadbalance_subscriber", "");
-    self->subscriber_vhandle = sh_monitor_register(subscriber, &h);
-    if(self->subscriber_vhandle == -1) {
+    const char *subshriber = sh_getstr("loadbalance_subshriber", "");
+    self->subshriber_vhandle = sh_monitor_register(subshriber, &h);
+    if(self->subshriber_vhandle == -1) {
         return 1;
     }
-    if (self->target_vhandle == self->subscriber_vhandle) {
-        sh_error("Target is equal Subscriber");
+    if (self->target_vhandle == self->subshriber_vhandle) {
+        sh_error("Target is equal Subshriber");
         return 1;
     }
     return 0;
@@ -113,7 +113,7 @@ target_start(struct module *s, int handle, const void *msg, int sz) {
     UM_DEFVAR(UM_SERVICEINFO, si);
     si->ninfo = 1;
     si->info[0] = *one;
-    sh_module_broadcast(MODULE_ID, self->subscriber_vhandle, MT_UM, si, UM_SERVICEINFO_size(si));
+    sh_module_broadcast(MODULE_ID, self->subshriber_vhandle, MT_UM, si, UM_SERVICEINFO_size(si));
 }
 
 static inline void
@@ -124,11 +124,11 @@ target_exit(struct module *s, int handle) {
     }
     UM_DEFFIX(UM_SERVICEDEL, sd);
     sd->handle = handle;
-    sh_module_broadcast(MODULE_ID, self->subscriber_vhandle, MT_UM, sd, sizeof(*sd));
+    sh_module_broadcast(MODULE_ID, self->subshriber_vhandle, MT_UM, sd, sizeof(*sd));
 }
 
 static inline void
-subscriber_start(struct module *s, int handle) {
+subshriber_start(struct module *s, int handle) {
     struct loadbalance *self = MODULE_SELF;
     UM_DEFVAR(UM_SERVICEINFO, si);
     si->ninfo = self->targets.sz;
@@ -146,7 +146,7 @@ update_load(struct module *s, int handle, int load) {
     UM_DEFFIX(UM_SERVICELOAD, sl);
     sl->handle = one->handle;
     sl->load = one->load;
-    sh_module_broadcast(MODULE_ID, self->subscriber_vhandle, MT_UM, sl, sizeof(*sl));
+    sh_module_broadcast(MODULE_ID, self->subshriber_vhandle, MT_UM, sl, sizeof(*sl));
 }
 
 void
@@ -170,9 +170,9 @@ loadbalance_main(struct module *s, int session, int source, int type, const void
                 break;
             }
         }
-        if (vhandle == self->subscriber_vhandle) {
+        if (vhandle == self->subshriber_vhandle) {
             if (type == MONITOR_START) {
-                subscriber_start(s, source);
+                subshriber_start(s, source);
             }
         }
         break;

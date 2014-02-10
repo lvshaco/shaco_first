@@ -1,4 +1,4 @@
-#include "sc.h"
+#include "sh.h"
 #include "redis.h"
 #include "msg_server.h"
 #include "memrw.h"
@@ -61,7 +61,7 @@ _refresh_rank(struct module *s, const char* type, time_t now, uint32_t* base) {
 }
 
 static int
-_insert_rank(struct module *s, const char* type, const char* oldtype, uint32_t charid, uint64_t score) { 
+_insert_rank(struct module *s, const char* type, const char* oldtype, uint32_t charid, uint64_t shore) { 
     struct rank *self = MODULE_SELF;
     UM_DEFVAR2(UM_REDISQUERY, rq, UM_MAXSZ);
     rq->needreply = 0;
@@ -75,7 +75,7 @@ _insert_rank(struct module *s, const char* type, const char* oldtype, uint32_t c
             len = snprintf(rw.ptr, RW_SPACE(&rw), 
                     "ZADD rank:%s %llu %u\r\n"
                     "ZREMRANGEBYRANK rank:%s -100001 -100001\r\n",
-                    type, (unsigned long long int)score, (unsigned int)charid, type);
+                    type, (unsigned long long int)shore, (unsigned int)charid, type);
         } else {
             return 1;
         }
@@ -86,7 +86,7 @@ _insert_rank(struct module *s, const char* type, const char* oldtype, uint32_t c
                     "ZADD rank:%s %llu %u\r\n"
                     "ZREMRANGEBYRANK rank:%s -100001 -100001\r\n",
                     oldtype, (unsigned int)charid,
-                    type, (unsigned long long int)score, (unsigned int)charid, type);
+                    type, (unsigned long long int)shore, (unsigned int)charid, type);
         } else {
             len = snprintf(rw.ptr, RW_SPACE(&rw), 
                     "ZREM rank:%s %u\r\n",
@@ -206,7 +206,7 @@ rank_main(struct module *s, int session, int source, int type, const void *msg, 
         switch (base->msgid) {
         case IDUM_DBRANK: {
             UM_CAST(UM_DBRANK, dr, msg);
-            _insert_rank(s, dr->type, dr->type_old, dr->charid, dr->score);
+            _insert_rank(s, dr->type, dr->type_old, dr->charid, dr->shore);
             break;
             }
         case IDUM_REDISREPLY: {

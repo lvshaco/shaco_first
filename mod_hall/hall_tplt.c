@@ -1,17 +1,17 @@
 #include "hall_tplt.h"
 #include "hall.h"
-#include "sc.h"
+#include "sh.h"
 
 static int
 load_tplt(struct hall *self) {
     tplt_free(self->T);
 #define TBLFILE(name) "./res/tbl/"#name".tbl"
-    struct tplt_desc desc[] = {
+    struct tplt_desh desh[] = {
         { TPLT_ROLE, sizeof(struct role_tplt), 1, TBLFILE(role), 0, TPLT_VIST_VEC32},
         { TPLT_RING, sizeof(struct ring_tplt), 1, TBLFILE(ring), 0, TPLT_VIST_VEC32},
         { TPLT_EXP,  sizeof(struct exp_tplt),  1, TBLFILE(exp),  0, TPLT_VIST_INDEX32},
     };
-    self->T = tplt_create(desc, sizeof(desc)/sizeof(desc[0]));
+    self->T = tplt_create(desh, sizeof(desh)/sizeof(desh[0]));
     return self->T ? 0 : 1;
 }
 

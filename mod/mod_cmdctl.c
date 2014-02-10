@@ -1,4 +1,4 @@
-#include "sc.h"
+#include "sh.h"
 #include "msg_server.h"
 #include "msg_client.h"
 #include "args.h"
@@ -40,7 +40,7 @@ _strerror(int error) {
 }
 
 static inline bool
-_iscenter() {
+_ishenter() {
     return false; // todo
 }
 
@@ -77,21 +77,21 @@ _reload(struct module* s, struct args* A, struct memrw* rw) {
 
 static int
 _stop(struct module* s, struct args* A, struct memrw* rw) {
-    if (!_iscenter()) {
+    if (!_ishenter()) {
         sh_stop();
     }
     return CTL_OK;
 }
 static int
 _start(struct module* s, struct args* A, struct memrw* rw) {
-    if (_iscenter()) {
+    if (_ishenter()) {
         system("./shaco-foot startall");
     }
     return CTL_OK;
 }
 static int
 _startmem(struct module* s, struct args* A, struct memrw* rw) {
-    if (_iscenter()) {
+    if (_ishenter()) {
         system("./shaco-foot startall -m");
     }
     return CTL_OK;

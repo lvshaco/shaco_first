@@ -1,4 +1,4 @@
-#include "sc.h"
+#include "sh.h"
 #include "elog_include.h"
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -67,7 +67,7 @@ log_init(struct module* s) {
     self->el = el;
     
     char msg[128];
-    snprintf(msg, sizeof(msg), ">>> shaco(%d) sc log level %s\n", 
+    snprintf(msg, sizeof(msg), ">>> shaco(%d) sh log level %s\n", 
             sh_getint("node_id", 0), sh_getstr("sh_loglevel", ""));
     elog_append(self->el, msg, strlen(msg));
     return 0;

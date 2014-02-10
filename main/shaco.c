@@ -1,4 +1,4 @@
-#include "sc.h"
+#include "sh.h"
 #include "sh_env.h"
 #include "lua.h"
 #include "lualib.h"

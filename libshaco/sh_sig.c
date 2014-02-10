@@ -1,12 +1,12 @@
 #include "sh_init.h"
-#include "sc.h"
+#include "sh.h"
 #include "sh_log.h"
 #include <signal.h>
 #include <stdlib.h>
 
 static void 
 _sigtermhandler(int sig) {
-    sh_warning("Received SIGTERM, schedule stop ...");
+    sh_warning("Received SIGTERM, shhedule stop ...");
     sh_stop();
 } 
 

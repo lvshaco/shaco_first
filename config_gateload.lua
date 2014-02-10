@@ -3,4 +3,4 @@ def_node("gateload", 2)
 sh_module=sh_module..",loadbalance:gate_load"
 
 loadbalance_target="gate"
-loadbalance_subscriber="route"
+loadbalance_subshriber="route"

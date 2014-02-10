@@ -1,6 +1,6 @@
 #include "sh_node.h"
 #include "sh_util.h"
-#include "sc.h"
+#include "sh.h"
 #include "sh_module.h"
 #include "sh_init.h"
 #include "sh_log.h"
@@ -106,7 +106,7 @@ _get_module(int vhandle) {
 }
 
 static int
-_subscribe(const char *name) {
+_subshribe(const char *name) {
     struct _module_vector *sers = &R->sers;
     struct _module *s;
     int i;
@@ -194,7 +194,7 @@ sh_module_exit(int handle) {
 }
 
 int 
-sh_module_subscribe(const char *name, int flag) {
+sh_module_subshribe(const char *name, int flag) {
     if (name[0] == '\0') {
         return -1;
     }
@@ -206,7 +206,7 @@ sh_module_subscribe(const char *name, int flag) {
         }
     }
     if (flag & SUB_REMOTE) {
-        handle = _subscribe(name);
+        handle = _subshribe(name);
         if (handle == -1) {
             return -1;
         }
@@ -280,7 +280,7 @@ sh_module_send(int source, int dest, int type, const void *msg, int sz) {
     if (dest & 0x10000) {
         struct _module *s = _get_module(dest);
         if (s == NULL) {
-            sh_error("No subscribe remote module %04x", dest);
+            sh_error("No subshribe remote module %04x", dest);
             return 1;
         }
         int h = _first_handle(s);
@@ -377,9 +377,9 @@ sh_module_has(int vhandle, int handle) {
 
 int 
 sh_handler(const char *name, int flag, int *handle) {
-    *handle = sh_module_subscribe(name, flag);
+    *handle = sh_module_subshribe(name, flag);
     if (*handle == -1) {
-        sh_error("Subscribe handle %s fail", name);
+        sh_error("Subshribe handle %s fail", name);
         return 1;
     }
     return 0;

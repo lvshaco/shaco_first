@@ -1,4 +1,4 @@
-#include "sc.h"
+#include "sh.h"
 #include "elog_include.h"
 
 struct gamelog {

@@ -1,4 +1,4 @@
-#include "sc.h"
+#include "sh.h"
 #include "hall.h"
 #include "hall_player.h"
 #include "msg_server.h"
@@ -26,7 +26,7 @@ build_detail(struct player *pr, struct tmemberdetail *detail) {
     memcpy(detail->name, cdata->name, sizeof(cdata->name));
     detail->role = cdata->role;
     detail->skin = cdata->skin;
-    detail->score_dashi = cdata->score_dashi;
+    detail->shore_dashi = cdata->shore_dashi;
     detail->attri = cdata->attri;
 }
 

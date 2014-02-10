@@ -1,4 +1,4 @@
-#include "sc.h"
+#include "sh.h"
 #include "msg_server.h"
 #include "redis.h"
 #include "freelist.h"
@@ -302,7 +302,7 @@ redisproxy_net(struct module* s, struct net_message* nm) {
     case NETE_SOCKERR:
         self->connid = -1;
         FREELIST_POPALL(querylink, &self->queryq);
-        sh_error("redis disconnect: %s", sh_net_error(nm->error));
+        sh_error("redis dishonnect: %s", sh_net_error(nm->error));
         break;
     }
 }

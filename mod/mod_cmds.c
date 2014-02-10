@@ -1,4 +1,4 @@
-#include "sc.h"
+#include "sh.h"
 #include "msg_server.h"
 #include "msg_client.h"
 #include "args.h"
@@ -139,7 +139,7 @@ handle_command(struct module *s, int source, int connid, void *msg, int sz) {
 }
 
 static void
-handle_disconnect(struct module *s, int source, int connid, int type) {
+handle_dishonnect(struct module *s, int source, int connid, int type) {
     struct server *self = MODULE_SELF;
     if (type == NETE_TIMEOUT) {
         notify_textinfo(s, source, connid, "livetimeout.");
@@ -162,7 +162,7 @@ cmds_main(struct module *s, int session, int source, int type, const void *msg, 
             switch (sub->msgid) {
             case IDUM_NETDISCONN: {
                 UM_CAST(UM_NETDISCONN, nd, sub);
-                handle_disconnect(s, source, ga->connid, nd->type);
+                handle_dishonnect(s, source, ga->connid, nd->type);
                 break;
                 }
             case IDUM_TEXT: {

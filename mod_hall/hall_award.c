@@ -1,4 +1,4 @@
-#include "sc.h"
+#include "sh.h"
 #include "hall.h"
 #include "hall_tplt.h"
 #include "hall_player.h"
@@ -26,18 +26,18 @@ _levelup(struct hall *self, uint32_t* exp, uint16_t* level) {
 }
 
 static inline uint64_t
-_get_score(struct chardata* cdata, uint32_t score) {
+_get_shore(struct chardata* cdata, uint32_t shore) {
     uint64_t level = cdata->level;
     if (level > 999) level = 999;
     uint32_t exp = cdata->exp;
     if (exp > 9999999) exp = 9999999;
-    return (uint64_t)score * 10000000000L + 
+    return (uint64_t)shore * 10000000000L + 
     (uint64_t)cdata->level * 10000000 + cdata->exp;
 }
 
 static inline void
 _rank(struct module *s, struct player* pr, 
-      const char* type, const char* type_old, uint64_t score) {
+      const char* type, const char* type_old, uint64_t shore) {
     struct hall *self = MODULE_SELF;
 
     // todo do not pointer
@@ -45,7 +45,7 @@ _rank(struct module *s, struct player* pr,
     dr->type = type;
     dr->type_old = type_old;
     dr->charid = pr->data.charid;
-    dr->score = score;
+    dr->shore = shore;
     sh_module_send(MODULE_ID, self->rank_handle, MT_UM, dr, sizeof(*dr));
 }
 
@@ -71,30 +71,30 @@ process_award(struct module *s, struct player* pr, int8_t type, const struct mem
         }
         updated = true;
     }
-    // score
+    // shore
     switch (type) {
     case ROOM_TYPE_NORMAL:
         if (new_grade != old_grade) {
-            cdata->score_normal = award->score;
+            cdata->shore_normal = award->shore;
             _rank(s, pr, 
             _player_gradestr(new_grade), 
             _player_gradestr(old_grade),
-            _get_score(cdata, cdata->score_normal));
+            _get_shore(cdata, cdata->shore_normal));
             updated = true;
-        } else if (award->score > cdata->score_normal) {
-            cdata->score_normal = award->score;
+        } else if (award->shore > cdata->shore_normal) {
+            cdata->shore_normal = award->shore;
             _rank(s, pr, _player_gradestr(new_grade), "",
-            _get_score(cdata, cdata->score_normal));
+            _get_shore(cdata, cdata->shore_normal));
             updated = true;
         }
         break;
     case ROOM_TYPE_DASHI: {
-        int score = (int)cdata->score_dashi + award->score;
-        if (score < 0)
-            score = 0;
-        cdata->score_dashi = score;
+        int shore = (int)cdata->shore_dashi + award->shore;
+        if (shore < 0)
+            shore = 0;
+        cdata->shore_dashi = shore;
         _rank(s, pr, "dashi", "", 
-        _get_score(cdata, cdata->score_dashi));
+        _get_shore(cdata, cdata->shore_dashi));
         updated = true;
         }
         break;

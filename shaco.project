@@ -41,7 +41,7 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.py *.h *.c" {
  include=include{
   libshaco=libshaco{
    dlmodule.h
-   sc.h
+   sh.h
    sh_env.h
    sh_hash.h
    sh_init.h

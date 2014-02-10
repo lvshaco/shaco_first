@@ -1,4 +1,4 @@
-#include "sc.h"
+#include "sh.h"
 #include "hall_attribute.h"
 #include "robot.h"
 #include "robot_tplt.h"
@@ -115,7 +115,7 @@ build_detail(struct agent *ag, struct tmemberdetail *detail) {
     memcpy(detail->name, cdata->name, sizeof(cdata->name));
     detail->role = cdata->role;
     detail->skin = cdata->skin;
-    detail->score_dashi = cdata->score_dashi;
+    detail->shore_dashi = cdata->shore_dashi;
     detail->attri = cdata->attri;
 }
 

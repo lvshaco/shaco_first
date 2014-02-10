@@ -1,4 +1,4 @@
-#include "sc.h"
+#include "sh.h"
 #include "args.h"
 #include "msg.h"
 #include <arpa/inet.h>
@@ -78,7 +78,7 @@ _is_center(struct remote *self) {
 }
 
 static void
-_disconnect_node(struct module *s, int connid) {
+_dishonnect_node(struct module *s, int connid) {
     struct remote *self = MODULE_SELF;
     struct _node *no = NULL;
     int i;
@@ -90,7 +90,7 @@ _disconnect_node(struct module *s, int connid) {
     }
     if (no) {
         int id = no-self->nodes;
-        sh_info("Node(%d:%d) disconnect", id, connid);
+        sh_info("Node(%d:%d) dishonnect", id, connid);
         no->connid = -1;
         no->node_handle = -1;
         for (i=0; i<no->handles.sz; ++i) {
@@ -389,7 +389,7 @@ _connect_to_center(struct module* s) {
 
 // module
 static inline int
-_subscribe_module(struct module *s, const char *name) {
+_subshribe_module(struct module *s, const char *name) {
     struct remote *self = MODULE_SELF;
     int handle = module_query_id(name);
     if (handle != -1) {
@@ -536,8 +536,8 @@ node_net(struct module* s, struct net_message* nm) {
         //sh_error("connect to node fail: %s", sh_net_error(nm->error));
         //break;
     case NETE_SOCKERR:
-        sh_error("node disconnect: %s, %d", sh_net_error(nm->error), nm->connid);
-        _disconnect_node(s, nm->connid);
+        sh_error("node dishonnect: %s, %d", sh_net_error(nm->error), nm->connid);
+        _dishonnect_node(s, nm->connid);
         break;
     }
 }
@@ -605,7 +605,7 @@ node_main(struct module *s, int session, int source, int type, const void *msg, 
         if (A.argc != 2)
             return;
         const char *name = A.argv[1];
-        _subscribe_module(s, name); 
+        _subshribe_module(s, name); 
     } else if (!strcmp(cmd, "PUB")) {
         if (A.argc != 2)
             return;

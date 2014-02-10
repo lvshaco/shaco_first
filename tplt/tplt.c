@@ -18,15 +18,15 @@ struct tplt {
 };
 
 struct tplt*
-tplt_create(const struct tplt_desc* desc, int sz) {
+tplt_create(const struct tplt_desh* desh, int sz) {
     if (sz <= 0)
         return NULL;
 
     int maxtype = 0;
-    const struct tplt_desc* d;
+    const struct tplt_desh* d;
     int i;
     for (i=0; i<sz; ++i) {
-        d = &desc[i];
+        d = &desh[i];
         assert(d->stream);
         if (maxtype < d->type)
             maxtype = d->type;
@@ -41,7 +41,7 @@ tplt_create(const struct tplt_desc* desc, int sz) {
     struct tplt_holder* holder; 
     struct tplt_visitor* visitor;
     for (i=0; i<sz; ++i) {
-        d = &desc[i];
+        d = &desh[i];
         assert(d->stream);
         assert(d->type >= 0 && d->type < maxtype);
         if (d->isfromfile) {

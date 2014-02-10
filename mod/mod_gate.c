@@ -1,4 +1,4 @@
-#include "sc.h"
+#include "sh.h"
 #include "freeid.h"
 #include "msg_client.h"
 #include "msg_server.h"
@@ -89,7 +89,7 @@ login_client(struct client* c) {
 }
 
 static bool
-disconnect_client(struct module *s, struct client* c, bool force) {
+dishonnect_client(struct module *s, struct client* c, bool force) {
     struct gate *self = MODULE_SELF;
     if (c->status == S_FREE)
         return true;
@@ -289,10 +289,10 @@ gate_main(struct module* s, int session, int source, int type, const void *msg, 
             case IDUM_LOGOUT: {
                 UM_CAST(UM_LOGOUT, lo, sub);
                 if (lo->err == SERR_OK) {
-                    disconnect_client(s, cl, true);
+                    dishonnect_client(s, cl, true);
                 } else {
                     send_to_client(cl, lo, sizeof(*lo));
-                    disconnect_client(s, cl, false);
+                    dishonnect_client(s, cl, false);
                 }
                 break;
                 }
@@ -329,7 +329,7 @@ gate_net(struct module* s, struct net_message* nm) {
         }
         break;
     case NETE_SOCKERR: {
-        sh_trace("Client %d sockerr disconnect %d", id, nm->error);
+        sh_trace("Client %d sockerr dishonnect %d", id, nm->error);
         c = get_client(self, id);
         assert(c);
         if (c->status == S_LOGINED) { 
@@ -339,7 +339,7 @@ gate_net(struct module* s, struct net_message* nm) {
             nd->err  = nm->error;
             sh_module_send(MODULE_ID, self->handler, MT_UM, ga, sizeof(*ga) + sizeof(*nd));
         }
-        disconnect_client(s, c, true);
+        dishonnect_client(s, c, true);
         }
         break;
     case NETE_WRIDONECLOSE: {
@@ -347,7 +347,7 @@ gate_net(struct module* s, struct net_message* nm) {
         c = get_client(self, id);
         assert(c);
         sh_trace("Client %d writedone close", id);
-        disconnect_client(s, c, true); 
+        dishonnect_client(s, c, true); 
         }
         break;
     }
@@ -365,7 +365,7 @@ gate_time(struct module* s) {
         case S_CONNECTED:
             if (now - c->active_time > 10*1000) {
                 sh_trace("Client %d login timeout", c->connid);
-                disconnect_client(s, c, true);
+                dishonnect_client(s, c, true);
             }
             break;
         case S_LOGINED:
@@ -379,13 +379,13 @@ gate_time(struct module* s) {
                 nd->err  = 0;
                 sh_module_send(MODULE_ID, self->handler, MT_UM, ga, sizeof(*ga) + sizeof(*nd));
                 
-                disconnect_client(s, c, true);
+                dishonnect_client(s, c, true);
             }
             break;
         case S_LOGOUTED:
             if (now - c->active_time > 5*1000) {
                 sh_trace("Client %d logout timeout", c->connid);
-                disconnect_client(s, c, true);
+                dishonnect_client(s, c, true);
             }
             break;
         default:

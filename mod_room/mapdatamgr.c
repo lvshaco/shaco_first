@@ -2,7 +2,7 @@
 #include "roommap.h"
 #include "tplt_include.h"
 #include "tplt_struct.h"
-#include "sc.h"
+#include "sh.h"
 #include <limits.h>
 #include <stdio.h>
 

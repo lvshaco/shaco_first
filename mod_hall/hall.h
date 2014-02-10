@@ -1,7 +1,7 @@
 #ifndef __hall_h__
 #define __hall_h__
 
-#include "sc.h"
+#include "sh.h"
 #include "redis.h"
 #include "hall_player.h"
 #include "msg_server.h"

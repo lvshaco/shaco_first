@@ -5,7 +5,7 @@
 #include "hall_attribute.h"
 #include "msg_server.h"
 #include "msg_client.h"
-#include "sc.h"
+#include "sh.h"
 
 #define RING_NPAGE_INIT 1
 /////////////////////////////////////////////////////////////////////

@@ -1,4 +1,4 @@
-#include "sc.h"
+#include "sh.h"
 #include "args.h"
 
 struct _int_array {

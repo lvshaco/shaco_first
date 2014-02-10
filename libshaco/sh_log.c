@@ -1,6 +1,6 @@
 #include "sh_log.h"
 #include "sh_util.h"
-#include "sc.h"
+#include "sh.h"
 #include "sh_node.h"
 #include "sh_env.h"
 #include "sh_init.h"
