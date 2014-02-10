@@ -294,14 +294,14 @@ install:
 	cp -r net $(source_dir)	
 	cp -r cnet $(source_dir)
 	cp -r main/robot.c $(source_dir)/cnet
-	mkdir .game
-	for file in `ls game`; do iconv -f utf-8 -t gbk mod_room/$$file > .mod_room/$$file; done 
+	mkdir .mod_room
+	for file in `ls mod_room`; do iconv -f utf-8 -t gbk mod_room/$$file > .mod_room/$$file; done 
 	cp -r .mod_room/* $(source_dir)/map
-	rm -rf .game
+	rm -rf .mod_room
 	#cp -r msg $(source_dir)
 	mkdir .msg
 	for file in `ls msg`; do iconv -f utf-8 -t gbk msg/$$file > .msg/$$file; done 
-	cp -r .msg/* $(source_dir)/msg
+	cp -r .msg/* $(source_dir)/message
 	rm -rf .msg
 	cp -r tplt $(source_dir)
 	cp -r tool/concat.py tool/convert_excel.py tool/excelto $(tool_dir)

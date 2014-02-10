@@ -66,7 +66,7 @@ struct net {
 };
 
 static int
-_subshribe(struct net *self, struct socket *s, int mask) {
+_subscribe(struct net *self, struct socket *s, int mask) {
     int result;
     if (mask == 0) {
         if (s->mask == 0) {
@@ -136,7 +136,7 @@ static void
 _close_socket(struct net *self, struct socket *s) {
     if (s->status == STATUS_INVALID)
         return;
-    _subshribe(self, s, 0);
+    _subscribe(self, s, 0);
     _socket_close(s->fd);
     
     s->status = STATUS_INVALID;
@@ -216,7 +216,7 @@ net_max_socket(struct net *self) {
 }
 
 int
-net_subshribe(struct net *self, int id, bool read) {
+net_subscribe(struct net *self, int id, bool read) {
     struct socket *s = _get_socket(self, id);
     if (s == NULL)
         return -1;
@@ -226,7 +226,7 @@ net_subshribe(struct net *self, int id, bool read) {
         mask |= NET_RABLE;
     if (s->mask & NET_WABLE)
         mask |= NET_WABLE;
-    return _subshribe(self, s, mask);
+    return _subscribe(self, s, mask);
 }
 
 struct net*
@@ -460,7 +460,7 @@ _send_buffer(struct net *self, struct socket *s) {
     }
     if (total > 0 &&
         s->head == NULL) {
-        _subshribe(self, s, s->mask & (~NET_WABLE));
+        _subscribe(self, s, s->mask & (~NET_WABLE));
     }
     return 0;
 }
@@ -514,7 +514,7 @@ net_send(struct net* self, int id, void* data, int sz, struct net_message* nm) {
         p->ptr = ptr;
         
         s->head = s->tail = p;
-        _subshribe(self, s, s->mask|NET_WABLE);
+        _subscribe(self, s, s->mask|NET_WABLE);
         return 0;
     } else {
         s->wbuffersz += sz;
@@ -654,7 +654,7 @@ net_listen(struct net *self, const char *addr, int port,
         return -1;
     }
 
-    if (_subshribe(self, s, NET_RABLE)) {
+    if (_subscribe(self, s, NET_RABLE)) {
         *err = _socket_error;
         _close_socket(self, s);
         return -1;
@@ -674,7 +674,7 @@ _onconnect(struct net *self, struct socket *s) {
     }
     if (err == 0) {
         s->status = STATUS_CONNECTED;
-        _subshribe(self, s, 0);
+        _subscribe(self, s, 0);
     }
     if (err) {
         _close_socket(self, s);
@@ -760,7 +760,7 @@ net_connect(struct net *self, const char *addr, int port, bool block,
         *err = 0;
         return s - self->sockets; // connected
     } else {
-        if (_subshribe(self, s, NET_RABLE|NET_WABLE)) {
+        if (_subscribe(self, s, NET_RABLE|NET_WABLE)) {
             *err = _socket_error; 
             _close_socket(self, s);
             return -1;
@@ -866,7 +866,7 @@ net_socket_address(struct net *self, int id, uint32_t *addr, int *port) {
 }
 
 int 
-net_socket_ishlosed(struct net *self, int id) {
+net_socket_isclosed(struct net *self, int id) {
     struct socket *s = _get_socket(self, id);
     return s == NULL;
 }

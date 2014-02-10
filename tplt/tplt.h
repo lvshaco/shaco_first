@@ -7,7 +7,7 @@ struct tplt;
 struct tplt_holder;
 struct tplt_visitor;
 
-struct tplt_desh {
+struct tplt_desc {
     int type; // see TPLT_*
     int size; // sizeof(*_tplt)
     int isfromfile;
@@ -16,7 +16,7 @@ struct tplt_desh {
     const struct tplt_visitor_ops* vist;
 };
 
-struct tplt* tplt_create(const struct tplt_desh* desh, int sz);
+struct tplt* tplt_create(const struct tplt_desc* desc, int sz);
 void tplt_free(struct tplt *self);
 const struct tplt_holder* tplt_get_holder(struct tplt *self, int type);
 const struct tplt_visitor* tplt_get_visitor(struct tplt *self, int type);

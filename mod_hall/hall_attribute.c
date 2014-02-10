@@ -35,8 +35,8 @@ effect(struct char_attribute* cattri, const struct role_tplt* base,
     //CASE(EFFECT_SKILL_ACTIVE);
     //CASE(EFFECT_SKILL_PASSIVE);
     CASE(EFFECT_VIEW_RANGE, cattri->view_range, base->view_range, value, isper);
-    CASE(EFFECT_SCORE_PROFIT, cattri->shore_profit, 1, value, 1);
-    CASE(EFFECT_WINSCORE_PROFIT, cattri->winshore_profit, 1, value, 1);
+    CASE(EFFECT_SCORE_PROFIT, cattri->score_profit, 1, value, 1);
+    CASE(EFFECT_WINSCORE_PROFIT, cattri->winscore_profit, 1, value, 1);
     }
 } 
 
@@ -75,8 +75,8 @@ static void dump(struct chardata* cdata) {
 
     sh_rec("coin_profit: %f", attri->coin_profit);
     sh_rec("wincoin_profit: %f", attri->wincoin_profit);
-    sh_rec("shore_profit: %f", attri->shore_profit);
-    sh_rec("winshore_profit: %f", attri->winshore_profit);
+    sh_rec("score_profit: %f", attri->score_profit);
+    sh_rec("winscore_profit: %f", attri->winscore_profit);
     sh_rec("exp_profit: %f", attri->exp_profit);
     sh_rec("item_timeadd: %f", attri->item_timeadd);
     sh_rec("item_oxygenadd: %f", attri->item_oxygenadd);

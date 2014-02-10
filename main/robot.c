@@ -72,7 +72,7 @@ _onconnect(struct net_message* nm) {
     int id = nm->connid;
     _server_set(ut, id);
   
-    cnet_subshribe(id, 1);
+    cnet_subscribe(id, 1);
 
     switch (ut) {
     case TROUTE:
@@ -153,7 +153,7 @@ _handleum(int id, int ut, struct UM_BASE* um) {
 //        static int I = 0;
 //        I++;
 //        if (I > 900)
-//            cnet_dishonnect(id);
+//            cnet_disconnect(id);
 //        }
 //        break;
     case IDUM_GATEADDR: {
@@ -253,7 +253,7 @@ _handleum(int id, int ut, struct UM_BASE* um) {
         UM_CAST(UM_GAMEOVER, go, um);
         mylog("****************GAME OVER*****************");
         mylog("room type: %d, member count: %d", go->type, go->nmember);
-        mylog("rank charid depth oxygenitem item bao exp coin shore");
+        mylog("rank charid depth oxygenitem item bao exp coin score");
         int i;
         for (i=0; i<go->nmember; ++i) {
             mylog("%d. [%u] %u %u %u %u %u %u %u", i+1, 
@@ -264,7 +264,7 @@ _handleum(int id, int ut, struct UM_BASE* um) {
                     go->stats[i].nbao,
                     go->stats[i].exp,
                     go->stats[i].coin,
-                    go->stats[i].shore);
+                    go->stats[i].score);
         }
         mylog("******************************************");
         break;

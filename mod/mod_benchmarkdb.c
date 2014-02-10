@@ -83,7 +83,7 @@ _sendtest(struct benchmarkdb* self) {
     if (!strcmp(self->mode, "test")) {
         //_sendcmd(self, "hgetall user:1\r\n");
         _sendcmd(self, "get test\r\n");
-        //_sendcmd(self, "zrange rank_shore 0 -1 withshores\r\n");
+        //_sendcmd(self, "zrange rank_score 0 -1 withscores\r\n");
     } else if (!strcmp(self->mode, "acca")) {
         snprintf(cmd, sizeof(cmd), "hmset acc:wa_account_%d id %d passwd 123456\r\n", id, id);
         _sendcmd(self, cmd);

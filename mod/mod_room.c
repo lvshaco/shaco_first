@@ -370,16 +370,16 @@ build_awards(struct gameroom *ro, struct player **sortm, int n, struct memberawa
     if (gametime < 1000)
         gametime = 1000;
 
-    int shore_sum = 0;
+    int score_sum = 0;
     for (i=1; i<ro->np; ++i) {
         m = sortm[i];
-        shore_sum += m->detail.shore_dashi;
+        score_sum += m->detail.score_dashi;
     }
-    int shore_diff;
+    int score_diff;
     if (ro->np > 0)
-        shore_diff = abs(sortm[0]->detail.shore_dashi - shore_sum/ro->np);
+        score_diff = abs(sortm[0]->detail.score_dashi - score_sum/ro->np);
     else
-        shore_diff = 0;
+        score_diff = 0;
     
     struct extra_first {
         int nitem;
@@ -397,59 +397,59 @@ build_awards(struct gameroom *ro, struct player **sortm, int n, struct memberawa
         if (m->nbedamage > ef.nbedamage)
             ef.nbedamage = m->nbedamage;
     } 
-    int shore_depth, shore_speed, shore_oxygen, shore_item, shore_bao;
-    int shore, coin, exp;
-    int cut_shore, extra_shore;
-    const int shore_line1 = 1000;
-    const int shore_line2 = 2000;
-    float coin_profit, shore_profit;
+    int score_depth, score_speed, score_oxygen, score_item, score_bao;
+    int score, coin, exp;
+    int cut_score, extra_score;
+    const int score_line1 = 1000;
+    const int score_line2 = 2000;
+    float coin_profit, score_profit;
     struct char_attribute* a = &m->detail.attri;
     for (i=0; i<ro->np; ++i) {
         m = sortm[i];
         a = &m->detail.attri;
-        shore_depth = pow(m->depth, 0.5) * 100;
-        shore_speed = pow(m->depth/(gametime*0.001), 1.2) * 766;
-        shore_oxygen = pow(m->noxygenitem, 1.2) * 20;
-        shore_item = (m->nitem + m->ntrap) * 20;
-        shore_bao = pow(m->nbao, 1.5) * 100;
+        score_depth = pow(m->depth, 0.5) * 100;
+        score_speed = pow(m->depth/(gametime*0.001), 1.2) * 766;
+        score_oxygen = pow(m->noxygenitem, 1.2) * 20;
+        score_item = (m->nitem + m->ntrap) * 20;
+        score_bao = pow(m->nbao, 1.5) * 100;
         
         coin_profit = 1+a->coin_profit;
         if (i==0)
             coin_profit += a->wincoin_profit+0.05;
-        coin = (shore_depth + shore_speed + shore_oxygen) * 0.1 * coin_profit;
+        coin = (score_depth + score_speed + score_oxygen) * 0.1 * coin_profit;
         
         exp = (m->depth * 0.2 + m->nbao);
         if (ro->type == ROOM_TYPE_DASHI) {
-            if (m->detail.shore_dashi < shore_line1)
-                cut_shore = 0;
+            if (m->detail.score_dashi < score_line1)
+                cut_score = 0;
             else {
-                int t = min(shore_line2, max(200, (m->detail.shore_dashi+shore_line1-shore_line2)));
-                cut_shore = (t/200) * 200;
-                if (cut_shore < t)
-                    cut_shore += 1;
+                int t = min(score_line2, max(200, (m->detail.score_dashi+score_line1-score_line2)));
+                cut_score = (t/200) * 200;
+                if (cut_score < t)
+                    cut_score += 1;
             }
-            extra_shore = 0;
+            extra_score = 0;
             if (m->nitem < ef.nitem)
-                extra_shore++;
+                extra_score++;
             if (m->ntrap >= ef.ntrap)
-                extra_shore++;
+                extra_score++;
             if (m->nbedamage >= ef.nbedamage)
-                extra_shore++;
+                extra_score++;
             if (i == 0) {
-                shore = max(3, min(20, 10 - shore_diff * 0.05 - cut_shore)) + extra_shore;
+                score = max(3, min(20, 10 - score_diff * 0.05 - cut_score)) + extra_score;
             } else {
-                shore = max(-3, min(-15, -10 - shore_diff * 0.1 - cut_shore)) + extra_shore;
+                score = max(-3, min(-15, -10 - score_diff * 0.1 - cut_score)) + extra_score;
             }
         }  else {
-            shore_profit = 1+a->shore_profit;
+            score_profit = 1+a->score_profit;
             if (i==0)
-                shore_profit += a->winshore_profit + 0.05;
-            shore = shore_depth + shore_speed + shore_oxygen + shore_item + shore_bao;
-            shore = shore * shore_profit * 10;
+                score_profit += a->winscore_profit + 0.05;
+            score = score_depth + score_speed + score_oxygen + score_item + score_bao;
+            score = score * score_profit * 10;
         }
         awards[i].exp = exp;
         awards[i].coin = coin;
-        awards[i].shore = shore;
+        awards[i].score = score;
     }
 }
 
@@ -501,7 +501,7 @@ game_over(struct module *s, struct gameroom* ro, bool death) {
         go->stats[i].nbao = m->nbao;
         go->stats[i].exp = awards[i].exp;
         go->stats[i].coin = awards[i].coin;
-        go->stats[i].shore = awards[i].shore;
+        go->stats[i].score = awards[i].score;
     }  
     int oversz = UM_GAMEOVER_size(go);
     for (i=0; i<ro->np; ++i) {
@@ -696,8 +696,8 @@ do_effect(struct player* m, struct char_attribute* cattri, const struct char_att
     CASE(EFFECT_ITEM_TIME, cattri->item_timeadd, 1, value, isper, -1, AMAX, REFRESH_ATTRI);
     CASE(EFFECT_ITEM_OXYGEN, cattri->item_oxygenadd, 1, value, isper, -1, AMAX, REFRESH_ATTRI);
     CASE(EFFECT_VIEW_RANGE, cattri->view_range, base->view_range, value, isper, 0, AMAX, REFRESH_ATTRI);
-    //CASE(EFFECT_SCORE_PROFIT, cattri->shore_profit, 1, value, isper, REFRESH_ATTRI);
-    //CASE(EFFECT_WINSCORE_PROFIT, cattri->winshore_profit, 1, value, isper, REFRESH_ATTRI);
+    //CASE(EFFECT_SCORE_PROFIT, cattri->score_profit, 1, value, isper, REFRESH_ATTRI);
+    //CASE(EFFECT_WINSCORE_PROFIT, cattri->winscore_profit, 1, value, isper, REFRESH_ATTRI);
     default:return 0.0f;
     }
 } 
@@ -748,8 +748,8 @@ static void dump(uint32_t accid, const char* name, struct char_attribute* attri)
 
     sh_rec("coin_profit: %f", attri->coin_profit);
     sh_rec("wincoin_profit: %f", attri->wincoin_profit);
-    sh_rec("shore_profit: %f", attri->shore_profit);
-    sh_rec("winshore_profit: %f", attri->winshore_profit);
+    sh_rec("score_profit: %f", attri->score_profit);
+    sh_rec("winscore_profit: %f", attri->winscore_profit);
     sh_rec("exp_profit: %f", attri->exp_profit);
     sh_rec("item_timeadd: %f", attri->item_timeadd);
     sh_rec("item_oxygenadd: %f", attri->item_oxygenadd);

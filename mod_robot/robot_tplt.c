@@ -6,10 +6,10 @@ static int
 load_tplt(struct robot *self) {
     tplt_free(self->T);
 #define TBLFILE(name) "./res/tbl/"#name".tbl"
-    struct tplt_desh desh[] = {
+    struct tplt_desc desc[] = {
         { TPLT_ROLE, sizeof(struct role_tplt), 1, TBLFILE(role), 0, TPLT_VIST_VEC32},
     };
-    self->T = tplt_create(desh, sizeof(desh)/sizeof(desh[0]));
+    self->T = tplt_create(desc, sizeof(desc)/sizeof(desc[0]));
     return self->T ? 0 : 1;
 }
 

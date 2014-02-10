@@ -17,7 +17,7 @@ struct ring_tplt {
     uint32_t id;             // ID
     uint32_t type;           // 类型
     char name[32];           // 名称
-    char desh[96];           // 简介
+    char desc[96];           // 简介
     uint32_t level;          // 等级
     uint32_t weight;         // 权值
     uint32_t saleprice;      // 出售价格

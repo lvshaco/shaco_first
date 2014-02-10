@@ -45,13 +45,13 @@ void net_dropread(struct net *self, int id, int sz);
 
 int net_poll(struct net *self, int timeout);
 int net_getevents(struct net *self, struct net_message **e);
-int net_subshribe(struct net *self, int id, bool read);
+int net_subscribe(struct net *self, int id, bool read);
 
 bool net_close_socket(struct net *self, int id, bool force);
 const char *net_error(struct net *self, int err);
 int net_max_socket(struct net *self);
 int net_socket_address(struct net *self, int id, uint32_t *addr, int *port);
-int net_socket_ishlosed(struct net *self, int id);
+int net_socket_isclosed(struct net *self, int id);
 int net_socket_ud(struct net* self, int id, int *ud, int *ut);
 int net_socket_nonblocking(struct net *self, int id);
 

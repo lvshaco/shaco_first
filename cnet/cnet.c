@@ -192,9 +192,9 @@ cnet_fini() {
 #endif
     }
 }
-int cnet_subshribe(int id, int read) { 
-    return net_subshribe(N, id, read); 
+int cnet_subscribe(int id, int read) { 
+    return net_subscribe(N, id, read); 
 }
-int cnet_dishonnect(int id) {
+int cnet_disconnect(int id) {
     return net_close_socket(N, id, true);
 }
