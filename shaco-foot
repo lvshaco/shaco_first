@@ -28,7 +28,6 @@ startcmdd() {
 }
 startall() {
     startone center 2
-    echo "abcdef"
     for S in $SERVERS;do
         startone $S 0.5
     done
