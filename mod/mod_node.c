@@ -487,7 +487,6 @@ _read(struct module *s, struct net_message *nm) {
             uint16_t dest = sh_from_littleendian16((uint8_t*)buf.ptr+4);
             int type = (dest>>8) & 0xff;
             dest &= 0xff;
-            //sh_debug("+++++++READ: source %04x dest %04x type %d sz %d", source, dest, type, msgsz-6);
             sh_module_send(source, dest, type, buf.ptr+6, msgsz-6);
             buf.ptr += msgsz;
             buf.sz  -= msgsz;
