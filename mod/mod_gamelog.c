@@ -12,6 +12,8 @@ struct log_entry {
 struct log_tailq {
     struct log_entry *head;
     struct log_entry *tail;
+    uint32_t npush;
+    uint32_t npop;
     pthread_mutex_t mutex;
 };
 
@@ -35,15 +37,15 @@ log_push(struct log_tailq *q, void *msg, int sz) {
    
     pthread_mutex_lock(&q->mutex);
     if (q->head) {
-        assert(q->tail != NULL);
-        assert(q->tail->next == NULL);
+        //assert(q->tail != NULL);
+        //assert(q->tail->next == NULL);
         q->tail->next = log;
     } else {
         q->head = log;
     }
-
     q->tail = log; 
     pthread_mutex_unlock(&q->mutex);
+    q->npush++;
     return 0;
 }
 
@@ -54,6 +56,7 @@ log_pop(struct log_tailq *q) {
         struct log_entry *log = q->head;
         q->head = log->next;
         pthread_mutex_unlock(&q->mutex);
+        q->npop++;
         return log;
     } else {
         pthread_mutex_unlock(&q->mutex);
@@ -76,15 +79,42 @@ create_log(struct gamelog *self) {
     return 0;
 }
 
+static uint64_t
+_elapsed() {
+    struct timespec ti;
+    clock_gettime(CLOCK_MONOTONIC, &ti);
+    return ti.tv_sec * 1000 + ti.tv_nsec / 1000000;
+}
+
+static inline void
+log_stat(struct gamelog *self) {
+    self->count++;
+    if (self->last_time == 0) {
+        self->last_time = _elapsed();
+    }
+    uint64_t now = _elapsed();
+    uint64_t diff = now - self->last_time;
+    if (diff >= 1000) {
+        int rate = self->count / (diff/1000.0);
+        self->last_time = now;
+        self->count = 0;
+        fprintf(stderr, "rate: %d\n", rate);
+    }
+}
+
 static void *
-log_main(void *arg) {
+log_run(void *arg) {
     struct gamelog *self = arg;
     for (;;) {
         struct log_entry *log = log_pop(&self->log_queue);
         if (log) {
             elog_append(self->logger, log->msg, log->sz);
+            log_stat(self);
+            free(log->msg);
+            free(log);
         } else {
             if (self->worker_run) {
+                //fprintf(stderr, "sleep ... ");
                 usleep(1000);
             } else {
                 break;
@@ -99,11 +129,12 @@ create_logger(struct gamelog *self) {
     if (create_log(self)) {
         return 1;
     }
-    self->log_queue.mutex = PTHREAD_MUTEX_INITIALIZER;
+    //self->log_queue.mutex = PTHREAD_MUTEX_INITIALIZER;
+    memset(&self->log_queue.mutex, 0, sizeof(self->log_queue.mutex));
     self->worker_run = true;
 
     pthread_t tid;
-    int result = pthread_create(&tid, NULL, log_main, self);
+    int result = pthread_create(&tid, NULL, log_run, self);
     if (result) {
         sh_error("Create log thread(err#%d)", result);
         return 1;
@@ -120,6 +151,9 @@ destroy_logger(struct gamelog *self) {
         self->worker_run = false;
         pthread_join(self->worker_id, NULL);
         self->worker_ok = false;
+        fprintf(stderr, "npush %u, npop %u\n", 
+                self->log_queue.npush, 
+                self->log_queue.npop);
     }
     if (self->logger) {
         elog_free(self->logger);
@@ -163,17 +197,4 @@ gamelog_main(struct module *s, int session, int source, int type, const void *ms
     char* log = malloc(sz);
     memcpy(log, msg, sz);
     log_push(&self->log_queue, log, sz);
-
-    self->count++;
-    if (self->last_time == 0) {
-        self->last_time = sh_timer_now();
-    }
-    uint64_t now = sh_timer_now();
-    uint64_t diff = now - self->last_time;
-    if (diff >= 1000) {
-        int rate = self->count / (diff/1000.0);
-        self->last_time = now;
-        self->count = 0;
-        sh_info("rate : %d", rate);
-    }
 }
