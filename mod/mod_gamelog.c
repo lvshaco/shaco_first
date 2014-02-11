@@ -3,67 +3,85 @@
 #include <pthread.h>
 #include <unistd.h>
 
-struct log_entry {
+// log queue
+struct log_data {
     void *msg;
     int sz;
+};
+
+struct log_entry {
+    struct log_data   data;
     struct log_entry *next;
 };
 
-struct log_tailq {
+struct log_queue {
     struct log_entry *head;
     struct log_entry *tail;
-    uint32_t npush;
-    uint32_t npop;
-    pthread_mutex_t mutex;
 };
 
-struct gamelog {
-    volatile bool worker_run;
-    bool worker_ok;
-    pthread_t worker_id; 
-    struct log_tailq log_queue;
-    struct elog *logger; 
-    uint64_t last_time;
-    int count;
-};
-
-// log
-static int
-log_push(struct log_tailq *q, void *msg, int sz) {
+static void
+log_queue_init(struct log_queue *q) {
     struct log_entry *log = malloc(sizeof(*log));
-    log->msg = msg;
-    log->sz = sz;
     log->next = NULL;
-   
-    pthread_mutex_lock(&q->mutex);
+
+    q->head = log; 
+    q->tail = log;
+}
+
+static void
+log_queue_fini(struct log_queue *q) {
     if (q->head) {
-        //assert(q->tail != NULL);
-        //assert(q->tail->next == NULL);
-        q->tail->next = log;
-    } else {
-        q->head = log;
+        free(q->head);
+        q->head = NULL;
+        q->tail = NULL;
     }
-    q->tail = log; 
-    pthread_mutex_unlock(&q->mutex);
-    q->npush++;
+}
+
+static int
+log_queue_push(struct log_queue *q, const struct log_data *data) {
+    struct log_entry *log = malloc(sizeof(*log));
+    log->next = NULL;
+
+    q->tail->data = *data;
+
+    __sync_synchronize();
+
+    q->tail->next = log;
+    q->tail = log;
     return 0;
 }
 
-static struct log_entry *
-log_pop(struct log_tailq *q) {
-    pthread_mutex_lock(&q->mutex);
-    if (q->head) {
-        struct log_entry *log = q->head;
+static int
+log_queue_pop(struct log_queue *q, struct log_data *data) {
+    struct log_entry *log;
+    if (q->head->next != NULL) {
+        log = q->head;
         q->head = log->next;
-        pthread_mutex_unlock(&q->mutex);
-        q->npop++;
-        return log;
+        *data = log->data;
+        free(log);
+        return 0;
     } else {
-        pthread_mutex_unlock(&q->mutex);
-        return NULL;
+        return 1;
     }
-    
 }
+
+// gamelog
+struct gamelog {
+    bool worker_ok;
+    pthread_t worker_id; 
+    volatile bool worker_run;
+    struct log_queue log_q;
+    struct elog *logger;
+    
+    uint64_t log_total_in;
+    uint64_t log_last_time;
+    uint64_t log_last;
+    uint64_t log_start_time;
+    uint64_t log_total;
+    uint64_t log_avg;
+    uint64_t log_max;
+    uint64_t log_min;
+};
 
 static int 
 create_log(struct gamelog *self) {
@@ -88,17 +106,27 @@ _elapsed() {
 
 static inline void
 log_stat(struct gamelog *self) {
-    self->count++;
-    if (self->last_time == 0) {
-        self->last_time = _elapsed();
-    }
     uint64_t now = _elapsed();
-    uint64_t diff = now - self->last_time;
+    self->log_last++;
+    self->log_total++;
+    if (self->log_last_time == 0) {
+        self->log_last_time  = now;
+        self->log_start_time = now;
+    }
+    
+    uint64_t diff = now - self->log_last_time;
     if (diff >= 1000) {
-        int rate = self->count / (diff/1000.0);
-        self->last_time = now;
-        self->count = 0;
-        fprintf(stderr, "rate: %d\n", rate);
+        uint64_t log_avg = self->log_last / (diff/1000.0);
+        if (self->log_min > log_avg ||
+            self->log_min == 0)
+            self->log_min = log_avg;
+        if (self->log_max < log_avg)
+            self->log_max = log_avg;
+
+        self->log_last = 0;
+        self->log_last_time = now;
+        uint64_t elapse = now - self->log_start_time;
+        self->log_avg = self->log_total / (elapse/1000.0);
     }
 }
 
@@ -106,16 +134,15 @@ static void *
 log_run(void *arg) {
     struct gamelog *self = arg;
     for (;;) {
-        struct log_entry *log = log_pop(&self->log_queue);
-        if (log) {
-            elog_append(self->logger, log->msg, log->sz);
+        struct log_data log;
+        int result = log_queue_pop(&self->log_q, &log);
+        if (result == 0) { 
+            elog_append(self->logger, log.msg, log.sz);
+            free(log.msg);
             log_stat(self);
-            free(log->msg);
-            free(log);
         } else {
             if (self->worker_run) {
-                //fprintf(stderr, "sleep ... ");
-                usleep(1000);
+                usleep(10);
             } else {
                 break;
             }
@@ -129,10 +156,9 @@ create_logger(struct gamelog *self) {
     if (create_log(self)) {
         return 1;
     }
-    //self->log_queue.mutex = PTHREAD_MUTEX_INITIALIZER;
-    memset(&self->log_queue.mutex, 0, sizeof(self->log_queue.mutex));
+    log_queue_init(&self->log_q);
+    
     self->worker_run = true;
-
     pthread_t tid;
     int result = pthread_create(&tid, NULL, log_run, self);
     if (result) {
@@ -146,14 +172,31 @@ create_logger(struct gamelog *self) {
 }
 
 static void
+dump_log_stat(struct gamelog *self) {
+    sh_info("|*********************************log stat*********************************|");
+    sh_info("log_total_in %llu, log_total %llu, log_avg %llu, log_max %llu, log_min %llu",
+            (unsigned long long)self->log_total_in,
+            (unsigned long long)self->log_total,
+            (unsigned long long)self->log_avg,
+            (unsigned long long)self->log_max,
+            (unsigned long long)self->log_min);
+    sh_info("|**************************************************************************|");
+}
+
+static void
 destroy_logger(struct gamelog *self) {
     if (self->worker_ok) {
         self->worker_run = false;
+
+        sh_warning("Waiting for log thread exit ... ");
+
         pthread_join(self->worker_id, NULL);
         self->worker_ok = false;
-        fprintf(stderr, "npush %u, npop %u\n", 
-                self->log_queue.npush, 
-                self->log_queue.npop);
+        log_queue_fini(&self->log_q);
+
+        sh_warning("Log thread exit");
+
+        dump_log_stat(self);
     }
     if (self->logger) {
         elog_free(self->logger);
@@ -193,8 +236,11 @@ void
 gamelog_main(struct module *s, int session, int source, int type, const void *msg, int sz) {
     struct gamelog *self = MODULE_SELF;
     assert(type == MT_TEXT);
-   
-    char* log = malloc(sz);
-    memcpy(log, msg, sz);
-    log_push(&self->log_queue, log, sz);
+  
+    struct log_data log;
+    log.msg = malloc(sz);
+    log.sz  = sz;
+    memcpy(log.msg, msg, sz);
+    log_queue_push(&self->log_q, &log);
+    self->log_total_in++;
 }
