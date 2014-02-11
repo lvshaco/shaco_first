@@ -3,6 +3,9 @@
 #include <pthread.h>
 #include <unistd.h>
 
+// todo: add drop msg if log_queue accumulate too much msg, 
+// note: msg accumulate size must be volatile
+
 // log queue
 struct log_data {
     void *msg;
