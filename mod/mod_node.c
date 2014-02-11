@@ -271,7 +271,6 @@ _connect_node(struct module *s, struct _node *no) {
     struct remote *self = MODULE_SELF;
     int id = no - self->nodes;
     if (no->connid != -1) {
-        sh_error("Node(%d:%d) has connected", id, no->connid);
         return 0;
     }
     struct sh_node_addr *addr = &no->addr; 
@@ -572,14 +571,23 @@ node_main(struct module *s, int session, int source, int type, const void *msg, 
         const char *gaddr = A.argv[4];
         int gport = strtol(A.argv[5], NULL, 10);
         int node_handle = strtol(A.argv[6], NULL, 10);
-        if (id > 0 &&
-            id != self->myid) {
-            struct _node *no = _get_node(self, id);
-            if (no) {
+        if (id <= 0) {
+            sh_error("Reg invalid node(%d)", id);
+            return;
+        }
+        if (id == self->myid) {
+            sh_error("Reg self node(%d)", id);
+            return;
+        }
+        struct _node *no = _get_node(self, id);
+        if (no) {
+            if (no->connid != -1) {
+                sh_error("Node(%d:%d) has connected", id, no->connid);
+            } else {
                 _update_node(no, naddr, nport, gaddr, gport);
                 _bound_node_entry(no, node_handle);
                 _connect_node(s, no);
-            }
+            } 
         }
     } else if (!strcmp(cmd, "ADDR")) {
         if (A.argc != 6)
