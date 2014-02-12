@@ -10,7 +10,6 @@
 #define TGATE 1
 #define TMAX 2
 static int SERVER[TMAX];
-static struct UM_GATEADDR GATEADDR;
 static struct chardata CHAR;
 static char ACCOUNT[ACCOUNT_NAME_MAX+1];
 static uint32_t LAST_SEND_TIME;
@@ -158,10 +157,9 @@ _handleum(int id, int ut, struct UM_BASE* um) {
 //        break;
     case IDUM_GATEADDR: {
         UM_CAST(UM_GATEADDR, addr, um);
-        GATEADDR = *addr;
-        mylog("gate address: %s:%u", GATEADDR.ip, GATEADDR.port);
-        mylog("connect to gate %s:%u", GATEADDR.ip, GATEADDR.port);
-        if (cnet_connect(GATEADDR.ip, GATEADDR.port, TGATE) < 0) {
+        mylog("gate address: %s:%u", addr->ip, addr->port);
+        mylog("connect to gate %s:%u", addr->ip, addr->port);
+        if (cnet_connect(addr->ip, addr->port, TGATE) < 0) {
             mylog("connect gate fail");
         }
         break;

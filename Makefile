@@ -92,7 +92,8 @@ mod_so=\
 	mod_uniqueol.so \
 	mod_match.so \
 	mod_benchmarklog.so \
-	mod_benchmark.so
+	mod_benchmark.so \
+	mod_robotcli.so
 
 all: \
 	shaco.so \

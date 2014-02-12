@@ -36,7 +36,7 @@ hall_init(struct module *s) {
     if (sh_handler("watchdog", SUB_REMOTE, &self->watchdog_handle) ||
         sh_handler("match", SUB_REMOTE, &self->match_handle) ||
         sh_handler("rpuser", SUB_REMOTE, &self->rpuser_handle) ||
-        sh_handler("rank", SUB_REMOTE, &self->rank_handle)) {
+        sh_handler("rprank", SUB_REMOTE, &self->rprank_handle)) {
         return 1;
     }
     if (hall_tplt_init(self))

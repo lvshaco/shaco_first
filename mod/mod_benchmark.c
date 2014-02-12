@@ -195,12 +195,12 @@ read_msg(struct benchmark* self, struct net_message* nm) {
             if (buf.sz < sz) {
                 break;
             }
-            buf.ptr += sz;
-            buf.sz  -= sz;
             if (handle_msg(self, c, buf.ptr+2, sz-2)) {
                 err = NET_ERR_MSG;
                 break;
             }
+            buf.ptr += sz;
+            buf.sz  -= sz;
             if (++step > 10) {
                 sh_net_dropread(id, nread-buf.sz);
                 return;

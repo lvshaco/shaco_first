@@ -81,7 +81,7 @@ alloc_sessionid(struct watchdog *self) {
         id = ++self->wsession_alloctor;
     return id;
 }
-
+/*
 static inline void
 response_loginfail(struct module *s, int gate_source, int connid, int err) {
     UM_DEFWRAP(UM_GATE, g, UM_LOGINACCOUNTFAIL, fail);
@@ -89,7 +89,7 @@ response_loginfail(struct module *s, int gate_source, int connid, int err) {
     fail->err = err;
     sh_module_send(MODULE_ID, gate_source, MT_UM, g, sizeof(*g) + sizeof(*fail));
 }
-
+*/
 static inline struct user *
 alloc_user(struct watchdog *self, int gate_source, int connid) {
     struct user *ur = malloc(sizeof(*ur));

@@ -4,6 +4,7 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.py *.h *.c" {
  config_auth.lua
  config_base.lua
  config_benchmark.lua
+ config_benchmarkdb.lua
  config_benchmarklog.lua
  config_bmdb.lua
  config_center.lua
@@ -14,6 +15,7 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.py *.h *.c" {
  config_hall.lua
  config_match.lua
  config_robot.lua
+ config_robotcli.lua
  config_room.lua
  config_route.lua
  config_rpacc.lua
@@ -110,6 +112,7 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.py *.h *.c" {
   mod_rank.c
   mod_redisproxy.c
   mod_robot.c
+  mod_robotcli.c
   mod_room.c
   mod_route.c
   mod_uniqueol.c
@@ -152,6 +155,10 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.py *.h *.c" {
   robot.h
   robot_tplt.h
   robot_tplt.c
+ }
+ mod_robotcli=mod_robotcli{
+  robotcli.h
+  robotcli.c
  }
  msg=msg{
   msg.h

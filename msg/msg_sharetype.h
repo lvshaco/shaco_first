@@ -14,6 +14,7 @@
 #define SERR_DBREPLYTYPE    12
 #define SERR_NODB           13
 #define SERR_DBDATAERR      14
+#define SERR_REQGATE        15
 #define SERR_NOREGION       20
 #define SERR_NOACC          21
 #define SERR_ACCVERIFY      22

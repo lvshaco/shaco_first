@@ -14,7 +14,7 @@ struct hall {
     int match_handle;
     int watchdog_handle;
     int rpuser_handle;
-    int rank_handle;
+    int rprank_handle;
     struct sh_hash acc2player;
     struct redis_reply reply;
 };
