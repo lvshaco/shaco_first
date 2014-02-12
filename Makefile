@@ -79,9 +79,6 @@ cli_src=\
 LDFLAGS=-Wl,-rpath,. \
 		shaco.so net.so lur.so base.so -llua -lm -ldl -lrt -rdynamic# -Wl,-E
 
-
-#mod_benchmarkdb.so
-
 mod_so=\
 	mod_echo.so \
 	mod_centers.so \
@@ -117,7 +114,8 @@ all: \
 	mod_redisproxy.so \
 	mod_hall.so \
 	mod_auth.so \
-	mod_robot.so
+	mod_robot.so \
+	mod_benchmarkdb.so
 
 release: CFLAGS += -O2 -fno-strict-aliasing
 release: all

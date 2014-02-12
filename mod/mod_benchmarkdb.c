@@ -2,6 +2,7 @@
 #include "redis.h"
 #include "msg_server.h"
 #include "memrw.h"
+#include "args.h"
 
 #define MODE_TEST  0
 #define MODE_ACCA  1
@@ -9,6 +10,7 @@
 #define MODE_COIN  3
 
 struct benchmarkdb {
+    int rpuser_handle;
     char mode[16];
     int startid;
     int curid;
@@ -38,6 +40,10 @@ benchmarkdb_free(struct benchmarkdb* self) {
 int
 benchmarkdb_init(struct module* s) {
     struct benchmarkdb* self = MODULE_SELF;
+
+    if (sh_handler("rpuser", SUB_REMOTE, &self->rpuser_handle)) {
+        return 1;
+    }
     redis_initreply(&self->reply, 512, 0);
  
     strncpy(self->mode, "test", sizeof(self->mode)-1);
@@ -49,66 +55,65 @@ benchmarkdb_init(struct module* s) {
     self->query_send = 0;
     self->query_recv = 0;
     self->query_done = 0;
-    SUBSCRIBE_MSG(s->moduleid, IDUM_REDISREPLY);
+    
     sh_timer_register(s->moduleid, 1000);
     return 0;
 }
 
 static void
-_sendcmd(struct benchmarkdb* self, const char* cmd) {
-    const struct sh_node* redisp = sh_node_get(HNODE_ID(NODE_RPUSER, 0));
-    if (redisp == NULL) {
-        sh_error("no redisproxy");
-        return;
-    }
+_sendcmd(struct module *s, const char* cmd) {
+    struct benchmarkdb* self = MODULE_SELF;
     size_t len = strlen(cmd);
-    UM_DEFVAR(UM_REDISQUERY, rq);
+    UM_DEFVAR2(UM_REDISQUERY, rq, UM_MAXSZ);
     rq->needreply = 1; 
     rq->needrecord = 0;
     rq->cbsz = 0;
     struct memrw rw;
-    memrw_init(&rw, rq->data, rq->msgsz - sizeof(*rq));
+    memrw_init(&rw, rq->data, UM_MAXSZ - sizeof(*rq));
     memrw_write(&rw, cmd, len);
-    rq->msgsz = sizeof(*rq) + RW_CUR(&rw);
-    UM_SENDTONODE(redisp, rq, rq->msgsz);
+    int msgsz = sizeof(*rq) + RW_CUR(&rw);
+    sh_module_send(MODULE_ID, self->rpuser_handle, MT_UM, rq, msgsz);
     self->query_send++;
 }
 
 static void
-_sendtest(struct benchmarkdb* self) {
+_sendtest(struct module *s) {
+    struct benchmarkdb *self = MODULE_SELF;
     if (self->curid - self->startid >= self->query)
         self->curid = self->startid;
     int id = self->curid++;
     char cmd[1024];
     if (!strcmp(self->mode, "test")) {
-        //_sendcmd(self, "hgetall user:1\r\n");
-        _sendcmd(self, "get test\r\n");
-        //_sendcmd(self, "zrange rank_score 0 -1 withscores\r\n");
+        //_sendcmd(s, "hgetall user:1\r\n");
+        _sendcmd(s, "get test\r\n");
+        //_sendcmd(s, "zrange rank_score 0 -1 withscores\r\n");
     } else if (!strcmp(self->mode, "acca")) {
         snprintf(cmd, sizeof(cmd), "hmset acc:wa_account_%d id %d passwd 123456\r\n", id, id);
-        _sendcmd(self, cmd);
+        _sendcmd(s, cmd);
     } else if (!strcmp(self->mode, "accd")) {
         snprintf(cmd, sizeof(cmd), "del acc:wa_account_%d\r\n", id);
-        _sendcmd(self, cmd);
+        _sendcmd(s, cmd);
     } else if (!strcmp(self->mode, "coin")) {
         snprintf(cmd, sizeof(cmd), "hmset user:%d coin 1000000 diamond 100000\r\n", id);
-        _sendcmd(self, cmd);
+        _sendcmd(s, cmd);
     } 
 }
 
 void
-benchmarkdb_module(struct module* s, struct module_message* sm) {
+command(struct module* s, const void *msg, int sz) {
     struct benchmarkdb* self = MODULE_SELF;
-    const char* type = sm->msg;
-
-    strncpy(self->mode, type, sizeof(self->mode)-1);
-
+    struct args A;
+    args_parsestrl(&A, 0, msg, sz);
+    if (A.argc != 4) {
+        return;
+    }
+    sh_strncpy(self->mode, A.argv[0], sizeof(self->mode));
+    self->startid = strtol(A.argv[1], NULL, 10);
+    int count = strtol(A.argv[2], NULL, 10);
+    int init  = strtol(A.argv[3], NULL, 10);
+    
     self->start = sh_timer_now();
-    self->startid = sm->sessionid;
     self->curid = self->startid;
-
-    int count = sm->type;
-    int init  = sm->sz;
     if (init <= 0)
         init =  1;
     self->query_init = min(count, init);
@@ -118,15 +123,15 @@ benchmarkdb_module(struct module* s, struct module_message* sm) {
     self->query_done = 0;
     int i;
     for (i=1; i<=count; ++i) {
-        _sendtest(self);
+        _sendtest(s);
     }
 }
 
 static void
-_handleredisproxy(struct benchmarkdb* self, struct node_message* nm) {
-    UM_CAST(UM_REDISREPLY, rep, nm->um);
+process_redis(struct module *s, struct UM_REDISREPLY *rep, int sz) {
+    struct benchmarkdb *self = MODULE_SELF;
     struct memrw rw;
-    memrw_init(&rw, rep->data, rep->msgsz - sizeof(*rep));
+    memrw_init(&rw, rep->data, sz - sizeof(*rep));
 
     redis_resetreplybuf(&self->reply, rw.ptr, RW_SPACE(&rw));
     assert(redis_getreply(&self->reply) == REDIS_SUCCEED);
@@ -144,19 +149,25 @@ _handleredisproxy(struct benchmarkdb* self, struct node_message* nm) {
         self->query_done = 0;
 
     }
-    _sendtest(self);
+    _sendtest(s);
 }
 
 void
-benchmarkdb_nodemsg(struct module* s, int id, void* msg, int sz) {
-    struct benchmarkdb* self = MODULE_SELF;
-    struct node_message nm;
-    if (_decode_nodemessage(msg, sz, &nm)) {
-        return;
-    }
-    switch (nm.hn->tid) {
-    case NODE_RPUSER:
-        _handleredisproxy(self, &nm);
+benchmarkdb_main(struct module *s, int session, int source, int type, const void *msg, int sz) {
+    switch (type) {
+    case MT_UM: {
+        UM_CAST(UM_BASE, base, msg);
+        switch (base->msgid) {
+        case IDUM_REDISREPLY: {
+            UM_CAST(UM_REDISREPLY, rep, msg);
+            process_redis(s, rep, sz);
+            break;
+            }
+        }
+        break;
+        }
+    case MT_TEXT:
+        command(s, msg, sz);
         break;
     }
 }
@@ -168,12 +179,9 @@ benchmarkdb_time(struct module* s) {
         return;
     if (self->query_send > 0)
         return;
-    const struct sh_node* redisp = sh_node_get(HNODE_ID(NODE_RPUSER, 0));
-    if (redisp == NULL)
-        return;
     self->start = sh_timer_now();
     int i;
     for (i=0; i<self->query_init; ++i) {
-        _sendtest(self);
+        _sendtest(s);
     }
 }

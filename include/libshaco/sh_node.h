@@ -8,9 +8,7 @@
 #define MT_UM   2
 #define MT_MONITOR 3
 #define MT_LOG 4
-#define MT_USR1 5
-#define MT_USR2 6
-#define MT_USR3 7
+#define MT_POINTER 5
 
 // publish flag
 #define PUB_SER 1

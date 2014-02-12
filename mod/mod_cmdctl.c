@@ -127,21 +127,18 @@ _reloadres(struct module* s, struct args* A, struct memrw* rw) {
 
 static int
 _db(struct module* s, struct args* A, struct memrw* rw) {
-    int handler = module_query_id("benchmarkdb");
-    if (handler == MODULE_INVALID) {
+    int handle = module_query_id("benchmarkdb");
+    if (handle == MODULE_INVALID) {
         return CTL_NOSERVICE;
     }
     if (A->argc <= 4) {
         return CTL_ARGLESS;
-    }
-    /* todo
-    char* type = A->argv[1];
-    int start = strtol(A->argv[2], NULL, 10);
-    int count = strtol(A->argv[3], NULL, 10);
-    int init  = strtol(A->argv[4], NULL, 10);
-    struct module_message sm = {start, 0, count, init, type};
-    module_notify_module(handler, &sm);
-    */
+    } 
+    char cmd[1024];
+    // type startid count init
+    int n = sh_snprintf(cmd, sizeof(cmd), "%s %s %s %s", 
+            A->argv[1], A->argv[2], A->argv[3], A->argv[4]);
+    sh_module_send(MODULE_ID, handle, MT_TEXT, cmd, n);
     return CTL_OK;
 }
 
