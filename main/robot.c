@@ -12,7 +12,7 @@
 static int SERVER[TMAX];
 static struct UM_GATEADDR GATEADDR;
 static struct chardata CHAR;
-static char ACCOUNT[ACCOUNT_NAME_MAX];
+static char ACCOUNT[ACCOUNT_NAME_MAX+1];
 static uint32_t LAST_SEND_TIME;
 
 static void

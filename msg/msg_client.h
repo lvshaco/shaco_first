@@ -121,8 +121,8 @@ struct UM_TEXT {
 // login account
 struct UM_LOGINACCOUNT {
     _UM_HEADER;
-    char account[ACCOUNT_NAME_MAX];
-    char passwd[ACCOUNT_PASSWD_MAX];
+    char account[ACCOUNT_NAME_MAX+1];
+    char passwd[ACCOUNT_PASSWD_MAX+1];
 };
 
 struct UM_LOGINACCOUNTFAIL {

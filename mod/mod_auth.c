@@ -10,8 +10,8 @@ struct user {
     int watchdog_source;
     uint32_t wsession;
     //uint64_t logintime;
-    char account[ACCOUNT_NAME_MAX];
-    char passwd[ACCOUNT_PASSWD_MAX];
+    char account[ACCOUNT_NAME_MAX+1];
+    char passwd[ACCOUNT_PASSWD_MAX+1];
 };
 
 
@@ -115,7 +115,7 @@ process_redis(struct module *s, struct UM_REDISREPLY *rep, int sz) {
     //uint32_t wsession = 0;
     //memrw_read(&rw, &wsession, sizeof(wsession));
    
-    char account[ACCOUNT_NAME_MAX];
+    char account[ACCOUNT_NAME_MAX+1];
     memrw_read(&rw, account, sizeof(account));
 
     struct user *ur = sh_hash64_find(&self->conn2user, conn);
