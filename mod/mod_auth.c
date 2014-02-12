@@ -145,6 +145,7 @@ process_redis(struct module *s, struct UM_REDISREPLY *rep, int sz) {
         notify_login_fail(s, ur, SERR_NOACC);
         return;
     }
+    sh_error("passwd : %s", ur->passwd);
     if (strncmp(ur->passwd, item->child[1].value.p, item->child[1].value.len)) {
         notify_login_fail(s, ur, SERR_ACCVERIFY);
         return;

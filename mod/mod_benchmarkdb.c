@@ -88,7 +88,7 @@ _sendtest(struct module *s) {
         _sendcmd(s, "get test\r\n");
         //_sendcmd(s, "zrange rank_score 0 -1 withscores\r\n");
     } else if (!strcmp(self->mode, "acca")) {
-        snprintf(cmd, sizeof(cmd), "hmset acc:wa_account_%d id %d passwd 123456\r\n", id, id);
+        snprintf(cmd, sizeof(cmd), "hmset acc:wa_account_%d id %d passwd 7c4a8d09ca3762af61e59520943dc26494f8941b\r\n", id, id);
         _sendcmd(s, cmd);
     } else if (!strcmp(self->mode, "accd")) {
         snprintf(cmd, sizeof(cmd), "del acc:wa_account_%d\r\n", id);

@@ -60,7 +60,7 @@ static void
 _login_account(int id) {
     UM_DEFFIX(UM_LOGINACCOUNT, la);
     strncpy(la->account, ACCOUNT, sizeof(la->account)-1);
-    strncpy(la->passwd, "123456", sizeof(la->passwd)-1);
+    strncpy(la->passwd, "7c4a8d09ca3762af61e59520943dc26494f8941b", sizeof(la->passwd)-1);
     _server_send(TGATE, la, sizeof(*la));
     mylog("request login account");
 }

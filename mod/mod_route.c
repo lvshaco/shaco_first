@@ -114,8 +114,8 @@ handle_gate(struct module *s, int source, int connid, const void *msg, int sz) {
     if (one) {
         UM_DEFWRAP(UM_GATE, ga, UM_GATEADDR, ok);
         ga->connid = connid;
-        //memcpy(ok->ip, one->ip, sizeof(one->ip));
-        memcpy(ok->ip, "116.228.135.50", sizeof(ok->ip));
+        memcpy(ok->ip, one->ip, sizeof(one->ip));
+        //memcpy(ok->ip, "116.228.135.50", sizeof(ok->ip));
         ok->port = one->port;
         sh_module_send(MODULE_ID, source, MT_UM, ga, sizeof(*ga) + sizeof(*ok));
         sh_trace("Route client %d get %s:%u handle %x load %d", 
