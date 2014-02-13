@@ -47,7 +47,6 @@ struct AI_brain {
 struct player {
     int watchdog_source;
     uint8_t index;
-    bool isrobot;
     bool login;
     bool online;
     bool loadok;
