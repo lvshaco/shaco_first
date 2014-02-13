@@ -1,4 +1,4 @@
-sh_loglevel="TRACE"
+sh_loglevel="INFO"
 sh_connmax=11000
 sh_module="robotcli"
 

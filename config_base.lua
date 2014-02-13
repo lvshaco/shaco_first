@@ -6,7 +6,7 @@ local iip = "127.0.0.1"
 local oip = "192.168.1.140"
 web_addr = "192.168.1.145"
 log_dir = "/home/lvxiaojun/log"
-local hb = 60
+local hb = 0--60
 
 node_map = {
 --
@@ -41,7 +41,7 @@ function def_node(name, id)
     node_ip   = node.ip
     node_port = node.port
 
-    sh_loglevel = "DEBUG"
+    sh_loglevel = "INFO"--"DEBUG"
     sh_connmax = node.conn
     sh_module = "log,node"
     if name == "center" then

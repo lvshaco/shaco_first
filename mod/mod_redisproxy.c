@@ -224,7 +224,7 @@ handle_reply(struct module *s) {
     if (ql->cbsz) {
         memrw_write(&rw, ql->cb, ql->cbsz);
     }
-    memrw_write(&rw, reader->buf, reader->pos);
+    memrw_write(&rw, reader->buf+reader->pos_last, reader->pos-reader->pos_last);
     int msgsz = RW_CUR(&rw) + sizeof(*rep);
     sh_module_send(MODULE_ID, ql->source, MT_UM, rep, msgsz);
 }
@@ -302,7 +302,7 @@ redisproxy_net(struct module* s, struct net_message* nm) {
     case NETE_SOCKERR:
         self->connid = -1;
         FREELIST_POPALL(querylink, &self->queryq);
-        sh_error("redis dishonnect: %s", sh_net_error(nm->error));
+        sh_error("redis disconnect: %s", sh_net_error(nm->error));
         break;
     }
 }
@@ -311,7 +311,7 @@ void
 redisproxy_time(struct module* s) {
     struct redisproxy* self = MODULE_SELF;
     if (self->connid == -1) {
-        if (block_connect_redis(s)) {
+        if (!block_connect_redis(s)) {
             auth(s);
         }
     }

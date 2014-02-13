@@ -78,7 +78,7 @@ _is_center(struct remote *self) {
 }
 
 static void
-_dishonnect_node(struct module *s, int connid) {
+_disconnect_node(struct module *s, int connid) {
     struct remote *self = MODULE_SELF;
     struct _node *no = NULL;
     int i;
@@ -90,7 +90,7 @@ _dishonnect_node(struct module *s, int connid) {
     }
     if (no) {
         int id = no-self->nodes;
-        sh_info("Node(%d:%d) dishonnect", id, connid);
+        sh_info("Node(%d:%d) disconnect", id, connid);
         no->connid = -1;
         no->node_handle = -1;
         for (i=0; i<no->handles.sz; ++i) {
@@ -534,8 +534,8 @@ node_net(struct module* s, struct net_message* nm) {
         //sh_error("connect to node fail: %s", sh_net_error(nm->error));
         //break;
     case NETE_SOCKERR:
-        sh_error("node dishonnect: %s, %d", sh_net_error(nm->error), nm->connid);
-        _dishonnect_node(s, nm->connid);
+        sh_error("node disconnect: %s, %d", sh_net_error(nm->error), nm->connid);
+        _disconnect_node(s, nm->connid);
         break;
     }
 }

@@ -242,7 +242,7 @@ hall_playerdb_process_redis(struct module *s, struct UM_REDISREPLY *rep, int sz)
 
     struct player* p = sh_hash_find(&self->acc2player, accid);
     if (p == NULL) {
-        return; // maybe dishonnect
+        return; // maybe disconnect
     }
 
     int32_t serr = SERR_UNKNOW;

@@ -20,6 +20,10 @@ static const char *CHAR_PREFIX = "wa_robotcli_";
 #define S_ROOM 7
 #define S_FAIL 8
 
+#define DISCONN_CONNERR 1
+#define DISCONN_SOCKERR 2
+#define DISCONN_ACTIVE  3
+
 struct client {
     int connid;
     int id;
@@ -49,7 +53,7 @@ client_bind_connection(struct client *c, int connid) {
 }
 
 static inline void
-client_disconnect(struct client *c) {
+client_disconnect(struct client *c) { 
     assert(c->connid != -1);
     c->connid = -1;
 }
@@ -79,7 +83,7 @@ static void
 client_fail(struct client *c, int err, const char *str) {
     c->status = S_FAIL;
     c->err = err;
-    sh_trace("Client %d fail(%d), for %s", c->id, err, str);
+    sh_error("Client %d fail(%d), for %s", c->id, err, str);
 }
 
 static void
@@ -130,6 +134,7 @@ client_buy_role(struct client *c, uint32_t roleid) {
 */
 static void
 client_play(struct client *c, int type) { 
+    return;
     UM_DEFFIX(UM_PLAY, play);
     play->type = type;
     client_send(c, play, sizeof(*play));
@@ -188,9 +193,9 @@ check_total_connect_gate_ok(struct robotcli *self) {
 
 static void
 check_total_login_ok(struct robotcli *self) {
-    if (self->nlogin_ok + self->nlogin_fail > 1000/*== self->nconnect_gate_ok*/) {
-        sh_info("Total(%d + %d) login ok", 
-                self->nlogin_ok, self->nlogin_fail);
+    if (self->nlogin_ok + self->nlogin_fail == self->nconnect_gate_ok) {
+        sh_info("Total(%d + %d) login ok, %d", 
+                self->nlogin_ok, self->nlogin_fail, self->nconnect_gate_ok);
     }
 }
 
@@ -221,14 +226,15 @@ on_connect(struct robotcli* self, int connid) {
 }
 
 static void
-on_disconnect(struct robotcli* self, int connid, bool connect_fail) {
+on_disconnect(struct robotcli* self, int connid, int type, int err) { 
     int id = freeid_free(&self->fi, connid);
     assert(id >= 0 && id < self->max);
 
     struct client* c = &self->clients[id];
     client_disconnect(c);
 
-    if (connect_fail) {
+    switch (type) {
+    case DISCONN_CONNERR:
         switch (c->status) {
         case S_CONNECT_ROUTE:
             self->nconnect_route_fail++;
@@ -242,6 +248,12 @@ on_disconnect(struct robotcli* self, int connid, bool connect_fail) {
             assert(0);
             break;
         }
+        break;
+    case DISCONN_SOCKERR:
+        if (c->status == S_CONNECT_GATE) {
+            sh_error("Client %d gate sockerr(%d)", c->id, err);
+        }
+        break;
     }
 }
 
@@ -262,7 +274,7 @@ client_connect_gate(struct module *s, struct client *c, const char *ip, int port
     struct robotcli *self = MODULE_SELF;
     if (c->connid != -1) {
         sh_net_close_socket(c->connid, true);
-        on_disconnect(self, c->connid, false);
+        on_disconnect(self, c->connid, DISCONN_ACTIVE, 0);
     }
     c->status = S_CONNECT_GATE;
 
@@ -304,6 +316,8 @@ client_handle(struct module *s, struct client *c, void *msg, int sz) {
     case IDUM_LOGOUT: {
         UM_CAST(UM_LOGOUT, lo, base);
         client_fail(c, lo->err, "logout gate");
+        self->nlogin_fail++;
+        check_total_login_ok(self);
         break;
         }
     case IDUM_LOGINFAIL: {
@@ -471,7 +485,7 @@ robotcli_init(struct module *s) {
    
     clients_init(s);
     
-    sh_timer_register(MODULE_ID, 1000);
+    //sh_timer_register(MODULE_ID, 1000);
     return 0;
 }
 
@@ -545,10 +559,10 @@ robotcli_net(struct module* s, struct net_message* nm) {
         on_connect(self, nm->connid);
         break;
     case NETE_CONNERR:
-        on_disconnect(self, nm->connid, true);
+        on_disconnect(self, nm->connid, DISCONN_CONNERR, nm->error);
         break;
     case NETE_SOCKERR:
-        on_disconnect(self, nm->connid, false);
+        on_disconnect(self, nm->connid, DISCONN_SOCKERR, nm->error);
         break;
     }
 }

@@ -238,7 +238,7 @@ on_connect(struct benchmark* self, int connid) {
 }
 
 static void
-on_dishonnect(struct benchmark* self, int connid) {
+on_disconnect(struct benchmark* self, int connid) {
     int id = freeid_free(&self->fi, connid);
     if (id == -1) {
         return;
@@ -259,7 +259,7 @@ benchmark_net(struct module* s, struct net_message* nm) {
         on_connect(self, nm->connid);
         break;
     case NETE_SOCKERR:
-        on_dishonnect(self, nm->connid);
+        on_disconnect(self, nm->connid);
         break;
     }
 }

@@ -329,7 +329,7 @@ gate_net(struct module* s, struct net_message* nm) {
         }
         break;
     case NETE_SOCKERR: {
-        sh_trace("Client %d sockerr dishonnect %d", id, nm->error);
+        sh_trace("Client %d sockerr disconnect %d", id, nm->error);
         c = get_client(self, id);
         assert(c);
         if (c->status == S_LOGINED) { 
