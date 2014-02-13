@@ -18,7 +18,12 @@ static const char *CHAR_PREFIX = "wa_robotcli_";
 #define S_CREATE_CHAR 5
 #define S_HALL 6
 #define S_ROOM 7
-#define S_FAIL 8
+#define S_START 8
+#define S_OVER 9
+#define S_FAIL 10
+
+#define CONN_ROUTE 1
+#define CONN_GATE  2
 
 #define DISCONN_CONNERR 1
 #define DISCONN_SOCKERR 2
@@ -36,6 +41,9 @@ struct client {
     uint64_t send_bytes;
     uint64_t recv_package;
     uint64_t recv_bytes;
+
+    uint64_t last_sync_pos;
+    uint64_t last_use_item;
 };
 
 static void 
@@ -72,21 +80,21 @@ client_send(struct client *c, void *msg, int sz) {
     c->send_bytes += sz;
 }
 
-static void
+static inline void
 client_heartbeat(struct client *c) {
     UM_DEFFIX(UM_HEARTBEAT, hb);
     client_send(c, hb, sizeof(*hb));
     sh_trace("Client %d heart beat", c->id);
 }
 
-static void
+static inline void
 client_fail(struct client *c, int err, const char *str) {
     c->status = S_FAIL;
     c->err = err;
     sh_error("Client %d fail(%d), for %s", c->id, err, str);
 }
 
-static void
+static inline void
 client_request_gate(struct client *c) {
     c->status = S_REQUEST_GATE;
 
@@ -95,7 +103,7 @@ client_request_gate(struct client *c) {
     sh_trace("Client %d request gate addresss", c->id);
 }
 
-static void
+static inline void
 client_login_account(struct client *c) {
     c->status = S_LOGIN_ACCOUNT;
 
@@ -106,7 +114,7 @@ client_login_account(struct client *c) {
     sh_trace("Client %d request login account", c->id);
 }
 
-static void
+static inline void
 client_create_char(struct client *c) {
     c->status = S_CREATE_CHAR;
 
@@ -116,7 +124,7 @@ client_create_char(struct client *c) {
     sh_trace("Client %d request create character(%s)", c->id, create->name);
 }
 
-static void
+static inline void
 client_info(struct client *c, const struct chardata *cdata) { 
     c->status = S_HALL;
     
@@ -132,22 +140,21 @@ client_buy_role(struct client *c, uint32_t roleid) {
     sh_trace("Client %d requset buy role(%d)", c->id, roleid);
 }
 */
-static void
+static inline void
 client_play(struct client *c, int type) { 
-    return;
     UM_DEFFIX(UM_PLAY, play);
     play->type = type;
     client_send(c, play, sizeof(*play));
     sh_trace("Client %d requset play(%d)", c->id, type);
 }
 
-static void
+static inline void
 client_roominfo(struct client *c, struct UM_GAMEINFO *gi) {
     c->status = S_ROOM;
     sh_trace("Client %d game info: nmember %d", c->id, gi->nmember);
 }
 
-static void
+static inline void
 client_loadok(struct client *c) {
     UM_DEFFIX(UM_GAMELOADOK, ok);
     client_send(c, ok, sizeof(*ok));
@@ -155,24 +162,52 @@ client_loadok(struct client *c) {
 
 }
 
-static void
-client_useitem(struct client *c, uint32_t itemid) {
+static inline void
+client_start(struct client *c) {
+    c->status = S_START;
+    sh_trace("Client %d start", c->id);
+}
+
+static inline void
+client_over(struct client *c) {
+    c->status = S_OVER;
+    sh_trace("Client %d over", c->id);
+}
+
+static inline void
+client_use_item(struct client *c, uint32_t itemid) {
     UM_DEFFIX(UM_USEITEM, ui);
     ui->itemid = itemid;
     client_send(c, ui, sizeof(*ui));
     sh_trace("Client %d requset use item(%u)", c->id, itemid);
 }
 
+static inline void
+client_sync_position(struct client *c, uint32_t depth) {
+    UM_DEFFIX(UM_GAMESYNC, sync);
+    sync->charid = c->cdata.charid;
+    sync->depth = depth;
+}
+
 struct robotcli {
     struct freeid fi;
     struct client* clients;
     int max;
+    
     int nconnect_route_ok;
     int nconnect_route_fail;
     int nconnect_gate_ok;
     int nconnect_gate_fail;
     int nlogin_ok;
     int nlogin_fail;
+
+    int nplay_req;
+    int nplay_ok;
+    int nplay_fail;
+    int ngame_info;
+    int ngame_enter;
+    int ngame_start;
+    int ngame_over;
 };
 
 static void
@@ -217,7 +252,24 @@ on_connect(struct robotcli* self, int connid) {
     case S_CONNECT_GATE:
         self->nconnect_gate_ok++;
         check_total_connect_gate_ok(self);
-        client_login_account(c);
+        client_login_account(c); 
+        break;
+    default:
+        assert(0);
+        break;
+    }
+}
+
+static void
+on_connecterr(struct robotcli *self, int ut, int err) {
+    switch (ut) {
+    case CONN_ROUTE:
+        self->nconnect_route_fail++;
+        check_total_connect_route_ok(self);
+        break;
+    case CONN_GATE:
+        self->nconnect_gate_fail++;
+        check_total_connect_gate_ok(self);
         break;
     default:
         assert(0);
@@ -228,32 +280,18 @@ on_connect(struct robotcli* self, int connid) {
 static void
 on_disconnect(struct robotcli* self, int connid, int type, int err) { 
     int id = freeid_free(&self->fi, connid);
+    if (id < 0) {
+        sh_panic("on disconnect: connid %d, type %d, err %d", connid, type, err);
+    }
     assert(id >= 0 && id < self->max);
 
     struct client* c = &self->clients[id];
     client_disconnect(c);
 
-    switch (type) {
-    case DISCONN_CONNERR:
-        switch (c->status) {
-        case S_CONNECT_ROUTE:
-            self->nconnect_route_fail++;
-            check_total_connect_route_ok(self);
-            break;
-        case S_CONNECT_GATE:
-            self->nconnect_gate_fail++;
-            check_total_connect_gate_ok(self);
-            break;
-        default:
-            assert(0);
-            break;
-        }
-        break;
-    case DISCONN_SOCKERR:
+    if (type == DISCONN_SOCKERR) {
         if (c->status == S_CONNECT_GATE) {
             sh_error("Client %d gate sockerr(%d)", c->id, err);
         }
-        break;
     }
 }
 
@@ -261,7 +299,7 @@ static int
 client_connect_route(struct module *s, struct client *c, const char *ip, int port) {
     c->status = S_CONNECT_ROUTE;
 
-    if (!sh_net_connect(ip, port, true, MODULE_ID, 0)) {
+    if (!sh_net_connect(ip, port, false, MODULE_ID, CONN_ROUTE)) {
         return 0;
     } else {
         sh_trace("Client %d connect route fail", c->id);
@@ -278,7 +316,7 @@ client_connect_gate(struct module *s, struct client *c, const char *ip, int port
     }
     c->status = S_CONNECT_GATE;
 
-    if (!sh_net_connect(ip, port, true, MODULE_ID, 0)) {
+    if (!sh_net_connect(ip, port, false, MODULE_ID, CONN_GATE)) {
         return 0;
     } else {
         sh_trace("Client %d connect gate fail", c->id);
@@ -339,11 +377,16 @@ client_handle(struct module *s, struct client *c, void *msg, int sz) {
         check_total_login_ok(self);
 
         client_play(c, 0);
+        self->nplay_req++;
+        if (self->nplay_req == self->max) {
+            sh_info("Total(%d) play req", self->nplay_req);
+        }
         break;
         }
     case IDUM_PLAYFAIL: {
         UM_CAST(UM_PLAYFAIL, pf, base);
         client_fail(c, pf->err, "play");
+        self->nplay_fail++;
         break;
         }
     case IDUM_PLAYWAIT: {
@@ -356,28 +399,45 @@ client_handle(struct module *s, struct client *c, void *msg, int sz) {
         sh_trace("Client %d play loading, leasttime: %d, other(%u, %s)",
                 c->id, pl->leasttime, pl->member.charid, pl->member.name);
         client_loadok(c);
+        self->nplay_ok++;
+        if (self->nplay_ok == self->max) {
+            sh_info("Total(%d) play ok", self->nplay_ok);
+        }
         break;
         }
     case IDUM_GAMEINFO: {
-        UM_CAST(UM_GAMEINFO, gi, base);
+        UM_CAST(UM_GAMEINFO, gi, base); 
         client_roominfo(c, gi); 
+        self->ngame_info++;
+        if (self->ngame_info == self->max) {
+            sh_info("Total(%d) game info ok", self->ngame_info);
+        }
         break;
         }
     case IDUM_GAMEMEMBER: {
-        UM_CAST(UM_GAMEMEMBER, gm, base);
+        UM_CAST(UM_GAMEMEMBER, gm, base); 
         sh_trace("Client %d add member(%u, %s)", c->id, gm->member.charid, gm->member.name);
         break;
         }
     case IDUM_GAMEENTER: {
         //UM_CAST(UM_GAMEENTER, ge, base);
+        self->ngame_enter++;
+        if (self->ngame_enter == self->max) {
+            sh_info("Total(%d) game enter ok", self->ngame_enter);
+        }
         sh_trace("Client %d game enter", c->id);
         break;
         }
     case IDUM_GAMESTART: {
         //UM_CAST(UM_GAMESTART, gs, base);
+        client_start(c);
+        self->ngame_start++;
+        if (self->ngame_start == self->max) {
+            sh_info("Total(%d) game start ok", self->ngame_start);
+        }
         sh_trace("Client %d game start", c->id);
         if (c->cdata.accid % 2 == 0) {
-            client_useitem(c, 2);
+            client_use_item(c, 2);
         }
         break;
         }
@@ -393,6 +453,11 @@ client_handle(struct module *s, struct client *c, void *msg, int sz) {
         break;
     case IDUM_GAMEOVER: {
         UM_CAST(UM_GAMEOVER, go, base);
+        client_over(c);
+        self->ngame_over++;
+        if (self->ngame_over == self->max) {
+            sh_info("Total(%d) game over ok", self->ngame_over);
+        }
         sh_trace("************Client %d GAME OVER*****************", c->id);
         sh_trace("room type: %d, member count: %d", go->type, go->nmember);
         sh_trace("rank charid depth oxygenitem item bao exp coin score");
@@ -441,10 +506,18 @@ robotcli_free(struct robotcli* self) {
     sh_info("|**************************robot stat****************************|");
     sh_info("route connection %d + %d", self->nconnect_route_ok, self->nconnect_route_fail);
     sh_info("gate connection  %d + %d", self->nconnect_gate_ok,  self->nconnect_gate_fail);
+    sh_info("gate login %d + %d",       self->nlogin_ok, self->nlogin_fail);
     sh_info("send_package_agv %u", (uint32_t)(send_package_all/self->max));
     sh_info("recv_package_agv %u", (uint32_t)(recv_package_all/self->max));
     sh_info("send_bytes_agv   %u", (uint32_t)(send_bytes_all/self->max));
     sh_info("recv_bytes_agv   %u", (uint32_t)(recv_bytes_all/self->max));
+    sh_info("play req   %u", self->nplay_req);
+    sh_info("play ok    %u", self->nplay_ok);
+    sh_info("play fail  %u", self->nplay_fail);
+    sh_info("game info  %u", self->ngame_info);
+    sh_info("game enter %u", self->ngame_enter);
+    sh_info("game start %u", self->ngame_start);
+    sh_info("game over  %u", self->ngame_over);
     sh_info("|****************************************************************|");
     freeid_fini(&self->fi);
     free(self->clients);
@@ -485,7 +558,7 @@ robotcli_init(struct module *s) {
    
     clients_init(s);
     
-    //sh_timer_register(MODULE_ID, 1000);
+    sh_timer_register(MODULE_ID, 200);
     return 0;
 }
 
@@ -559,7 +632,7 @@ robotcli_net(struct module* s, struct net_message* nm) {
         on_connect(self, nm->connid);
         break;
     case NETE_CONNERR:
-        on_disconnect(self, nm->connid, DISCONN_CONNERR, nm->error);
+        on_connecterr(self, nm->ut, nm->error);
         break;
     case NETE_SOCKERR:
         on_disconnect(self, nm->connid, DISCONN_SOCKERR, nm->error);
@@ -578,8 +651,23 @@ robotcli_time(struct module* s) {
         c = &self->clients[i];
         if (c->connid != -1 &&
             c->status >= S_HALL && c->status <= S_ROOM) {
-            if (now - c->last_send_time > HEART_BEAT*1000) {
+            if (now - c->last_send_time > HEART_BEAT) {
                 client_heartbeat(c);
+            }
+        }
+    }
+    for (i=0; i<self->max; ++i) {
+        c = &self->clients[i];
+        if (c->connid != -1 &&
+            c->status == S_START) {
+            if (now - c->last_sync_pos >= 150) {
+                client_sync_position(c, 5);
+                c->last_sync_pos = now;
+            }
+            if (now - c->last_use_item >= 500) {
+                // 221318, 100501
+                client_use_item(c, 221318);
+                c->last_use_item = now;
             }
         }
     }

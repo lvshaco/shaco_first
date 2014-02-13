@@ -17,7 +17,7 @@ sh_check_init() {
         l.rlim_cur = RLIM_INFINITY;
         l.rlim_max = RLIM_INFINITY;
         if (setrlimit(RLIMIT_CORE, &l) == -1) {
-            sh_exit("setrlimit fail: %s", strerror(errno));
+            sh_exit("setrlimit core fail: %s", strerror(errno));
         }
     }
 
@@ -31,7 +31,7 @@ sh_check_init() {
             l.rlim_max = l.rlim_cur;
         }
         if (setrlimit(RLIMIT_NOFILE, &l) == -1) {
-            sh_exit("setrlimit nofile fail: %s", strerror(errno));
+            sh_exit("setrlimit nofile %d fail: %s", max, strerror(errno));
         }
     }
 }

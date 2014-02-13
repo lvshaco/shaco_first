@@ -316,7 +316,10 @@ gate_net(struct module* s, struct net_message* nm) {
     switch (nm->type) {
     case NETE_READ: {
         c = get_client(self, id); 
-        assert(c);
+        if (c == NULL) {
+            sh_panic("gate_net read get_client connid %d null:", id);
+            assert(c);
+        }
         read(s, c, nm);
         }
         break;
