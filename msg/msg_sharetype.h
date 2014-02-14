@@ -41,7 +41,7 @@
 #define SERR_ALLOC          54
 #define SERR_NOAUTHS        55
 #define SERR_NOUNIQUEOL     56
-#define SERR_ACCINSERT      57
+#define SERR_ACCINSERT      57 // the same as SERR_ACCLOGINED
 #define SERR_NOHALLS        58
 #define SERR_NOROOMS        59
 

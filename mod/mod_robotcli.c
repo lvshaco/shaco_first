@@ -197,7 +197,8 @@ struct robotcli {
     struct freeid fi;
     struct client* clients;
     int max;
-    
+    int startid;
+
     int nconnect_route_ok;
     int nconnect_route_fail;
     int nconnect_gate_ok;
@@ -536,8 +537,8 @@ clients_init(struct module *s) {
     int port = sh_getint("route_port", 0);
 
     int i;
-    for (i=0; i<self->max; ++i) {
-        client_init(&self->clients[i], i+1);
+    for (i=0; i<self->max; ++i) { 
+        client_init(&self->clients[i], self->startid+i);
         client_connect_route(s, &self->clients[i], ip, port);
     }
 }
@@ -545,6 +546,9 @@ clients_init(struct module *s) {
 int
 robotcli_init(struct module *s) {
     struct robotcli* self = MODULE_SELF;
+
+    self->startid = sh_getint("robotcli_client_startid", 0);
+    sh_info("robotcli_client_startid %d", self->startid);
 
     int hmax = sh_getint("sh_connmax", 0);
     int cmax = sh_getint("robotcli_client_max", 0); 
@@ -555,7 +559,7 @@ robotcli_init(struct module *s) {
     if (cmax > hmax) {
         sh_error("Client max over connection max");
         return 1;
-    }   
+    }
     self->max = cmax;
     self->clients = malloc(sizeof(struct client) * cmax);
     memset(self->clients, 0, sizeof(struct client) * cmax);
