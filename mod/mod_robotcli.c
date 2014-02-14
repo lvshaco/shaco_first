@@ -7,6 +7,8 @@
 static const char *PASSWD = "7c4a8d09ca3762af61e59520943dc26494f8941b";
 static const char *ACC_PREFIX = "wa_account_";
 static const char *CHAR_PREFIX = "wa_robotcli_";
+static const uint32_t ITEMS[] = 
+{100501, 221318, 410101, 200501, 210507/*, 210709, 221219, 221420*/};
 
 #define HEART_BEAT 3
 
@@ -44,6 +46,8 @@ struct client {
 
     uint64_t last_sync_pos;
     uint64_t last_use_item;
+
+    int item_index;
 };
 
 static void 
@@ -207,7 +211,7 @@ struct robotcli {
     int ngame_info;
     int ngame_enter;
     int ngame_start;
-    int ngame_over;
+    int ngame_over; 
 };
 
 static void
@@ -474,6 +478,7 @@ client_handle(struct module *s, struct client *c, void *msg, int sz) {
                     go->stats[i].score);
         }
         sh_trace("******************************************");
+        client_play(c, 0);
         break;
         }
     }
@@ -666,7 +671,10 @@ robotcli_time(struct module* s) {
             }
             if (now - c->last_use_item >= 500) {
                 // 221318, 100501
-                client_use_item(c, 221318);
+                if (c->item_index >= sizeof(ITEMS)/sizeof(ITEMS[0]))
+                    c->item_index = 0;
+                int itemid = ITEMS[c->item_index++];
+                client_use_item(c, itemid);
                 c->last_use_item = now;
             }
         }
