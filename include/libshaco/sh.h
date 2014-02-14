@@ -23,7 +23,7 @@
 
 void sh_init();
 void sh_start();
-void sh_stop();
+void sh_stop(const char* info);
 
 void sh_exit(const char* fmt, ...)
 #ifdef __GNUC__

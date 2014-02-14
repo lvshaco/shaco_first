@@ -78,7 +78,7 @@ _reload(struct module* s, struct args* A, struct memrw* rw) {
 static int
 _stop(struct module* s, struct args* A, struct memrw* rw) {
     if (!_ishenter()) {
-        sh_stop();
+        sh_stop("stop command");
     }
     return CTL_OK;
 }

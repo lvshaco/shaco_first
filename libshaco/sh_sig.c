@@ -6,8 +6,8 @@
 
 static void 
 _sigtermhandler(int sig) {
-    sh_warning("Received SIGTERM, shhedule stop ...");
-    sh_stop();
+    // do not call sh_warning, is no signal safe
+    sh_stop("received sigterm");
 } 
 
 static void
