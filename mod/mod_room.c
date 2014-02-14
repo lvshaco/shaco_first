@@ -257,7 +257,6 @@ static void
 gameroom_create(struct module *s, int source, struct UM_CREATEROOM *create) {
     sh_trace("Room %u recevie create from mapid %u", create->id, create->mapid);
     struct room* self = MODULE_SELF;
-    create->mapid = 1;
     struct gameroom *ro = sh_hash_find(&self->gamerooms, create->id);
     if (ro) {
         notify_create_gameroom_result(s, source, create->id, SERR_ROOMIDCONFLICT);
