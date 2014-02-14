@@ -141,7 +141,10 @@ benchmark_init(struct module* s) {
 }
 
 static inline struct client*
-get_client(struct benchmark* self, int id) {
+get_client(struct benchmark* self, int connid) {
+    int id = freeid_find(&self->fi, connid);
+    if (id == -1)
+       return NULL;
     assert(id >= 0 && id < self->max);
     struct client* c = &self->clients[id];
     assert(c->connected);

@@ -314,43 +314,44 @@ gate_net(struct module* s, struct net_message* nm) {
     struct client* c;
     int id = nm->connid;
     switch (nm->type) {
-    case NETE_READ: {
+    case NETE_READ:
         c = get_client(self, id); 
-        if (c == NULL) {
-            sh_panic("gate_net read get_client connid %d null:", id);
-            assert(c);
-        }
-        read(s, c, nm);
+        if (c) {
+            // net.c all event will first cache, then deal together, 
+            // so now this client may be free, due to the event of other connection,
+            // eg: gate_main send_to_client, then c occur NETE_SOCKERR, then c free,
+            // bug, c has the NETE_READ event in net.c:ne
+            read(s, c, nm);
         }
         break;
     case NETE_ACCEPT:
         sh_trace("Client %d accepted", id);
         // do not forward to handler
         c = accept_client(s, id); 
-        if (!self->need_verify && c) {
+        if (c && !self->need_verify) {
             login_client(c);
         }
         break;
-    case NETE_SOCKERR: {
+    case NETE_SOCKERR:
         sh_trace("Client %d sockerr disconnect %d", id, nm->error);
         c = get_client(self, id);
-        assert(c);
-        if (c->status == S_LOGINED) { 
-            UM_DEFWRAP(UM_GATE, ga, UM_NETDISCONN, nd);
-            ga->connid = id;
-            nd->type = NETE_SOCKERR;
-            nd->err  = nm->error;
-            sh_module_send(MODULE_ID, self->handler, MT_UM, ga, sizeof(*ga) + sizeof(*nd));
-        }
-        disconnect_client(s, c, true);
+        if (c) {
+            if (c->status == S_LOGINED) { 
+                UM_DEFWRAP(UM_GATE, ga, UM_NETDISCONN, nd);
+                ga->connid = id;
+                nd->type = NETE_SOCKERR;
+                nd->err  = nm->error;
+                sh_module_send(MODULE_ID, self->handler, MT_UM, ga, sizeof(*ga) + sizeof(*nd));
+            }
+            disconnect_client(s, c, true);
         }
         break;
-    case NETE_WRIDONECLOSE: {
+    case NETE_WRIDONECLOSE:
         // donot forward to handler
         c = get_client(self, id);
-        assert(c);
-        sh_trace("Client %d writedone close", id);
-        disconnect_client(s, c, true); 
+        if (c) {
+            sh_trace("Client %d writedone close", id);
+            disconnect_client(s, c, true); 
         }
         break;
     }
@@ -381,7 +382,7 @@ gate_time(struct module* s) {
                 nd->type = NETE_TIMEOUT;
                 nd->err  = 0;
                 sh_module_send(MODULE_ID, self->handler, MT_UM, ga, sizeof(*ga) + sizeof(*nd));
-                
+
                 disconnect_client(s, c, true);
             }
             break;
