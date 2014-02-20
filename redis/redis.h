@@ -106,6 +106,17 @@ redis_bulkitem_toul(struct redis_replyitem* item) {
     return strtoul(tmp, NULL, 10); 
 }
 
+static inline float
+redis_bulkitem_tof(struct redis_replyitem* item) {
+    if (redis_bulkitem_isnull(item))
+        return 0;
+    char tmp[32];
+    int l = min(sizeof(tmp)-1, item->value.len);
+    memcpy(tmp, item->value.p, l);
+    tmp[l] = '\0';
+    return strtof(tmp, NULL); 
+}
+
 static inline int64_t
 redis_to_int64(struct redis_replyitem* item) {
     if (redis_bulkitem_isnull(item))

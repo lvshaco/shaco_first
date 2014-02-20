@@ -75,6 +75,9 @@ _db(struct module *s, struct player* p, int8_t type) {
                 " package"
                 " role"
                 " skin"
+                " luck_factor"
+                " last_washgold_refresh_time"
+                " washgold"
                 " score1"
                 " score2"
                 " ownrole"
@@ -144,6 +147,9 @@ _db(struct module *s, struct player* p, int8_t type) {
                 " package %u"
                 " role %u"
                 " skin %u"
+                " luck_factor %.3f"
+                " last_washgold_refresh_time %u"
+                " washgold %u"
                 " score1 %u"
                 " score2 %u"
                 " ownrole %s"
@@ -160,6 +166,9 @@ _db(struct module *s, struct player* p, int8_t type) {
                 cdata->package,
                 cdata->role,
                 cdata->skin,
+                cdata->luck_factor,
+                cdata->last_washgold_refresh_time,
+                cdata->washgold,
                 cdata->score_normal,
                 cdata->score_dashi,
                 strownrole,
@@ -228,6 +237,9 @@ _loadpdb(struct player* p, struct redis_replyitem* item) {
     CHECK(cdata->package = redis_bulkitem_toul(si++));
     CHECK(cdata->role = redis_bulkitem_toul(si++));
     CHECK(cdata->skin = redis_bulkitem_toul(si++));
+    CHECK(cdata->luck_factor = redis_bulkitem_tof(si++));
+    CHECK(cdata->last_washgold_refresh_time = redis_bulkitem_toul(si++));
+    CHECK(cdata->washgold = redis_bulkitem_toul(si++));
     CHECK(cdata->score_normal = redis_bulkitem_toul(si++));
     CHECK(cdata->score_dashi = redis_bulkitem_toul(si++));
     CHECK(
