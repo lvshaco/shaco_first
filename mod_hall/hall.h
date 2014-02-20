@@ -7,6 +7,11 @@
 #include "msg_server.h"
 #include "msg_client.h"
 
+#define TICK_INTV (1000)
+#define SEC_TO_FLOAT_TICK(sec) ((1000.0/TICK_INTV)*sec)
+#define SEC_TO_TICK(sec) (int)((SEC_TO_FLOAT_TICK(sec) < 1) ? 1 : (SEC_TO_FLOAT_TICK(sec)+0.5))
+#define SEC_ELAPSED(sec) ((self->tick % SEC_TO_TICK(sec)) == 0)
+
 struct tplt;
 
 struct hall {
@@ -15,6 +20,8 @@ struct hall {
     int watchdog_handle;
     int rpuser_handle;
     int rprank_handle;
+    int tick;
+    uint32_t randseed;
     struct sh_hash acc2player;
     struct redis_reply reply;
 };
@@ -41,6 +48,15 @@ hall_sync_role(struct module *s, struct player* pr) {
     cl->uid  = UID(pr);
     ci->data = pr->data;
     sh_module_send(MODULE_ID, pr->watchdog_source, MT_UM, cl, sizeof(*cl) + sizeof(*ci));
+}
+
+static inline void
+hall_sync_money(struct module *s, struct player* pr) {
+    UM_DEFWRAP(UM_CLIENT, cl, UM_SYNCMONEY, sm);
+    cl->uid  = UID(pr);
+    sm->coin = pr->data.coin;
+    sm->diamond = pr->data.diamond;
+    sh_module_send(MODULE_ID, pr->watchdog_source, MT_UM, cl, sizeof(*cl) + sizeof(*sm));
 }
 
 #endif

@@ -11,15 +11,6 @@
 /////////////////////////////////////////////////////////////////////
 
 static void
-sync_money(struct module *s, struct player* pr) {
-    UM_DEFWRAP(UM_CLIENT, cl, UM_SYNCMONEY, sm);
-    cl->uid = UID(pr);
-    sm->coin = pr->data.coin;
-    sm->diamond = pr->data.diamond;
-    sh_module_send(MODULE_ID, pr->watchdog_source, MT_UM, cl, sizeof(*cl) + sizeof(*sm));
-}
-
-static void
 sync_ringpage(struct module *s, struct player* pr) {
     UM_DEFWRAP(UM_CLIENT, cl, UM_RINGPAGESYNC, sy);
     cl->uid = UID(pr);
@@ -147,7 +138,7 @@ process_buyringpage(struct module *s, struct player *pr, const struct UM_RINGPAG
     rdata->npage += 1;
     cdata->diamond -= RING_PAGE_PRICE;
     
-    sync_money(s, pr);
+    hall_sync_money(s, pr);
     sync_ringpage(s, pr); 
     hall_playerdb_send(s, pr, PDB_SAVE);
     return;

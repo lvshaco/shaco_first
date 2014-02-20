@@ -5,6 +5,7 @@
 #include "hall_role.h"
 #include "hall_ring.h"
 #include "hall_attribute.h"
+#include "hall_washgold.h"
 #include "sh.h"
 #include "msg_server.h"
 #include "redis.h"
@@ -89,6 +90,7 @@ _db(struct module *s, struct player* p, int8_t type) {
     case PDB_CREATE: {
         rq->needreply = 1;
         uint32_t charid = cdata->charid;
+        cdata->luck_factor = 0.5f; // todo
         cdata->coin = 1000000; // todo
         cdata->diamond = 100000; // todo
         int len = snprintf(rw.ptr, RW_SPACE(&rw), "hmset user:%u"
@@ -408,8 +410,10 @@ hall_playerdb_process_redis(struct module *s, struct UM_REDISREPLY *rep, int sz)
             UM_DEFFIX(UM_ENTERHALL, enter);
             hall_role_main(s, p, enter, sizeof(*enter));
             hall_ring_main(s, p, enter, sizeof(*enter));
+            // before attribute refresh
             hall_attribute_main(self->T, &p->data); 
-            
+            // after attribute refresh
+            hall_washgold_main(s, p, enter, sizeof(*enter)); 
             hall_sync_role(s, p);
         }
         break;

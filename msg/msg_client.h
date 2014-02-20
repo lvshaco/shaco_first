@@ -46,6 +46,11 @@
 //#define IDUM_PLAYDONE       IDUM_CBEGIN+45
 #define IDUM_PLAYE          IDUM_CBEGIN+46
 
+// washgold
+#define IDUM_WASHGOLDB      IDUM_CBEGIN+50
+#define IDUM_WASHGOLD       IDUM_CBEGIN+51
+#define IDUM_WASHGOLDE      IDUM_CBEGIN+59
+
 #define IDUM_HALLE          IDUM_CBEGIN+499  // hall end
 
 // client -> server (room)
@@ -79,6 +84,10 @@
 #define IDUM_PLAYWAIT       IDUM_CBEGIN+642
 #define IDUM_PLAYLOADING    IDUM_CBEGIN+643
 #define IDUM_PLAYE2         IDUM_CBEGIN+649
+
+// washgold
+#define IDUM_WASHGOLD_INFO  IDUM_CBEGIN+650
+#define IDUM_WASHGOLD_RES   IDUM_CBEGIN+651
 
 // room
 #define IDUM_GAMEINFO       IDUM_CBEGIN+800
@@ -231,6 +240,24 @@ struct UM_RINGSTACK { // S -> C
     _UM_HEADER;
     uint32_t ringid;
     uint8_t stack; // 当前堆叠
+};
+
+// washgold
+
+struct UM_WASHGOLD { // C->S
+    _UM_HEADER;
+};
+
+struct UM_WASHGOLD_RES { // S->C
+    _UM_HEADER;
+    uint8_t gain; // 淘金获取 (最大255)
+    uint8_t extra_gain; // 金币收益加成
+    uint32_t washgold; // 当前淘金库存
+};
+
+struct UM_WASHGOLD_INFO { // S->C
+    _UM_HEADER;
+    uint32_t washgold; // 当前淘金库存
 };
 
 //////////////////////////////////////////////////////////////

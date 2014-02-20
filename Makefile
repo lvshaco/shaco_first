@@ -180,6 +180,9 @@ mod_hall.so: $(mod_dir)/mod_hall.c \
 	mod_hall/hall_award.h \
 	mod_hall/hall_attribute.c \
 	mod_hall/hall_attribute.h \
+	mod_hall/hall_luck.h \
+	mod_hall/hall_washgold.c \
+	mod_hall/hall_washgold.h \
 	mod_hall/hall_play.c \
 	mod_hall/hall_play.h
 	@rm -f $@

@@ -128,6 +128,7 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.py *.h *.c" {
   hall_ring.h
   hall_role.h
   hall_tplt.h
+  hall_washgold.h
   hall_attribute.c
   hall_award.c
   hall_play.c
@@ -136,6 +137,8 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.py *.h *.c" {
   hall_ring.c
   hall_role.c
   hall_tplt.c
+  hall_washgold.c
+  hall_luck.h
  }
  mod_room=mod_room{
   buff.h

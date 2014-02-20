@@ -7,6 +7,7 @@
 #include "hall_ring.h"
 #include "hall_award.h"
 #include "hall_play.h"
+#include "hall_washgold.h"
 #include "msg_server.h"
 #include "msg_client.h"
 
@@ -39,12 +40,15 @@ hall_init(struct module *s) {
         sh_handler("rprank", SUB_REMOTE, &self->rprank_handle)) {
         return 1;
     }
+    self->randseed = sh_timer_now()/1000;
     if (hall_tplt_init(self))
         return 1;
     if (hall_player_init(self))
         return 1;
     if (hall_playerdb_init(self))
         return 1; 
+
+    sh_timer_register(MODULE_ID, TICK_INTV);
     return 0;
 }
 
@@ -89,6 +93,8 @@ hall_main(struct module *s, int session, int source, int type, const void *msg, 
                     hall_ring_main(s, pr, wrap, sz-sizeof(*ha));
                 } else if (wrap->msgid >= IDUM_PLAYB && wrap->msgid <= IDUM_PLAYE) {
                     hall_play_main(s, pr, wrap, sz-sizeof(*ha));
+                } else if (wrap->msgid >= IDUM_WASHGOLDB && wrap->msgid <= IDUM_WASHGOLDE) {
+                    hall_washgold_main(s, pr, wrap, sz-sizeof(*ha));
                 }
                 break;
             }
@@ -117,4 +123,11 @@ hall_main(struct module *s, int session, int source, int type, const void *msg, 
     case MT_MONITOR:
         break;
     }
+}
+
+void
+hall_time(struct module *s) {
+    struct hall *self = MODULE_SELF;
+    hall_washgold_time(s);
+    self->tick++;
 }
