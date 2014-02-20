@@ -57,7 +57,8 @@ _isvalid_fd(int fd) {
     // in linux:   FD_SETSIZE is the max value of fd, so
     // Executing FD_CLR() or FD_SET() with a value of fd 
     // that is negative or is equal to or larger than 
-    // FD_SETSIZE will result in undefined behavior
+    // FD_SETSIZE will result in undefined behavior.
+    // by the way, you can alloc FD_SET in heap in linux
     if (fd < 0)
         return false;
 #ifndef WIN32
