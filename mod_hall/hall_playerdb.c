@@ -169,7 +169,7 @@ _db(struct module *s, struct player* p, int8_t type) {
                 rdata->nring,
                 "strrings" // todo
                 );
-        memrw_pos(&rw, len);
+        memrw_pos(&rw, len); 
         }
         break;
     default:
@@ -180,9 +180,25 @@ _db(struct module *s, struct player* p, int8_t type) {
 
 int 
 hall_playerdb_send(struct module *s, struct player *pr, int type) {
-    return _db(s, pr, type);
+    if (type != PDB_SAVE) {
+        return _db(s, pr, type);
+    } else {
+        return hall_playerdb_save(s, pr, true);
+    }
 }
 
+int
+hall_playerdb_save(struct module *s, struct player *pr, bool force) {
+    uint64_t now = sh_timer_now();
+    if (force || 
+        now - pr->last_save_time >= 1000 * PDB_SAVE_INTV) {
+        if (_db(s, pr, PDB_SAVE)) {
+            return 1; 
+        }
+        pr->last_save_time = now;
+    }
+    return 0;
+}
 
 static int
 _loadpdb(struct player* p, struct redis_replyitem* item) {

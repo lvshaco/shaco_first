@@ -81,7 +81,7 @@ process_userole(struct module *s, struct player *pr, const struct UM_USEROLE *us
 
     hall_sync_role(s, pr);
 
-    hall_playerdb_send(s, pr, PDB_SAVE);
+    hall_playerdb_save(s, pr, false);
 }
 
 static void
@@ -115,7 +115,7 @@ process_buyrole(struct module *s, struct player *pr, const struct UM_BUYROLE *bu
     sync_addrole(s, pr, roleid);
     sync_money(s, pr);
 
-    hall_playerdb_send(s, pr, PDB_SAVE);
+    hall_playerdb_save(s, pr, true);
 }
 
 static void

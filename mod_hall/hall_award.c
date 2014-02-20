@@ -100,7 +100,7 @@ process_award(struct module *s, struct player* pr, int8_t type, const struct mem
         break;
     }
     if (updated) { 
-        hall_playerdb_send(s, pr, PDB_SAVE);
+        hall_playerdb_save(s, pr, true);
     }
 }
 

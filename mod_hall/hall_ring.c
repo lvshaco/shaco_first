@@ -93,7 +93,8 @@ process_equipring(struct module *s, struct player *pr, const struct UM_RINGEQUIP
     }
     // do logic
     memcpy(page->slots, um->rings, sizeof(page->slots));
-    hall_playerdb_send(s, pr, PDB_SAVE);
+
+    hall_playerdb_save(s, pr, false);
 }
 /*
 static void
@@ -119,8 +120,8 @@ process_renameringpage(struct module *s, struct player *pr, const struct UM_RING
     }
     // do logic
     strncpy(page->name, um->name, sizeof(page->name));
-    
-    hall_playerdb_send(s, pr, PDB_SAVE);
+   
+    hall_playerdb_save(s, pr, false);
 }
 
 static void
@@ -140,7 +141,7 @@ process_buyringpage(struct module *s, struct player *pr, const struct UM_RINGPAG
     
     hall_sync_money(s, pr);
     sync_ringpage(s, pr); 
-    hall_playerdb_send(s, pr, PDB_SAVE);
+    hall_playerdb_save(s, pr, true);
     return;
 }
 
@@ -161,8 +162,8 @@ process_useringpage(struct module *s, struct player *pr, const struct UM_RINGPAG
 
     // refresh attribute
     hall_attribute_main(self->T, &pr->data);
-    
-    hall_playerdb_send(s, pr, PDB_SAVE);
+   
+    hall_playerdb_save(s, pr, false);
     return;
 }
 
