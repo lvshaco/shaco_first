@@ -8,6 +8,9 @@
 
 static inline int
 hall_luck_random(struct hall* self, struct player *pr, float radiate, int uprand) {
+    if (uprand <= 0) {
+        return 0;
+    }
     struct chardata *cdata = &pr->data;
     
     float luck_base = cdata->attri.lucky / 100.0;

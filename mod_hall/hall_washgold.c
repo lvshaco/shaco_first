@@ -26,14 +26,16 @@ sync_washgold_result(struct module *s, struct player *pr, uint8_t gain, uint8_t 
 }
 
 static inline void
-refresh_washgold(struct module *s, struct player *pr) {
+refresh_washgold(struct module *s, struct player *pr, bool sync) {
     struct chardata* cdata = &pr->data;
     uint32_t now = sh_timer_now() / 1000;
     uint32_t diff = now - cdata->last_washgold_refresh_time;
     if (diff >= 3600) {
         cdata->washgold += min(1200, diff/60 * 2);
         cdata->last_washgold_refresh_time = now;
-        sync_washgold_info(s, pr);
+        if (sync) {
+            sync_washgold_info(s, pr);
+        }
     }
 }
 
@@ -69,7 +71,7 @@ process_washgold(struct module *s, struct player *pr) {
 
 static void
 login(struct module *s, struct player* pr) {
-    refresh_washgold(s, pr);
+    refresh_washgold(s, pr, false);
 }
 
 void
@@ -89,7 +91,7 @@ static void
 timecb(void *pointer, void *ud) {
     struct module *s = ud;
     struct player *pr = pointer;
-    refresh_washgold(s, pr);
+    refresh_washgold(s, pr, true);
 }
 
 void
