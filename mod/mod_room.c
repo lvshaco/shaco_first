@@ -1027,7 +1027,7 @@ gameroom_update_delay(struct module *s, struct gameroom *ro) {
 }
 
 static void
-member_update_effect(struct player *m) {
+member_update_effect(struct module *s, struct gameroom *ro, struct player *m) {
     struct buff_effect *effect;
     int i, j;
     for (i=0; i<m->total_effect.sz; ++i) {
@@ -1038,11 +1038,16 @@ member_update_effect(struct player *m) {
         if (effect->time > 0 &&
             effect->time <= sh_timer_now()) {
             sh_trace("timeout : %llu, to char %u", (unsigned long long)effect->time, m->detail.charid);
-            
             for (j=0; j<BUFF_EFFECT; ++j) {
                 effect->effects[j].value *= -1;
                 item_effectone(m, &effect->effects[j]);
             }
+            
+            UM_DEFFIX(UM_ITEMUNEFFECT, iue);
+            iue->charid = m->detail.charid;
+            iue->itemid = effect->id;
+            multicast_msg(s, ro, iue, sizeof(*iue), 0);
+
             effect_del(effect);
         }
     }
@@ -1590,7 +1595,7 @@ gameroom_update(struct module *s, struct gameroom *ro) {
             if (reduce_oxygen(m, oxygen) > 0) {
                 m->refresh_flag |= REFRESH_ATTRI;
             }
-            member_update_effect(m);
+            member_update_effect(s, ro, m);
             on_refresh_attri(s, m, ro);
             if (m->brain) {
                 AI_main(s, ro, m);

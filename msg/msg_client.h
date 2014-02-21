@@ -98,6 +98,7 @@
 #define IDUM_ROLEINFO       IDUM_CBEGIN+805
 #define IDUM_GAMEOVER       IDUM_CBEGIN+806
 #define IDUM_GAMEMEMBER     IDUM_CBEGIN+807
+#define IDUM_ITEMUNEFFECT   IDUM_CBEGIN+808
 
 // heartbeat
 #define IDUM_HEARTBEAT      IDUM_CBEGIN+900
@@ -339,10 +340,16 @@ struct UM_USEITEM {
 
 struct UM_ITEMEFFECT {
     _UM_HEADER;
-    uint32_t spellid;
-    uint32_t oriitem;
-    uint32_t charid;
-    uint32_t itemid;
+    uint32_t spellid; // 释放者ID
+    uint32_t oriitem; // 未知道具ID
+    uint32_t charid;  // 目标ID
+    uint32_t itemid;  // 真实道具ID
+};
+
+struct UM_ITEMUNEFFECT {
+    _UM_HEADER;
+    uint32_t charid;  // 目标ID
+    uint32_t itemid;  // 真实道具ID
 };
 
 struct UM_ROLEPRESS {
