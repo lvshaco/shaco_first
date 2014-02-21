@@ -123,9 +123,18 @@ redisproxy_init(struct module* s) {
         return 1;
     }
     int handle;
-    if (sh_handler(sh_getstr("redis_requester", ""), SUB_REMOTE, &handle)) {
-        return 1;
+    const char *requester = sh_getstr("redis_requester", "");
+    char tmp[1024];
+    sh_strncpy(tmp, requester, sizeof(tmp));
+    char *saveptr = NULL;
+    char *one = strtok_r(tmp, ",", &saveptr);
+    while (one) {
+        if (sh_handler(one, SUB_REMOTE, &handle)) {
+            return 1;
+        }
+        one = strtok_r(NULL, ",", &saveptr);
     }
+
     self->connid = -1;
     if (block_connect_redis(s)) {
         return 1;

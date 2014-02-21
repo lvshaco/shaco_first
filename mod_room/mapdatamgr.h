@@ -3,11 +3,12 @@
 
 #include <stdint.h>
 
+struct sh_hash;
 struct roommap;
 struct tplt;
 
-int  mapdatamgr_init(struct tplt *T, const char *path);
-void mapdatamgr_fini();
-struct roommap *mapdatamgr_find(uint32_t id);
+struct sh_hash *mapdatamgr_init(struct tplt *T, const char *path);
+void mapdatamgr_fini(struct sh_hash *H);
+struct roommap *mapdatamgr_find(struct sh_hash *H, uint32_t id);
 
 #endif

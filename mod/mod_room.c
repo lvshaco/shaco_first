@@ -267,7 +267,7 @@ gameroom_create(struct module *s, int source, struct UM_CREATEROOM *create) {
         notify_create_gameroom_result(s, source, create->id, SERR_CRENOTPLT);
         return;
     }
-    struct roommap *mapdata = mapdatamgr_find(mapt->id);
+    struct roommap *mapdata = mapdatamgr_find(self->MH, mapt->id);
     if (mapdata == NULL) {
         notify_create_gameroom_result(s, source, create->id, SERR_CRENOMAP);
         return;
@@ -724,7 +724,7 @@ static void dump(uint32_t accid, const char* name, struct char_attribute* attri)
     sh_rec("oxygen: %d", attri->oxygen);     // 氧气
     sh_rec("body: %d", attri->body);       // 体能
     sh_rec("quick: %d", attri->quick);      // 敏捷
-    
+
     sh_rec("movespeed: %f", attri->movespeed);     // 移动速度
     sh_rec("movespeedadd: %f", attri->movespeedadd);
     sh_rec("charfallspeed: %f", attri->charfallspeed); // 坠落速度
@@ -771,8 +771,8 @@ item_effect_member(struct module *s, struct gameroom *ro, struct player *m,
             assert(effect);
             effectptr = effect->effects;
         }
-        effect->time = sh_timer_now()/1000 + item->time + addtime;
-        sh_debug("insert time: %u, to char %u", effect->time, m->detail.charid);
+        effect->time = sh_timer_now() + item->time*1000 + addtime;
+        sh_trace("insert time: %llu, to char %u", (unsigned long long)effect->time, m->detail.charid);
     } else {
         effectptr = tmp;
     }
@@ -793,7 +793,7 @@ item_effect_member(struct module *s, struct gameroom *ro, struct player *m,
             effectptr[i].isper = false;
         }
         on_refresh_attri(s, m, ro);
-        //dump(charid(m), m->detail.name, &m->detail.attri);
+        dump(UID(m), m->detail.name, &m->detail.attri);
     }
 }
 
@@ -836,7 +836,8 @@ get_effect_members(struct gameroom* ro,
 static void
 item_effect(struct module* s, struct gameroom* ro, struct player* me, 
         const struct item_tplt* item, int addtime) {
-    sh_debug("char %u, item effect %u", me->detail.charid, item->id);
+    sh_trace("char %u, item effect %u, item time %d(s), add time %d", 
+            me->detail.charid, item->id, item->time, addtime);
 
     struct player* tars[MEMBER_MAX];
     int ntar = get_effect_members(ro, me, item->target, tars);
@@ -853,7 +854,7 @@ item_effect(struct module* s, struct gameroom* ro, struct player* me,
 
 static void
 item_delay(struct room *self, struct player *m, const struct item_tplt *item, int delay_time) {
-    sh_debug("char %u, use delay item %u", m->detail.charid, item->id);
+    sh_trace("char %u, use delay item %u", m->detail.charid, item->id);
 
     uint64_t effect_time = sh_timer_now() + delay_time;
     struct buff_delay* delay = delay_find(&m->total_delay, item->id);
@@ -896,7 +897,7 @@ rand_trapitem(struct room *self, const struct map_tplt *mapt) {
     uint32_t randid = mapt->trapitem[rand()%mapt->ntrapitem];
     const struct item_tplt* item = itemtplt_find(self, randid);
     if (item == NULL) {
-        sh_debug("not found rand item %u", randid);
+        sh_trace("not found rand item %u", randid);
     }
     return item;
 }
@@ -909,7 +910,7 @@ use_item(struct module *s, struct player *m, const struct UM_USEITEM *use) {
 
     const struct item_tplt* item = itemtplt_find(self, use->itemid);
     if (item == NULL) {
-        sh_debug("not found use item: %u", use->itemid);
+        sh_trace("not found use item: %u", use->itemid);
         return;
     }
     const struct item_tplt* oriitem = item;
@@ -1035,8 +1036,8 @@ member_update_effect(struct player *m) {
             continue;
 
         if (effect->time > 0 &&
-            effect->time <= sh_timer_now()/1000) {
-            sh_debug("timeout : %u, to char %u", effect->time, m->detail.charid);
+            effect->time <= sh_timer_now()) {
+            sh_trace("timeout : %llu, to char %u", (unsigned long long)effect->time, m->detail.charid);
             
             for (j=0; j<BUFF_EFFECT; ++j) {
                 effect->effects[j].value *= -1;

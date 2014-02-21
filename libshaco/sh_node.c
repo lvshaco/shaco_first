@@ -207,16 +207,16 @@ sh_module_subshribe(const char *name, int flag) {
     }
     if (flag & SUB_REMOTE) {
         handle = _subshribe(name);
-        if (handle == -1) {
-            return -1;
-        }
-        char msg[128];
-        int n = snprintf(msg, sizeof(msg), "SUB %s", name); 
-        if (module_main(R->handle, 0, 0, MT_TEXT, msg, n)) {
-            return -1;
+        if (handle != -1) {
+            char msg[128];
+            int n = snprintf(msg, sizeof(msg), "SUB %s", name); 
+            if (module_main(R->handle, 0, 0, MT_TEXT, msg, n)) {
+                return -1;
+            }
+            return handle;
         }
     }
-    return handle;
+    return -1;
 }
 
 int 

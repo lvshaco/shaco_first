@@ -6,18 +6,13 @@
 #include <limits.h>
 #include <stdio.h>
 
-static struct sh_hash *H = NULL;
-
-int 
+struct sh_hash *
 mapdatamgr_init(struct tplt *T, const char *path) {
     const struct tplt_holder* holder = tplt_get_holder(T, TPLT_MAP);
     if (holder == NULL) {
-        return 1;
+        return NULL;
     } 
-    if (H != NULL) {
-        return 1;
-    }
-    H = sh_hash_new(1);
+    struct sh_hash *H = sh_hash_new(1);
     
     char fname[PATH_MAX];
     int i; 
@@ -37,10 +32,10 @@ mapdatamgr_init(struct tplt *T, const char *path) {
         }
         sh_hash_insert(H, tplt[i].id, m);
     }
-    return 0;
+    return H;
 err:
-    mapdatamgr_fini();
-    return 1;
+    mapdatamgr_fini(H);
+    return NULL;
 }
 
 static void
@@ -49,17 +44,16 @@ freemapcb(void* m) {
 }
 
 void
-mapdatamgr_fini() {
+mapdatamgr_fini(struct sh_hash *H) {
     if (H == NULL) {
         return;
     }
     sh_hash_foreach(H, freemapcb);
     sh_hash_delete(H);
-    H = NULL;
 }
 
 struct roommap *
-mapdatamgr_find(uint32_t id) {
+mapdatamgr_find(struct sh_hash *H, uint32_t id) {
     if (H)
         return sh_hash_find(H, id);
     return NULL;

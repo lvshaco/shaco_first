@@ -17,8 +17,9 @@ load_tplt(struct room *self) {
 
 static int
 load_mapdata(struct room *self) {
-    mapdatamgr_fini();
-    return mapdatamgr_init(self->T, "./res/map");
+    mapdatamgr_fini(self->MH);
+    self->MH = mapdatamgr_init(self->T, "./res/map");
+    return self->MH ? 0 : 1;
 }
 
 int
@@ -34,8 +35,14 @@ room_tplt_init(struct room *self) {
 
 void
 room_tplt_fini(struct room *self) {
-    mapdatamgr_fini();
-    tplt_free(self->T);
+    if (self->MH) {
+        mapdatamgr_fini(self->MH);
+        self->MH = NULL;
+    }
+    if (self->T) {
+        tplt_free(self->T);
+        self->T = NULL;
+    }
 }
 
 void

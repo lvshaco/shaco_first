@@ -8,6 +8,7 @@ struct tplt;
 
 struct room {
     struct tplt *T;
+    struct sh_hash *MH; 
     //int watchdog_handle;
     //int match_handle;
     int tick;

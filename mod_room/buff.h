@@ -20,7 +20,7 @@ struct one_effect {
 struct buff_effect {
     uint32_t id;
     struct one_effect effects[BUFF_EFFECT];
-    int time;
+    uint64_t time;
 };
 
 struct delay_vector {

@@ -41,6 +41,9 @@ int
 benchmarkdb_init(struct module* s) {
     struct benchmarkdb* self = MODULE_SELF;
 
+    if (sh_handle_publish(MODULE_NAME, PUB_SER)) {
+        return 1;
+    }
     if (sh_handler("rpuser", SUB_REMOTE, &self->rpuser_handle)) {
         return 1;
     }
@@ -84,9 +87,8 @@ _sendtest(struct module *s) {
     int id = self->curid++;
     char cmd[1024];
     if (!strcmp(self->mode, "test")) {
-        //_sendcmd(s, "hgetall user:1\r\n");
-        _sendcmd(s, "get test\r\n");
-        //_sendcmd(s, "zrange rank_score 0 -1 withscores\r\n");
+        snprintf(cmd, sizeof(cmd), "hmset user:%d coin 1000000 diamond 100000\r\n", id);
+        _sendcmd(s, cmd);
     } else if (!strcmp(self->mode, "acca")) {
         snprintf(cmd, sizeof(cmd), "hmset acc:wa_account_%d id %d passwd 7c4a8d09ca3762af61e59520943dc26494f8941b\r\n", id, id);
         _sendcmd(s, cmd);
@@ -138,6 +140,7 @@ process_redis(struct module *s, struct UM_REDISREPLY *rep, int sz) {
     //redis_walkreply(&self->reply);
     self->query_done++;
     self->query_recv++;
+    //sh_info("query %d, query_done %d", self->query, self->query_done);
     if (self->query_done == self->query) {
         self->end = sh_timer_now();
         uint64_t elapsed = self->end - self->start;
