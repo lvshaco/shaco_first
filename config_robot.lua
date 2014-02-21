@@ -1,4 +1,4 @@
 require "config_base"
 def_node("robot", 5)
 sh_module=sh_module..",robot"
-tplt_handle="robot"
+cmd_handle="robot"

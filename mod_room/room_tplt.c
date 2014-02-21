@@ -51,16 +51,16 @@ room_tplt_main(struct module *s, int session, int source, int type, const void *
     if (type != MT_TEXT)
         return;
 
-    if (!strncmp("reload", msg, sz)) {
+    if (!strncmp("reloadres", msg, sz)) {
         if (!load_tplt(self)) {
-            sh_info("reload tplt ok");
+            sh_info("reloadres tplt ok");
             if (!load_mapdata(self)) {
-                sh_info("reload mapdata ok");
+                sh_info("reloadres mapdata ok");
             } else {
-                sh_error("reload mapdata fail");
+                sh_error("reloadres mapdata fail");
             } 
         } else {
-            sh_error("reload tplt ok");
+            sh_error("reloadres tplt ok");
         }
     }
 }

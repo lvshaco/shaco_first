@@ -5,8 +5,11 @@
 #include "memrw.h"
 #include <time.h>
 
+#define LITERAL(str) str, sizeof(str)
+
 struct cmdctl {
     int cmds_handle;
+    int cmd_handle;
 };
 
 ///////////////////
@@ -21,7 +24,8 @@ struct ctl_command {
 #define CTL_FAIL 2
 #define CTL_ARGLESS 3
 #define CTL_ARGINVALID 4
-#define CTL_NOSERVICE 5
+#define CTL_ARGTOOLONG 5
+#define CTL_NOMODULE 6
 
 static const char* STRERROR[] = {
     "execute ok",
@@ -29,6 +33,7 @@ static const char* STRERROR[] = {
     "execute fail",
     "execute less arg",
     "execute invalid arg",
+    "execute too long arg",
     "execute no module",
 };
 
@@ -106,39 +111,32 @@ _time(struct module* s, struct args* A, struct memrw* rw) {
     memrw_pos(rw, n);
     return CTL_OK;
 }
-static int
-_players(struct module* s, struct args* A, struct memrw* rw) {
-    // todo
-    //int count = sh_gate_usedclient();
-    //int n = snprintf(rw->ptr, RW_SPACE(rw), "[%d]", count);
-    //memrw_pos(rw, n);
-    return CTL_OK;
-}
 
 static int
 _reloadres(struct module* s, struct args* A, struct memrw* rw) {
-    int handle = module_query_id(sh_getstr("tplt_handle", ""));
-    if (handle == -1) {
-        return CTL_NOSERVICE;
+    struct cmdctl *self = MODULE_SELF;
+    if (sh_module_send(MODULE_ID, self->cmd_handle, MT_TEXT, LITERAL("reloadres"))) {
+        return CTL_NOMODULE;
     }
-    sh_module_send(MODULE_ID, handle, MT_TEXT, "reload", sizeof("reload"));
     return CTL_OK;
 }
 
 static int
-_db(struct module* s, struct args* A, struct memrw* rw) {
-    int handle = module_query_id("benchmarkdb");
-    if (handle == MODULE_INVALID) {
-        return CTL_NOSERVICE;
+_modcmd(struct module* s, struct args* A, struct memrw* rw) {
+    struct cmdctl *self = MODULE_SELF;
+    char cmd[10];
+    int i, n, off = 0;
+    for (i=1; i<A->argc; ++i) {
+        n = sh_snprintf(cmd+off, sizeof(cmd)-off, "%s ", A->argv[i]);
+        if (n == 0) {
+            return CTL_ARGTOOLONG;
+        }
+        off += n;
     }
-    if (A->argc <= 4) {
+    if (off == 0) {
         return CTL_ARGLESS;
-    } 
-    char cmd[1024];
-    // type startid count init
-    int n = sh_snprintf(cmd, sizeof(cmd), "%s %s %s %s", 
-            A->argv[1], A->argv[2], A->argv[3], A->argv[4]);
-    sh_module_send(MODULE_ID, handle, MT_TEXT, cmd, n);
+    }
+    sh_module_send(MODULE_ID, self->cmd_handle, MT_TEXT, cmd, off);
     return CTL_OK;
 }
 
@@ -152,9 +150,8 @@ static struct ctl_command COMMAND_MAP[] = {
     { "start",       _start },
     { "startmem",    _startmem },
     { "time",        _time },
-    { "players",     _players },
     { "reloadres",   _reloadres },
-    { "db",          _db },
+    { "modcmd",      _modcmd },
     { NULL, NULL },
 };
 
@@ -178,7 +175,8 @@ cmdctl_init(struct module* s) {
     if (sh_handle_publish(MODULE_NAME, PUB_SER)) {
         return 1;
     }
-    if (sh_handler("cmds", SUB_REMOTE, &self->cmds_handle)) {
+    if (sh_handler("cmds", SUB_REMOTE, &self->cmds_handle) ||
+        sh_handler(sh_getstr("cmd_handle", ""), SUB_LOCAL, &self->cmd_handle)) {
         return 1;
     }
     return 0;
