@@ -124,7 +124,7 @@ _reloadres(struct module* s, struct args* A, struct memrw* rw) {
 static int
 _modcmd(struct module* s, struct args* A, struct memrw* rw) {
     struct cmdctl *self = MODULE_SELF;
-    char cmd[10];
+    char cmd[1024];
     int i, n, off = 0;
     for (i=1; i<A->argc; ++i) {
         n = sh_snprintf(cmd+off, sizeof(cmd)-off, "%s ", A->argv[i]);
