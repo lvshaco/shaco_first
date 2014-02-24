@@ -29,6 +29,9 @@ static inline void
 refresh_washgold(struct module *s, struct player *pr, bool sync) {
     struct chardata* cdata = &pr->data;
     uint32_t now = sh_timer_now() / 1000;
+    if (cdata->last_washgold_refresh_time == 0) {
+        cdata->last_washgold_refresh_time = now;
+    }
     uint32_t diff = now - cdata->last_washgold_refresh_time;
     if (diff >= 3600) {
         cdata->washgold += min(1200, diff/60 * 2);

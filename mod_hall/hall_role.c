@@ -174,8 +174,12 @@ process_adjust_state(struct module *s, struct player *pr, const struct UM_ADJUST
     if (pay_coin > 0) {
         cdata->coin -= pay_coin;
     }
-
-    notify_adjust_result(s, pr, typeid, role_state_id(new_value), (new_value - old_value) > 16);
+    int old_id = role_state_id(old_value);
+    int new_id = role_state_id(new_value);
+    if (old_id != new_id) {
+        hall_attribute_main(self->T, cdata); 
+    }
+    notify_adjust_result(s, pr, typeid, new_id, (new_value - old_value) > 16);
     hall_sync_money(s, pr);
     
     hall_playerdb_save(s, pr, true);
@@ -183,8 +187,15 @@ process_adjust_state(struct module *s, struct player *pr, const struct UM_ADJUST
 
 static void
 refresh_state(struct module *s, struct player *pr) {
+    struct hall *self = MODULE_SELF;
+
     uint64_t now = sh_timer_now();
     struct chardata *cdata = &pr->data;
+    if (cdata->last_state_refresh_time == 0) {
+        cdata->last_state_refresh_time = now;
+    }
+   
+    bool change_state = false;
     int i;
     for (i=0; i<ROLE_MAX; ++i) {
         if (cdata->ownrole[i]) {
@@ -197,9 +208,13 @@ refresh_state(struct module *s, struct player *pr) {
                 int new_id = role_state_id(state_value);
                 if (new_id != old_id) {
                     sync_state(s, pr, i, new_id);
+                    change_state = true;
                 }
             }
         }
+    }
+    if (change_state) {
+        hall_attribute_main(self->T, &pr->data);
     }
     cdata->last_state_refresh_time = now;
 }
