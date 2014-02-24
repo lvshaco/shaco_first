@@ -94,6 +94,7 @@ _db(struct module *s, struct player* p, int8_t type) {
                 " pages"
                 " nring"
                 " rings"
+                " states"
                 "\r\n", charid);
         memrw_pos(&rw, len);
         }
@@ -145,6 +146,9 @@ _db(struct module *s, struct player* p, int8_t type) {
         char strrings[sh_bytestr_encode_leastn(sizeof(rdata->rings))];
         sh_bytestr_encode((uint8_t*)rdata->rings, min(rdata->nring, sizeof(rdata->rings)), 
                           strrings, sizeof(strrings));
+        char strstates[sh_bytestr_encode_leastn(sizeof(cdata->roles_state))];
+        sh_bytestr_encode((uint8_t*)cdata->roles_state, sizeof(cdata->roles_state), 
+                          strownrole, sizeof(strownrole));
         int len = snprintf(rw.ptr, RW_SPACE(&rw), "hmset user:%u"
                 " level %u"
                 " exp %u"
@@ -165,6 +169,7 @@ _db(struct module *s, struct player* p, int8_t type) {
                 " pages %s"
                 " nring %u"
                 " rings %s"
+                " states %s"
                 "\r\n", charid,
                 cdata->level, 
                 cdata->exp, 
@@ -184,7 +189,8 @@ _db(struct module *s, struct player* p, int8_t type) {
                 rdata->npage,
                 strpages,
                 rdata->nring,
-                "strrings" // todo
+                "strrings", // todo
+                strstates
                 );
         memrw_pos(&rw, len); 
         }
@@ -265,6 +271,9 @@ _loadpdb(struct player* p, struct redis_replyitem* item) {
     sh_bytestr_decode(si->value.p, si->value.len, (uint8_t*)rdata->rings, sizeof(rdata->rings));
     si++;
     );
+    CHECK(
+    sh_bytestr_decode(si->value.p, si->value.len, (uint8_t*)cdata->roles_state, sizeof(cdata->roles_state));
+    si++;)
     return SERR_OK;
 }
 

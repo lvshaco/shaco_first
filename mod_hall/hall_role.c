@@ -12,8 +12,6 @@
 #define IS_VALID_TYPEID(id) ((id) >= 0 && (id) < ROLE_MAX)
 #define IS_VALID_CLOTHID(id) ((id) >= 0 && (id) < ROLE_CLOTHES_MAX)
 
-#define STATE_INIT_VALUE 40
-
 #define STATE_1_VALUE 8
 #define STATE_2_VALUE 29
 #define STATE_3_VALUE 50
@@ -21,6 +19,7 @@
 #define STATE_5_VALUE 90
 #define STATE_MAX_VALUE STATE_5_VALUE
 #define STATE_LESSNORMAL_MAX_VALUE STATE_2_VALUE
+#define STATE_INIT_VALUE 40
 
 static inline int
 state_id(int value) {

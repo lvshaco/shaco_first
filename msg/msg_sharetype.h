@@ -182,13 +182,13 @@ struct chardata {
     uint32_t score_dashi;   // 大师赛积分
     struct   char_attribute attri;
     uint8_t  ownrole[ROLE_MAX]; // 拥有的角色
-    uint8_t  roles_state[ROLE_MAX]; // 角色状态
     struct   ringdata ringdata; // 戒指信息
 
     float luck_factor; // 幸运系数
     uint32_t last_washgold_refresh_time; // 上次淘金库存时间
     uint32_t washgold;  // 淘金库存
 
+    uint8_t  roles_state[ROLE_MAX]; // 角色状态
     uint32_t last_state_refresh_time; // 上次状态回复时间
 };
 
