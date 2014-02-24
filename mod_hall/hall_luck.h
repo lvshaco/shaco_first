@@ -7,7 +7,7 @@
 #include "hall_player.h"
 
 static inline int
-hall_luck_random(struct hall* self, struct player *pr, float radiate, int uprand) {
+hall_luck_random(struct hall *self, struct player *pr, float radiate, int uprand) {
     if (uprand <= 0) {
         return 0;
     }
@@ -38,6 +38,14 @@ hall_luck_random(struct hall* self, struct player *pr, float radiate, int uprand
     else if (cdata->luck_factor < 0)
         cdata->luck_factor = 0;
     return randx;
+}
+
+static inline float
+hall_luck_random_float(struct hall *self, struct player *pr, float radiate, int uprand) {
+    if (uprand > 0) {
+        return hall_luck_random(self, pr, radiate, uprand) / (float)uprand;
+    }
+    return 0.0f;
 }
 
 #endif

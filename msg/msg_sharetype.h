@@ -55,7 +55,17 @@
 #define ROLE_CLOTHES_MAX 7
 #define ROLE_TYPEID(roleid) ((roleid)/10-1)
 #define ROLE_CLOTHID(roleid) ((roleid)%10)
+#define ROLE_ID(typeid, clothid) (((typeid)+1) * 10 + (clothid))a
+
 #define LEVEL_MAX 135
+
+// 角色状态
+#define ROLE_STATE_1 1 // 低迷
+#define ROLE_STATE_2 2 // 疲惫
+#define ROLE_STATE_3 3 // 正常
+#define ROLE_STATE_4 4 // 神清气爽
+#define ROLE_STATE_5 5 // 福星高照
+#define ROLE_STATE_NORMAL ROLE_STATE_3
 
 // 戒指
 #define RING_STACK 99
@@ -172,11 +182,14 @@ struct chardata {
     uint32_t score_dashi;   // 大师赛积分
     struct   char_attribute attri;
     uint8_t  ownrole[ROLE_MAX]; // 拥有的角色
+    uint8_t  roles_state[ROLE_MAX]; // 角色状态
     struct   ringdata ringdata; // 戒指信息
 
     float luck_factor; // 幸运系数
     uint32_t last_washgold_refresh_time; // 上次淘金库存时间
     uint32_t washgold;  // 淘金库存
+
+    uint32_t last_state_refresh_time; // 上次状态回复时间
 };
 
 // room type

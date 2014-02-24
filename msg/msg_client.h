@@ -26,6 +26,7 @@
 #define IDUM_USEROLE        IDUM_CBEGIN+20
 #define IDUM_BUYROLE        IDUM_CBEGIN+21
 #define IDUM_ADDROLE        IDUM_CBEGIN+22
+#define IDUM_ADJUSTSTATE    IDUM_CBEGIN+23
 #define IDUM_ROLEE          IDUM_CBEGIN+29
 
 // ring
@@ -73,6 +74,8 @@
 // role
 #define IDUM_CHARINFO       IDUM_CBEGIN+620
 #define IDUM_SYNCMONEY      IDUM_CBEGIN+621
+#define IDUM_SYNCSTATE      IDUM_CBEGIN+622
+#define IDUM_ADJUSTSTATE_RES IDUM_CBEGIN+623
 
 // ring
 #define IDUM_RINGPAGESYNC   IDUM_CBEGIN+630
@@ -202,6 +205,24 @@ struct UM_SYNCMONEY {
     _UM_HEADER;
     uint32_t coin;
     uint32_t diamond;
+};
+
+struct UM_ADJUSTSTATE { // C->S
+    _UM_HEADER;
+    uint32_t role_typeid; // 指定角色
+};
+
+struct UM_ADJUSTSTATE_RES { // S->C
+    _UM_HEADER;
+    uint32_t role_typeid; // 指定角色
+    uint8_t stateid; // see ROLE_STATE_
+    uint8_t big_adjust; // 是否大调整（播放大特效)
+};
+
+struct UM_SYNCSTATE { // S->C
+    _UM_HEADER;
+    uint32_t role_typeid; // 指定角色
+    uint8_t stateid; // see ROLE_STATE_
 };
 
 // ring

@@ -22,6 +22,13 @@ hall_playerdb_fini(struct hall *self) {
     redis_finireply(&self->reply);
 }
 
+static void
+char_create(struct chardata *cdata) {
+    cdata->luck_factor = 0.5f; // todo
+    cdata->coin = 1000000; // todo
+    cdata->diamond = 100000; // todo
+}
+
 static int
 _db(struct module *s, struct player* p, int8_t type) {
     struct hall *self = MODULE_SELF;
@@ -78,6 +85,7 @@ _db(struct module *s, struct player* p, int8_t type) {
                 " luck_factor"
                 " last_washgold_refresh_time"
                 " washgold"
+                " last_state_refresh_time"
                 " score1"
                 " score2"
                 " ownrole"
@@ -93,9 +101,7 @@ _db(struct module *s, struct player* p, int8_t type) {
     case PDB_CREATE: {
         rq->needreply = 1;
         uint32_t charid = cdata->charid;
-        cdata->luck_factor = 0.5f; // todo
-        cdata->coin = 1000000; // todo
-        cdata->diamond = 100000; // todo
+        char_create(cdata);
         int len = snprintf(rw.ptr, RW_SPACE(&rw), "hmset user:%u"
                 " name %s"
                 " level %u"
@@ -150,6 +156,7 @@ _db(struct module *s, struct player* p, int8_t type) {
                 " luck_factor %.3f"
                 " last_washgold_refresh_time %u"
                 " washgold %u"
+                " last_state_refresh_time %u"
                 " score1 %u"
                 " score2 %u"
                 " ownrole %s"
@@ -169,6 +176,7 @@ _db(struct module *s, struct player* p, int8_t type) {
                 cdata->luck_factor,
                 cdata->last_washgold_refresh_time,
                 cdata->washgold,
+                cdata->last_state_refresh_time,
                 cdata->score_normal,
                 cdata->score_dashi,
                 strownrole,
@@ -238,8 +246,9 @@ _loadpdb(struct player* p, struct redis_replyitem* item) {
     CHECK(cdata->role = redis_bulkitem_toul(si++));
     CHECK(cdata->skin = redis_bulkitem_toul(si++));
     CHECK(cdata->luck_factor = redis_bulkitem_tof(si++));
-    CHECK(cdata->last_washgold_refresh_time = redis_bulkitem_toul(si++));
+    CHECK(cdata->last_washgold_refresh_time = redis_bulkitem_toul(si++)); 
     CHECK(cdata->washgold = redis_bulkitem_toul(si++));
+    CHECK(cdata->last_state_refresh_time = redis_bulkitem_toul(si++));
     CHECK(cdata->score_normal = redis_bulkitem_toul(si++));
     CHECK(cdata->score_dashi = redis_bulkitem_toul(si++));
     CHECK(

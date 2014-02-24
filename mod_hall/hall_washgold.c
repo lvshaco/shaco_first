@@ -47,7 +47,7 @@ process_washgold(struct module *s, struct player *pr) {
         return;
     }
     uint32_t gain, extra;
-    float rand = hall_luck_random(self, pr, 0.4, 100)/100.0;
+    float rand = hall_luck_random_float(self, pr, 0.4, 100);
     if (rand * rand > 0.7) {
         gain = rand * 60;
     } else {
