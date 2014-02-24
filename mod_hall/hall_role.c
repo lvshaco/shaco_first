@@ -1,4 +1,5 @@
 #include "hall.h"
+#include "hall_role.h"
 #include "hall_tplt.h"
 #include "hall_player.h"
 #include "hall_playerdb.h"
@@ -9,32 +10,6 @@
 #include "sh.h"
 
 #define ROLE_DEF 10 // 默认给予ID
-#define IS_VALID_TYPEID(id) ((id) >= 0 && (id) < ROLE_MAX)
-#define IS_VALID_CLOTHID(id) ((id) >= 0 && (id) < ROLE_CLOTHES_MAX)
-
-#define STATE_1_VALUE 8
-#define STATE_2_VALUE 29
-#define STATE_3_VALUE 50
-#define STATE_4_VALUE 81
-#define STATE_5_VALUE 90
-#define STATE_MAX_VALUE STATE_5_VALUE
-#define STATE_LESSNORMAL_MAX_VALUE STATE_2_VALUE
-#define STATE_INIT_VALUE 40
-
-static inline int
-state_id(int value) {
-    if (value <= STATE_1_VALUE) {
-        return ROLE_STATE_1;
-    } else if (value <= STATE_2_VALUE) {
-        return ROLE_STATE_2;
-    } else if (value <= STATE_3_VALUE) {
-        return ROLE_STATE_3;
-    } else if (value <= STATE_4_VALUE) {
-        return ROLE_STATE_4;
-    } else {
-        return ROLE_STATE_5;
-    }
-}
 
 static bool
 has_role(struct chardata* cdata, uint32_t roleid) {
@@ -200,7 +175,7 @@ process_adjust_state(struct module *s, struct player *pr, const struct UM_ADJUST
         cdata->coin -= pay_coin;
     }
 
-    notify_adjust_result(s, pr, typeid, state_id(new_value), (new_value - old_value) > 16);
+    notify_adjust_result(s, pr, typeid, role_state_id(new_value), (new_value - old_value) > 16);
     hall_sync_money(s, pr);
     
     hall_playerdb_save(s, pr, true);
@@ -214,12 +189,12 @@ refresh_state(struct module *s, struct player *pr) {
     for (i=0; i<ROLE_MAX; ++i) {
         if (cdata->ownrole[i]) {
             int state_value = cdata->roles_state[i];
-            int old_id = state_id(state_value);
+            int old_id = role_state_id(state_value);
             if (old_id < ROLE_STATE_NORMAL) {
                 state_value += min(20, (now - cdata->last_state_refresh_time) / 30);
                 state_value = min(state_value, STATE_MAX_VALUE);
                 cdata->roles_state[i] = state_value;
-                int new_id = state_id(state_value);
+                int new_id = role_state_id(state_value);
                 if (new_id != old_id) {
                     sync_state(s, pr, i, new_id);
                 }

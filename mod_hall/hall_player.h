@@ -63,9 +63,6 @@ struct player {
 struct module;
 struct hall;
 
-#define TOCLIENT 1
-#define TODB 2
-
 #define UID(pr) ((pr)->data.accid)
 
 int hall_player_init(struct hall *self);

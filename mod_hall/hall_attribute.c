@@ -4,6 +4,12 @@
 #include "hall_player.h"
 #include "msg_server.h"
 
+struct effect_type {
+    int effectt;
+    int value;
+    int valuet;
+};
+
 static void
 effect(struct char_attribute* cattri, const struct role_tplt* base, 
         int32_t type, int32_t value, bool isper) {
@@ -88,34 +94,57 @@ void
 attribute_refresh(struct tplt *T, struct chardata *cdata) {
     struct ringdata* rdata = &cdata->ringdata;
     struct char_attribute* cattri = &cdata->attri;
-
+    int i;
     const struct role_tplt* base = tplt_find(T, TPLT_ROLE, cdata->role);
     if (base == NULL)
         return;
 
+    uint32_t typeid = ROLE_TYPEID(cdata->role);
+    if (!IS_VALID_TYPEID(typeid)) {
+        return;
+    }
     memset(cattri, 0, sizeof(*cattri)); 
+
+    // role
     EFFECT(cattri, base, base->effect1, base->value1, base->valuet1);
     EFFECT(cattri, base, base->effect2, base->value2, base->valuet2);
     EFFECT(cattri, base, base->effect3, base->value3, base->valuet3);
     EFFECT(cattri, base, base->effect4, base->value4, base->valuet4);
     EFFECT(cattri, base, base->effect5, base->value5, base->valuet5);
-    
+  
+    // role state
+    int state_value = cdata->roles_state[typeid]; 
+    int state_id = role_state_id(state_value); 
+    static struct effect_type state_effects[ROLE_STATE_MAX * 3] = { // todo
+        { EFFECT_LUCK, -50, 1 }, { EFFECT_OXYGEN, -50, 1 }, { EFFECT_INVALID, 0, 0 },
+        { EFFECT_LUCK, -10, 1 }, { EFFECT_OXYGEN, -50, 1 }, { EFFECT_INVALID, 0, 0 },
+        { EFFECT_INVALID, 0, 0 }, { EFFECT_INVALID, 0, 0 }, { EFFECT_INVALID, 0, 0 },
+        { EFFECT_LUCK,  10, 1 }, { EFFECT_OXYGEN,  10, 1 }, { EFFECT_INVALID, 0, 0 },
+        { EFFECT_LUCK,  50, 1 }, { EFFECT_OXYGEN,  50, 1 }, { EFFECT_INVALID, 0, 0 },
+    };
+    struct effect_type* stateptr = &state_effects[state_id];
+    for (i=0; i<3; ++i) {
+        EFFECT(cattri, base, stateptr[i].effectt, stateptr[i].value, stateptr[i].valuet);
+    }
+   
+    // role ring
     if (rdata->usepage >= rdata->npage) {
         rdata->usepage = 0;
     }
     const struct ring_tplt* ring;
     uint32_t ringid;
     struct ringpage* page = &rdata->pages[rdata->usepage];
-    int i;
     for (i=0; i<RING_PAGE_SLOT; ++i) {
         ringid = page->slots[i];
         if (ringid > 0) {
             ring = tplt_find(T, TPLT_RING, ringid);
             if (ring) {
-                EFFECT(cattri, base, base->effect1, base->value1, base->valuet1);
+                EFFECT(cattri, base, ring->effect1, ring->value1, ring->valuet1);
             }
         }
     }
+
+    // base
     cattri->oxygen += base->oxygen;
     cattri->body += base->body;
     cattri->quick += base->quick;

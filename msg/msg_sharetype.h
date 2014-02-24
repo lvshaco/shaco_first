@@ -57,15 +57,44 @@
 #define ROLE_CLOTHID(roleid) ((roleid)%10)
 #define ROLE_ID(typeid, clothid) (((typeid)+1) * 10 + (clothid))a
 
+#define IS_VALID_TYPEID(id) ((id) >= 0 && (id) < ROLE_MAX)
+#define IS_VALID_CLOTHID(id) ((id) >= 0 && (id) < ROLE_CLOTHES_MAX)
+
 #define LEVEL_MAX 135
 
 // 角色状态
-#define ROLE_STATE_1 1 // 低迷
-#define ROLE_STATE_2 2 // 疲惫
-#define ROLE_STATE_3 3 // 正常
-#define ROLE_STATE_4 4 // 神清气爽
-#define ROLE_STATE_5 5 // 福星高照
+#define ROLE_STATE_0 0 // 低迷
+#define ROLE_STATE_1 1 // 疲惫
+#define ROLE_STATE_2 2 // 正常
+#define ROLE_STATE_3 3 // 神清气爽
+#define ROLE_STATE_4 4 // 福星高照
+#define ROLE_STATE_MAX 5
+
 #define ROLE_STATE_NORMAL ROLE_STATE_3
+
+#define STATE_0_VALUE 8
+#define STATE_1_VALUE 29
+#define STATE_2_VALUE 50
+#define STATE_3_VALUE 81
+#define STATE_4_VALUE 90
+#define STATE_MAX_VALUE STATE_4_VALUE
+#define STATE_LESSNORMAL_MAX_VALUE STATE_1_VALUE
+#define STATE_INIT_VALUE 40
+
+static inline int
+role_state_id(int value) {
+    if (value <= STATE_0_VALUE) {
+        return ROLE_STATE_0;
+    } else if (value <= STATE_1_VALUE) {
+        return ROLE_STATE_1;
+    } else if (value <= STATE_2_VALUE) {
+        return ROLE_STATE_2;
+    } else if (value <= STATE_3_VALUE) {
+        return ROLE_STATE_3;
+    } else {
+        return ROLE_STATE_4;
+    }
+}
 
 // 戒指
 #define RING_STACK 99
