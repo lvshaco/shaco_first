@@ -222,14 +222,14 @@ struct UM_ADJUSTSTATE { // C->S
 struct UM_ADJUSTSTATE_RES { // S->C
     _UM_HEADER;
     uint32_t role_typeid; // 指定角色
-    uint8_t state_value; // see ROLE_STATE_
+    uint8_t state_value; // 
     uint8_t big_adjust; // 是否大调整（播放大特效)
 };
 
 struct UM_SYNCSTATE { // S->C
     _UM_HEADER;
     uint32_t role_typeid; // 指定角色
-    uint8_t state_value; // see ROLE_STATE_
+    uint8_t state_value; //
 };
 
 // ring
