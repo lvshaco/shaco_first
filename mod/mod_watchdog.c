@@ -52,6 +52,7 @@ void
 watchdog_free(struct watchdog *self) {
     if (self == NULL)
         return;
+    sh_hash64_foreach(&self->conn2user, free);
     sh_hash64_fini(&self->conn2user);
     sh_hash_fini(&self->acc2user);
     free(self);
@@ -105,11 +106,6 @@ alloc_user(struct watchdog *self, int gate_source, int connid) {
     return ur;
 }
 
-static inline void
-free_user(struct user *ur) {
-    free(ur);
-}
-
 static void
 disconnect_client(struct module *s, int gate_source, int connid, int err) {
     UM_DEFWRAP(UM_GATE, g, UM_LOGOUT, lo);
@@ -152,7 +148,7 @@ logout(struct module *s, struct user *ur, int8_t err, int dishonn) {
     if (dishonn == DISCONNECT) {
         disconnect_client(s, ur->gate_source, ur->connid, err);
     } 
-    free_user(ur);
+    free(ur);
 }
 
 static void
@@ -355,14 +351,16 @@ login_room(struct module *s, struct UM_LOGINROOM *lr, int sz) {
 }
 
 static inline void
-exit_room(struct module *s, struct UM_EXITROOM *exit, int sz) {
+exit_room(struct module *s, uint32_t uid) {
     struct watchdog *self = MODULE_SELF;
-    struct user *ur = sh_hash_find(&self->acc2user, exit->uid);
+    struct user *ur = sh_hash_find(&self->acc2user, uid);
     if (ur) {
         ur->status = S_HALL;
         ur->room_handle = -1;
         if (ur->hall_handle != -1) {
-            sh_module_send(MODULE_ID, ur->hall_handle, MT_UM, exit, sz);
+            UM_DEFFIX(UM_EXITROOM, exit);
+            exit->uid = uid;
+            sh_module_send(MODULE_ID, ur->hall_handle, MT_UM, exit, sizeof(*exit));
         }
     }
 }
@@ -428,7 +426,7 @@ watchdog_main(struct module *s, int session, int source, int type, const void *m
             }
         case IDUM_EXITROOM: {
             UM_CAST(UM_EXITROOM, exit, msg);
-            exit_room(s, exit, sz);
+            exit_room(s, exit->uid);
             break;
             }
         case IDUM_ROOM: {

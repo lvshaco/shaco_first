@@ -120,12 +120,15 @@ build_detail(struct agent *ag, struct tmemberdetail *detail) {
 }
 
 static void
-pull(struct module *s, int source, int count) {
+pull(struct module *s, int source, struct UM_ROBOT_PULL *rp) {
     struct robot *self = MODULE_SELF;
     UM_DEFFIX(UM_ROBOT_APPLY, ra);
     struct agent *ag = agent_pull(self);
     if (ag) {
-        build_brief(ag, &ra->brief);
+        ra->info.type = rp->type;
+        ra->info.luck_rand = 0;
+        ra->info.match_score = rp->match_score;
+        build_brief(ag, &ra->info.brief);
         sh_module_send(MODULE_ID, source, MT_UM, ra, sizeof(*ra)); 
         sh_trace("Robot %u pull", UID(ag));
     } else {
@@ -232,7 +235,7 @@ robot_main(struct module *s, int session, int source, int type, const void *msg,
         switch (base->msgid) {
         case IDUM_ROBOT_PULL: {
             UM_CAST(UM_ROBOT_PULL, rp, msg);
-            pull(s, source, rp->count);
+            pull(s, source, rp);
             break;
             }
         case IDUM_MATCH: {

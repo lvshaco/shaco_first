@@ -148,7 +148,7 @@ _db(struct module *s, struct player* p, int8_t type) {
                           strrings, sizeof(strrings));
         char strstates[sh_bytestr_encode_leastn(sizeof(cdata->roles_state))];
         sh_bytestr_encode((uint8_t*)cdata->roles_state, sizeof(cdata->roles_state), 
-                          strownrole, sizeof(strownrole));
+                          strstates, sizeof(strstates));
         int len = snprintf(rw.ptr, RW_SPACE(&rw), "hmset user:%u"
                 " level %u"
                 " exp %u"
@@ -192,7 +192,7 @@ _db(struct module *s, struct player* p, int8_t type) {
                 "strrings", // todo
                 strstates
                 );
-        memrw_pos(&rw, len); 
+        memrw_pos(&rw, len);
         }
         break;
     default:

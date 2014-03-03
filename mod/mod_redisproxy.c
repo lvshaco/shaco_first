@@ -196,6 +196,10 @@ query(struct module *s, int source, struct UM_REDISQUERY *rq, int sz) {
             sh_rec(dataptr);
         }
     }
+// todo, delete
+    dataptr[datasz-1] = '\0';
+    sh_rec(dataptr);
+
 }
 
 void

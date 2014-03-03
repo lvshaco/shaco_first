@@ -129,6 +129,19 @@ sh_hash_remove(struct sh_hash *h, uint32_t key) {
     return NULL;
 }
 
+void *
+sh_hash_pop(struct sh_hash *h) {
+    struct sh_hash_slot *one;
+    int i;
+    for (i=0; i<h->cap; ++i) {
+        one = h->slots[i];
+        if (one) {
+            return sh_hash_remove(h, one->key);
+        }
+    }
+    return NULL;
+}
+
 void
 sh_hash_foreach(struct sh_hash *h, void (*cb)(void *pointer)) {
     struct sh_hash_slot *one, *next;

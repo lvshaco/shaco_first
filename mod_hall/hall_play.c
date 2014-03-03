@@ -1,6 +1,7 @@
 #include "sh.h"
 #include "hall.h"
 #include "hall_player.h"
+#include "hall_luck.h"
 #include "msg_server.h"
 #include "msg_client.h"
 
@@ -36,8 +37,15 @@ play(struct module *s, struct player *pr, int type) {
     if (pr->status == PS_HALL) { 
         pr->status = PS_WAITING;
         UM_DEFFIX(UM_APPLY, ap);
-        ap->type = type;
-        build_brief(pr, &ap->brief);
+        ap->info.type = type;
+        if (type == ROOM_TYPE_NORMAL) {
+            ap->info.luck_rand = hall_luck_random(self, pr, 0.4, 100);
+            ap->info.match_score = pr->data.score_normal;
+        } else {
+            ap->info.luck_rand = 0;
+            ap->info.match_score = pr->data.score_dashi;
+        }
+        build_brief(pr, &ap->info.brief);
         sh_module_send(MODULE_ID, self->match_handle, MT_UM, ap, sizeof(*ap));
         sh_trace("Play %u send play to match", UID(pr));
     } else {

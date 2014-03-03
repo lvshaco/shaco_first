@@ -44,6 +44,8 @@
 #define SERR_ACCINSERT      57 // the same as SERR_ACCLOGINED
 #define SERR_NOHALLS        58
 #define SERR_NOROOMS        59
+#define SERR_JOINROOM       60
+#define SERR_ROOMFULL       61
 
 #pragma pack(1)
 
@@ -257,6 +259,7 @@ struct tmemberdetail {
     uint32_t charid;
     char name[CHAR_NAME_MAX];
 
+    uint16_t level;
     uint32_t role;
     uint32_t skin;
     uint32_t score_dashi; // 大师赛积分

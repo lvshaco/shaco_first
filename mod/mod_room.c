@@ -184,12 +184,37 @@ maptplt_find(struct room *self, uint32_t mapid) {
 }
 
 static inline void
+notify_exit_room(struct module *s, int source, uint32_t uid) {
+    UM_DEFFIX(UM_EXITROOM, exit);
+    exit->uid = uid;
+    sh_module_send(MODULE_ID, source, MT_UM, exit, sizeof(*exit));
+}
+
+static inline void
+notify_play_fail(struct module *s, int source, uint32_t uid, int err) {
+    UM_DEFWRAP(UM_CLIENT, cl, UM_PLAYFAIL, pf);
+    cl->uid = uid;
+    pf->err = err;
+    sh_module_send(MODULE_ID, source, MT_UM, cl, sizeof(*cl)+sizeof(*pf));
+}
+
+static inline void
 notify_create_gameroom_result(struct module *s, int dest_handle, uint32_t roomid, int err) {
     sh_trace("Room %u notify match create result %d", roomid, err);
     UM_DEFFIX(UM_CREATEROOMRES, result);
     result->id = roomid;
     result->err = err;
     sh_module_send(MODULE_ID, dest_handle, MT_UM, result, sizeof(*result));
+}
+
+static inline void
+notify_join_gameroom_result(struct module *s, int source, uint32_t id, uint32_t uid, int err) {
+    sh_trace("Room %u notify join result %d", id, err);
+    UM_DEFFIX(UM_JOINROOMRES, result);
+    result->id = id;
+    result->uid = uid;
+    result->err = err;
+    sh_module_send(MODULE_ID, source, MT_UM, result, sizeof(*result));
 }
 
 static void
@@ -218,9 +243,7 @@ logout(struct module *s, struct player *m) {
     struct gameroom *ro = member2gameroom(m);
     uint32_t charid = m->detail.charid; 
 
-    UM_DEFFIX(UM_EXITROOM, exit);
-    exit->uid = UID(m);
-    sh_module_send(MODULE_ID, m->watchdog_source, MT_UM, exit, sizeof(*exit));
+    notify_exit_room(s, m->watchdog_source, UID(m));
 
     if (ro->status == ROOMS_START) {
         UM_DEFFIX(UM_GAMEUNJOIN, unjoin);
@@ -236,7 +259,33 @@ logout(struct module *s, struct player *m) {
 //////////////////////////////////////////////////////////////////////
 // gameroom logic
 
-struct player *
+static inline void
+build_brief_from_detail(struct tmemberdetail *detail, struct tmemberbrief *brief) {
+    brief->accid = detail->accid;
+    brief->charid = detail->charid;
+    memcpy(brief->name, detail->name, CHAR_NAME_MAX);
+    brief->level = detail->level;
+    brief->role = detail->role;
+    brief->skin = detail->skin;
+    brief->oxygen = detail->attri.oxygen;
+    brief->body = detail->attri.body;
+    brief->quick = detail->attri.body;
+}
+
+static inline void
+fill_brief_into_detail(struct tmemberbrief *brief, struct tmemberdetail *detail) {
+    detail->accid = brief->accid;
+    detail->charid = brief->charid;
+    memcpy(detail->name, brief->name, CHAR_NAME_MAX);
+    detail->level = brief->level;
+    detail->role = brief->role;
+    detail->skin = brief->skin;
+    detail->attri.oxygen = brief->oxygen;
+    detail->attri.body = brief->body;
+    detail->attri.quick = brief->body;
+}
+
+static struct player *
 member_get(struct gameroom *ro, uint32_t accid) {
     int i;
     for (i=0; i<ro->np; ++i) {
@@ -246,11 +295,22 @@ member_get(struct gameroom *ro, uint32_t accid) {
     return NULL;
 }
 
+static int
+find_free_member(struct gameroom *ro) {
+    int i;
+    for (i=0; i<MEMBER_MAX; ++i) {
+        if (ro->p[i].detail.accid == 0) {
+            return i;
+        }
+    }
+    return -1;
+}
+
 static inline void
-member_place(struct player *m, uint32_t accid, uint8_t index) {
+member_place(struct player *m, struct tmemberbrief *brief, uint8_t index) {
     memset(m, 0, sizeof(*m));
     m->index = index;
-    m->detail.accid = accid;
+    fill_brief_into_detail(brief, &m->detail);
 }
 
 static void
@@ -293,12 +353,39 @@ gameroom_create(struct module *s, int source, struct UM_CREATEROOM *create) {
     int i;
     ro->np = create->nmember;
     for (i=0; i<create->nmember; ++i) {
-        member_place(&ro->p[i], create->members[i], i);
+        member_place(&ro->p[i], &create->members[i], i);
     }
     assert(!sh_hash_insert(&self->gamerooms, ro->id, ro));
     notify_create_gameroom_result(s, source, create->id, SERR_OK);
     self->map_randseed++; 
     sh_trace("Room %u mapid %u create ok", create->id, create->mapid);
+}
+
+static void
+gameroom_join(struct module *s, int source, uint32_t id, struct tmemberbrief *brief) {
+    struct room* self = MODULE_SELF;
+    
+    uint32_t uid = brief->accid;
+    sh_trace("Room %u recevie join %u", id, uid);
+    
+    struct gameroom *ro = sh_hash_find(&self->gamerooms, id);
+    if (ro == NULL) {
+        notify_join_gameroom_result(s, source, id, uid, SERR_NOROOM);
+        return;
+    }
+    struct player *m = member_get(ro, uid);
+    if (m) {
+        notify_join_gameroom_result(s, source, id, uid, SERR_OK);
+        return;
+    }
+    int i = find_free_member(ro);
+    if (i == -1) {
+        notify_join_gameroom_result(s, source, id, uid, SERR_ROOMFULL);
+        return;
+    }
+    member_place(&ro->p[i], brief, i);
+    ro->np++; 
+    notify_join_gameroom_result(s, source, id, uid, SERR_OK);
 }
 
 static void
@@ -554,9 +641,10 @@ check_enter_gameroom(struct module *s, struct gameroom *ro) {
     if (count_onlinemember(ro) > 0) {
         gameroom_enter(s, ro);
         return true;
-    } else {
-        gameroom_destroy(s, ro);
-        return false;
+    // 如果服务器卡住，导致角色登陆房间过慢
+    //} else {
+        //gameroom_destroy(s, ro);
+        //return false;
     }
     return false;
 }
@@ -1069,10 +1157,14 @@ login(struct module *s, int source, uint32_t roomid, const struct tmemberdetail 
     uint32_t accid  = detail->accid;
     struct gameroom *ro = sh_hash_find(&self->gamerooms, roomid); 
     if (ro == NULL) {
+        notify_exit_room(s, source, accid);
+        notify_play_fail(s, source, accid, SERR_NOROOM);
         return NULL; // someting wrong
     }
     struct player *m = member_get(ro, accid);
     if (m == NULL || m->online) {
+        notify_exit_room(s, source, accid);
+        notify_play_fail(s, source, accid, SERR_NOMEMBER);
         return NULL; // someting wrong
     }
     m->detail = *detail; 
@@ -1571,6 +1663,11 @@ room_main(struct module *s, int session, int source, int type, const void *msg, 
         case IDUM_DESTROYROOM: {
             UM_CAST(UM_DESTROYROOM, des, msg);
             gameroom_destroy_byid(s, des->id);
+            break;
+            }
+        case IDUM_JOINROOM: {
+            UM_CAST(UM_JOINROOM, join, msg);
+            gameroom_join(s, source, join->id, &join->brief);
             break;
             }
         }

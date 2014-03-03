@@ -23,6 +23,7 @@ void sh_hash_delete(struct sh_hash *h);
 void * sh_hash_find(struct sh_hash *h, uint32_t key);
 int sh_hash_insert(struct sh_hash *h, uint32_t key, void *pointer);
 void * sh_hash_remove(struct sh_hash *h, uint32_t key);
+void * sh_hash_pop(struct sh_hash *h);
 void sh_hash_foreach(struct sh_hash *h, void (*cb)(void *pointer));
 void sh_hash_foreach2(struct sh_hash *h, void (*cb)(void *pointer, void *ud), void *ud);
 
