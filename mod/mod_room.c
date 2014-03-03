@@ -402,6 +402,8 @@ build_awards(struct gameroom *ro, struct player **sortm, int n, struct memberawa
     const int score_line2 = 2000;
     float coin_profit, score_profit;
     struct char_attribute* a = &m->detail.attri;
+
+    int take_state;
     for (i=0; i<ro->np; ++i) {
         m = sortm[i];
         a = &m->detail.attri;
@@ -435,8 +437,10 @@ build_awards(struct gameroom *ro, struct player **sortm, int n, struct memberawa
                 extra_score++;
             if (i == 0) {
                 score = max(3, min(20, 10 - score_diff * 0.05 - cut_score)) + extra_score;
+                take_state = 10;
             } else {
                 score = max(-3, min(-15, -10 - score_diff * 0.1 - cut_score)) + extra_score;
+                take_state = 20;
             }
         }  else {
             score_profit = 1+a->score_profit;
@@ -444,7 +448,9 @@ build_awards(struct gameroom *ro, struct player **sortm, int n, struct memberawa
                 score_profit += a->winscore_profit + 0.05;
             score = score_depth + score_speed + score_oxygen + score_item + score_bao;
             score = score * score_profit * 10;
+            take_state = 20;
         }
+        awards[i].take_state = take_state;
         awards[i].exp = exp;
         awards[i].coin = coin;
         awards[i].score = score;

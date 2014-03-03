@@ -3,6 +3,7 @@
 #include "hall_tplt.h"
 #include "hall_player.h"
 #include "hall_playerdb.h"
+#include "hall_attribute.h"
 #include "msg_server.h"
 
 static void
@@ -49,14 +50,47 @@ _rank(struct module *s, struct player* pr,
     sh_module_send(MODULE_ID, self->rprank_handle, MT_UM, dr, sizeof(*dr));
 }
 
+static inline int
+_take_state(struct module *s, struct player *pr, int take) {
+    struct hall *self = MODULE_SELF;
+    struct chardata* cdata = &pr->data;
+
+    uint32_t typeid = ROLE_TYPEID(cdata->role);
+    if (!IS_VALID_TYPEID(typeid)) {
+        return 1;
+    }
+    int old_value = cdata->roles_state[typeid];
+    int new_value = old_value;
+    if (new_value > take) {
+        new_value -= take;
+    } else {
+        new_value = 0;
+    }
+    cdata->roles_state[typeid] = new_value;
+    int old_id = role_state_id(old_value);
+    int new_id = role_state_id(new_value);
+    if (old_id != new_id) {
+        hall_attribute_main(self->T, cdata);
+        hall_sync_state(s, pr, typeid, new_value);
+    }
+    return 0;
+}
+
 static void
 process_award(struct module *s, struct player* pr, int8_t type, const struct memberaward* award) {
     struct hall *self = MODULE_SELF;
     struct chardata* cdata = &pr->data;
     bool updated = false;
+    // take state
+    if (award->take_state > 0) {
+        if (!_take_state(s, pr, award->take_state)) {
+            updated = true;
+        }
+    }
     // coin
     if (award->coin > 0) {
         cdata->coin += award->coin;
+        hall_sync_money(s, pr);
         updated = true;
     }
     // exp
@@ -69,6 +103,7 @@ process_award(struct module *s, struct player* pr, int8_t type, const struct mem
             old_grade = _player_gradeid(old_level);
             new_grade = _player_gradeid(cdata->level);
         }
+        hall_sync_exp(s, pr);
         updated = true;
     }
     // score

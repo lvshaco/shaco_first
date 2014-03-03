@@ -52,11 +52,29 @@ hall_sync_role(struct module *s, struct player* pr) {
 
 static inline void
 hall_sync_money(struct module *s, struct player* pr) {
-    UM_DEFWRAP(UM_CLIENT, cl, UM_SYNCMONEY, sm);
+    UM_DEFWRAP(UM_CLIENT, cl, UM_SYNCMONEY, sync);
     cl->uid  = UID(pr);
-    sm->coin = pr->data.coin;
-    sm->diamond = pr->data.diamond;
-    sh_module_send(MODULE_ID, pr->watchdog_source, MT_UM, cl, sizeof(*cl) + sizeof(*sm));
+    sync->coin = pr->data.coin;
+    sync->diamond = pr->data.diamond;
+    sh_module_send(MODULE_ID, pr->watchdog_source, MT_UM, cl, sizeof(*cl) + sizeof(*sync));
+}
+
+static inline void
+hall_sync_exp(struct module *s, struct player* pr) {
+    UM_DEFWRAP(UM_CLIENT, cl, UM_SYNCEXP, sync);
+    cl->uid  = UID(pr);
+    sync->level = pr->data.level;
+    sync->exp = pr->data.exp;
+    sh_module_send(MODULE_ID, pr->watchdog_source, MT_UM, cl, sizeof(*cl) + sizeof(*sync));
+}
+
+static inline void
+hall_sync_state(struct module *s, struct player *pr, uint32_t typeid, uint8_t state_value) {
+    UM_DEFWRAP(UM_CLIENT, cl, UM_SYNCSTATE, sync);
+    cl->uid  = UID(pr);
+    sync->role_typeid = typeid;
+    sync->state_value = state_value;
+    sh_module_send(MODULE_ID, pr->watchdog_source, MT_UM, cl, sizeof(*cl) + sizeof(*sync));
 }
 
 #endif
