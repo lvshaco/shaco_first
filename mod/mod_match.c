@@ -402,6 +402,7 @@ del_member(struct room *ro, struct applyer *ar) {
         if (ro->members[i].uid == ar->uid) {
             ro->members[i].uid = 0;
             ro->nmember--;
+            return;
         }
     }
     assert(false);

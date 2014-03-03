@@ -151,6 +151,7 @@ struct ringdata {
 #define EFFECT_SCORE_PROFIT     24
 #define EFFECT_WINSCORE_PROFIT  25
 
+#define EFFECT_STATE            50
 #define EFFECT_PROTECT          51
 #define EFFECT_SPECEFFECT       52
 #define EFFECT_CHANGE_CELL      53
@@ -158,6 +159,9 @@ struct ringdata {
 #define EFFECT_REBIRTH          55
 #define EFFECT_REVERSE          56
 #define EFFECT_SEX              57
+
+#define EFFECT_STATE_PROTECT    0
+#define EFFECT_STATE_PROTECT_ONCE 1
 
 struct char_attribute {
     int32_t oxygen;     // 氧气
@@ -192,6 +196,7 @@ struct char_attribute {
     float   item_oxygenadd; // 物品氧气效果加成
     int32_t lucky;          // 幸运
     int32_t prices;         // 身价
+    int32_t effect_states;  // 效果状态
 };
 
 // 玩家信息
