@@ -177,7 +177,7 @@ process_adjust_state(struct module *s, struct player *pr, const struct UM_ADJUST
 }
 
 static void
-refresh_state(struct module *s, struct player *pr) {
+refresh_state(struct module *s, struct player *pr, bool sync) {
     struct hall *self = MODULE_SELF;
 
     uint64_t now = sh_timer_now();
@@ -198,7 +198,9 @@ refresh_state(struct module *s, struct player *pr) {
                 cdata->roles_state[i] = state_value;
                 int new_id = role_state_id(state_value);
                 if (new_id != old_id) {
-                    hall_sync_state(s, pr, i, state_value);
+                    if (sync) {
+                        hall_sync_state(s, pr, i, state_value);
+                    }
                     change_state = true;
                 }
             }
@@ -234,7 +236,7 @@ login(struct module *s, struct player* pr) {
         sh_error("can not found role %d, charid %u", cdata->role, cdata->charid);
     }
 
-    refresh_state(s, pr);
+    refresh_state(s, pr, false);
 }
 
 void
@@ -265,7 +267,7 @@ static void
 timecb(void *pointer, void *ud) {
     struct module *s = ud;
     struct player *pr = pointer;
-    refresh_state(s, pr);
+    refresh_state(s, pr, true);
 }
 
 void
