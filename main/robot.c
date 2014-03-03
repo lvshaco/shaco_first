@@ -13,7 +13,7 @@ static int SERVER[TMAX];
 static struct chardata CHAR;
 static char ACCOUNT[ACCOUNT_NAME_MAX+1];
 static uint32_t LAST_SEND_TIME;
-
+static int TYPE;
 static void
 mylog(const char *fmt, ...) {
     time_t now = time(NULL);
@@ -192,7 +192,7 @@ _handleum(int id, int ut, struct UM_BASE* um) {
         UM_CAST(UM_CHARINFO, ci, um);
         mylog("charinfo: id %u, name %s", ci->data.charid, ci->data.name);
         CHAR = ci->data;
-        _play(0);
+        _play(TYPE);
         break;
         }
     case IDUM_PLAYFAIL: {
@@ -278,9 +278,14 @@ int main(int argc, char* argv[]) {
     } else {
         strncpy(ACCOUNT, "wa_account_1", sizeof(ACCOUNT)-1);
     }
-    if (argc > 3) {
-        ip = argv[2];
-        port = strtoul(argv[3], NULL, 10);
+    if (argc > 2) {
+        TYPE = strtoul(argv[2], NULL, 10);
+    } else {
+        TYPE = 1;
+    }
+    if (argc > 4) {
+        ip = argv[3];
+        port = strtoul(argv[4], NULL, 10);
     } else {
         ip = "192.168.1.140";
         port = 18100;
