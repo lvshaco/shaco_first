@@ -76,6 +76,7 @@
 #define IDUM_SYNCMONEY      IDUM_CBEGIN+621
 #define IDUM_SYNCSTATE      IDUM_CBEGIN+622
 #define IDUM_ADJUSTSTATE_RES IDUM_CBEGIN+623
+#define IDUM_SYNCEXP        IDUM_CBEGIN+624
 
 // ring
 #define IDUM_RINGPAGESYNC   IDUM_CBEGIN+630
@@ -207,6 +208,12 @@ struct UM_SYNCMONEY {
     uint32_t diamond;
 };
 
+struct UM_SYNCEXP {
+    _UM_HEADER;
+    uint16_t level;
+    uint32_t exp;
+};
+
 struct UM_ADJUSTSTATE { // C->S
     _UM_HEADER;
     uint32_t role_typeid; // 指定角色
@@ -215,14 +222,14 @@ struct UM_ADJUSTSTATE { // C->S
 struct UM_ADJUSTSTATE_RES { // S->C
     _UM_HEADER;
     uint32_t role_typeid; // 指定角色
-    uint8_t stateid; // see ROLE_STATE_
+    uint8_t state_value; // see ROLE_STATE_
     uint8_t big_adjust; // 是否大调整（播放大特效)
 };
 
 struct UM_SYNCSTATE { // S->C
     _UM_HEADER;
     uint32_t role_typeid; // 指定角色
-    uint8_t stateid; // see ROLE_STATE_
+    uint8_t state_value; // see ROLE_STATE_
 };
 
 // ring

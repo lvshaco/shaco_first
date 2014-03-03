@@ -54,21 +54,12 @@ sync_addrole(struct module *s, struct player* pr, uint32_t roleid) {
 }
 
 static inline void
-sync_state(struct module *s, struct player *pr, uint32_t typeid, uint8_t stateid) {
-    UM_DEFWRAP(UM_CLIENT, cl, UM_SYNCSTATE, sync);
-    cl->uid  = UID(pr);
-    sync->role_typeid = typeid;
-    sync->stateid = stateid;
-    sh_module_send(MODULE_ID, pr->watchdog_source, MT_UM, cl, sizeof(*cl) + sizeof(*sync));
-}
-
-static inline void
-notify_adjust_result(struct module *s, struct player *pr, uint32_t typeid, uint8_t stateid, 
+notify_adjust_result(struct module *s, struct player *pr, uint32_t typeid, uint8_t state_value, 
         uint8_t big_adjust) {
     UM_DEFWRAP(UM_CLIENT, cl, UM_ADJUSTSTATE_RES, res);
     cl->uid  = UID(pr);
     res->role_typeid = typeid;
-    res->stateid = stateid;
+    res->state_value = state_value;
     res->big_adjust = big_adjust;
     sh_module_send(MODULE_ID, pr->watchdog_source, MT_UM, cl, sizeof(*cl) + sizeof(*res));
 }
@@ -179,7 +170,7 @@ process_adjust_state(struct module *s, struct player *pr, const struct UM_ADJUST
     if (old_id != new_id) {
         hall_attribute_main(self->T, cdata); 
     }
-    notify_adjust_result(s, pr, typeid, new_id, (new_value - old_value) > 16);
+    notify_adjust_result(s, pr, typeid, new_value, (new_value - old_value) > 16);
     hall_sync_money(s, pr);
     
     hall_playerdb_save(s, pr, true);
@@ -207,7 +198,7 @@ refresh_state(struct module *s, struct player *pr) {
                 cdata->roles_state[i] = state_value;
                 int new_id = role_state_id(state_value);
                 if (new_id != old_id) {
-                    sync_state(s, pr, i, new_id);
+                    hall_sync_state(s, pr, i, state_value);
                     change_state = true;
                 }
             }

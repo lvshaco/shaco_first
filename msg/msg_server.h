@@ -277,6 +277,7 @@ struct UM_DESTROYROOM {
 };
 
 struct memberaward {
+    int32_t take_state;
     int32_t exp;
     int32_t coin;
     int32_t score;
