@@ -87,6 +87,21 @@ struct gameroom {
 
 #define UID(m) ((m)->detail.accid)
 
+static inline void
+set_effect_state(struct player *m, int state) {
+    m->detail.attri.effect_states |= 1<<state;
+}
+
+static inline void
+clr_effect_state(struct player *m, int state) {
+    m->detail.attri.effect_states &= ~(1<<state);
+}
+
+static inline bool
+has_effect_state(struct player *m, int state) {
+    return (m->detail.attri.effect_states & 1<<state) != 0;
+}
+
 static inline float
 oxygen_percent(struct player *pr) {
     return pr->detail.attri.oxygen / (float)pr->base.oxygen;
@@ -790,6 +805,15 @@ do_effect(struct player* m, struct char_attribute* cattri, const struct char_att
     CASE(EFFECT_VIEW_RANGE, cattri->view_range, base->view_range, value, isper, 0, AMAX, REFRESH_ATTRI);
     //CASE(EFFECT_SCORE_PROFIT, cattri->score_profit, 1, value, isper, REFRESH_ATTRI);
     //CASE(EFFECT_WINSCORE_PROFIT, cattri->winscore_profit, 1, value, isper, REFRESH_ATTRI);
+    case EFFECT_STATE: {
+        int ivalue = value;
+        if (ivalue > 0) {
+            set_effect_state(m, ivalue);
+        } else {
+            clr_effect_state(m, -ivalue);
+        }
+        return ivalue;
+    }
     default:return 0.0f;
     }
 } 
@@ -1235,6 +1259,13 @@ static void
 sync_press(struct module *s, struct player *m, const struct UM_ROLEPRESS *press) {
     struct gameroom *ro = member2gameroom(m);
 
+    if (has_effect_state(m, EFFECT_STATE_PROTECT_ONCE)) {
+        clr_effect_state(m, EFFECT_STATE_PROTECT_ONCE);
+        return;
+    }
+    if (has_effect_state(m, EFFECT_STATE_PROTECT)) {
+        return;
+    }
     int oxygen = m->base.oxygen/10;
     if (reduce_oxygen(m, oxygen) > 0) {
         m->refresh_flag |= REFRESH_ATTRI;
