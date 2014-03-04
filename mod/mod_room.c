@@ -10,6 +10,7 @@
 #include "buff.h"
 #include <math.h>
 
+#define ROOM_LOAD_TIMELEAST 5
 #define ENTER_TIMELEAST (ROOM_LOAD_TIMELEAST*1000)
 #define ENTER_TIMEOUT (5000+ENTER_TIMELEAST)
 #define START_TIMEOUT 3000
@@ -99,7 +100,7 @@ clr_effect_state(struct player *m, int state) {
 
 static inline bool
 has_effect_state(struct player *m, int state) {
-    return (m->detail.attri.effect_states & 1<<state) != 0;
+    return (m->detail.attri.effect_states & (1<<state)) != 0;
 }
 
 static inline float
@@ -281,7 +282,7 @@ build_brief_from_detail(struct tmemberdetail *detail, struct tmemberbrief *brief
     memcpy(brief->name, detail->name, CHAR_NAME_MAX);
     brief->level = detail->level;
     brief->role = detail->role;
-    brief->skin = detail->skin;
+    brief->state = detail->state;
     brief->oxygen = detail->attri.oxygen;
     brief->body = detail->attri.body;
     brief->quick = detail->attri.body;
@@ -294,7 +295,7 @@ fill_brief_into_detail(struct tmemberbrief *brief, struct tmemberdetail *detail)
     memcpy(detail->name, brief->name, CHAR_NAME_MAX);
     detail->level = brief->level;
     detail->role = brief->role;
-    detail->skin = brief->skin;
+    detail->state = brief->state;
     detail->attri.oxygen = brief->oxygen;
     detail->attri.body = brief->body;
     detail->attri.quick = brief->body;
@@ -734,13 +735,14 @@ notify_game_info(struct module *s, struct player *m) {
         UM_DEFVAR(UM_CLIENT, cl); 
         UD_CAST(UM_GAMEINFO, gi, cl->wrap);
         cl->uid = UID(m);
+        gi->load_least_time = ROOM_LOAD_TIMELEAST;
         gi->status = ro->status;
         gi->gattri = ro->gattri;
         
         int i, n=0;
         for (i=0; i<ro->np; ++i) {
             if (ro->p[i].online) {
-                gi->members[i] = ro->p[i].detail;
+                build_brief_from_detail(&ro->p[i].detail, &gi->members[i]);
                 n++;
             }
         }

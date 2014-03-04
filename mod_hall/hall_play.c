@@ -13,7 +13,7 @@ build_brief(struct player *pr, struct tmemberbrief *brief) {
     memcpy(brief->name, cdata->name, sizeof(cdata->name));
     brief->level = cdata->level;
     brief->role = cdata->role;
-    brief->skin = cdata->skin;
+    brief->state = role_state(cdata);
     brief->oxygen = cdata->attri.oxygen;
     brief->body = cdata->attri.body;
     brief->quick = cdata->attri.quick;
@@ -26,7 +26,7 @@ build_detail(struct player *pr, struct tmemberdetail *detail) {
     detail->charid = cdata->charid;
     memcpy(detail->name, cdata->name, sizeof(cdata->name));
     detail->role = cdata->role;
-    detail->skin = cdata->skin;
+    detail->state = role_state(cdata);
     detail->score_dashi = cdata->score_dashi;
     detail->attri = cdata->attri;
 }
@@ -97,16 +97,6 @@ enter_room(struct module *s, struct player *pr, struct UM_ENTERROOM *er) {
 }
 
 static void
-loading(struct module *s, struct player *pr, struct UM_PLAYLOADING *loading) {
-    // just route to client loading
-    UM_DEFWRAP(UM_CLIENT, cl, UM_PLAYLOADING, pl);
-    cl->uid = UID(pr);
-    *pl = *loading;
-    sh_module_send(MODULE_ID, pr->watchdog_source, MT_UM, cl, sizeof(*cl)+sizeof(*pl));
-    sh_trace("Play %u notify client loading", UID(pr));
-}
-
-static void
 exit_room(struct module *s, struct player *pr) {
     struct hall *self = MODULE_SELF;
     if (pr->status == PS_ROOM) {
@@ -147,11 +137,6 @@ hall_play_main(struct module *s, struct player *pr, const void *msg, int sz) {
     case IDUM_ENTERROOM: {
         UM_CASTCK(UM_ENTERROOM, er, base, sz);
         enter_room(s, pr, er);
-        break;
-        }
-    case IDUM_PLAYLOADING: {
-        UM_CASTCK(UM_PLAYLOADING, pl, base, sz);
-        loading(s, pr, pl);
         break;
         }
     case IDUM_EXITROOM: {

@@ -111,7 +111,6 @@ _db(struct module *s, struct player* p, int8_t type) {
                 " diamond %u"
                 " package %u"
                 " role %u"
-                " skin %u"
                 "\r\n", charid,
                 cdata->name,
                 cdata->level, 
@@ -119,8 +118,7 @@ _db(struct module *s, struct player* p, int8_t type) {
                 cdata->coin, 
                 cdata->diamond, 
                 cdata->package,
-                cdata->role,
-                cdata->skin);
+                cdata->role);
         memrw_pos(&rw, len);
         }
         break;
@@ -156,7 +154,6 @@ _db(struct module *s, struct player* p, int8_t type) {
                 " diamond %u"
                 " package %u"
                 " role %u"
-                " skin %u"
                 " luck_factor %.3f"
                 " last_washgold_refresh_time %u"
                 " washgold %u"
@@ -177,7 +174,6 @@ _db(struct module *s, struct player* p, int8_t type) {
                 cdata->diamond, 
                 cdata->package,
                 cdata->role,
-                cdata->skin,
                 cdata->luck_factor,
                 cdata->last_washgold_refresh_time,
                 cdata->washgold,
@@ -250,7 +246,6 @@ _loadpdb(struct player* p, struct redis_replyitem* item) {
     CHECK(cdata->diamond = redis_bulkitem_toul(si++));
     CHECK(cdata->package = redis_bulkitem_toul(si++));
     CHECK(cdata->role = redis_bulkitem_toul(si++));
-    CHECK(cdata->skin = redis_bulkitem_toul(si++));
     CHECK(cdata->luck_factor = redis_bulkitem_tof(si++));
     CHECK(cdata->last_washgold_refresh_time = redis_bulkitem_toul(si++)); 
     CHECK(cdata->washgold = redis_bulkitem_toul(si++));

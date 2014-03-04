@@ -86,7 +86,6 @@
 #define IDUM_PLAYB2         IDUM_CBEGIN+640
 #define IDUM_PLAYFAIL       IDUM_CBEGIN+641
 #define IDUM_PLAYWAIT       IDUM_CBEGIN+642
-#define IDUM_PLAYLOADING    IDUM_CBEGIN+643
 #define IDUM_PLAYE2         IDUM_CBEGIN+649
 
 // washgold
@@ -306,13 +305,6 @@ struct UM_PLAYWAIT {
     int timeout;
 };
 
-#define PLAY_LOADING_TIMEOUT 10
-struct UM_PLAYLOADING {
-    _UM_HEADER;
-    int8_t leasttime;  // least time of loading
-    struct tmemberbrief member;
-};
-
 /////////////////////////////////////////////////////////////
 // game login
 
@@ -323,10 +315,11 @@ struct UM_PLAYLOADING {
 
 struct UM_GAMEINFO {
     _UM_HEADER;
+    int8_t load_least_time;
     int8_t status;
     struct groundattri gattri;
     int8_t nmember;
-    struct tmemberdetail members[0];
+    struct tmemberbrief members[0];
 };
 static inline uint16_t
 UM_GAMEINFO_size(struct UM_GAMEINFO* um) {

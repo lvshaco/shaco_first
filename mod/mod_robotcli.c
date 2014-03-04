@@ -155,7 +155,12 @@ client_play(struct client *c, int type) {
 static inline void
 client_roominfo(struct client *c, struct UM_GAMEINFO *gi) {
     c->status = S_ROOM;
-    sh_trace("Client %d game info: nmember %d", c->id, gi->nmember);
+    sh_trace("Client %d game info: load leasttime: %d, nmember %d", 
+            c->id, gi->load_least_time, gi->nmember);
+    int i;
+    for (i=0; i<gi->nmember; ++i) {
+        sh_trace("  member %i: %u, %s", i, gi->members[i].charid, gi->members[i].name);
+    }
 }
 
 static inline void
@@ -399,23 +404,17 @@ client_handle(struct module *s, struct client *c, void *msg, int sz) {
         sh_trace("Client %d play wait, timeout %d", c->id, pw->timeout);
         break;
         }
-    case IDUM_PLAYLOADING: {
-        UM_CAST(UM_PLAYLOADING, pl, base);
-        sh_trace("Client %d play loading, leasttime: %d, other(%u, %s)",
-                c->id, pl->leasttime, pl->member.charid, pl->member.name);
-        client_loadok(c);
-        self->nplay_ok++;
-        if (self->nplay_ok == self->max) {
-            sh_info("Total(%d) play ok", self->nplay_ok);
-        }
-        break;
-        }
     case IDUM_GAMEINFO: {
         UM_CAST(UM_GAMEINFO, gi, base); 
         client_roominfo(c, gi); 
         self->ngame_info++;
         if (self->ngame_info == self->max) {
             sh_info("Total(%d) game info ok", self->ngame_info);
+        }
+        client_loadok(c);
+        self->nplay_ok++;
+        if (self->nplay_ok == self->max) {
+            sh_info("Total(%d) play ok", self->nplay_ok);
         }
         break;
         }

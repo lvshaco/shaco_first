@@ -101,7 +101,7 @@ build_brief(struct agent *ag, struct tmemberbrief *brief) {
     memcpy(brief->name, cdata->name, sizeof(cdata->name));
     brief->level = cdata->level;
     brief->role = cdata->role;
-    brief->skin = cdata->skin;
+    brief->state = role_state(cdata);
     brief->oxygen = cdata->attri.oxygen;
     brief->body = cdata->attri.body;
     brief->quick = cdata->attri.quick;
@@ -114,7 +114,6 @@ build_detail(struct agent *ag, struct tmemberdetail *detail) {
     detail->charid = cdata->charid;
     memcpy(detail->name, cdata->name, sizeof(cdata->name));
     detail->role = cdata->role;
-    detail->skin = cdata->skin;
     detail->score_dashi = cdata->score_dashi;
     detail->attri = cdata->attri;
 }

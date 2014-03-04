@@ -205,16 +205,14 @@ _handleum(int id, int ut, struct UM_BASE* um) {
         mylog("play wait: timeout %d", pw->timeout);
         break;
         }
-    case IDUM_PLAYLOADING: {
-        UM_CAST(UM_PLAYLOADING, pl, um);
-        mylog("play loading: leasttime: %d, other(%u,%s)",
-                pl->leasttime, pl->member.charid, pl->member.name);
-        _loadok();
-        break;
-        }
     case IDUM_GAMEINFO: {
         UM_CAST(UM_GAMEINFO, gi, um);
-        mylog("game info: nmember %d", gi->nmember);
+        mylog("game info: load leasttime: %d, nmember %d", gi->load_least_time, gi->nmember);
+        int i;
+        for (i=0; i<gi->nmember; ++i) {
+            mylog("member %i: %u, %s", i, gi->members[i].charid, gi->members[i].name);
+        }
+        _loadok();
         break;
         }
     case IDUM_GAMEMEMBER: {

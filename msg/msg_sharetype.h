@@ -211,8 +211,7 @@ struct chardata {
     uint32_t diamond; // 钻石
     uint16_t package; // 包裹容量
 
-    uint32_t role;    // 使用的角色
-    uint32_t skin;    // 使用的服装 (废弃)
+    uint8_t role;    // 使用的角色
 
     uint32_t score_normal;  // 普通赛得分
     uint32_t score_dashi;   // 大师赛积分
@@ -228,10 +227,15 @@ struct chardata {
     uint32_t last_state_refresh_time; // 上次状态回复时间
 };
 
+static inline uint8_t 
+role_state(struct chardata *cdata) {
+    uint8_t typeid = ROLE_TYPEID(cdata->role);
+    return cdata->roles_state[typeid < ROLE_MAX ? typeid : 0];
+}
+
 // room type
 #define ROOM_TYPE_NORMAL 0 // 普通赛
 #define ROOM_TYPE_DASHI  1 // 大师赛
-#define ROOM_LOAD_TIMELEAST 5
 #define MEMBER_MAX 8
 
 // 道具类型
@@ -265,8 +269,8 @@ struct tmemberdetail {
     char name[CHAR_NAME_MAX];
 
     uint16_t level;
-    uint32_t role;
-    uint32_t skin;
+    uint8_t role;
+    uint8_t state;
     uint32_t score_dashi; // 大师赛积分
     struct char_attribute attri;
 };
@@ -277,8 +281,8 @@ struct tmemberbrief {
     uint32_t charid;
     char name[CHAR_NAME_MAX];
     uint16_t level;
-    uint32_t role;
-    uint32_t skin;
+    uint8_t role;
+    uint8_t state;
     int32_t oxygen; 
     int32_t body;
     int32_t quick;
