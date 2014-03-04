@@ -229,8 +229,8 @@ struct chardata {
 
 static inline uint8_t 
 role_state(struct chardata *cdata) {
-    uint8_t typeid = ROLE_TYPEID(cdata->role);
-    return cdata->roles_state[typeid < ROLE_MAX ? typeid : 0];
+    uint8_t type_id = ROLE_TYPEID(cdata->role);
+    return cdata->roles_state[type_id < ROLE_MAX ? type_id : 0];
 }
 
 // room type

@@ -4,6 +4,8 @@ SERVERS="rpacc rpuser rprank gateload uniqueol match robot watchdog auth hall ro
 
 ls() {
     ps -ef |grep shaco |grep config
+    local n=`ps -ef |grep shaco |grep config |wc -l`
+    echo 
     ps -ef |grep commandd |grep lua
 }
 startone() {
