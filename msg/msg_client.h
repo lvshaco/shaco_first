@@ -319,7 +319,7 @@ struct UM_GAMEINFO {
     int8_t status;
     struct groundattri gattri;
     int8_t nmember;
-    struct tmemberbrief members[0];
+    struct tmemberdetail members[0];
 };
 static inline uint16_t
 UM_GAMEINFO_size(struct UM_GAMEINFO* um) {

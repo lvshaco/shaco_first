@@ -742,7 +742,7 @@ notify_game_info(struct module *s, struct player *m) {
         int i, n=0;
         for (i=0; i<ro->np; ++i) {
             if (ro->p[i].online) {
-                build_brief_from_detail(&ro->p[i].detail, &gi->members[i]);
+                gi->members[i] = ro->p[i].detail;
                 n++;
             }
         }
