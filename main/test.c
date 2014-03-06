@@ -7,6 +7,7 @@
 #include "redis.h"
 #include "elog_include.h"
 #include "sh_hash.h"
+#include "sh_array.h"
 #include <stdint.h>
 #include <stdarg.h>
 #include <stdio.h>
@@ -1136,12 +1137,90 @@ test_syslog(int times) {
     //closelog();
 }
 
+struct T1 {
+    int i1;
+    int i2;
+};
+
+static int 
+array_cb(void *elem, void *ud) {
+    struct T1 *A = elem;
+    int *i = ud;
+    if (A->i1 == 100) {
+        *i = 100;
+        return 1;
+    } else 
+        return 0;
+}
+
+static int
+array_cmp(const void *e1, const void *e2) {
+    const struct T1 *t1 = e1;
+    const struct T1 *t2 = e2;
+    return t2->i1 - t1->i1;
+}
+
+void
+test_array(int times) {
+    if (times == 0)
+        return;
+
+    struct T1 *one;
+    struct sh_array *A;
+    A = sh_array_new(sizeof(struct T1), 1);
+    int i;
+    for (i=0; i<times; ++i) {
+        one = sh_array_push(A);
+        one->i1 = i;
+        one->i2 = i;
+    }
+    assert(sh_array_n(A) == times);
+    for (i=0; i<times; ++i) {
+        one = sh_array_get(A, i);
+        assert(one->i1 == i);
+        assert(one->i2 == i);
+    }
+    one = sh_array_top(A);
+    assert(one->i1 == times-1);
+    assert(one->i2 == times-1);
+
+    if (times > 100) {
+        int n = 0;
+        assert(sh_array_foreach(A, array_cb, &n));
+        assert(n == 100);
+    }
+
+    for (i=times-1; i>=0; --i) {
+        one = sh_array_pop(A);
+        assert(one->i1 == i);
+        assert(one->i2 == i);
+    }
+    sh_array_fini(A);
+    sh_array_delete(A);
+    printf("test_array ok, times %d\n", times);
+
+    printf("test_array sort desc:\n");
+    A = sh_array_new(sizeof(struct T1), 1);
+    for (i=0; i<10; ++i) {
+        one = sh_array_push(A);
+        one->i1 = rand() % 10000;
+        printf("[%2d] = %d\n", i, one->i1);
+    }
+    sh_array_sort(A, array_cmp);
+    printf("test_array sort desc result:\n");
+    for (i=0; i<sh_array_n(A); ++i) {
+        one = sh_array_get(A, i);
+        printf("[%2d] = %d\n", i, one->i1);
+    }
+}
+
 int 
 main(int argc, char* argv[]) {
     int times = 1;
     if (argc > 1)
         times = strtol(argv[1], NULL, 10);
-   
+
+    uint64_t t1 = _elapsed();
     //int32_t r = sh_cstr_to_int32("RES");
     //printf("r = %d\n", r);
     //int ret = sh_cstr_compare_int32("RES", r);
@@ -1158,7 +1237,7 @@ main(int argc, char* argv[]) {
     //test_redis();
     //test_freelist();
     //test_elog2();
-    test_elog3(times);
+    //test_elog3(times);
     //test_log(times);
     //test_elog4(times);
     //test_redisnew(times);
@@ -1170,5 +1249,9 @@ main(int argc, char* argv[]) {
     //test_hash64(times);
     //test_hash32_for(times);
     //test_syslog(times);
+    test_array(times);
+
+    uint64_t t2 = _elapsed();
+    printf("main use time %d\n", (int)(t2-t1));
     return 0;
 }

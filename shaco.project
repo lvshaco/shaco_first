@@ -25,6 +25,7 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.py *.h *.c" {
  config_watchdog.lua
  libshaco=libshaco{
   dlmodule.c
+  sh_array.c
   sh_check.c
   sh_env.c
   sh_hash.c
@@ -44,6 +45,7 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.py *.h *.c" {
   libshaco=libshaco{
    dlmodule.h
    sh.h
+   sh_array.h
    sh_env.h
    sh_hash.h
    sh_init.h
@@ -122,6 +124,7 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.py *.h *.c" {
   hall.h
   hall_attribute.h
   hall_award.h
+  hall_luck.h
   hall_play.h
   hall_player.h
   hall_playerdb.h
@@ -138,30 +141,33 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.py *.h *.c" {
   hall_role.c
   hall_tplt.c
   hall_washgold.c
-  hall_luck.h
  }
  mod_room=mod_room{
-  buff.h
-  fight.h
-  genmap.h
-  mapdatamgr.h
   room.h
+  room_ai.h
+  room_buff.h
+  room_fight.h
+  room_game.h
+  room_genmap.h
+  room_item.h
+  room_luck.h
+  room_map.h
   room_tplt.h
-  roommap.h
-  fight.c
-  genmap.c
-  mapdatamgr.c
+  room_ai.c
+  room_fight.c
+  room_game.c
+  room_genmap.c
+  room_item.c
+  room_map.c
   room_tplt.c
-  roommap.c
  }
  mod_robot=mod_robot{
   robot.h
   robot_tplt.h
   robot_tplt.c
  }
- mod_robotcli=mod_robotcli{
-  robotcli.h
-  robotcli.c
+ mod_share=mod_share{
+  luck_random.h
  }
  msg=msg{
   msg.h

@@ -3,7 +3,7 @@
 #include "msg_client.h"
 
 #define WAIT_TIMEOUT 3
-#define JOINABLE_TIME 30
+#define JOINABLE_TIME 3
 
 #define S_WAITING 0
 #define S_CREATING 1
@@ -298,6 +298,7 @@ create_room(struct match *self, struct applyer *leader, int room_handle) {
     ro->type = leader->type;
     ro->status = S_CREATING;
     ro->nmember = 0;
+    memset(ro->members, 0, sizeof(ro->members));
     return ro;
 }
 
@@ -305,7 +306,7 @@ static void
 destroy_room(struct match *self, struct room *ro) {
     sh_trace("Match room %u destroy", ro->id); 
     if (ro->joinable) {
-        assert(ro->match_slot < S_MAX);
+        assert(ro->match_slot < N_MAX);
         sh_hash_remove(&self->joinable_rooms[ro->match_slot], ro->id);
     }
     sh_hash_remove(&self->rooms, ro->id);
@@ -367,8 +368,9 @@ create_room_fail(struct module *s, uint32_t id, int err) {
 
 static inline void
 room_switch_joinable(struct match *self, struct room *ro) {
+    sh_trace("Match room %u switch to enable join", ro->id);
     assert(!ro->joinable);
-    assert(sh_hash_remove(&self->rooms, ro->id) == ro);
+    //assert(sh_hash_remove(&self->rooms, ro->id) == ro);
     assert(ro->match_slot < N_MAX);
     assert(!sh_hash_insert(&self->joinable_rooms[ro->match_slot], ro->id, ro));
     ro->joinable = true;
@@ -376,10 +378,11 @@ room_switch_joinable(struct match *self, struct room *ro) {
 
 static inline void
 room_switch_unjoinable(struct match *self, struct room *ro) {
+    sh_trace("Match room %u switch to disable join", ro->id);
     assert(ro->joinable);
-    assert(ro->match_slot < N_MAX);
-    assert(sh_hash_remove(&self->joinable_rooms[ro->match_slot], ro->id) == ro);
-    assert(!sh_hash_insert(&self->rooms, ro->id, ro));
+    //assert(ro->match_slot < N_MAX);
+    //assert(sh_hash_remove(&self->joinable_rooms[ro->match_slot], ro->id) == ro);
+    //assert(!sh_hash_insert(&self->rooms, ro->id, ro));
     ro->joinable = false;
 }
 
@@ -392,6 +395,7 @@ add_member(struct room *ro, struct applyer *ar, int i) {
     ar->roomid = ro->id;
     ro->members[i].uid = ar->uid;
     ro->nmember++;
+    sh_trace("Match room %u add member %u, cur %u", ro->id, ar->uid, ro->nmember);
 }
 
 static inline void
@@ -402,6 +406,7 @@ del_member(struct room *ro, struct applyer *ar) {
         if (ro->members[i].uid == ar->uid) {
             ro->members[i].uid = 0;
             ro->nmember--;
+            sh_trace("Match room %u del member %u, cur %u", ro->id, ar->uid, ro->nmember);
             return;
         }
     }
@@ -410,7 +415,6 @@ del_member(struct room *ro, struct applyer *ar) {
 
 static int
 join_room(struct module *s, struct room *ro, struct applyer *ar) {
-    struct match *self = MODULE_SELF;
     sh_trace("Match applyer %u join room %u", ar->uid, ro->id);
     assert(ro->nmember < MEMBER_MAX);
     int i;
@@ -418,7 +422,6 @@ join_room(struct module *s, struct room *ro, struct applyer *ar) {
         if (ro->members[i].uid == 0) {
             add_member(ro, ar, i);
             notify_join_room(s, ro, ar);
-            room_switch_unjoinable(self, ro);
             return 0;
         } 
     }
@@ -502,7 +505,9 @@ lookup_N(struct module *s, struct applyer *ar) {
     assert(ar->match_slot < N_MAX);
     struct room *ro = sh_hash_pop(&self->joinable_rooms[ar->match_slot]);
     if (ro) {
-        return join_room(s, ro, ar);
+        int r = join_room(s, ro, ar);
+        room_switch_unjoinable(self, ro);
+        return r;
     } else {
         return start_room(s, &ar, 1); 
     }
@@ -610,7 +615,7 @@ logout(struct module *s, uint32_t uid) {
     if (ar == NULL) {
         return;
     }
-    sh_trace("Match applyer %u logout, status %d", ar->uid, ar->status);
+    sh_trace("Match applyer %u in room %u logout, status %d", ar->uid, ar->roomid, ar->status);
     switch (ar->status) {
     case S_WAITING:
         leave_waiting(self, ar);
@@ -708,7 +713,8 @@ roomcb(void *pointer, void *ud) {
     uint64_t now = sh_timer_now();
 
     if (ro->type == ROOM_TYPE_NORMAL &&
-        ro->status == S_GAMING) {
+        ro->status == S_GAMING && 
+        !ro->joinable) {
         if (now - ro->start_time > JOINABLE_TIME * 1000) {
             room_switch_joinable(self, ro);
         }

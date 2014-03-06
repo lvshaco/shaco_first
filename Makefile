@@ -70,7 +70,8 @@ libshaco_src=\
 	libshaco/sh_monitor.c \
  	libshaco/dlmodule.c \
 	libshaco/sh_util.c \
-	libshaco/sh_hash.c
+	libshaco/sh_hash.c \
+	libshaco/sh_array.c
 	
 
 cli_src=\
@@ -126,18 +127,24 @@ $(mod_so): %.so: $(mod_dir)/%.c
 	gcc $(CFLAGS) $(SHARED) -o $@ $< -Iinclude/libshaco -Inet -Ibase -Imsg
 
 mod_room.so: $(mod_dir)/mod_room.c \
+	mod_room/room_game.c \
+	mod_room/room_game.h \
 	mod_room/room_tplt.c \
 	mod_room/room_tplt.h \
-	mod_room/fight.c \
-	mod_room/fight.h \
-	mod_room/genmap.c \
-	mod_room/genmap.h \
-	mod_room/mapdatamgr.c \
-	mod_room/mapdatamgr.h \
-	mod_room/roommap.c \
-	mod_room/roommap.h
+	mod_room/room_buff.h \
+	mod_room/room_item.c \
+	mod_room/room_item.h \
+	mod_room/room_luck.h \
+	mod_room/room_ai.c \
+	mod_room/room_ai.h \
+	mod_room/room_fight.c \
+	mod_room/room_fight.h \
+	mod_room/room_genmap.c \
+	mod_room/room_genmap.h \
+	mod_room/room_map.c \
+	mod_room/room_map.h
 	@rm -f $@
-	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Iinclude/libshaco -Inet -Ibase -Imsg -Imod_room -Itplt -Idatadefine -Wl,-rpath,. tplt.so 
+	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Iinclude/libshaco -Inet -Ibase -Imsg -Imod_room -Imod_share -Itplt -Idatadefine -Wl,-rpath,. tplt.so 
 
 mod_log.so: $(mod_dir)/mod_log.c
 	@rm -f $@
@@ -186,7 +193,7 @@ mod_hall.so: $(mod_dir)/mod_hall.c \
 	mod_hall/hall_play.c \
 	mod_hall/hall_play.h
 	@rm -f $@
-	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Iinclude/libshaco -Inet -Ibase -Itplt -Idatadefine -Imsg -Iredis -Imod_hall -Wl,-rpath,. redis.so tplt.so
+	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Iinclude/libshaco -Inet -Ibase -Itplt -Idatadefine -Imsg -Iredis -Imod_hall -Imod_share -Wl,-rpath,. redis.so tplt.so
 
 mod_robot.so: $(mod_dir)/mod_robot.c \
 	mod_hall/hall_attribute.c \
@@ -314,3 +321,5 @@ clean:
 
 cleanall: clean
 	rm -rf cscope.* tags
+	rm -rf res
+	rm -rf datadefine

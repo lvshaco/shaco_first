@@ -1,5 +1,5 @@
-#ifndef __genmap_h__
-#define __genmap_h__
+#ifndef __room_genmap_h__
+#define __room_genmap_h__
 
 #include <stdint.h>
 
