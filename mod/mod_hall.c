@@ -77,8 +77,7 @@ hall_main(struct module *s, int session, int source, int type, const void *msg, 
                 return;
             UM_CAST(UM_BASE, wrap, ha->wrap);
             switch (wrap->msgid) {
-            case IDUM_LOGOUT:
-                hall_playerdb_save(s, pr, true);
+            case IDUM_LOGOUT: 
                 hall_player_main(s, source, pr, wrap, sz-sizeof(*ha));
                 break;
             case IDUM_CHARCREATE:
