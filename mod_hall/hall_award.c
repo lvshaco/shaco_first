@@ -106,33 +106,36 @@ process_award(struct module *s, struct player* pr, int8_t type, const struct mem
         hall_sync_exp(s, pr);
         updated = true;
     }
-    // score
-    switch (type) {
-    case ROOM_TYPE_NORMAL:
+    // score_normal
+    if (award->score_normal > 0) {
         if (new_grade != old_grade) {
-            cdata->score_normal = award->score;
+            cdata->score_normal = award->score_normal;
             _rank(s, pr, 
             _player_gradestr(new_grade), 
             _player_gradestr(old_grade),
             _get_score(cdata, cdata->score_normal));
             updated = true;
-        } else if (award->score > cdata->score_normal) {
-            cdata->score_normal = award->score;
+        } else if (award->score_normal > cdata->score_normal) {
+            cdata->score_normal = award->score_normal;
             _rank(s, pr, _player_gradestr(new_grade), "",
             _get_score(cdata, cdata->score_normal));
             updated = true;
         }
-        break;
-    case ROOM_TYPE_DASHI: {
-        int score = (int)cdata->score_dashi + award->score;
+    }
+    // score_dashi
+    if (award->score_dashi != 0) {
+        int score = (int)cdata->score_dashi + award->score_dashi;
         if (score < 0)
             score = 0;
         cdata->score_dashi = score;
         _rank(s, pr, "dashi", "", 
         _get_score(cdata, cdata->score_dashi));
         updated = true;
-        }
-        break;
+    }
+    // luck_factor
+    if (award->luck_factor != cdata->luck_factor) {
+        cdata->luck_factor = award->luck_factor;
+        updated = true;
     }
     if (updated) { 
         hall_playerdb_save(s, pr, true);

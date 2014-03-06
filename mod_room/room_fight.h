@@ -1,5 +1,5 @@
-#ifndef __fight_h__
-#define __fight_h__
+#ifndef __room_fight_h__
+#define __room_fight_h__
 
 #include "msg_sharetype.h"
 #include <stdint.h>

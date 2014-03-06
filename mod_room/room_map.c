@@ -1,4 +1,4 @@
-#include "roommap.h"
+#include "room_map.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>

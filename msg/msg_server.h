@@ -235,6 +235,7 @@ struct UM_LOGINROOM {
     _UM_HEADER;
     int room_handle;
     uint32_t roomid;
+    float luck_factor;
     struct tmemberdetail detail;
 };
 
@@ -280,7 +281,9 @@ struct memberaward {
     int32_t take_state;
     int32_t exp;
     int32_t coin;
-    int32_t score;
+    int32_t score_normal;
+    int32_t score_dashi;
+    float   luck_factor;
 };
 
 struct UM_GAMEAWARD {

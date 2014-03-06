@@ -1,5 +1,5 @@
-#include "genmap.h"
-#include "roommap.h"
+#include "room_genmap.h"
+#include "room_map.h"
 #include "tplt_struct.h"
 #include <stdint.h>
 #include <stdlib.h>

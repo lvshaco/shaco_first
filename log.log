@@ -1,0 +1,2462 @@
+mkdir: created directory `/home/game/.shaco/excel'
+mkdir: created directory `./res/tbl'
+mkdir: created directory `./res/tplt'
+A    /home/game/.shaco/excel
+A    /home/game/.shaco/excel/动画.xls
+A    /home/game/.shaco/excel/道具.xls
+A    /home/game/.shaco/excel/音效.xls
+A    /home/game/.shaco/excel/excelmake_server.xml
+A    /home/game/.shaco/excel/秘石.xls
+A    /home/game/.shaco/excel/戒指.xlsx
+A    /home/game/.shaco/excel/角色.xls
+A    /home/game/.shaco/excel/角色对白.xlsx
+A    /home/game/.shaco/excel/excelmake_client.xml
+A    /home/game/.shaco/excel/关卡.xlsx
+A    /home/game/.shaco/excel/经验.xlsx
+A    /home/game/.shaco/excel/地块.xls
+Exported revision 298.
+{'map': '../res/map', 'c': '../res/tplt', 'tbl': '../res/tbl'}
+[excel to map] /home/game/.shaco/excel/关卡.xlsx (关卡管理) ->  
+  map1 parse (地块1) -> ../res/map/map1.map
+  map2 parse (地块2) -> ../res/map/map2.map
+  map3 parse (地块3) -> ../res/map/map3.map[ok]
+[excel to c] /home/game/.shaco/excel/道具.xls (道具) ->  ../res/tplt/item.c[ok]
+[excel to c] /home/game/.shaco/excel/戒指.xlsx (戒指) ->  ../res/tplt/ring.c[ok]
+[excel to c] /home/game/.shaco/excel/关卡.xlsx (关卡管理) ->  ../res/tplt/map.c[ok]
+[excel to c] /home/game/.shaco/excel/角色.xls (角色数据) ->  ../res/tplt/role.c[ok]
+[excel to c] /home/game/.shaco/excel/秘石.xls (秘石) ->  ../res/tplt/stone.c[ok]
+[excel to c] /home/game/.shaco/excel/经验.xlsx (经验) ->  ../res/tplt/exp.c[ok]
+[excel to tbl] /home/game/.shaco/excel/道具.xls (道具) ->  
+[error : unknow field type,             name#ID, vname#id, type#uint32, len#4 val#100501]
+
+[error : unknow field type,             name#类型, vname#type, type#uint32, len#4 val#1]
+
+[error : unknow field type,             name#子类, vname#subtype, type#uint32, len#4 val#0]
+
+[error : unknow field type,             name#运气, vname#luck, type#uint32, len#4 val#5.0]
+
+[error : unknow field type,             name#目标, vname#target, type#int32, len#4 val#0]
+
+[error : unknow field type,             name#漂浮时间, vname#uptime, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#延迟时间, vname#delay, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#持续时间, vname#time, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#效果类型1, vname#effect1, type#int32, len#4 val#1]
+
+[error : unknow field type,             name#效果值类型1, vname#valuet1, type#int32, len#4 val#1.0]
+
+[error : unknow field type,             name#效果值1, vname#value1, type#int32, len#4 val#150.0]
+
+[error : unknow field type,             name#效果类型2, vname#effect2, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#效果值类型2, vname#valuet2, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#效果值2, vname#value2, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#效果类型3, vname#effect3, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#效果值类型3, vname#valuet3, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#效果值3, vname#value3, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#ID, vname#id, type#uint32, len#4 val#221318]
+
+[error : unknow field type,             name#类型, vname#type, type#uint32, len#4 val#2]
+
+[error : unknow field type,             name#子类, vname#subtype, type#uint32, len#4 val#2]
+
+[error : unknow field type,             name#运气, vname#luck, type#uint32, len#4 val#3.0]
+
+[error : unknow field type,             name#目标, vname#target, type#int32, len#4 val#1]
+
+[error : unknow field type,             name#漂浮时间, vname#uptime, type#int32, len#4 val#2000.0]
+
+[error : unknow field type,             name#延迟时间, vname#delay, type#int32, len#4 val#1000.0]
+
+[error : unknow field type,             name#持续时间, vname#time, type#int32, len#4 val#10.0]
+
+[error : unknow field type,             name#效果类型1, vname#effect1, type#int32, len#4 val#5]
+
+[error : unknow field type,             name#效果值类型1, vname#valuet1, type#int32, len#4 val#1.0]
+
+[error : unknow field type,             name#效果值1, vname#value1, type#int32, len#4 val#-400.0]
+
+[error : unknow field type,             name#效果类型2, vname#effect2, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#效果值类型2, vname#valuet2, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#效果值2, vname#value2, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#效果类型3, vname#effect3, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#效果值类型3, vname#valuet3, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#效果值3, vname#value3, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#ID, vname#id, type#uint32, len#4 val#410101]
+
+[error : unknow field type,             name#类型, vname#type, type#uint32, len#4 val#4]
+
+[error : unknow field type,             name#子类, vname#subtype, type#uint32, len#4 val#1]
+
+[error : unknow field type,             name#运气, vname#luck, type#uint32, len#4 val#1.0]
+
+[error : unknow field type,             name#目标, vname#target, type#int32, len#4 val#0]
+
+[error : unknow field type,             name#漂浮时间, vname#uptime, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#延迟时间, vname#delay, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#持续时间, vname#time, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#效果类型1, vname#effect1, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#效果值类型1, vname#valuet1, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#效果值1, vname#value1, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#效果类型2, vname#effect2, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#效果值类型2, vname#valuet2, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#效果值2, vname#value2, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#效果类型3, vname#effect3, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#效果值类型3, vname#valuet3, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#效果值3, vname#value3, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#ID, vname#id, type#uint32, len#4 val#200501]
+
+[error : unknow field type,             name#类型, vname#type, type#uint32, len#4 val#2]
+
+[error : unknow field type,             name#子类, vname#subtype, type#uint32, len#4 val#0]
+
+[error : unknow field type,             name#运气, vname#luck, type#uint32, len#4 val#5.0]
+
+[error : unknow field type,             name#目标, vname#target, type#int32, len#4 val#0]
+
+[error : unknow field type,             name#漂浮时间, vname#uptime, type#int32, len#4 val#1000.0]
+
+[error : unknow field type,             name#延迟时间, vname#delay, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#持续时间, vname#time, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#效果类型1, vname#effect1, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#效果值类型1, vname#valuet1, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#效果值1, vname#value1, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#效果类型2, vname#effect2, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#效果值类型2, vname#valuet2, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#效果值2, vname#value2, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#效果类型3, vname#effect3, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#效果值类型3, vname#valuet3, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#效果值3, vname#value3, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#ID, vname#id, type#uint32, len#4 val#210507]
+
+[error : unknow field type,             name#类型, vname#type, type#uint32, len#4 val#2]
+
+[error : unknow field type,             name#子类, vname#subtype, type#uint32, len#4 val#1]
+
+[error : unknow field type,             name#运气, vname#luck, type#uint32, len#4 val#5.0]
+
+[error : unknow field type,             name#目标, vname#target, type#int32, len#4 val#0]
+
+[error : unknow field type,             name#漂浮时间, vname#uptime, type#int32, len#4 val#1500.0]
+
+[error : unknow field type,             name#延迟时间, vname#delay, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#持续时间, vname#time, type#int32, len#4 val#10.0]
+
+[error : unknow field type,             name#效果类型1, vname#effect1, type#int32, len#4 val#9]
+
+[error : unknow field type,             name#效果值类型1, vname#valuet1, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#效果值1, vname#value1, type#int32, len#4 val#70.0]
+
+[error : unknow field type,             name#效果类型2, vname#effect2, type#int32, len#4 val#11]
+
+[error : unknow field type,             name#效果值类型2, vname#valuet2, type#int32, len#4 val#1.0]
+
+[error : unknow field type,             name#效果值2, vname#value2, type#int32, len#4 val#300.0]
+
+[error : unknow field type,             name#效果类型3, vname#effect3, type#int32, len#4 val#7]
+
+[error : unknow field type,             name#效果值类型3, vname#valuet3, type#int32, len#4 val#1.0]
+
+[error : unknow field type,             name#效果值3, vname#value3, type#int32, len#4 val#100.0]
+
+[error : unknow field type,             name#ID, vname#id, type#uint32, len#4 val#210709]
+
+[error : unknow field type,             name#类型, vname#type, type#uint32, len#4 val#2]
+
+[error : unknow field type,             name#子类, vname#subtype, type#uint32, len#4 val#1]
+
+[error : unknow field type,             name#运气, vname#luck, type#uint32, len#4 val#7.0]
+
+[error : unknow field type,             name#目标, vname#target, type#int32, len#4 val#0]
+
+[error : unknow field type,             name#漂浮时间, vname#uptime, type#int32, len#4 val#1500.0]
+
+[error : unknow field type,             name#延迟时间, vname#delay, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#持续时间, vname#time, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#效果类型1, vname#effect1, type#int32, len#4 val#51]
+
+[error : unknow field type,             name#效果值类型1, vname#valuet1, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#效果值1, vname#value1, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#效果类型2, vname#effect2, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#效果值类型2, vname#valuet2, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#效果值2, vname#value2, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#效果类型3, vname#effect3, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#效果值类型3, vname#valuet3, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#效果值3, vname#value3, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#ID, vname#id, type#uint32, len#4 val#221420]
+
+[error : unknow field type,             name#类型, vname#type, type#uint32, len#4 val#2]
+
+[error : unknow field type,             name#子类, vname#subtype, type#uint32, len#4 val#2]
+
+[error : unknow field type,             name#运气, vname#luck, type#uint32, len#4 val#4.0]
+
+[error : unknow field type,             name#目标, vname#target, type#int32, len#4 val#1]
+
+[error : unknow field type,             name#漂浮时间, vname#uptime, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#延迟时间, vname#delay, type#int32, len#4 val#1000.0]
+
+[error : unknow field type,             name#持续时间, vname#time, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#效果类型1, vname#effect1, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#效果值类型1, vname#valuet1, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#效果值1, vname#value1, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#效果类型2, vname#effect2, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#效果值类型2, vname#valuet2, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#效果值2, vname#value2, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#效果类型3, vname#effect3, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#效果值类型3, vname#valuet3, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#效果值3, vname#value3, type#int32, len#4 val#0.0]
+../res/tbl/item.tbl[ok]
+[excel to tbl] /home/game/.shaco/excel/戒指.xlsx (戒指) ->  
+[error : unknow field type,             name#ID, vname#id, type#uint32, len#4 val#1010]
+
+[error : unknow field type,             name#类型, vname#type, type#uint32, len#4 val#1.0]
+
+[error : unknow field type,             name#名称, vname#name, type#string, len#32 val#氧气指环]
+
+[error : unknow field type,             name#简介, vname#desc, type#string, len#96 val#氧气指环]
+
+[error : unknow field type,             name#等级, vname#level, type#uint32, len#4 val#0.0]
+
+[error : unknow field type,             name#权值, vname#weight, type#uint32, len#4 val#1000.0]
+
+[error : unknow field type,             name#出售价格, vname#saleprice, type#uint32, len#4 val#100.0]
+
+[error : unknow field type,             name#效果1, vname#effect1, type#int32, len#4 val#1]
+
+[error : unknow field type,             name#值类型1, vname#valuet1, type#int32, len#4 val#1.0]
+
+[error : unknow field type,             name#值1, vname#value1, type#int32, len#4 val#30.0]
+
+[error : unknow field type,             name#效果2, vname#effect2, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#值类型2, vname#valuet2, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#值2, vname#value2, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#效果3, vname#effect3, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#值类型3, vname#valuet3, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#值3, vname#value3, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#ID, vname#id, type#uint32, len#4 val#1011]
+
+[error : unknow field type,             name#类型, vname#type, type#uint32, len#4 val#1.0]
+
+[error : unknow field type,             name#名称, vname#name, type#string, len#32 val#集气指环]
+
+[error : unknow field type,             name#简介, vname#desc, type#string, len#96 val#集气指环]
+
+[error : unknow field type,             name#等级, vname#level, type#uint32, len#4 val#1.0]
+
+[error : unknow field type,             name#权值, vname#weight, type#uint32, len#4 val#100.0]
+
+[error : unknow field type,             name#出售价格, vname#saleprice, type#uint32, len#4 val#100.0]
+
+[error : unknow field type,             name#效果1, vname#effect1, type#int32, len#4 val#1]
+
+[error : unknow field type,             name#值类型1, vname#valuet1, type#int32, len#4 val#1.0]
+
+[error : unknow field type,             name#值1, vname#value1, type#int32, len#4 val#40.0]
+
+[error : unknow field type,             name#效果2, vname#effect2, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#值类型2, vname#valuet2, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#值2, vname#value2, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#效果3, vname#effect3, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#值类型3, vname#valuet3, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#值3, vname#value3, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#ID, vname#id, type#uint32, len#4 val#1012]
+
+[error : unknow field type,             name#类型, vname#type, type#uint32, len#4 val#1.0]
+
+[error : unknow field type,             name#名称, vname#name, type#string, len#32 val#聚气之银环]
+
+[error : unknow field type,             name#简介, vname#desc, type#string, len#96 val#聚气之银环]
+
+[error : unknow field type,             name#等级, vname#level, type#uint32, len#4 val#2.0]
+
+[error : unknow field type,             name#权值, vname#weight, type#uint32, len#4 val#10.0]
+
+[error : unknow field type,             name#出售价格, vname#saleprice, type#uint32, len#4 val#100.0]
+
+[error : unknow field type,             name#效果1, vname#effect1, type#int32, len#4 val#1]
+
+[error : unknow field type,             name#值类型1, vname#valuet1, type#int32, len#4 val#1.0]
+
+[error : unknow field type,             name#值1, vname#value1, type#int32, len#4 val#50.0]
+
+[error : unknow field type,             name#效果2, vname#effect2, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#值类型2, vname#valuet2, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#值2, vname#value2, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#效果3, vname#effect3, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#值类型3, vname#valuet3, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#值3, vname#value3, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#ID, vname#id, type#uint32, len#4 val#1015]
+
+[error : unknow field type,             name#类型, vname#type, type#uint32, len#4 val#1.0]
+
+[error : unknow field type,             name#名称, vname#name, type#string, len#32 val#氧气指环·诅]
+
+[error : unknow field type,             name#简介, vname#desc, type#string, len#96 val#氧气指环·诅]
+
+[error : unknow field type,             name#等级, vname#level, type#uint32, len#4 val#5.0]
+
+[error : unknow field type,             name#权值, vname#weight, type#uint32, len#4 val#20.0]
+
+[error : unknow field type,             name#出售价格, vname#saleprice, type#uint32, len#4 val#100.0]
+
+[error : unknow field type,             name#效果1, vname#effect1, type#int32, len#4 val#1]
+
+[error : unknow field type,             name#值类型1, vname#valuet1, type#int32, len#4 val#1.0]
+
+[error : unknow field type,             name#值1, vname#value1, type#int32, len#4 val#60.0]
+
+[error : unknow field type,             name#效果2, vname#effect2, type#int32, len#4 val#3]
+
+[error : unknow field type,             name#值类型2, vname#valuet2, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#值2, vname#value2, type#int32, len#4 val#-50.0]
+
+[error : unknow field type,             name#效果3, vname#effect3, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#值类型3, vname#valuet3, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#值3, vname#value3, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#ID, vname#id, type#uint32, len#4 val#1020]
+
+[error : unknow field type,             name#类型, vname#type, type#uint32, len#4 val#1.0]
+
+[error : unknow field type,             name#名称, vname#name, type#string, len#32 val#体能指环]
+
+[error : unknow field type,             name#简介, vname#desc, type#string, len#96 val#体能指环]
+
+[error : unknow field type,             name#等级, vname#level, type#uint32, len#4 val#0.0]
+
+[error : unknow field type,             name#权值, vname#weight, type#uint32, len#4 val#1000.0]
+
+[error : unknow field type,             name#出售价格, vname#saleprice, type#uint32, len#4 val#100.0]
+
+[error : unknow field type,             name#效果1, vname#effect1, type#int32, len#4 val#2]
+
+[error : unknow field type,             name#值类型1, vname#valuet1, type#int32, len#4 val#1.0]
+
+[error : unknow field type,             name#值1, vname#value1, type#int32, len#4 val#60.0]
+
+[error : unknow field type,             name#效果2, vname#effect2, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#值类型2, vname#valuet2, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#值2, vname#value2, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#效果3, vname#effect3, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#值类型3, vname#valuet3, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#值3, vname#value3, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#ID, vname#id, type#uint32, len#4 val#1030]
+
+[error : unknow field type,             name#类型, vname#type, type#uint32, len#4 val#1.0]
+
+[error : unknow field type,             name#名称, vname#name, type#string, len#32 val#敏捷指环]
+
+[error : unknow field type,             name#简介, vname#desc, type#string, len#96 val#敏捷指环]
+
+[error : unknow field type,             name#等级, vname#level, type#uint32, len#4 val#0.0]
+
+[error : unknow field type,             name#权值, vname#weight, type#uint32, len#4 val#1000.0]
+
+[error : unknow field type,             name#出售价格, vname#saleprice, type#uint32, len#4 val#100.0]
+
+[error : unknow field type,             name#效果1, vname#effect1, type#int32, len#4 val#3]
+
+[error : unknow field type,             name#值类型1, vname#valuet1, type#int32, len#4 val#1.0]
+
+[error : unknow field type,             name#值1, vname#value1, type#int32, len#4 val#60.0]
+
+[error : unknow field type,             name#效果2, vname#effect2, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#值类型2, vname#valuet2, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#值2, vname#value2, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#效果3, vname#effect3, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#值类型3, vname#valuet3, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#值3, vname#value3, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#ID, vname#id, type#uint32, len#4 val#1040]
+
+[error : unknow field type,             name#类型, vname#type, type#uint32, len#4 val#1.0]
+
+[error : unknow field type,             name#名称, vname#name, type#string, len#32 val#点金指环]
+
+[error : unknow field type,             name#简介, vname#desc, type#string, len#96 val#点金指环]
+
+[error : unknow field type,             name#等级, vname#level, type#uint32, len#4 val#0.0]
+
+[error : unknow field type,             name#权值, vname#weight, type#uint32, len#4 val#1000.0]
+
+[error : unknow field type,             name#出售价格, vname#saleprice, type#uint32, len#4 val#100.0]
+
+[error : unknow field type,             name#效果1, vname#effect1, type#int32, len#4 val#4]
+
+[error : unknow field type,             name#值类型1, vname#valuet1, type#int32, len#4 val#1.0]
+
+[error : unknow field type,             name#值1, vname#value1, type#int32, len#4 val#30.0]
+
+[error : unknow field type,             name#效果2, vname#effect2, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#值类型2, vname#valuet2, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#值2, vname#value2, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#效果3, vname#effect3, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#值类型3, vname#valuet3, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#值3, vname#value3, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#ID, vname#id, type#uint32, len#4 val#1070]
+
+[error : unknow field type,             name#类型, vname#type, type#uint32, len#4 val#1.0]
+
+[error : unknow field type,             name#名称, vname#name, type#string, len#32 val#远攻指环]
+
+[error : unknow field type,             name#简介, vname#desc, type#string, len#96 val#远攻指环]
+
+[error : unknow field type,             name#等级, vname#level, type#uint32, len#4 val#0.0]
+
+[error : unknow field type,             name#权值, vname#weight, type#uint32, len#4 val#1000.0]
+
+[error : unknow field type,             name#出售价格, vname#saleprice, type#uint32, len#4 val#100.0]
+
+[error : unknow field type,             name#效果1, vname#effect1, type#int32, len#4 val#7]
+
+[error : unknow field type,             name#值类型1, vname#valuet1, type#int32, len#4 val#1.0]
+
+[error : unknow field type,             name#值1, vname#value1, type#int32, len#4 val#30.0]
+
+[error : unknow field type,             name#效果2, vname#effect2, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#值类型2, vname#valuet2, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#值2, vname#value2, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#效果3, vname#effect3, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#值类型3, vname#valuet3, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#值3, vname#value3, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#ID, vname#id, type#uint32, len#4 val#1090]
+
+[error : unknow field type,             name#类型, vname#type, type#uint32, len#4 val#1.0]
+
+[error : unknow field type,             name#名称, vname#name, type#string, len#32 val#力量指环]
+
+[error : unknow field type,             name#简介, vname#desc, type#string, len#96 val#力量指环]
+
+[error : unknow field type,             name#等级, vname#level, type#uint32, len#4 val#0.0]
+
+[error : unknow field type,             name#权值, vname#weight, type#uint32, len#4 val#1000.0]
+
+[error : unknow field type,             name#出售价格, vname#saleprice, type#uint32, len#4 val#100.0]
+
+[error : unknow field type,             name#效果1, vname#effect1, type#int32, len#4 val#9]
+
+[error : unknow field type,             name#值类型1, vname#valuet1, type#int32, len#4 val#1.0]
+
+[error : unknow field type,             name#值1, vname#value1, type#int32, len#4 val#300.0]
+
+[error : unknow field type,             name#效果2, vname#effect2, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#值类型2, vname#valuet2, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#值2, vname#value2, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#效果3, vname#effect3, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#值类型3, vname#valuet3, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#值3, vname#value3, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#ID, vname#id, type#uint32, len#4 val#1170]
+
+[error : unknow field type,             name#类型, vname#type, type#uint32, len#4 val#1.0]
+
+[error : unknow field type,             name#名称, vname#name, type#string, len#32 val#经验指环]
+
+[error : unknow field type,             name#简介, vname#desc, type#string, len#96 val#经验指环]
+
+[error : unknow field type,             name#等级, vname#level, type#uint32, len#4 val#0.0]
+
+[error : unknow field type,             name#权值, vname#weight, type#uint32, len#4 val#1000.0]
+
+[error : unknow field type,             name#出售价格, vname#saleprice, type#uint32, len#4 val#100.0]
+
+[error : unknow field type,             name#效果1, vname#effect1, type#int32, len#4 val#17]
+
+[error : unknow field type,             name#值类型1, vname#valuet1, type#int32, len#4 val#1.0]
+
+[error : unknow field type,             name#值1, vname#value1, type#int32, len#4 val#30.0]
+
+[error : unknow field type,             name#效果2, vname#effect2, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#值类型2, vname#valuet2, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#值2, vname#value2, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#效果3, vname#effect3, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#值类型3, vname#valuet3, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#值3, vname#value3, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#ID, vname#id, type#uint32, len#4 val#1200]
+
+[error : unknow field type,             name#类型, vname#type, type#uint32, len#4 val#1.0]
+
+[error : unknow field type,             name#名称, vname#name, type#string, len#32 val#身价指环]
+
+[error : unknow field type,             name#简介, vname#desc, type#string, len#96 val#身价指环]
+
+[error : unknow field type,             name#等级, vname#level, type#uint32, len#4 val#0.0]
+
+[error : unknow field type,             name#权值, vname#weight, type#uint32, len#4 val#1000.0]
+
+[error : unknow field type,             name#出售价格, vname#saleprice, type#uint32, len#4 val#100.0]
+
+[error : unknow field type,             name#效果1, vname#effect1, type#int32, len#4 val#20]
+
+[error : unknow field type,             name#值类型1, vname#valuet1, type#int32, len#4 val#1.0]
+
+[error : unknow field type,             name#值1, vname#value1, type#int32, len#4 val#10.0]
+
+[error : unknow field type,             name#效果2, vname#effect2, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#值类型2, vname#valuet2, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#值2, vname#value2, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#效果3, vname#effect3, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#值类型3, vname#valuet3, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#值3, vname#value3, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#ID, vname#id, type#uint32, len#4 val#1220]
+
+[error : unknow field type,             name#类型, vname#type, type#uint32, len#4 val#1.0]
+
+[error : unknow field type,             name#名称, vname#name, type#string, len#32 val#技能指环]
+
+[error : unknow field type,             name#简介, vname#desc, type#string, len#96 val#技能指环]
+
+[error : unknow field type,             name#等级, vname#level, type#uint32, len#4 val#0.0]
+
+[error : unknow field type,             name#权值, vname#weight, type#uint32, len#4 val#1000.0]
+
+[error : unknow field type,             name#出售价格, vname#saleprice, type#uint32, len#4 val#100.0]
+
+[error : unknow field type,             name#效果1, vname#effect1, type#int32, len#4 val#22]
+
+[error : unknow field type,             name#值类型1, vname#valuet1, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#值1, vname#value1, type#int32, len#4 val#1.0]
+
+[error : unknow field type,             name#效果2, vname#effect2, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#值类型2, vname#valuet2, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#值2, vname#value2, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#效果3, vname#effect3, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#值类型3, vname#valuet3, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#值3, vname#value3, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#ID, vname#id, type#uint32, len#4 val#1230]
+
+[error : unknow field type,             name#类型, vname#type, type#uint32, len#4 val#1.0]
+
+[error : unknow field type,             name#名称, vname#name, type#string, len#32 val#视野指环]
+
+[error : unknow field type,             name#简介, vname#desc, type#string, len#96 val#视野指环]
+
+[error : unknow field type,             name#等级, vname#level, type#uint32, len#4 val#0.0]
+
+[error : unknow field type,             name#权值, vname#weight, type#uint32, len#4 val#1000.0]
+
+[error : unknow field type,             name#出售价格, vname#saleprice, type#uint32, len#4 val#100.0]
+
+[error : unknow field type,             name#效果1, vname#effect1, type#int32, len#4 val#23]
+
+[error : unknow field type,             name#值类型1, vname#valuet1, type#int32, len#4 val#1.0]
+
+[error : unknow field type,             name#值1, vname#value1, type#int32, len#4 val#30.0]
+
+[error : unknow field type,             name#效果2, vname#effect2, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#值类型2, vname#valuet2, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#值2, vname#value2, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#效果3, vname#effect3, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#值类型3, vname#valuet3, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#值3, vname#value3, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#ID, vname#id, type#uint32, len#4 val#2010]
+
+[error : unknow field type,             name#类型, vname#type, type#uint32, len#4 val#2.0]
+
+[error : unknow field type,             name#名称, vname#name, type#string, len#32 val#氧气扳指]
+
+[error : unknow field type,             name#简介, vname#desc, type#string, len#96 val#氧气扳指]
+
+[error : unknow field type,             name#等级, vname#level, type#uint32, len#4 val#0.0]
+
+[error : unknow field type,             name#权值, vname#weight, type#uint32, len#4 val#200.0]
+
+[error : unknow field type,             name#出售价格, vname#saleprice, type#uint32, len#4 val#100.0]
+
+[error : unknow field type,             name#效果1, vname#effect1, type#int32, len#4 val#1]
+
+[error : unknow field type,             name#值类型1, vname#valuet1, type#int32, len#4 val#1.0]
+
+[error : unknow field type,             name#值1, vname#value1, type#int32, len#4 val#90.0]
+
+[error : unknow field type,             name#效果2, vname#effect2, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#值类型2, vname#valuet2, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#值2, vname#value2, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#效果3, vname#effect3, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#值类型3, vname#valuet3, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#值3, vname#value3, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#ID, vname#id, type#uint32, len#4 val#2040]
+
+[error : unknow field type,             name#类型, vname#type, type#uint32, len#4 val#2.0]
+
+[error : unknow field type,             name#名称, vname#name, type#string, len#32 val#点金扳指]
+
+[error : unknow field type,             name#简介, vname#desc, type#string, len#96 val#点金扳指]
+
+[error : unknow field type,             name#等级, vname#level, type#uint32, len#4 val#0.0]
+
+[error : unknow field type,             name#权值, vname#weight, type#uint32, len#4 val#200.0]
+
+[error : unknow field type,             name#出售价格, vname#saleprice, type#uint32, len#4 val#100.0]
+
+[error : unknow field type,             name#效果1, vname#effect1, type#int32, len#4 val#4]
+
+[error : unknow field type,             name#值类型1, vname#valuet1, type#int32, len#4 val#1.0]
+
+[error : unknow field type,             name#值1, vname#value1, type#int32, len#4 val#90.0]
+
+[error : unknow field type,             name#效果2, vname#effect2, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#值类型2, vname#valuet2, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#值2, vname#value2, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#效果3, vname#effect3, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#值类型3, vname#valuet3, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#值3, vname#value3, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#ID, vname#id, type#uint32, len#4 val#2060]
+
+[error : unknow field type,             name#类型, vname#type, type#uint32, len#4 val#2.0]
+
+[error : unknow field type,             name#名称, vname#name, type#string, len#32 val#重力扳指]
+
+[error : unknow field type,             name#简介, vname#desc, type#string, len#96 val#重力扳指]
+
+[error : unknow field type,             name#等级, vname#level, type#uint32, len#4 val#0.0]
+
+[error : unknow field type,             name#权值, vname#weight, type#uint32, len#4 val#200.0]
+
+[error : unknow field type,             name#出售价格, vname#saleprice, type#uint32, len#4 val#100.0]
+
+[error : unknow field type,             name#效果1, vname#effect1, type#int32, len#4 val#6]
+
+[error : unknow field type,             name#值类型1, vname#valuet1, type#int32, len#4 val#1.0]
+
+[error : unknow field type,             name#值1, vname#value1, type#int32, len#4 val#120.0]
+
+[error : unknow field type,             name#效果2, vname#effect2, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#值类型2, vname#valuet2, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#值2, vname#value2, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#效果3, vname#effect3, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#值类型3, vname#valuet3, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#值3, vname#value3, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#ID, vname#id, type#uint32, len#4 val#2100]
+
+[error : unknow field type,             name#类型, vname#type, type#uint32, len#4 val#2.0]
+
+[error : unknow field type,             name#名称, vname#name, type#string, len#32 val#幸运扳指]
+
+[error : unknow field type,             name#简介, vname#desc, type#string, len#96 val#幸运扳指]
+
+[error : unknow field type,             name#等级, vname#level, type#uint32, len#4 val#0.0]
+
+[error : unknow field type,             name#权值, vname#weight, type#uint32, len#4 val#200.0]
+
+[error : unknow field type,             name#出售价格, vname#saleprice, type#uint32, len#4 val#100.0]
+
+[error : unknow field type,             name#效果1, vname#effect1, type#int32, len#4 val#10]
+
+[error : unknow field type,             name#值类型1, vname#valuet1, type#int32, len#4 val#1.0]
+
+[error : unknow field type,             name#值1, vname#value1, type#int32, len#4 val#20.0]
+
+[error : unknow field type,             name#效果2, vname#effect2, type#int32, len#4 val#4]
+
+[error : unknow field type,             name#值类型2, vname#valuet2, type#int32, len#4 val#1.0]
+
+[error : unknow field type,             name#值2, vname#value2, type#int32, len#4 val#20.0]
+
+[error : unknow field type,             name#效果3, vname#effect3, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#值类型3, vname#valuet3, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#值3, vname#value3, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#ID, vname#id, type#uint32, len#4 val#2101]
+
+[error : unknow field type,             name#类型, vname#type, type#uint32, len#4 val#2.0]
+
+[error : unknow field type,             name#名称, vname#name, type#string, len#32 val#开运扳指]
+
+[error : unknow field type,             name#简介, vname#desc, type#string, len#96 val#开运扳指]
+
+[error : unknow field type,             name#等级, vname#level, type#uint32, len#4 val#1.0]
+
+[error : unknow field type,             name#权值, vname#weight, type#uint32, len#4 val#20.0]
+
+[error : unknow field type,             name#出售价格, vname#saleprice, type#uint32, len#4 val#100.0]
+
+[error : unknow field type,             name#效果1, vname#effect1, type#int32, len#4 val#10]
+
+[error : unknow field type,             name#值类型1, vname#valuet1, type#int32, len#4 val#1.0]
+
+[error : unknow field type,             name#值1, vname#value1, type#int32, len#4 val#25.0]
+
+[error : unknow field type,             name#效果2, vname#effect2, type#int32, len#4 val#4]
+
+[error : unknow field type,             name#值类型2, vname#valuet2, type#int32, len#4 val#1.0]
+
+[error : unknow field type,             name#值2, vname#value2, type#int32, len#4 val#20.0]
+
+[error : unknow field type,             name#效果3, vname#effect3, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#值类型3, vname#valuet3, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#值3, vname#value3, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#ID, vname#id, type#uint32, len#4 val#2102]
+
+[error : unknow field type,             name#类型, vname#type, type#uint32, len#4 val#2.0]
+
+[error : unknow field type,             name#名称, vname#name, type#string, len#32 val#鸿运玉扳指]
+
+[error : unknow field type,             name#简介, vname#desc, type#string, len#96 val#鸿运玉扳指]
+
+[error : unknow field type,             name#等级, vname#level, type#uint32, len#4 val#2.0]
+
+[error : unknow field type,             name#权值, vname#weight, type#uint32, len#4 val#2.0]
+
+[error : unknow field type,             name#出售价格, vname#saleprice, type#uint32, len#4 val#100.0]
+
+[error : unknow field type,             name#效果1, vname#effect1, type#int32, len#4 val#10]
+
+[error : unknow field type,             name#值类型1, vname#valuet1, type#int32, len#4 val#1.0]
+
+[error : unknow field type,             name#值1, vname#value1, type#int32, len#4 val#30.0]
+
+[error : unknow field type,             name#效果2, vname#effect2, type#int32, len#4 val#4]
+
+[error : unknow field type,             name#值类型2, vname#valuet2, type#int32, len#4 val#1.0]
+
+[error : unknow field type,             name#值2, vname#value2, type#int32, len#4 val#30.0]
+
+[error : unknow field type,             name#效果3, vname#effect3, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#值类型3, vname#valuet3, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#值3, vname#value3, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#ID, vname#id, type#uint32, len#4 val#2105]
+
+[error : unknow field type,             name#类型, vname#type, type#uint32, len#4 val#2.0]
+
+[error : unknow field type,             name#名称, vname#name, type#string, len#32 val#幸运扳指·诅]
+
+[error : unknow field type,             name#简介, vname#desc, type#string, len#96 val#幸运扳指·诅]
+
+[error : unknow field type,             name#等级, vname#level, type#uint32, len#4 val#5.0]
+
+[error : unknow field type,             name#权值, vname#weight, type#uint32, len#4 val#4.0]
+
+[error : unknow field type,             name#出售价格, vname#saleprice, type#uint32, len#4 val#100.0]
+
+[error : unknow field type,             name#效果1, vname#effect1, type#int32, len#4 val#10]
+
+[error : unknow field type,             name#值类型1, vname#valuet1, type#int32, len#4 val#1.0]
+
+[error : unknow field type,             name#值1, vname#value1, type#int32, len#4 val#40.0]
+
+[error : unknow field type,             name#效果2, vname#effect2, type#int32, len#4 val#4]
+
+[error : unknow field type,             name#值类型2, vname#valuet2, type#int32, len#4 val#1.0]
+
+[error : unknow field type,             name#值2, vname#value2, type#int32, len#4 val#40.0]
+
+[error : unknow field type,             name#效果3, vname#effect3, type#int32, len#4 val#1]
+
+[error : unknow field type,             name#值类型3, vname#valuet3, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#值3, vname#value3, type#int32, len#4 val#-100.0]
+
+[error : unknow field type,             name#ID, vname#id, type#uint32, len#4 val#2110]
+
+[error : unknow field type,             name#类型, vname#type, type#uint32, len#4 val#2.0]
+
+[error : unknow field type,             name#名称, vname#name, type#string, len#32 val#速攻扳指]
+
+[error : unknow field type,             name#简介, vname#desc, type#string, len#96 val#速攻指环]
+
+[error : unknow field type,             name#等级, vname#level, type#uint32, len#4 val#0.0]
+
+[error : unknow field type,             name#权值, vname#weight, type#uint32, len#4 val#200.0]
+
+[error : unknow field type,             name#出售价格, vname#saleprice, type#uint32, len#4 val#100.0]
+
+[error : unknow field type,             name#效果1, vname#effect1, type#int32, len#4 val#11]
+
+[error : unknow field type,             name#值类型1, vname#valuet1, type#int32, len#4 val#1.0]
+
+[error : unknow field type,             name#值1, vname#value1, type#int32, len#4 val#90.0]
+
+[error : unknow field type,             name#效果2, vname#effect2, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#值类型2, vname#valuet2, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#值2, vname#value2, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#效果3, vname#effect3, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#值类型3, vname#valuet3, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#值3, vname#value3, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#ID, vname#id, type#uint32, len#4 val#2120]
+
+[error : unknow field type,             name#类型, vname#type, type#uint32, len#4 val#2.0]
+
+[error : unknow field type,             name#名称, vname#name, type#string, len#32 val#闪避扳指]
+
+[error : unknow field type,             name#简介, vname#desc, type#string, len#96 val#闪避扳指]
+
+[error : unknow field type,             name#等级, vname#level, type#uint32, len#4 val#0.0]
+
+[error : unknow field type,             name#权值, vname#weight, type#uint32, len#4 val#200.0]
+
+[error : unknow field type,             name#出售价格, vname#saleprice, type#uint32, len#4 val#100.0]
+
+[error : unknow field type,             name#效果1, vname#effect1, type#int32, len#4 val#12]
+
+[error : unknow field type,             name#值类型1, vname#valuet1, type#int32, len#4 val#1.0]
+
+[error : unknow field type,             name#值1, vname#value1, type#int32, len#4 val#30.0]
+
+[error : unknow field type,             name#效果2, vname#effect2, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#值类型2, vname#valuet2, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#值2, vname#value2, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#效果3, vname#effect3, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#值类型3, vname#valuet3, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#值3, vname#value3, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#ID, vname#id, type#uint32, len#4 val#2140]
+
+[error : unknow field type,             name#类型, vname#type, type#uint32, len#4 val#2.0]
+
+[error : unknow field type,             name#名称, vname#name, type#string, len#32 val#跳跃扳指]
+
+[error : unknow field type,             name#简介, vname#desc, type#string, len#96 val#跳跃扳指]
+
+[error : unknow field type,             name#等级, vname#level, type#uint32, len#4 val#0.0]
+
+[error : unknow field type,             name#权值, vname#weight, type#uint32, len#4 val#200.0]
+
+[error : unknow field type,             name#出售价格, vname#saleprice, type#uint32, len#4 val#100.0]
+
+[error : unknow field type,             name#效果1, vname#effect1, type#int32, len#4 val#14]
+
+[error : unknow field type,             name#值类型1, vname#valuet1, type#int32, len#4 val#1.0]
+
+[error : unknow field type,             name#值1, vname#value1, type#int32, len#4 val#120.0]
+
+[error : unknow field type,             name#效果2, vname#effect2, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#值类型2, vname#valuet2, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#值2, vname#value2, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#效果3, vname#effect3, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#值类型3, vname#valuet3, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#值3, vname#value3, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#ID, vname#id, type#uint32, len#4 val#2150]
+
+[error : unknow field type,             name#类型, vname#type, type#uint32, len#4 val#2.0]
+
+[error : unknow field type,             name#名称, vname#name, type#string, len#32 val#感知扳指]
+
+[error : unknow field type,             name#简介, vname#desc, type#string, len#96 val#感知扳指]
+
+[error : unknow field type,             name#等级, vname#level, type#uint32, len#4 val#0.0]
+
+[error : unknow field type,             name#权值, vname#weight, type#uint32, len#4 val#200.0]
+
+[error : unknow field type,             name#出售价格, vname#saleprice, type#uint32, len#4 val#100.0]
+
+[error : unknow field type,             name#效果1, vname#effect1, type#int32, len#4 val#15]
+
+[error : unknow field type,             name#值类型1, vname#valuet1, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#值1, vname#value1, type#int32, len#4 val#50.0]
+
+[error : unknow field type,             name#效果2, vname#effect2, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#值类型2, vname#valuet2, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#值2, vname#value2, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#效果3, vname#effect3, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#值类型3, vname#valuet3, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#值3, vname#value3, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#ID, vname#id, type#uint32, len#4 val#2170]
+
+[error : unknow field type,             name#类型, vname#type, type#uint32, len#4 val#2.0]
+
+[error : unknow field type,             name#名称, vname#name, type#string, len#32 val#经验扳指]
+
+[error : unknow field type,             name#简介, vname#desc, type#string, len#96 val#经验扳指]
+
+[error : unknow field type,             name#等级, vname#level, type#uint32, len#4 val#0.0]
+
+[error : unknow field type,             name#权值, vname#weight, type#uint32, len#4 val#200.0]
+
+[error : unknow field type,             name#出售价格, vname#saleprice, type#uint32, len#4 val#100.0]
+
+[error : unknow field type,             name#效果1, vname#effect1, type#int32, len#4 val#17]
+
+[error : unknow field type,             name#值类型1, vname#valuet1, type#int32, len#4 val#1.0]
+
+[error : unknow field type,             name#值1, vname#value1, type#int32, len#4 val#100.0]
+
+[error : unknow field type,             name#效果2, vname#effect2, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#值类型2, vname#valuet2, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#值2, vname#value2, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#效果3, vname#effect3, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#值类型3, vname#valuet3, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#值3, vname#value3, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#ID, vname#id, type#uint32, len#4 val#2200]
+
+[error : unknow field type,             name#类型, vname#type, type#uint32, len#4 val#2.0]
+
+[error : unknow field type,             name#名称, vname#name, type#string, len#32 val#身价扳指]
+
+[error : unknow field type,             name#简介, vname#desc, type#string, len#96 val#身价扳指]
+
+[error : unknow field type,             name#等级, vname#level, type#uint32, len#4 val#0.0]
+
+[error : unknow field type,             name#权值, vname#weight, type#uint32, len#4 val#200.0]
+
+[error : unknow field type,             name#出售价格, vname#saleprice, type#uint32, len#4 val#100.0]
+
+[error : unknow field type,             name#效果1, vname#effect1, type#int32, len#4 val#20]
+
+[error : unknow field type,             name#值类型1, vname#valuet1, type#int32, len#4 val#1.0]
+
+[error : unknow field type,             name#值1, vname#value1, type#int32, len#4 val#30.0]
+
+[error : unknow field type,             name#效果2, vname#effect2, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#值类型2, vname#valuet2, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#值2, vname#value2, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#效果3, vname#effect3, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#值类型3, vname#valuet3, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#值3, vname#value3, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#ID, vname#id, type#uint32, len#4 val#2210]
+
+[error : unknow field type,             name#类型, vname#type, type#uint32, len#4 val#2.0]
+
+[error : unknow field type,             name#名称, vname#name, type#string, len#32 val#技能扳指]
+
+[error : unknow field type,             name#简介, vname#desc, type#string, len#96 val#技能扳指]
+
+[error : unknow field type,             name#等级, vname#level, type#uint32, len#4 val#0.0]
+
+[error : unknow field type,             name#权值, vname#weight, type#uint32, len#4 val#200.0]
+
+[error : unknow field type,             name#出售价格, vname#saleprice, type#uint32, len#4 val#100.0]
+
+[error : unknow field type,             name#效果1, vname#effect1, type#int32, len#4 val#21]
+
+[error : unknow field type,             name#值类型1, vname#valuet1, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#值1, vname#value1, type#int32, len#4 val#1.0]
+
+[error : unknow field type,             name#效果2, vname#effect2, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#值类型2, vname#valuet2, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#值2, vname#value2, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#效果3, vname#effect3, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#值类型3, vname#valuet3, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#值3, vname#value3, type#int32, len#4 val#0.0]
+../res/tbl/ring.tbl[ok]
+[excel to tbl] /home/game/.shaco/excel/关卡.xlsx (关卡管理) ->  
+[error : unknow field type,             name#ID, vname#id, type#uint32, len#4 val#1.0]
+
+[error : unknow field type,             name#难度, vname#difficulty, type#uint32, len#4 val#900.0]
+
+[error : unknow field type,             name#宽度, vname#width, type#uint32, len#4 val#9.0]
+
+[error : unknow field type,             name#深度, vname#height, type#uint32, len#4 val#300.0]
+
+[error : unknow field type,             name#地块配置, vname#block, type#uint32, len#4 val#1.0]
+
+[error : unknow field type,             name#地块纹理, vname#colortex, type#uarray, len#10 val#1,2,3]
+
+[error : unknow field type,             name#特殊纹理, vname#spectex, type#uarray, len#5 val#1,1,1]
+
+[error : unknow field type,             name#道具配置, vname#fightitem, type#uarray, len#10 val#221318,210709]
+
+[error : unknow field type,             name#机关配置, vname#trapitem, type#uarray, len#10 val#0]
+
+[error : unknow field type,             name#秘石1配置, vname#baoitem1, type#uarray, len#10 val#1,2,3]
+
+[error : unknow field type,             name#秘石2配置, vname#baoitem2, type#uarray, len#10 val#1,2,3]
+
+[error : unknow field type,             name#秘石3配置, vname#baoitem3, type#uarray, len#10 val#1,2,3]
+
+[error : unknow field type,             name#秘石4配置, vname#baoitem4, type#uarray, len#10 val#1,2,3]
+
+[error : unknow field type,             name#秘石5配置, vname#baoitem5, type#uarray, len#10 val#1,2,3]
+
+[error : unknow field type,             name#秘石6配置, vname#baoitem6, type#uarray, len#10 val#1,2,3]
+
+[error : unknow field type,             name#秘石7配置, vname#baoitem7, type#uarray, len#10 val#1,2,3]
+
+[error : unknow field type,             name#秘石8配置, vname#baoitem8, type#uarray, len#10 val#1,2,3]
+
+[error : unknow field type,             name#秘石9配置, vname#baoitem9, type#uarray, len#10 val#1,2,3]
+
+[error : unknow field type,             name#秘石10配置, vname#baoitem10, type#uarray, len#10 val#1,2,3]
+
+[error : unknow field type,             name#ID, vname#id, type#uint32, len#4 val#2.0]
+
+[error : unknow field type,             name#难度, vname#difficulty, type#uint32, len#4 val#300.0]
+
+[error : unknow field type,             name#宽度, vname#width, type#uint32, len#4 val#9.0]
+
+[error : unknow field type,             name#深度, vname#height, type#uint32, len#4 val#300.0]
+
+[error : unknow field type,             name#地块配置, vname#block, type#uint32, len#4 val#2.0]
+
+[error : unknow field type,             name#地块纹理, vname#colortex, type#uarray, len#10 val#4,5,6]
+
+[error : unknow field type,             name#特殊纹理, vname#spectex, type#uarray, len#5 val#1,1,1]
+
+[error : unknow field type,             name#道具配置, vname#fightitem, type#uarray, len#10 val#221318,210709]
+
+[error : unknow field type,             name#机关配置, vname#trapitem, type#uarray, len#10 val#0]
+
+[error : unknow field type,             name#秘石1配置, vname#baoitem1, type#uarray, len#10 val#4,5,6]
+
+[error : unknow field type,             name#秘石2配置, vname#baoitem2, type#uarray, len#10 val#4,5,6]
+
+[error : unknow field type,             name#秘石3配置, vname#baoitem3, type#uarray, len#10 val#4,5,6]
+
+[error : unknow field type,             name#秘石4配置, vname#baoitem4, type#uarray, len#10 val#4,5,6]
+
+[error : unknow field type,             name#秘石5配置, vname#baoitem5, type#uarray, len#10 val#4,5,6]
+
+[error : unknow field type,             name#秘石6配置, vname#baoitem6, type#uarray, len#10 val#4,5,6]
+
+[error : unknow field type,             name#秘石7配置, vname#baoitem7, type#uarray, len#10 val#4,5,6]
+
+[error : unknow field type,             name#秘石8配置, vname#baoitem8, type#uarray, len#10 val#4,5,6]
+
+[error : unknow field type,             name#秘石9配置, vname#baoitem9, type#uarray, len#10 val#4,5,6]
+
+[error : unknow field type,             name#秘石10配置, vname#baoitem10, type#uarray, len#10 val#4,5,6]
+
+[error : unknow field type,             name#ID, vname#id, type#uint32, len#4 val#3.0]
+
+[error : unknow field type,             name#难度, vname#difficulty, type#uint32, len#4 val#300.0]
+
+[error : unknow field type,             name#宽度, vname#width, type#uint32, len#4 val#9.0]
+
+[error : unknow field type,             name#深度, vname#height, type#uint32, len#4 val#300.0]
+
+[error : unknow field type,             name#地块配置, vname#block, type#uint32, len#4 val#3.0]
+
+[error : unknow field type,             name#地块纹理, vname#colortex, type#uarray, len#10 val#4,5,6]
+
+[error : unknow field type,             name#特殊纹理, vname#spectex, type#uarray, len#5 val#1,1,1]
+
+[error : unknow field type,             name#道具配置, vname#fightitem, type#uarray, len#10 val#221318,210709]
+
+[error : unknow field type,             name#机关配置, vname#trapitem, type#uarray, len#10 val#0]
+
+[error : unknow field type,             name#秘石1配置, vname#baoitem1, type#uarray, len#10 val#1,2,3]
+
+[error : unknow field type,             name#秘石2配置, vname#baoitem2, type#uarray, len#10 val#1,2,3]
+
+[error : unknow field type,             name#秘石3配置, vname#baoitem3, type#uarray, len#10 val#1,2,3]
+
+[error : unknow field type,             name#秘石4配置, vname#baoitem4, type#uarray, len#10 val#1,2,3]
+
+[error : unknow field type,             name#秘石5配置, vname#baoitem5, type#uarray, len#10 val#1,2,3]
+
+[error : unknow field type,             name#秘石6配置, vname#baoitem6, type#uarray, len#10 val#1,2,3]
+
+[error : unknow field type,             name#秘石7配置, vname#baoitem7, type#uarray, len#10 val#1,2,3]
+
+[error : unknow field type,             name#秘石8配置, vname#baoitem8, type#uarray, len#10 val#1,2,3]
+
+[error : unknow field type,             name#秘石9配置, vname#baoitem9, type#uarray, len#10 val#1,2,3]
+
+[error : unknow field type,             name#秘石10配置, vname#baoitem10, type#uarray, len#10 val#1,2,3]
+../res/tbl/map.tbl[ok]
+[excel to tbl] /home/game/.shaco/excel/角色.xls (角色数据) ->  
+[error : unknow field type,             name#ID, vname#id, type#uint32, len#4 val#10.0]
+
+[error : unknow field type,             name#角色名称, vname#name, type#string, len#32 val#小白]
+
+[error : unknow field type,             name#性别, vname#sex, type#uint32, len#4 val#0.0]
+
+[error : unknow field type,             name#氧气, vname#oxygen, type#int32, len#4 val#600.0]
+
+[error : unknow field type,             name#体能, vname#body, type#int32, len#4 val#500.0]
+
+[error : unknow field type,             name#敏捷, vname#quick, type#int32, len#4 val#500.0]
+
+[error : unknow field type,             name#金币收益, vname#coin_profit, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#幸运, vname#lucky, type#int32, len#4 val#500.0]
+
+[error : unknow field type,             name#挖掘距离, vname#attack_distance, type#int32, len#4 val#75.0]
+
+[error : unknow field type,             name#挖掘范围, vname#attack_range, type#int32, len#4 val#100.0]
+
+[error : unknow field type,             name#挖掘速度, vname#attack_speed, type#int32, len#4 val#60.0]
+
+[error : unknow field type,             name#跳跃高度, vname#jump_range, type#int32, len#4 val#100.0]
+
+[error : unknow field type,             name#感知, vname#sence_range, type#int32, len#4 val#300.0]
+
+[error : unknow field type,             name#视野, vname#view_range, type#int32, len#4 val#300.0]
+
+[error : unknow field type,             name#攻击力, vname#attack_power, type#int32, len#4 val#100.0]
+
+[error : unknow field type,             name#所需等级, vname#needlevel, type#uint32, len#4 val#0.0]
+
+[error : unknow field type,             name#所需金币, vname#needcoin, type#uint32, len#4 val#0]
+
+[error : unknow field type,             name#所需钻石, vname#needdiamond, type#uint32, len#4 val#0]
+
+[error : unknow field type,             name#效果类型1, vname#effect1, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#效果值类型1, vname#valuet1, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#效果值1, vname#value1, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#效果类型2, vname#effect2, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#效果值类型2, vname#valuet2, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#效果值2, vname#value2, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#效果类型3, vname#effect3, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#效果值类型3, vname#valuet3, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#效果值3, vname#value3, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#效果类型4, vname#effect4, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#效果值类型4, vname#valuet4, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#效果值4, vname#value4, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#效果类型5, vname#effect5, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#效果值类型5, vname#valuet5, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#效果值5, vname#value5, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#ID, vname#id, type#uint32, len#4 val#11.0]
+
+[error : unknow field type,             name#角色名称, vname#name, type#string, len#32 val#小白]
+
+[error : unknow field type,             name#性别, vname#sex, type#uint32, len#4 val#0.0]
+
+[error : unknow field type,             name#氧气, vname#oxygen, type#int32, len#4 val#600.0]
+
+[error : unknow field type,             name#体能, vname#body, type#int32, len#4 val#500.0]
+
+[error : unknow field type,             name#敏捷, vname#quick, type#int32, len#4 val#500.0]
+
+[error : unknow field type,             name#金币收益, vname#coin_profit, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#幸运, vname#lucky, type#int32, len#4 val#500.0]
+
+[error : unknow field type,             name#挖掘距离, vname#attack_distance, type#int32, len#4 val#75.0]
+
+[error : unknow field type,             name#挖掘范围, vname#attack_range, type#int32, len#4 val#100.0]
+
+[error : unknow field type,             name#挖掘速度, vname#attack_speed, type#int32, len#4 val#60.0]
+
+[error : unknow field type,             name#跳跃高度, vname#jump_range, type#int32, len#4 val#100.0]
+
+[error : unknow field type,             name#感知, vname#sence_range, type#int32, len#4 val#300.0]
+
+[error : unknow field type,             name#视野, vname#view_range, type#int32, len#4 val#300.0]
+
+[error : unknow field type,             name#攻击力, vname#attack_power, type#int32, len#4 val#100.0]
+
+[error : unknow field type,             name#所需等级, vname#needlevel, type#uint32, len#4 val#0.0]
+
+[error : unknow field type,             name#所需金币, vname#needcoin, type#uint32, len#4 val#10000]
+
+[error : unknow field type,             name#所需钻石, vname#needdiamond, type#uint32, len#4 val#180]
+
+[error : unknow field type,             name#效果类型1, vname#effect1, type#int32, len#4 val#1]
+
+[error : unknow field type,             name#效果值类型1, vname#valuet1, type#int32, len#4 val#1]
+
+[error : unknow field type,             name#效果值1, vname#value1, type#int32, len#4 val#100]
+
+[error : unknow field type,             name#效果类型2, vname#effect2, type#int32, len#4 val#7]
+
+[error : unknow field type,             name#效果值类型2, vname#valuet2, type#int32, len#4 val#0]
+
+[error : unknow field type,             name#效果值2, vname#value2, type#int32, len#4 val#5]
+
+[error : unknow field type,             name#效果类型3, vname#effect3, type#int32, len#4 val#11]
+
+[error : unknow field type,             name#效果值类型3, vname#valuet3, type#int32, len#4 val#1]
+
+[error : unknow field type,             name#效果值3, vname#value3, type#int32, len#4 val#-500]
+
+[error : unknow field type,             name#效果类型4, vname#effect4, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#效果值类型4, vname#valuet4, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#效果值4, vname#value4, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#效果类型5, vname#effect5, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#效果值类型5, vname#valuet5, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#效果值5, vname#value5, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#ID, vname#id, type#uint32, len#4 val#12.0]
+
+[error : unknow field type,             name#角色名称, vname#name, type#string, len#32 val#小白]
+
+[error : unknow field type,             name#性别, vname#sex, type#uint32, len#4 val#0.0]
+
+[error : unknow field type,             name#氧气, vname#oxygen, type#int32, len#4 val#600.0]
+
+[error : unknow field type,             name#体能, vname#body, type#int32, len#4 val#500.0]
+
+[error : unknow field type,             name#敏捷, vname#quick, type#int32, len#4 val#500.0]
+
+[error : unknow field type,             name#金币收益, vname#coin_profit, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#幸运, vname#lucky, type#int32, len#4 val#500.0]
+
+[error : unknow field type,             name#挖掘距离, vname#attack_distance, type#int32, len#4 val#75.0]
+
+[error : unknow field type,             name#挖掘范围, vname#attack_range, type#int32, len#4 val#100.0]
+
+[error : unknow field type,             name#挖掘速度, vname#attack_speed, type#int32, len#4 val#80.0]
+
+[error : unknow field type,             name#跳跃高度, vname#jump_range, type#int32, len#4 val#100.0]
+
+[error : unknow field type,             name#感知, vname#sence_range, type#int32, len#4 val#300.0]
+
+[error : unknow field type,             name#视野, vname#view_range, type#int32, len#4 val#300.0]
+
+[error : unknow field type,             name#攻击力, vname#attack_power, type#int32, len#4 val#100.0]
+
+[error : unknow field type,             name#所需等级, vname#needlevel, type#uint32, len#4 val#0.0]
+
+[error : unknow field type,             name#所需金币, vname#needcoin, type#uint32, len#4 val#100000]
+
+[error : unknow field type,             name#所需钻石, vname#needdiamond, type#uint32, len#4 val#1800]
+
+[error : unknow field type,             name#效果类型1, vname#effect1, type#int32, len#4 val#1]
+
+[error : unknow field type,             name#效果值类型1, vname#valuet1, type#int32, len#4 val#1]
+
+[error : unknow field type,             name#效果值1, vname#value1, type#int32, len#4 val#100]
+
+[error : unknow field type,             name#效果类型2, vname#effect2, type#int32, len#4 val#2]
+
+[error : unknow field type,             name#效果值类型2, vname#valuet2, type#int32, len#4 val#1]
+
+[error : unknow field type,             name#效果值2, vname#value2, type#int32, len#4 val#100]
+
+[error : unknow field type,             name#效果类型3, vname#effect3, type#int32, len#4 val#5]
+
+[error : unknow field type,             name#效果值类型3, vname#valuet3, type#int32, len#4 val#1]
+
+[error : unknow field type,             name#效果值3, vname#value3, type#int32, len#4 val#100]
+
+[error : unknow field type,             name#效果类型4, vname#effect4, type#int32, len#4 val#9]
+
+[error : unknow field type,             name#效果值类型4, vname#valuet4, type#int32, len#4 val#0]
+
+[error : unknow field type,             name#效果值4, vname#value4, type#int32, len#4 val#100]
+
+[error : unknow field type,             name#效果类型5, vname#effect5, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#效果值类型5, vname#valuet5, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#效果值5, vname#value5, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#ID, vname#id, type#uint32, len#4 val#20.0]
+
+[error : unknow field type,             name#角色名称, vname#name, type#string, len#32 val#马莉]
+
+[error : unknow field type,             name#性别, vname#sex, type#uint32, len#4 val#1.0]
+
+[error : unknow field type,             name#氧气, vname#oxygen, type#int32, len#4 val#600.0]
+
+[error : unknow field type,             name#体能, vname#body, type#int32, len#4 val#400.0]
+
+[error : unknow field type,             name#敏捷, vname#quick, type#int32, len#4 val#600.0]
+
+[error : unknow field type,             name#金币收益, vname#coin_profit, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#幸运, vname#lucky, type#int32, len#4 val#500.0]
+
+[error : unknow field type,             name#挖掘距离, vname#attack_distance, type#int32, len#4 val#75.0]
+
+[error : unknow field type,             name#挖掘范围, vname#attack_range, type#int32, len#4 val#100.0]
+
+[error : unknow field type,             name#挖掘速度, vname#attack_speed, type#int32, len#4 val#60.0]
+
+[error : unknow field type,             name#跳跃高度, vname#jump_range, type#int32, len#4 val#100.0]
+
+[error : unknow field type,             name#感知, vname#sence_range, type#int32, len#4 val#300.0]
+
+[error : unknow field type,             name#视野, vname#view_range, type#int32, len#4 val#300.0]
+
+[error : unknow field type,             name#攻击力, vname#attack_power, type#int32, len#4 val#100.0]
+
+[error : unknow field type,             name#所需等级, vname#needlevel, type#uint32, len#4 val#0.0]
+
+[error : unknow field type,             name#所需金币, vname#needcoin, type#uint32, len#4 val#1000]
+
+[error : unknow field type,             name#所需钻石, vname#needdiamond, type#uint32, len#4 val#0]
+
+[error : unknow field type,             name#效果类型1, vname#effect1, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#效果值类型1, vname#valuet1, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#效果值1, vname#value1, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#效果类型2, vname#effect2, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#效果值类型2, vname#valuet2, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#效果值2, vname#value2, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#效果类型3, vname#effect3, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#效果值类型3, vname#valuet3, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#效果值3, vname#value3, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#效果类型4, vname#effect4, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#效果值类型4, vname#valuet4, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#效果值4, vname#value4, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#效果类型5, vname#effect5, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#效果值类型5, vname#valuet5, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#效果值5, vname#value5, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#ID, vname#id, type#uint32, len#4 val#21.0]
+
+[error : unknow field type,             name#角色名称, vname#name, type#string, len#32 val#马莉]
+
+[error : unknow field type,             name#性别, vname#sex, type#uint32, len#4 val#1.0]
+
+[error : unknow field type,             name#氧气, vname#oxygen, type#int32, len#4 val#600.0]
+
+[error : unknow field type,             name#体能, vname#body, type#int32, len#4 val#400.0]
+
+[error : unknow field type,             name#敏捷, vname#quick, type#int32, len#4 val#600.0]
+
+[error : unknow field type,             name#金币收益, vname#coin_profit, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#幸运, vname#lucky, type#int32, len#4 val#500.0]
+
+[error : unknow field type,             name#挖掘距离, vname#attack_distance, type#int32, len#4 val#75.0]
+
+[error : unknow field type,             name#挖掘范围, vname#attack_range, type#int32, len#4 val#100.0]
+
+[error : unknow field type,             name#挖掘速度, vname#attack_speed, type#int32, len#4 val#80.0]
+
+[error : unknow field type,             name#跳跃高度, vname#jump_range, type#int32, len#4 val#100.0]
+
+[error : unknow field type,             name#感知, vname#sence_range, type#int32, len#4 val#300.0]
+
+[error : unknow field type,             name#视野, vname#view_range, type#int32, len#4 val#300.0]
+
+[error : unknow field type,             name#攻击力, vname#attack_power, type#int32, len#4 val#100.0]
+
+[error : unknow field type,             name#所需等级, vname#needlevel, type#uint32, len#4 val#0.0]
+
+[error : unknow field type,             name#所需金币, vname#needcoin, type#uint32, len#4 val#15000]
+
+[error : unknow field type,             name#所需钻石, vname#needdiamond, type#uint32, len#4 val#280]
+
+[error : unknow field type,             name#效果类型1, vname#effect1, type#int32, len#4 val#1]
+
+[error : unknow field type,             name#效果值类型1, vname#valuet1, type#int32, len#4 val#1.0]
+
+[error : unknow field type,             name#效果值1, vname#value1, type#int32, len#4 val#100.0]
+
+[error : unknow field type,             name#效果类型2, vname#effect2, type#int32, len#4 val#14]
+
+[error : unknow field type,             name#效果值类型2, vname#valuet2, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#效果值2, vname#value2, type#int32, len#4 val#100.0]
+
+[error : unknow field type,             name#效果类型3, vname#effect3, type#int32, len#4 val#5]
+
+[error : unknow field type,             name#效果值类型3, vname#valuet3, type#int32, len#4 val#1]
+
+[error : unknow field type,             name#效果值3, vname#value3, type#int32, len#4 val#200]
+
+[error : unknow field type,             name#效果类型4, vname#effect4, type#int32, len#4 val#3]
+
+[error : unknow field type,             name#效果值类型4, vname#valuet4, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#效果值4, vname#value4, type#int32, len#4 val#100.0]
+
+[error : unknow field type,             name#效果类型5, vname#effect5, type#int32, len#4 val#6]
+
+[error : unknow field type,             name#效果值类型5, vname#valuet5, type#int32, len#4 val#1.0]
+
+[error : unknow field type,             name#效果值5, vname#value5, type#int32, len#4 val#300.0]
+
+[error : unknow field type,             name#ID, vname#id, type#uint32, len#4 val#30.0]
+
+[error : unknow field type,             name#角色名称, vname#name, type#string, len#32 val#艾露莎]
+
+[error : unknow field type,             name#性别, vname#sex, type#uint32, len#4 val#1.0]
+
+[error : unknow field type,             name#氧气, vname#oxygen, type#int32, len#4 val#600.0]
+
+[error : unknow field type,             name#体能, vname#body, type#int32, len#4 val#500.0]
+
+[error : unknow field type,             name#敏捷, vname#quick, type#int32, len#4 val#900.0]
+
+[error : unknow field type,             name#金币收益, vname#coin_profit, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#幸运, vname#lucky, type#int32, len#4 val#500.0]
+
+[error : unknow field type,             name#挖掘距离, vname#attack_distance, type#int32, len#4 val#90.0]
+
+[error : unknow field type,             name#挖掘范围, vname#attack_range, type#int32, len#4 val#100.0]
+
+[error : unknow field type,             name#挖掘速度, vname#attack_speed, type#int32, len#4 val#60.0]
+
+[error : unknow field type,             name#跳跃高度, vname#jump_range, type#int32, len#4 val#100.0]
+
+[error : unknow field type,             name#感知, vname#sence_range, type#int32, len#4 val#300.0]
+
+[error : unknow field type,             name#视野, vname#view_range, type#int32, len#4 val#300.0]
+
+[error : unknow field type,             name#攻击力, vname#attack_power, type#int32, len#4 val#100.0]
+
+[error : unknow field type,             name#所需等级, vname#needlevel, type#uint32, len#4 val#0.0]
+
+[error : unknow field type,             name#所需金币, vname#needcoin, type#uint32, len#4 val#25000]
+
+[error : unknow field type,             name#所需钻石, vname#needdiamond, type#uint32, len#4 val#380]
+
+[error : unknow field type,             name#效果类型1, vname#effect1, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#效果值类型1, vname#valuet1, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#效果值1, vname#value1, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#效果类型2, vname#effect2, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#效果值类型2, vname#valuet2, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#效果值2, vname#value2, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#效果类型3, vname#effect3, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#效果值类型3, vname#valuet3, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#效果值3, vname#value3, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#效果类型4, vname#effect4, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#效果值类型4, vname#valuet4, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#效果值4, vname#value4, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#效果类型5, vname#effect5, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#效果值类型5, vname#valuet5, type#int32, len#4 val#0.0]
+
+[error : unknow field type,             name#效果值5, vname#value5, type#int32, len#4 val#0.0]
+../res/tbl/role.tbl[ok]
+[excel to tbl] /home/game/.shaco/excel/秘石.xls (秘石) ->  
+[error : unknow field type,             name#ID, vname#id, type#uint32, len#4 val#1.0]
+
+[error : unknow field type,             name#权值, vname#weight, type#uint32, len#4 val#1000.0]
+
+[error : unknow field type,             name#ID, vname#id, type#uint32, len#4 val#2.0]
+
+[error : unknow field type,             name#权值, vname#weight, type#uint32, len#4 val#500.0]
+../res/tbl/stone.tbl[ok]
+[excel to tbl] /home/game/.shaco/excel/经验.xlsx (经验) ->  
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#0.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#0.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#1.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#45.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#2.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#60.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#3.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#75.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#4.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#90.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#5.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#105.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#6.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#120.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#7.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#135.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#8.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#150.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#9.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#165.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#10.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#90.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#11.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#120.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#12.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#150.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#13.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#180.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#14.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#210.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#15.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#240.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#16.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#270.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#17.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#300.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#18.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#330.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#19.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#135.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#20.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#180.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#21.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#225.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#22.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#270.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#23.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#315.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#24.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#360.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#25.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#405.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#26.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#450.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#27.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#495.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#28.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#180.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#29.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#240.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#30.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#300.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#31.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#360.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#32.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#420.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#33.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#480.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#34.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#540.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#35.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#600.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#36.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#660.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#37.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#225.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#38.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#300.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#39.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#375.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#40.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#450.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#41.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#525.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#42.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#600.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#43.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#675.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#44.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#750.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#45.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#825.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#46.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#900.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#47.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#975.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#48.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#1050.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#49.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#1125.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#50.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#1200.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#51.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#1275.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#52.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#1350.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#53.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#1425.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#54.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#1500.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#55.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#1575.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#56.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#1650.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#57.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#1725.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#58.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#1800.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#59.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#1875.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#60.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#1950.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#61.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#2025.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#62.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#2100.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#63.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#2175.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#64.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#2250.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#65.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#2325.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#66.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#2400.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#67.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#2475.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#68.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#2550.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#69.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#2625.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#70.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#2700.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#71.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#2775.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#72.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#2850.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#73.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#2925.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#74.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#3000.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#75.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#3075.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#76.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#3150.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#77.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#3225.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#78.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#3300.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#79.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#3375.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#80.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#3450.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#81.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#3525.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#82.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#3600.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#83.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#3675.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#84.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#3750.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#85.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#3825.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#86.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#3900.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#87.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#3975.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#88.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#4050.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#89.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#4125.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#90.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#4200.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#91.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#4275.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#92.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#4350.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#93.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#4425.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#94.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#4500.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#95.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#4575.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#96.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#4650.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#97.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#4725.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#98.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#4800.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#99.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#4875.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#100.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#4950.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#101.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#5025.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#102.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#5100.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#103.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#5175.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#104.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#5250.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#105.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#5325.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#106.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#5400.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#107.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#5475.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#108.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#5550.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#109.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#5625.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#110.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#5700.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#111.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#5775.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#112.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#5850.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#113.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#5925.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#114.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#6000.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#115.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#6075.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#116.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#6150.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#117.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#6225.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#118.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#6300.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#119.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#6375.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#120.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#6450.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#121.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#6525.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#122.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#6600.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#123.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#6675.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#124.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#6750.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#125.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#6825.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#126.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#6900.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#127.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#6975.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#128.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#7050.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#129.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#7125.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#130.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#7200.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#131.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#7275.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#132.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#7350.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#133.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#7425.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#134.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#7500.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#135.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#7575.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#136.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#7650.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#137.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#7725.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#138.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#7800.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#139.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#7875.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#140.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#7950.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#141.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#8025.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#142.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#8100.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#143.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#8175.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#144.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#8250.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#145.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#8325.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#146.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#8400.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#147.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#8475.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#148.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#8550.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#149.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#8625.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#150.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#8700.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#151.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#8775.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#152.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#8850.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#153.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#8925.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#154.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#9000.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#155.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#9075.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#156.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#9150.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#157.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#9225.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#158.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#9300.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#159.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#9375.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#160.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#9450.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#161.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#9525.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#162.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#9600.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#163.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#9675.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#164.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#9750.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#165.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#9825.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#166.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#9900.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#167.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#9975.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#168.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#10050.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#169.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#10125.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#170.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#10200.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#171.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#10275.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#172.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#10350.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#173.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#10425.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#174.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#10500.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#175.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#10575.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#176.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#10650.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#177.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#10725.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#178.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#10800.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#179.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#10875.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#180.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#10950.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#181.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#11025.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#182.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#11100.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#183.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#11175.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#184.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#11250.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#185.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#11325.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#186.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#11400.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#187.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#11475.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#188.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#11550.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#189.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#11625.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#190.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#11700.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#191.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#11775.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#192.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#11850.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#193.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#11925.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#194.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#12000.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#195.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#12075.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#196.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#12150.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#197.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#12225.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#198.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#12300.0]
+
+[error : unknow field type,             name#等级ID, vname#level, type#uint32, len#4 val#199.0]
+
+[error : unknow field type,             name#当前等级所需经验值, vname#curexp, type#uint32, len#4 val#12375.0]
+../res/tbl/exp.tbl[ok]
+[concat file]
+[+]../res/tplt/exp.c
+[+]../res/tplt/map.c
+[+]../res/tplt/stone.c
+[+]../res/tplt/role.c
+[+]../res/tplt/item.c
+[+]../res/tplt/ring.c
+[=]../datadefine/tplt_struct.h

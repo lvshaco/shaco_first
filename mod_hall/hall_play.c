@@ -88,6 +88,7 @@ enter_room(struct module *s, struct player *pr, struct UM_ENTERROOM *er) {
         UM_DEFFIX(UM_LOGINROOM, lr);
         lr->room_handle = er->room_handle;
         lr->roomid = er->roomid;
+        lr->luck_factor = pr->data.luck_factor;
         build_detail(pr, &lr->detail);
         sh_module_send(MODULE_ID, pr->watchdog_source, MT_UM, lr, sizeof(*lr));
         sh_trace("Play %u notify client enter room", UID(pr));

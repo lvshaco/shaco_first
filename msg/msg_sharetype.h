@@ -249,7 +249,8 @@ role_state(struct chardata *cdata) {
 // 道具目标类型
 #define ITEM_TARGET_SELF  0
 #define ITEM_TARGET_ENEMY 1
-#define ITEM_TARGET_ALL 2
+#define ITEM_TARGET_FRIEND 2
+#define ITEM_TARGET_ALL 3
 
 // 关卡信息
 struct groundattri {

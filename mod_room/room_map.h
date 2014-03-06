@@ -1,5 +1,5 @@
-#ifndef __roommap_h__
-#define __roommap_h__
+#ifndef __room_map_h__
+#define __room_map_h__
 
 #include <stdint.h>
 #include <stdlib.h>
