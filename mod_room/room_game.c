@@ -1059,7 +1059,7 @@ login(struct module *s, int source, uint32_t roomid, float luck_factor,
 
 static void
 player_login(struct module *s, int source, const struct UM_LOGINROOM *lr) { 
-    struct player *m = login(s, source, lr->luck_factor, lr->roomid, &lr->detail);
+    struct player *m = login(s, source, lr->roomid, lr->luck_factor, &lr->detail);
     if (m) {
         sh_trace("Room %u player %u login ok", lr->roomid, lr->detail.accid);
         m->brain = NULL;
@@ -1071,7 +1071,7 @@ player_login(struct module *s, int source, const struct UM_LOGINROOM *lr) {
 
 static void
 robot_login(struct module *s, int source, const struct UM_ROBOT_LOGINROOM *lr) {
-    struct player *m = login(s, source, 0.5f, lr->roomid, &lr->detail);
+    struct player *m = login(s, source, lr->roomid, 0.5f, &lr->detail);
     if (m) {
         sh_trace("Room %u robot %u login ok", lr->roomid, lr->detail.accid);
         ai_init(m, lr->level);
@@ -1177,7 +1177,7 @@ gameroom_update_delay(struct module *s, struct gameroom *ro) {
     int i;
     for (i=0; i<ro->np; ++i) {
         m = &ro->p[i];
-        if (m->online)
+        if (!m->online)
             continue;
         struct buff_ud ud = {s, ro, m};
         sh_array_foreach(&m->total_delay, buff_delay_update, &ud);
@@ -1189,7 +1189,7 @@ gameroom_update(struct module *s, struct gameroom *ro) {
     int i;
     for (i=0; i<ro->np; ++i) {
         struct player *m = &ro->p[i];
-        if (m->online) {
+        if (!m->online) {
             continue;
         }
         int oxygen = role_oxygen_time_consume(&m->detail.attri);

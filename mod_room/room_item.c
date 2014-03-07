@@ -30,6 +30,7 @@ item_cmp(const void *p1, const void *p2) {
 int
 room_item_init(struct room *self, struct gameroom *ro, const struct map_tplt *map) {
     struct room_item *items = &ro->items;
+    items->n = 0;
     int i;
     for (i=0; i<map->nfightitem; ++i) {
         uint32_t itemid = map->fightitem[i];
