@@ -53,7 +53,8 @@
 #define IDUM_DESTROYROOM    IDUM_NBEGIN+203
 #define IDUM_JOINROOM       IDUM_NBEGIN+204
 #define IDUM_JOINROOMRES    IDUM_NBEGIN+205
-    
+#define IDUM_ROBOT_PULL_REQ IDUM_NBEGIN+206
+
 #define IDUM_AWARDB         IDUM_NBEGIN+220
 #define IDUM_GAMEAWARD      IDUM_NBEGIN+220
 #define IDUM_AWARDE         IDUM_NBEGIN+229
@@ -239,14 +240,20 @@ struct UM_LOGINROOM {
     struct tmemberdetail detail;
 };
 
+struct match_member {
+    uint8_t is_robot;
+    struct tmemberbrief brief;
+};
+
 // room
 struct UM_CREATEROOM {
     _UM_HEADER; 
     int8_t type;  // see ROOM_TYPE*
     uint32_t mapid;
     uint32_t id;
+    int8_t max_member;
     int8_t nmember;
-    struct tmemberbrief members[0];
+    struct match_member members[0];
 };
 static inline uint16_t 
 UM_CREATEROOM_size(struct UM_CREATEROOM* cr) {
@@ -262,7 +269,7 @@ struct UM_CREATEROOMRES {
 struct UM_JOINROOM {
     _UM_HEADER;
     uint32_t id;
-    struct tmemberbrief brief;
+    struct match_member mm;
 };
 
 struct UM_JOINROOMRES {
@@ -292,10 +299,19 @@ struct UM_GAMEAWARD {
     struct memberaward award;
 };
 
+#define APPLY_TARGET_TYPE_NONE   0
+#define APPLY_TARGET_TYPE_ROOM   1
+#define APPLY_TARGET_TYPE_PLAYER 2
+struct apply_target {
+    int8_t type; // APPLY_TARGET_TYPE_
+    uint32_t id;
+};
+
 struct apply_info {
-    int8_t  type;
-    uint8_t luck_rand;
+    int8_t   type;
+    uint8_t  luck_rand;
     uint32_t match_score;
+    struct apply_target target;
     struct tmemberbrief brief;
 };
 
@@ -308,10 +324,17 @@ struct UM_APPLYCANCEL {
     _UM_HEADER;
 };
 
+struct UM_ROBOT_PULL_REQ {
+    _UM_HEADER;
+    uint32_t roomid;
+};
+
 struct UM_ROBOT_PULL {
     _UM_HEADER;
     int8_t type;
+    int8_t ai;
     uint32_t match_score;
+    struct apply_target target;
 };
 
 struct UM_ROBOT_APPLY {

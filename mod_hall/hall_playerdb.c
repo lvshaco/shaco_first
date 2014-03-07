@@ -81,7 +81,6 @@ _db(struct module *s, struct player* p, int8_t type) {
                 " diamond"
                 " package"
                 " role"
-                " skin"
                 " luck_factor"
                 " last_washgold_refresh_time"
                 " washgold"

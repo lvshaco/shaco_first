@@ -5,11 +5,17 @@
 
 struct room;
 struct player;
-struct gameroom;
+struct room_game;
 struct map_tplt;
+struct item_tplt;
 
-int room_item_init(struct room *self, struct gameroom *ro, const struct map_tplt *map);
-void room_item_fini(struct gameroom *ro);
-uint32_t room_item_rand(struct room *self, struct gameroom *ro, struct player *m);
+void room_item_init(struct room *self, struct room_game *ro, const struct map_tplt *map);
+void room_item_fini(struct room_game *ro);
+
+const struct item_tplt * 
+room_item_rand(struct room *self, 
+        struct room_game *ro, 
+        struct player *m, 
+        const struct item_tplt *item);
 
 #endif

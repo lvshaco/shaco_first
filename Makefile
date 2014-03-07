@@ -127,6 +127,7 @@ $(mod_so): %.so: $(mod_dir)/%.c
 	gcc $(CFLAGS) $(SHARED) -o $@ $< -Iinclude/libshaco -Inet -Ibase -Imsg
 
 mod_room.so: $(mod_dir)/mod_room.c \
+	mod_room/room.c \
 	mod_room/room_game.c \
 	mod_room/room_game.h \
 	mod_room/room_tplt.c \
@@ -142,7 +143,11 @@ mod_room.so: $(mod_dir)/mod_room.c \
 	mod_room/room_genmap.c \
 	mod_room/room_genmap.h \
 	mod_room/room_map.c \
-	mod_room/room_map.h
+	mod_room/room_map.h \
+	mod_room/room_dump.c \
+	mod_room/room_dump.h \
+	mod_room/room_pull.c \
+	mod_room/room_pull.h
 	@rm -f $@
 	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Iinclude/libshaco -Inet -Ibase -Imsg -Imod_room -Imod_share -Itplt -Idatadefine -Wl,-rpath,. tplt.so 
 

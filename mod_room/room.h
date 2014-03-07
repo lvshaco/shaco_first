@@ -6,6 +6,7 @@
 #include "msg_sharetype.h"
 #include <stdint.h>
 #include <stdbool.h>
+#include <stddef.h>
 
 #define TICK_INTV (100)
 #define ROOM_UPDATE_INTV (1000)
@@ -14,18 +15,23 @@
 #define SEC_TO_TICK(sec) (int)((SEC_TO_FLOAT_TICK(sec) < 1) ? 1 : (SEC_TO_FLOAT_TICK(sec)+0.5))
 #define SEC_ELAPSED(sec) ((self->tick % SEC_TO_TICK(sec)) == 0)
 
+// 房间模式
+#define MODE_FREE  0 // 自由
+#define MODE_CO    1 // 合作
+#define MODE_FIGHT 2 // 对战
+#define MODE_MAX 3
+
 struct tplt;
 
 struct room {
+    int match_handle;
     struct tplt *T;
     struct sh_hash *MH; 
-    //int watchdog_handle;
-    //int match_handle;
     int tick;
     uint32_t randseed;
     uint32_t map_randseed;
     struct sh_hash players;
-    struct sh_hash gamerooms;
+    struct sh_hash room_games;
 };
 
 struct buff_delay {
@@ -53,9 +59,10 @@ struct player {
     int watchdog_source; // if isrobot then, this is robot handle
     uint8_t index;
     uint8_t team; // 所属队伍的标志
-    bool login;
-    bool online;
-    bool loadok;
+    bool logined; // 是否登录过
+    bool online;  // 是否在线
+    bool loadok;  // 客户端是否加载完成
+    bool is_robot;// 是否机器人
     int refresh_flag;
     float luck_factor;
     struct tmemberdetail detail;
@@ -74,7 +81,11 @@ struct player {
     struct ai_brain *brain;
 };
 
-#define is_robot(m) ((m)->brain != NULL)
+#define is_robot(m) ((m)->is_robot)
+#define is_player(m) (!(is_robot(m)))
+#define is_online(m) ((m)->online)
+#define is_logined(m) ((m)->logined)
+#define is_offline(m) (is_logined(m) && !is_online(m))
 
 struct luck_item {
     uint32_t luck;
@@ -87,25 +98,43 @@ struct room_item {
     struct luck_item p[10];
 };
 
-
-struct gameroom { 
+struct room_game { 
     uint32_t id;
-    int8_t type; // ROOM_TYPE*
-    //uint32_t key;
-    int status; // ROOMS_*
+    int8_t type; // ROOM_TYPE_
+    int8_t status; // ROOMS_
     uint64_t statustime;
     uint64_t starttime;
-    int np;
+    uint32_t pull_next_time;
+    int8_t maxp;
+    int8_t np;
     struct player p[MEMBER_MAX];
-    struct room_item items;
+    struct room_item mode_items[MODE_MAX];
     struct groundattri gattri;
     struct genmap* map;
 };
 
-#define member2gameroom(m) ({ \
-    assert(m->index >=0 && m->index < MEMBER_MAX); \
-    ((struct gameroom*)((char*)(m) - (m)->index * sizeof(*(m)) - offsetof(struct gameroom, p))); \
-})
+struct member_n {
+    int8_t player;
+    int8_t robot;
+};
+
+int  room_online_nplayer(struct room_game *ro);
+bool room_preonline_1player(struct room_game *ro);
+   
+static inline int
+room_game_mode(struct room_game *ro) {
+    if (ro->type == ROOM_TYPE_DASHI) {
+        return MODE_FIGHT;
+    } else {
+        return (ro->np > 1) ? MODE_CO : MODE_FREE;
+    }
+}
+
+static inline struct room_game *
+room_member_to_game(struct player *m) {
+    assert(m->index >= 0 && m->index < MEMBER_MAX);
+    return (struct room_game*)((char*)m - m->index * sizeof(*m) - offsetof(struct room_game, p));
+}
 
 #define UID(m) ((m)->detail.accid)
 

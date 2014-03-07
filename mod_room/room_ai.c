@@ -46,12 +46,12 @@ oxygen_percent(struct player *m) {
 }
 
 static struct player *
-player_front(struct gameroom *ro, struct player *m) {
+player_front(struct room_game *ro, struct player *m) {
     int i;
     for (i=0; i<ro->np; ++i) { 
         struct player *other = &ro->p[i];
-        if (other->online &&
-            other != m &&
+        if (other != m &&
+            is_online(other) &&
             other->depth > m->depth) {
             return other;
         }
@@ -60,7 +60,7 @@ player_front(struct gameroom *ro, struct player *m) {
 }
 
 static int
-lookup_target(struct room *self, struct gameroom *ro, struct player *m, 
+lookup_target(struct room *self, struct room_game *ro, struct player *m, 
         int type, struct ai_target *target) {
     struct genmap *map = ro->map;
     int depth = m->depth + 2; 
@@ -114,7 +114,7 @@ target_depth(struct ai_target *target) {
 }
 
 static int
-down_block_count(struct gameroom *ro, int depth) {
+down_block_count(struct room_game *ro, int depth) {
     struct genmap *map = ro->map;
     int h = depth;
     if (h < 0 || h >= map->height) {
@@ -154,7 +154,7 @@ ai_dir(struct player *m) {
 }
 
 static float
-ai_speed(struct gameroom *ro, struct player *m) {
+ai_speed(struct room_game *ro, struct player *m) {
     struct ai_brain *brain = m->brain;
     if (brain->dir < 1)
         return 1;
@@ -228,7 +228,7 @@ ai_can_pick(struct player *m) {
 
 }
 static void
-ai_pick_target(struct module *s, struct gameroom *ro, struct player *m) {
+ai_pick_target(struct module *s, struct room_game *ro, struct player *m) {
     struct ai_brain *brain = m->brain;
     struct ai_target *target = target_current(brain);
     if (target) {
@@ -258,7 +258,7 @@ ai_pick_target(struct module *s, struct gameroom *ro, struct player *m) {
 }
 
 static int
-ai_lookup_oxygen(struct room *self, struct gameroom *ro, struct player *m) {
+ai_lookup_oxygen(struct room *self, struct room_game *ro, struct player *m) {
     struct ai_brain *brain = m->brain;
     struct ai_target target;
     if (!lookup_target(self, ro, m, ITEM_T_OXYGEN, &target)) {
@@ -281,7 +281,7 @@ ai_lookup_oxygen(struct room *self, struct gameroom *ro, struct player *m) {
 }
 
 static int
-ai_lookup_item(struct room *self, struct gameroom *ro, struct player *m) {
+ai_lookup_item(struct room *self, struct room_game *ro, struct player *m) {
     struct ai_brain *brain = m->brain;
     struct ai_target target;
     if (!lookup_target(self, ro, m, ITEM_T_FIGHT, &target)) {
@@ -313,7 +313,7 @@ ai_press(struct module *s, struct player *m, uint64_t now, int press_time) {
 }
 
 void
-ai_main(struct module *s, struct gameroom *ro, struct player *m) {
+ai_main(struct module *s, struct room_game *ro, struct player *m) {
     struct room *self = MODULE_SELF;
     struct ai_brain *brain = m->brain;
     

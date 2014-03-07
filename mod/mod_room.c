@@ -29,7 +29,7 @@ room_init(struct module* s) {
     int handle;
     if (sh_handler("robot", SUB_REMOTE, &handle) ||
         sh_handler("watchdog", SUB_REMOTE, &handle) ||
-        sh_handler("match", SUB_REMOTE, &handle))
+        sh_handler("match", SUB_REMOTE, &self->match_handle))
         return 1;
    
     if (room_tplt_init(self)) {

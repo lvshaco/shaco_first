@@ -5,6 +5,13 @@
 #include "msg_server.h"
 #include "msg_client.h"
 
+static inline struct agent_list *
+index_rest_list(struct robot *self, int level) {
+    int idx = level-1;
+    assert(idx >= 0 && idx < AI_MAX);
+    return &self->rests[idx];
+}
+
 static struct agent *
 alloc_agent(struct robot *self) {
     struct agent *ag = malloc(sizeof(*ag));
@@ -14,13 +21,15 @@ alloc_agent(struct robot *self) {
 }
 
 static struct agent *
-agent_pull(struct robot *self) {
-    struct agent *ag = self->rest_head;
+agent_pull(struct robot *self, int level) {
+    struct agent_list *rest = index_rest_list(self, level);
+    
+    struct agent *ag = rest->head;
     if (ag == NULL)
         return NULL;
     assert(ag->status == S_REST);
     ag->status = S_WAIT;
-    self->rest_head = self->rest_head->next;
+    rest->head = rest->head->next;
     return ag;
 }
 
@@ -32,15 +41,16 @@ agent_fight(struct robot *self, struct agent *ag) {
 
 static void
 agent_rest(struct robot *self, struct agent *ag) {
+    struct agent_list *rest = index_rest_list(self, ag->level);
     ag->status = S_REST;
-    if (self->rest_head) {
-        assert(self->rest_tail != NULL);
-        assert(self->rest_tail->next == NULL);
-        self->rest_tail->next = ag;
+    if (rest->head) {
+        assert(rest->tail != NULL);
+        assert(rest->tail->next == NULL);
+        rest->tail->next = ag;
     } else {
-        self->rest_head = ag;
+        rest->head = ag;
     }
-    self->rest_tail = ag;
+    rest->tail = ag;
     ag->next = NULL;
 }
 
@@ -74,6 +84,7 @@ static int
 init_agents(struct module *s) {
     struct robot *self = MODULE_SELF;
     sh_hash_init(&self->agents, 1);
+    memset(self->rests, 0, sizeof(self->rests));
     // todo
     int count = 100;
     if (count > ROBOT_MAX) {
@@ -122,11 +133,13 @@ static void
 pull(struct module *s, int source, struct UM_ROBOT_PULL *rp) {
     struct robot *self = MODULE_SELF;
     UM_DEFFIX(UM_ROBOT_APPLY, ra);
-    struct agent *ag = agent_pull(self);
+    struct agent *ag = agent_pull(self, rp->ai);
     if (ag) {
         ra->info.type = rp->type;
         ra->info.luck_rand = 0;
         ra->info.match_score = rp->match_score;
+        ra->info.target.type = rp->target.type;
+        ra->info.target.id = rp->target.id;
         build_brief(ag, &ra->info.brief);
         sh_module_send(MODULE_ID, source, MT_UM, ra, sizeof(*ra)); 
         sh_trace("Robot %u pull", UID(ag));
@@ -199,7 +212,7 @@ robot_free(struct robot* self) {
         return;
     sh_hash_foreach(&self->agents, free);
     sh_hash_fini(&self->agents);
-    self->rest_head = NULL;
+    memset(self->rests, 0, sizeof(self->rests));
     self->nagent = 0;
     robot_tplt_fini(self);
     free(self);

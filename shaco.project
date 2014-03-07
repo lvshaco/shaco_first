@@ -144,6 +144,7 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.py *.h *.c" {
  }
  mod_room=mod_room{
   room.h
+  room.c
   room_ai.h
   room_buff.h
   room_fight.h
@@ -160,6 +161,10 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.py *.h *.c" {
   room_item.c
   room_map.c
   room_tplt.c
+  room_dump.h
+  room_dump.c
+  room_pull.h
+  room_pull.c
  }
  mod_robot=mod_robot{
   robot.h

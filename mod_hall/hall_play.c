@@ -45,6 +45,8 @@ play(struct module *s, struct player *pr, int type) {
             ap->info.luck_rand = 0;
             ap->info.match_score = pr->data.score_dashi;
         }
+        ap->info.target.type = APPLY_TARGET_TYPE_NONE;
+        ap->info.target.id = 0;
         build_brief(pr, &ap->info.brief);
         sh_module_send(MODULE_ID, self->match_handle, MT_UM, ap, sizeof(*ap));
         sh_trace("Play %u send play to match", UID(pr));
