@@ -98,7 +98,10 @@ _sendtest(struct module *s) {
     } else if (!strcmp(self->mode, "coin")) {
         snprintf(cmd, sizeof(cmd), "hmset user:%d coin 1000000 diamond 100000\r\n", id);
         _sendcmd(s, cmd);
-    } 
+    } else if (!strcmp(self->mode, "score")) {
+        snprintf(cmd, sizeof(cmd), "hmset user:%d score2 0 score1 0\r\n", id);
+        _sendcmd(s, cmd);
+    }
 }
 
 void
@@ -109,6 +112,7 @@ command(struct module* s, const void *msg, int sz) {
     if (A.argc != 4) {
         return;
     }
+    // modcmd "mode" startid count init
     sh_strncpy(self->mode, A.argv[0], sizeof(self->mode));
     self->startid = strtol(A.argv[1], NULL, 10);
     int count = strtol(A.argv[2], NULL, 10);
