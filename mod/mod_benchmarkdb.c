@@ -4,11 +4,6 @@
 #include "memrw.h"
 #include "args.h"
 
-#define MODE_TEST  0
-#define MODE_ACCA  1
-#define MODE_ACCD  2
-#define MODE_COIN  3
-
 struct benchmarkdb {
     int rpuser_handle;
     char mode[16];
@@ -182,7 +177,7 @@ benchmarkdb_main(struct module *s, int session, int source, int type, const void
 void
 benchmarkdb_time(struct module* s) {
     struct benchmarkdb* self= MODULE_SELF;
-    if (self->mode != MODE_TEST)
+    if (strncpy(self->mode, "test", sizeof(self->mode)-1))
         return;
     if (self->query_send > 0)
         return;
