@@ -144,6 +144,19 @@ _useitem(uint32_t id) {
     mylog("requset use item: %u", id);
 }
 
+static void
+_stat(const struct tmemberstat *st, int rank) {
+    mylog("%d. [%u] %d %d %d %d %d %d %d", rank, 
+            st->charid,
+            st->depth,
+            st->noxygenitem,
+            st->nitem,
+            st->nbao,
+            st->exp,
+            st->coin,
+            st->score);
+}
+
 static void 
 _handleum(int id, int ut, struct UM_BASE* um) {
     mylog("handleum: %d", um->msgid);
@@ -245,6 +258,13 @@ _handleum(int id, int ut, struct UM_BASE* um) {
         mylog("update roleinfo: %u", ri->detail.charid);
         }
         break;
+    case IDUM_GAMEUNJOIN: {
+        UM_CAST(UM_GAMEUNJOIN, unjoin, um);
+        mylog("--------member %u unjoin---------", unjoin->stat.charid);
+        mylog("rank charid depth oxygenitem item bao exp coin score");
+        _stat(&unjoin->stat, 0);
+        break;
+        }
     case IDUM_GAMEOVER: {
         UM_CAST(UM_GAMEOVER, go, um);
         mylog("****************GAME OVER*****************");
@@ -252,15 +272,7 @@ _handleum(int id, int ut, struct UM_BASE* um) {
         mylog("rank charid depth oxygenitem item bao exp coin score");
         int i;
         for (i=0; i<go->nmember; ++i) {
-            mylog("%d. [%u] %u %u %u %u %u %u %u", i+1, 
-                    go->stats[i].charid,
-                    go->stats[i].depth,
-                    go->stats[i].noxygenitem,
-                    go->stats[i].nitem,
-                    go->stats[i].nbao,
-                    go->stats[i].exp,
-                    go->stats[i].coin,
-                    go->stats[i].score);
+            _stat(&go->stats[i], i+1);
         }
         mylog("******************************************");
         break;

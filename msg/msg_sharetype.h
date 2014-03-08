@@ -34,8 +34,8 @@
 #define SERR_CREMAP         44
 #define SERR_ROOMIDCONFLICT 45
 
-#define SERR_NOROOM         50
-#define SERR_ROOMKEY        51
+#define SERR_NOROOMJOIN     50
+#define SERR_NOROOMLOGIN    51
 #define SERR_NOMEMBER       52
 #define SERR_ROOMOVER       53
 #define SERR_ALLOC          54
@@ -46,6 +46,8 @@
 #define SERR_NOROOMS        59
 #define SERR_JOINROOM       60
 #define SERR_ROOMFULL       61
+#define SERR_ROOMUNJOINABLE 62
+#define SERR_ROOMUNEXIST    63
 
 #pragma pack(1)
 
@@ -213,7 +215,7 @@ struct chardata {
 
     uint8_t role;    // 使用的角色
 
-    uint32_t score_normal;  // 普通赛得分
+    uint32_t score_normal;  // 比赛得分
     uint32_t score_dashi;   // 大师赛积分
     struct   char_attribute attri;
     uint8_t  ownrole[ROLE_MAX]; // 拥有的角色
@@ -234,7 +236,7 @@ role_state(struct chardata *cdata) {
 }
 
 // room type
-#define ROOM_TYPE_NORMAL 0 // 普通赛
+#define ROOM_TYPE_NORMAL 0 // 普通赛, 自由/合作模式
 #define ROOM_TYPE_DASHI  1 // 大师赛
 #define MEMBER_MAX 8
 

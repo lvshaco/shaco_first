@@ -28,7 +28,10 @@
 #define S_WAIT   1
 #define S_FIGHT  2
 
+#define AI_MAX   10
 #define UID(ag) ((ag)->data.accid)
+
+struct tplt;
 
 struct agent { 
     int status;
@@ -38,16 +41,18 @@ struct agent {
     struct agent *next;
 };
 
-struct tplt;
+struct agent_list {
+    struct agent *head; 
+    struct agent *tail;
+};
 
 struct robot {
     struct tplt *T;
     int match_handle;
     int room_handle;
     int nagent;
-    struct agent *rest_head; 
-    struct agent *rest_tail;
     struct sh_hash agents;
+    struct agent_list rests[AI_MAX];
 };
 
 #endif

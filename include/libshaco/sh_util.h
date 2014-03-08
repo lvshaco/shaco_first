@@ -28,6 +28,11 @@
 
 // rand
 #define sh_rand(x) rand_r(&(x))
+static inline int 
+sh_rande(uint32_t *seed) {
+    *seed = (*seed) * 1103515245 + 12345;
+    return((uint32_t)((*seed)/65536) % 32768);
+}
 
 #ifndef min
 #define min(x, y) ((x) < (y) ? (x) : (y))

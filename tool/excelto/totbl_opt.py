@@ -48,8 +48,11 @@ def _serialize_to_file(table, field_map, outfile):
             elif ftype == "string":
                 op.write(struct.pack("%ds" % flen, str(val)))
             elif ftype == "uarray":
-                subv = map(lambda x: int(x), val.split(","))
-                nsub = len(subv)
+                if val:
+                    subv = map(lambda x: int(x), val.split(","))
+                    nsub = len(subv)
+                else:
+                    nsub = 0
                 op.write(struct.pack("H", nsub))
                 for vi in range(flen):
                     op.write(struct.pack("I", subv[vi] if vi < nsub else 0))

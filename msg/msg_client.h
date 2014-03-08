@@ -345,7 +345,7 @@ struct UM_GAMELOADOK {
 
 struct UM_GAMEUNJOIN {
     _UM_HEADER;
-    uint32_t charid;
+    struct tmemberstat stat;
 };
 
 struct UM_GAMESYNC {

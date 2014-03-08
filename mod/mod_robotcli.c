@@ -334,6 +334,19 @@ client_connect_gate(struct module *s, struct client *c, const char *ip, int port
     } 
 }
 
+static void
+stat(const struct tmemberstat *st, int rank) {
+    sh_trace("%d. [%u] %d %d %d %d %d %d %d", rank, 
+            st->charid,
+            st->depth,
+            st->noxygenitem,
+            st->nitem,
+            st->nbao,
+            st->exp,
+            st->coin,
+            st->score);
+}
+
 static void 
 client_handle(struct module *s, struct client *c, void *msg, int sz) {
     struct robotcli *self = MODULE_SELF;
@@ -455,6 +468,13 @@ client_handle(struct module *s, struct client *c, void *msg, int sz) {
         sh_trace("Client %d update roleinfo: %u", c->id, ri->detail.charid);
         }
         break;
+    case IDUM_GAMEUNJOIN: {
+        UM_CAST(UM_GAMEUNJOIN, unjoin, base);
+        sh_trace("--------member %u unjoin---------", unjoin->stat.charid);
+        sh_trace("rank charid depth oxygenitem item bao exp coin score");
+        stat(&unjoin->stat, 0);
+        break;
+        }
     case IDUM_GAMEOVER: {
         UM_CAST(UM_GAMEOVER, go, base);
         client_over(c);
@@ -467,15 +487,7 @@ client_handle(struct module *s, struct client *c, void *msg, int sz) {
         sh_trace("rank charid depth oxygenitem item bao exp coin score");
         int i;
         for (i=0; i<go->nmember; ++i) {
-            sh_trace("%d. [%u] %u %u %u %u %u %u %u", i+1, 
-                    go->stats[i].charid,
-                    go->stats[i].depth,
-                    go->stats[i].noxygenitem,
-                    go->stats[i].nitem,
-                    go->stats[i].nbao,
-                    go->stats[i].exp,
-                    go->stats[i].coin,
-                    go->stats[i].score);
+            stat(&go->stats[i], i+1);
         }
         sh_trace("******************************************");
         client_play(c, 0);
