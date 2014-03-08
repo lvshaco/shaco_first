@@ -274,7 +274,7 @@ build_award_dashi(struct room_game *ro, uint64_t gametime, const struct award_in
     const int score_line2 = 5000;
     int score_last = m->detail.score_dashi;
     int score_dashi;
-    int score_diff = abs(score_last - in->score_agv) * 2;
+    int score_diff = (score_last - in->score_agv) * 2;
     int score_cut = 0;
     int score_ext = 0;
     if (score_last >= score_line1) {
@@ -291,18 +291,9 @@ build_award_dashi(struct room_game *ro, uint64_t gametime, const struct award_in
     if (m->nbedamage >= in->max_bedamage)
         score_ext += 32 * 0.05;
     if (rank == 0) {
-        if (score_last >= in->score_agv) {
-            score_dashi = max(10, min(62, 32 - score_diff * 0.06 - score_cut)) + score_ext;
-        } else {
-            score_dashi = max(10, min(62, 32 + score_diff * 0.06 - score_cut)) + score_ext;
-        }
+        score_dashi = max(10, min(62, 32 - score_diff * 0.06 - score_cut)) + score_ext;
     } else if (score_last >= 1500) {
-        if (score_last >= in->score_agv) {
-            score_dashi = max(-13,min(-66,-26 - score_diff * 0.12 - score_cut)) + score_ext;
-        } else {
-            score_dashi = max(-13,min(-66,-26 + score_diff * 0.12 - score_cut)) + score_ext;
-
-        }
+        score_dashi = max(-66,min(-13,-26 - score_diff * 0.12 - score_cut)) + score_ext;
     } else {
         score_dashi = 0;
     }

@@ -101,7 +101,7 @@ struct room {
 struct waiter {
     bool is_robot;
     uint32_t uid;
-    uint64_t waiting_time;
+    uint64_t waiting_timeout;
 };
 
 struct match {
@@ -238,13 +238,13 @@ notify_join_room(struct module *s, struct room *ro, struct applyer *ar) {
 }
 
 static inline void
-notify_waiting(struct module *s, struct applyer *ar) {
+notify_waiting(struct module *s, struct applyer *ar, int tick) {
     sh_trace("Match notify waiting %u", ar->uid);
     if (ar->is_robot)
         return;
     UM_DEFWRAP(UM_MATCH, ma, UM_PLAYWAIT, pw);
     ma->uid = ar->uid;
-    pw->timeout = WAIT_TIMEOUT;
+    pw->timeout = tick;
     sh_module_send(MODULE_ID, ar->hall_source, MT_UM, ma, sizeof(*ma)+sizeof(*pw));
 }
 
@@ -288,14 +288,16 @@ applyer_to_waiter(struct match *self, struct applyer *ar) {
     return &self->waiting_S[ar->match_slot];
 }
 
-static void
+static int
 join_waiting(struct match *self, struct applyer *ar) {
     sh_trace("Match new applyer %u join waiting", ar->uid);
     ar->status = S_WAITING;
     struct waiter *one = applyer_to_waiter(self, ar);
     one->is_robot = ar->is_robot;
     one->uid = ar->uid;
-    one->waiting_time = sh_timer_now();
+    int tick = sh_rande(&self->randseed)%5 + 8;
+    one->waiting_timeout = sh_timer_now() + tick*1000;
+    return tick;
 }
 
 static void
@@ -542,15 +544,26 @@ lookup_N(struct module *s, struct applyer *ar) {
 static int
 lookup_S(struct module *s, struct applyer *ar) {
     sh_trace("Match applyer %u lookup_S", ar->uid);
-    struct match *self = MODULE_SELF; 
-    struct applyer *other = NULL;
-
+    struct match *self = MODULE_SELF;  
     assert(ar->match_slot < S_MAX); 
-    struct waiter *one = &self->waiting_S[ar->match_slot];
-    if (one->uid) {
-        other = sh_hash_find(&self->applyers, one->uid);
-        if (other == NULL) {
-            one->uid = 0;
+
+    int slot = ar->match_slot;
+    const int slots[] = {
+        slot, slot+1, slot-1, slot-2, slot-3, slot-4, slot-5,
+    };
+    struct applyer *other = NULL;
+    int i;
+    for (i=0; i<sizeof(slots)/sizeof(slots[0]); ++i) {
+        slot = slots[i];
+        if (slot >= 0 && slot < S_MAX) {
+            struct waiter *one = &self->waiting_S[slot];
+            if (one->uid) {
+                other = sh_hash_find(&self->applyers, one->uid);
+                if (other == NULL) {
+                    one->uid = 0; // someting wrong
+                }
+                break;
+            }
         }
     }
     if (other) {
@@ -562,8 +575,8 @@ lookup_S(struct module *s, struct applyer *ar) {
         }
         return err;
     } else {
-        join_waiting(self, ar);
-        notify_waiting(s, ar);
+        int tick = join_waiting(self, ar);
+        notify_waiting(s, ar, tick);
         return 0;
     }
 }
@@ -759,15 +772,14 @@ waiter_time(struct module *s, struct waiter *one) {
     if (one->is_robot || one->uid == 0) {
         return;
     }
-    if (sh_timer_now() - one->waiting_time < WAIT_TIMEOUT*1000) {
-        return;
-    }
-    sh_trace("Match waiter %u, timeout", one->uid);
-    struct applyer *ar = sh_hash_find(&self->applyers, one->uid);
-    if (ar) {
-        robot_pull(s, ar->type, ar->match_score, APPLY_TARGET_TYPE_NONE, 0); 
-    } else {
-        one->uid = 0; // sometine wrong
+    if (sh_timer_now() >= one->waiting_timeout) {
+        sh_trace("Match waiter %u, timeout", one->uid);
+        struct applyer *ar = sh_hash_find(&self->applyers, one->uid);
+        if (ar) {
+            robot_pull(s, ar->type, ar->match_score, APPLY_TARGET_TYPE_NONE, 0); 
+        } else {
+            one->uid = 0; // sometine wrong
+        }
     }
 }
 

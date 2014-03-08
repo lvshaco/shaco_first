@@ -1214,6 +1214,24 @@ test_array(int times) {
     }
 }
 
+static uint64_t next = 1;
+
+static inline int 
+_rand(void) {
+    next = next * 1103515245 + 12345;
+    return((uint32_t)(next/65536) % 32768);
+}
+
+void
+test_rand(int times) {
+    int sum = 0;
+    int i;
+    for (i=0; i<times; ++i) {
+        sum += _rand()%100;
+    }
+    printf("rand sum %d\n", sum);
+}
+
 int 
 main(int argc, char* argv[]) {
     int times = 1;
@@ -1249,7 +1267,8 @@ main(int argc, char* argv[]) {
     //test_hash64(times);
     //test_hash32_for(times);
     //test_syslog(times);
-    test_array(times);
+    //test_array(times);
+    test_rand(times);
 
     uint64_t t2 = _elapsed();
     printf("main use time %d\n", (int)(t2-t1));
