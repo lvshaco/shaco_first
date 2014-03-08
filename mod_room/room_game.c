@@ -157,7 +157,7 @@ build_brief_from_detail(struct tmemberdetail *detail, struct tmemberbrief *brief
     brief->state = detail->state;
     brief->oxygen = detail->attri.oxygen;
     brief->body = detail->attri.body;
-    brief->quick = detail->attri.body;
+    brief->quick = detail->attri.quick;
 }
 
 static inline void
@@ -170,7 +170,7 @@ fill_brief_into_detail(struct tmemberbrief *brief, struct tmemberdetail *detail)
     detail->state = brief->state;
     detail->attri.oxygen = brief->oxygen;
     detail->attri.body = brief->body;
-    detail->attri.quick = brief->body;
+    detail->attri.quick = brief->quick;
 }
 
 static struct player *
@@ -724,10 +724,8 @@ notify_game_info(struct module *s, struct player *m) {
         int i, n=0;
         for (i=0; i<ro->np; ++i) {
             struct player *m = &ro->p[i];
-            if (is_online(m)) {
-                gi->members[i] = m->detail;
-                n++;
-            }
+            gi->members[i] = m->detail;
+            n++;
         }
         gi->nmember = n;
         int sz = UM_GAMEINFO_size(gi);

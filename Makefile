@@ -328,3 +328,4 @@ cleanall: clean
 	rm -rf cscope.* tags
 	rm -rf res
 	rm -rf datadefine
+	find . -name "*.pyc" | xargs -i rm -f {}
