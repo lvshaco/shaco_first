@@ -41,7 +41,7 @@ function def_node(name, id)
     node_ip   = node.ip
     node_port = node.port
 
-    sh_loglevel = "INFO"
+    sh_loglevel = "TRACE"
     sh_connmax = node.conn
     sh_module = "log,node"
     if name == "center" then

@@ -271,10 +271,12 @@ notify_status(struct module *s, struct applyer *ar) {
 
 static inline void
 robot_pull(struct module *s, int type, int match_score, int target_type, int target_id) { 
+    int ai = match_ai(type, match_score);
+    sh_trace("Match robot pull type %d ai %d score %d", type, ai, match_score);
     struct match *self = MODULE_SELF;
     UM_DEFFIX(UM_ROBOT_PULL, rp);
     rp->type = type;
-    rp->ai = match_ai(type, match_score);
+    rp->ai = ai;
     rp->match_score = match_score;
     rp->target.type = target_type;
     rp->target.id = target_id;
@@ -290,7 +292,7 @@ applyer_to_waiter(struct match *self, struct applyer *ar) {
 
 static int
 join_waiting(struct match *self, struct applyer *ar) {
-    sh_trace("Match new applyer %u join waiting", ar->uid);
+    sh_trace("Match new applyer %u join waiting slot %u", ar->uid, ar->match_slot);
     ar->status = S_WAITING;
     struct waiter *one = applyer_to_waiter(self, ar);
     one->is_robot = ar->is_robot;
@@ -551,9 +553,13 @@ lookup_S(struct module *s, struct applyer *ar) {
     const int slots[] = {
         slot, slot+1, slot-1, slot-2, slot-3, slot-4, slot-5,
     };
+    bool no_far = ar->match_score <= 2000;
     struct applyer *other = NULL;
     int i;
     for (i=0; i<sizeof(slots)/sizeof(slots[0]); ++i) {
+        if (i > 2 && no_far) {
+            break;
+        }
         slot = slots[i];
         if (slot >= 0 && slot < S_MAX) {
             struct waiter *one = &self->waiting_S[slot];
@@ -568,7 +574,7 @@ lookup_S(struct module *s, struct applyer *ar) {
     }
     if (other) {
         leave_waiting(self, other);
-        struct applyer *as[2] = {ar, other};
+        struct applyer *as[2] = {other, ar};
         int err = start_room(s, as, 2);
         if (err) {
             join_waiting(self, other);
