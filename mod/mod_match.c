@@ -1,121 +1,80 @@
 #include "sh.h"
+#include "match.h"
 #include "msg_server.h"
 #include "msg_client.h"
 
-#define WAIT_TIMEOUT 3
-#define JOINABLE_TIME 3
+// autopull
+static bool
+single_p(struct room *ro) {
+    int i;
+    if (ro->nmember == 1)
+        for (i=0; i<MEMBER_MAX; ++i)
+            if (ro->members[i].uid && 
+               !ro->members[i].is_robot)
+                return true;
+    return false;
+}
 
-#define S_WAITING 0
-#define S_CREATING 1
-#define S_GAMING 2
+static inline void
+robot_pull(struct module *s, int type, int match_score, int target_type, int target_id) { 
+    int ai = match_ai(type, match_score);
+    sh_trace("Match robot pull type %d ai %d score %d", type, ai, match_score);
+    struct match *self = MODULE_SELF;
+    UM_DEFFIX(UM_ROBOT_PULL, rp);
+    rp->type = type;
+    rp->ai = ai;
+    rp->match_score = match_score;
+    rp->target.type = target_type;
+    rp->target.id = target_id;
+    sh_module_send(MODULE_ID, self->robot_handle, MT_UM, rp, sizeof(*rp));
+}
 
-#define N_0 0
-#define N_1 1
-#define N_2 2
-#define N_3 3
-#define N_4 4
-#define N_MAX 5
+static inline void
+autopull_init(struct match *self, struct room *ro) {
+    int off = sh_rande(&self->randseed) % (125 - 105) + 105;
+    off = 30 * off/100.f;
+    ro->autopull_time = sh_timer_now()/1000 + off;
+    sh_trace("Match room %u init autopull %d S later", ro->id, off);
+}
 
-#define S_MAX 65
+static inline void
+autopull_reinit(struct match *self, struct room *ro) {
+    int off = sh_rande(&self->randseed)%(75-50)+50;
+    off = 30 * off/100.f;
+    ro->autopull_time = sh_timer_now()/1000 + off;
+    sh_trace("Match room %u reinit autopull %d S later", ro->id, off);
+}
 
-static inline uint32_t
-match_score_to_N(uint32_t score) {
-    if (score < 100000) {
-        return N_0;
-    } else if (score < 180000) {
-        return N_1;
-    } else if (score < 250000) {
-        return N_2;
-    } else if (score < 310000) {
-        return N_3;
-    } else {
-        return N_4;
+static inline void
+autopull_interrupt(struct match *self, struct room *ro) {
+    if (ro->autopull_time > 0) {
+        if (!single_p(ro)) {
+            ro->autopull_time = 0;
+            sh_trace("Match room %u autopull interrupt", ro->id);
+        }
     }
 }
 
-static inline uint32_t
-match_score_to_S(uint32_t score) {
-    uint32_t slot = score/150;
-    return slot < S_MAX ? slot : (S_MAX-1);
+static inline void
+autopull_time(struct module *s, struct room *ro) {
+    struct match *self = MODULE_SELF;
+    if (ro->autopull_time == 0 ||
+        ro->autopull_time > sh_timer_now()/1000) {
+        return;
+    }
+    int rand = sh_rande(&self->randseed) % 100;
+    if (rand > 70) {
+        robot_pull(s, ro->type, ro->match_score, APPLY_TARGET_TYPE_ROOM, ro->id);
+        ro->autopull_time = 0;
+        sh_trace("Match room %u rand %d autopull", ro->id, rand);
+    } else {
+        int off = 15 * (1+(70-rand)/70.f);
+        ro->autopull_time += off;
+        sh_trace("Match room %u rand %d autopull %d S later", ro->id, rand, off);
+    }
 }
 
-static inline int
-match_score_to_Nai(uint32_t score) {
-    static int TO_AI[N_MAX] = {4,5,6,7,8};
-    uint32_t slot = match_score_to_N(score);
-    return TO_AI[slot]; 
-}
-
-static inline int
-match_score_to_Sai(uint32_t score) {
-    int ai = score / 900 + 1; 
-    return ai <= 10 ? ai : 10;
-}
-
-static inline uint32_t
-match_slot(int type, uint32_t score) {
-    if (type == ROOM_TYPE_NORMAL)
-        return match_score_to_N(score);
-    else
-        return match_score_to_S(score);
-}
-
-static inline int
-match_ai(int type, uint32_t score) {
-    if (type == ROOM_TYPE_NORMAL)
-        return match_score_to_Nai(score);
-    else
-        return match_score_to_Sai(score);
-}
-
-struct applyer {
-    int hall_source; // if is_robot is true, then this is robot_handle
-    uint32_t uid;
-    bool is_robot;
-    int8_t type;
-    int8_t status;
-    uint8_t luck_rand; 
-    uint32_t match_score;
-    uint32_t match_slot;
-    struct tmemberbrief brief;
-    uint32_t roomid;
-};
-
-struct member {
-    uint32_t uid;
-};
-
-struct room {
-    uint32_t id;
-    uint64_t start_time;
-    int room_handle;
-    int joinable;
-    uint32_t match_score;
-    uint32_t match_slot;
-    int8_t type;
-    int8_t status;
-    uint8_t nmember;
-    struct member members[MEMBER_MAX];
-};
-
-struct waiter {
-    bool is_robot;
-    uint32_t uid;
-    uint64_t waiting_timeout;
-};
-
-struct match {
-    int hall_handle;
-    int room_handle;
-    int robot_handle;
-    uint32_t roomid_alloctor;
-    uint32_t randseed;
-    struct waiter waiting_S[S_MAX];
-    struct sh_hash applyers;
-    struct sh_hash rooms;
-    struct sh_hash joinable_rooms[N_MAX];
-};
-
+// match
 struct match *
 match_create() {
     struct match *self = malloc(sizeof(*self));
@@ -215,7 +174,7 @@ notify_create_room(struct module *s, struct room *ro, struct applyer **as, int n
     sh_trace("Match notify create room %u", ro->id);
     UM_DEFVAR(UM_CREATEROOM, create);
     create->type = ro->type;
-    create->mapid = sh_rand(self->randseed) % 2 + 1; // 1,2 todo
+    create->mapid = sh_rand(&self->randseed) % 2 + 1; // 1,2 todo
     create->id = ro->id;
     create->max_member = max(2, n); // todo, now 2
     create->nmember = n;
@@ -268,20 +227,6 @@ notify_status(struct module *s, struct applyer *ar) {
     }
 }
 */
-
-static inline void
-robot_pull(struct module *s, int type, int match_score, int target_type, int target_id) { 
-    int ai = match_ai(type, match_score);
-    sh_trace("Match robot pull type %d ai %d score %d", type, ai, match_score);
-    struct match *self = MODULE_SELF;
-    UM_DEFFIX(UM_ROBOT_PULL, rp);
-    rp->type = type;
-    rp->ai = ai;
-    rp->match_score = match_score;
-    rp->target.type = target_type;
-    rp->target.id = target_id;
-    sh_module_send(MODULE_ID, self->robot_handle, MT_UM, rp, sizeof(*rp));
-}
 
 static inline struct waiter *
 applyer_to_waiter(struct match *self, struct applyer *ar) {
@@ -422,6 +367,7 @@ add_member(struct room *ro, struct applyer *ar, int i) {
     assert(ro->members[i].uid == 0);
     ar->status = ro->status;
     ar->roomid = ro->id;
+    ro->members[i].is_robot = ar->is_robot;
     ro->members[i].uid = ar->uid;
     ro->nmember++;
     sh_trace("Match room %u add member %u, cur %u", ro->id, ar->uid, ro->nmember);
@@ -444,6 +390,7 @@ del_member(struct room *ro, struct applyer *ar) {
 
 static int
 join_room(struct module *s, struct room *ro, struct applyer *ar) {
+    struct match *self = MODULE_SELF;
     sh_trace("Match applyer %u join room %u", ar->uid, ro->id);
     assert(ro->nmember < MEMBER_MAX);
     int i;
@@ -451,6 +398,12 @@ join_room(struct module *s, struct room *ro, struct applyer *ar) {
         if (ro->members[i].uid == 0) {
             add_member(ro, ar, i);
             notify_join_room(s, ro, ar);
+            if (ro->autoswitch) {
+                ro->autoswitch = false;
+            }
+            if (ro->type == ROOM_TYPE_NORMAL) {
+                autopull_interrupt(self, ro);
+            }
             return 0;
         } 
     }
@@ -466,9 +419,18 @@ leave_room(struct module *s, struct applyer *ar) {
     }
     sh_trace("Match applyer %u leave room %u", ar->uid, ro->id);
     del_member(ro, ar);
+   
+    if (ro->type == ROOM_TYPE_NORMAL) {
+        if (single_p(ro)) {
+            room_switch_joinable(self, ro);
+            autopull_reinit(self, ro);
+            return 0;
+        }
+    }
     if (ro->nmember == 0) {
         notify_destroy_room(s, ro);
         destroy_room(self, ro);
+        return 0;
     }
     return 0;
 }
@@ -488,6 +450,13 @@ start_room(struct module *s, struct applyer **as, int n) {
     }
     sh_hash_insert(&self->rooms, ro->id, ro);
     notify_create_room(s, ro, as, n);
+
+    if (single_p(ro)) {
+        if (ro->type == ROOM_TYPE_NORMAL) {
+            ro->autoswitch = true;
+            autopull_init(self, ro);
+        } 
+    }
     return 0;
 }
 
@@ -553,11 +522,11 @@ lookup_S(struct module *s, struct applyer *ar) {
     const int slots[] = {
         slot, slot+1, slot-1, slot-2, slot-3, slot-4, slot-5,
     };
-    bool no_far = ar->match_score <= 2000;
+    bool is_lower = ar->match_score <= 2000;
     struct applyer *other = NULL;
     int i;
     for (i=0; i<sizeof(slots)/sizeof(slots[0]); ++i) {
-        if (i > 2 && no_far) {
+        if (i > 2 && is_lower) {
             break;
         }
         slot = slots[i];
@@ -666,16 +635,6 @@ robot_apply(struct module *s, int source, struct UM_ROBOT_APPLY *ra) {
     apply(s, source, true, &ra->info);
 }
 
-static void
-robot_pull_req(struct module *s, int source, int roomid) {
-    struct match *self = MODULE_SELF;
-    struct room *ro = sh_hash_find(&self->rooms, roomid);
-    if (!ro->joinable) {
-        return;
-    }
-    robot_pull(s, ro->type, ro->match_score, APPLY_TARGET_TYPE_ROOM, roomid);
-}
-
 /*
 static void
 apply_cancel(struct module *s, int source, uint32_t uid) {
@@ -758,11 +717,6 @@ match_main(struct module *s, int session, int source, int type, const void *msg,
             }
             break;
             }
-        case IDUM_ROBOT_PULL_REQ: {
-            UM_CAST(UM_ROBOT_PULL_REQ, req, msg);
-            robot_pull_req(s, source, req->roomid);
-            break;
-            }
         }
         break;
         }
@@ -797,12 +751,14 @@ roomcb(void *pointer, void *ud) {
     struct room *ro = pointer;
     uint64_t now = sh_timer_now();
 
-    if (ro->type == ROOM_TYPE_NORMAL &&
-        ro->status == S_GAMING && 
-        !ro->joinable) {
+    if (ro->autoswitch) {
         if (now - ro->start_time > JOINABLE_TIME * 1000) {
             room_switch_joinable(self, ro);
+            ro->autoswitch = false;
         }
+    }
+    if (ro->type == ROOM_TYPE_NORMAL) {
+        autopull_time(s, ro);
     }
 }
 

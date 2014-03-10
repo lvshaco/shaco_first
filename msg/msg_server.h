@@ -53,7 +53,6 @@
 #define IDUM_DESTROYROOM    IDUM_NBEGIN+203
 #define IDUM_JOINROOM       IDUM_NBEGIN+204
 #define IDUM_JOINROOMRES    IDUM_NBEGIN+205
-#define IDUM_ROBOT_PULL_REQ IDUM_NBEGIN+206
 
 #define IDUM_AWARDB         IDUM_NBEGIN+220
 #define IDUM_GAMEAWARD      IDUM_NBEGIN+220
@@ -322,11 +321,6 @@ struct UM_APPLY {
 
 struct UM_APPLYCANCEL {
     _UM_HEADER;
-};
-
-struct UM_ROBOT_PULL_REQ {
-    _UM_HEADER;
-    uint32_t roomid;
 };
 
 struct UM_ROBOT_PULL {

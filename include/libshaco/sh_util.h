@@ -27,7 +27,7 @@
 #define sh_countof(x) (sizeof(x)/sizeof((x)[0]))
 
 // rand
-#define sh_rand(x) rand_r(&(x))
+#define sh_rand(x) rand_r(x)
 static inline int 
 sh_rande(uint32_t *seed) {
     *seed = (*seed) * 1103515245 + 12345;
