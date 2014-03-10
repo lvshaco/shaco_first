@@ -11,7 +11,7 @@ hall_luck_random(struct hall *self, struct player *pr, float radiate, int uprand
         return 0;
     }
     struct chardata *cdata = &pr->data;
-    return luck_random(self->randseed, cdata->attri.lucky, radiate, uprand, &cdata->luck_factor);
+    return luck_random(&self->randseed, cdata->attri.lucky, radiate, uprand, &cdata->luck_factor);
 }
 
 static inline float

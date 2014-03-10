@@ -5,7 +5,7 @@
 #include "sh_util.h"
 
 static inline int
-luck_random(uint32_t randseed, int32_t lucky, float radiate, int uprand, float* luck_factor) {
+luck_random(uint32_t* randseed, int32_t lucky, float radiate, int uprand, float* luck_factor) {
     if (uprand <= 0) {
         return 0;
     }

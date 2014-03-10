@@ -12,7 +12,7 @@ item_rand(struct room *self, struct room_game *ro, int mode, struct player *m) {
     assert(mode >= 0 && mode < MODE_MAX);
     struct room_item *items = &ro->mode_items[mode];
     int lucky = m->detail.attri.lucky;
-    int rand = luck_random(self->randseed, lucky, 0.4f, items->luck_up, &m->luck_factor);
+    int rand = luck_random(&self->randseed, lucky, 0.4f, items->luck_up, &m->luck_factor);
     int i;
     for (i=0; i<items->n; ++i) {
         if (rand <= items->p[i].luck) {

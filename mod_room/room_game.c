@@ -6,7 +6,6 @@
 #include "room_genmap.h"
 #include "room_fight.h"
 #include "room_dump.h"
-#include "room_pull.h"
 #include "msg_client.h"
 #include "msg_server.h"
 #include "sh.h"
@@ -404,10 +403,6 @@ member_over(struct module *s, struct room_game *ro, struct player *m, int flag) 
     
     sh_hash_remove(&self->players, UID(m));
     member_free(m);
-
-    if (!(flag & F_OVER)) {
-        room_pull_on_leave(s, ro);
-    }
 }
 
 static void
@@ -532,8 +527,6 @@ room_game_create(struct module *s, int source, struct UM_CREATEROOM *create) {
     notify_create_room_game_result(s, source, create->id, SERR_OK);
     self->map_randseed++; 
     sh_trace("Room %u mapid %u create ok", create->id, create->mapid);
-
-    room_pull_init(s, ro);
 }
 
 static void
@@ -563,8 +556,6 @@ room_game_join(struct module *s, int source, uint32_t id, struct match_member *m
         ro->np++; 
     }
     notify_join_room_game_result(s, source, id, uid, SERR_OK);
-
-    room_pull_on_join(s, ro);
 }
 
 static void
@@ -689,8 +680,6 @@ check_over_room_game(struct module *s, struct room_game *ro) {
     int n = room_online_nplayer(ro);
     if (n == 0) {
         room_game_destroy(s, ro);
-    } else if (n == 1) {
-        room_pull_update(s, ro);
     }
     return true;
 }
@@ -936,7 +925,7 @@ item_delay(struct room *self, struct player *m, const struct item_tplt *item, in
 static uint32_t
 rand_baoitem(struct room *self, const struct item_tplt *item, const struct map_tplt *mapt) {
 #define CASE_BAO(n) case n: \
-    return mapt->baoitem ## n[sh_rand(self->randseed)%mapt->nbaoitem ## n] \
+    return mapt->baoitem ## n[sh_rand(&self->randseed)%mapt->nbaoitem ## n] \
 
     switch (item->subtype) {
     CASE_BAO(1);

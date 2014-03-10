@@ -91,7 +91,6 @@ mod_so=\
 	mod_loadbalance.so \
 	mod_watchdog.so \
 	mod_uniqueol.so \
-	mod_match.so \
 	mod_benchmarklog.so \
 	mod_benchmark.so \
 	mod_robotcli.so
@@ -111,6 +110,7 @@ all: \
 	mod_log.so \
 	mod_gamelog.so \
 	$(mod_so) \
+	mod_match.so \
 	mod_room.so \
 	mod_rank.so \
 	mod_redisproxy.so \
@@ -125,6 +125,11 @@ release: all
 $(mod_so): %.so: $(mod_dir)/%.c
 	@rm -f $@
 	gcc $(CFLAGS) $(SHARED) -o $@ $< -Iinclude/libshaco -Inet -Ibase -Imsg
+
+mod_match.so: $(mod_dir)/mod_match.c \
+	mod_match/match.h
+	@rm -f $@
+	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Iinclude/libshaco -Inet -Ibase -Imsg -Imod_match
 
 mod_room.so: $(mod_dir)/mod_room.c \
 	mod_room/room.c \
@@ -145,9 +150,7 @@ mod_room.so: $(mod_dir)/mod_room.c \
 	mod_room/room_map.c \
 	mod_room/room_map.h \
 	mod_room/room_dump.c \
-	mod_room/room_dump.h \
-	mod_room/room_pull.c \
-	mod_room/room_pull.h
+	mod_room/room_dump.h
 	@rm -f $@
 	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Iinclude/libshaco -Inet -Ibase -Imsg -Imod_room -Imod_share -Itplt -Idatadefine -Wl,-rpath,. tplt.so 
 
