@@ -1252,13 +1252,13 @@ main(int argc, char* argv[]) {
     //test_args();
     //test_freeid();
     //test_hashid();
-    //test_redis();
+    test_redis();
     //test_freelist();
     //test_elog2();
     //test_elog3(times);
     //test_log(times);
     //test_elog4(times);
-    //test_redisnew(times);
+    test_redisnew(times);
     //test_copy(times);
     //test_encode();
     //test(times);
@@ -1268,7 +1268,7 @@ main(int argc, char* argv[]) {
     //test_hash32_for(times);
     //test_syslog(times);
     //test_array(times);
-    test_rand(times);
+    //test_rand(times);
 
     uint64_t t2 = _elapsed();
     printf("main use time %d\n", (int)(t2-t1));
