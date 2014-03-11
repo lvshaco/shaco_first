@@ -1,24 +1,101 @@
 #include "sh.h"
+#include "cmdctl.h"
 #include "redis.h"
 #include "msg_server.h"
 #include "memrw.h"
 #include "args.h"
 
-struct benchmarkdb {
-    int rpuser_handle;
-    char mode[16];
-    int startid;
-    int curid;
-    uint64_t start;
-    uint64_t end;
-    int query_init;
-    int query;
-    int query_send;
-    int query_recv;
-    int query_done;
-    struct redis_reply reply;
+struct benchmarkdb {               
+    int rpuser_handle;             
+    char mode[16];                 
+    int startid;                   
+    int curid;                     
+    uint64_t start;                
+    uint64_t end;                  
+    int query_init;                
+    int query;                     
+    int query_send;                
+    int query_recv;                
+    int query_done;       
+    struct redis_reply reply; 
 };
 
+static void
+sendcmd(struct module *s, const char* cmd) {
+    struct benchmarkdb* self = MODULE_SELF;
+    size_t len = strlen(cmd);
+    UM_DEFVAR2(UM_REDISQUERY, rq, UM_MAXSZ);
+    rq->needreply = 1; 
+    rq->needrecord = 0;
+    rq->cbsz = 0;
+    struct memrw rw;
+    memrw_init(&rw, rq->data, UM_MAXSZ - sizeof(*rq));
+    memrw_write(&rw, cmd, len);
+    int msgsz = sizeof(*rq) + RW_CUR(&rw);
+    sh_module_send(MODULE_ID, self->rpuser_handle, MT_UM, rq, msgsz);
+    self->query_send++;
+}
+
+static void
+sendtest(struct module *s) {
+    struct benchmarkdb *self = MODULE_SELF;
+    if (self->curid - self->startid >= self->query)
+        self->curid = self->startid;
+    int id = self->curid++;
+    char cmd[1024];
+    if (!strcmp(self->mode, "test")) {
+        snprintf(cmd, sizeof(cmd), "hmset user:%d coin 1000000 diamond 100000\r\n", id);
+        sendcmd(s, cmd);
+    } else if (!strcmp(self->mode, "acca")) {
+        snprintf(cmd, sizeof(cmd), "hmset acc:wa_account_%d id %d passwd 7c4a8d09ca3762af61e59520943dc26494f8941b\r\n", id, id);
+        sendcmd(s, cmd);
+    } else if (!strcmp(self->mode, "accd")) {
+        snprintf(cmd, sizeof(cmd), "del acc:wa_account_%d\r\n", id);
+        sendcmd(s, cmd);
+    } else if (!strcmp(self->mode, "coin")) {
+        snprintf(cmd, sizeof(cmd), "hmset user:%d coin 1000000 diamond 100000\r\n", id);
+        sendcmd(s, cmd);
+    } else if (!strcmp(self->mode, "score")) {
+        snprintf(cmd, sizeof(cmd), "hmset user:%d score2 0 score1 0\r\n", id);
+        sendcmd(s, cmd);
+    }
+}
+
+// command
+static int
+db(struct module *s, struct args *A, struct memrw *rw) {
+    struct benchmarkdb* self = MODULE_SELF;
+    if (A->argc < 5) {
+        return CTL_ARGLESS;
+    }
+    // modcmd "mode" startid count init
+    sh_strncpy(self->mode, A->argv[1], sizeof(self->mode));
+    self->startid = strtol(A->argv[2], NULL, 10);
+    int count = strtol(A->argv[3], NULL, 10);
+    int init  = strtol(A->argv[4], NULL, 10);
+    
+    self->start = sh_timer_now();
+    self->curid = self->startid;
+    if (init <= 0)
+        init =  1;
+    self->query_init = min(count, init);
+    self->query = count;
+    self->query_send = 0;
+    self->query_recv = 0;
+    self->query_done = 0;
+    int i;
+    for (i=1; i<=count; ++i) {
+        sendtest(s);
+    }
+    return CTL_OK;
+}
+
+static struct ctl_command CMDS[] = {
+    { "db", db },
+    { NULL, NULL },
+};
+
+// benchmarkdb
 struct benchmarkdb*
 benchmarkdb_create() {
     struct benchmarkdb* self = malloc(sizeof(*self));
@@ -59,76 +136,6 @@ benchmarkdb_init(struct module* s) {
 }
 
 static void
-_sendcmd(struct module *s, const char* cmd) {
-    struct benchmarkdb* self = MODULE_SELF;
-    size_t len = strlen(cmd);
-    UM_DEFVAR2(UM_REDISQUERY, rq, UM_MAXSZ);
-    rq->needreply = 1; 
-    rq->needrecord = 0;
-    rq->cbsz = 0;
-    struct memrw rw;
-    memrw_init(&rw, rq->data, UM_MAXSZ - sizeof(*rq));
-    memrw_write(&rw, cmd, len);
-    int msgsz = sizeof(*rq) + RW_CUR(&rw);
-    sh_module_send(MODULE_ID, self->rpuser_handle, MT_UM, rq, msgsz);
-    self->query_send++;
-}
-
-static void
-_sendtest(struct module *s) {
-    struct benchmarkdb *self = MODULE_SELF;
-    if (self->curid - self->startid >= self->query)
-        self->curid = self->startid;
-    int id = self->curid++;
-    char cmd[1024];
-    if (!strcmp(self->mode, "test")) {
-        snprintf(cmd, sizeof(cmd), "hmset user:%d coin 1000000 diamond 100000\r\n", id);
-        _sendcmd(s, cmd);
-    } else if (!strcmp(self->mode, "acca")) {
-        snprintf(cmd, sizeof(cmd), "hmset acc:wa_account_%d id %d passwd 7c4a8d09ca3762af61e59520943dc26494f8941b\r\n", id, id);
-        _sendcmd(s, cmd);
-    } else if (!strcmp(self->mode, "accd")) {
-        snprintf(cmd, sizeof(cmd), "del acc:wa_account_%d\r\n", id);
-        _sendcmd(s, cmd);
-    } else if (!strcmp(self->mode, "coin")) {
-        snprintf(cmd, sizeof(cmd), "hmset user:%d coin 1000000 diamond 100000\r\n", id);
-        _sendcmd(s, cmd);
-    } else if (!strcmp(self->mode, "score")) {
-        snprintf(cmd, sizeof(cmd), "hmset user:%d score2 0 score1 0\r\n", id);
-        _sendcmd(s, cmd);
-    }
-}
-
-void
-command(struct module* s, const void *msg, int sz) {
-    struct benchmarkdb* self = MODULE_SELF;
-    struct args A;
-    args_parsestrl(&A, 0, msg, sz);
-    if (A.argc != 4) {
-        return;
-    }
-    // modcmd "mode" startid count init
-    sh_strncpy(self->mode, A.argv[0], sizeof(self->mode));
-    self->startid = strtol(A.argv[1], NULL, 10);
-    int count = strtol(A.argv[2], NULL, 10);
-    int init  = strtol(A.argv[3], NULL, 10);
-    
-    self->start = sh_timer_now();
-    self->curid = self->startid;
-    if (init <= 0)
-        init =  1;
-    self->query_init = min(count, init);
-    self->query = count;
-    self->query_send = 0;
-    self->query_recv = 0;
-    self->query_done = 0;
-    int i;
-    for (i=1; i<=count; ++i) {
-        _sendtest(s);
-    }
-}
-
-static void
 process_redis(struct module *s, struct UM_REDISREPLY *rep, int sz) {
     struct benchmarkdb *self = MODULE_SELF;
     struct memrw rw;
@@ -151,7 +158,7 @@ process_redis(struct module *s, struct UM_REDISREPLY *rep, int sz) {
         self->query_done = 0;
 
     }
-    _sendtest(s);
+    sendtest(s);
 }
 
 void
@@ -168,8 +175,8 @@ benchmarkdb_main(struct module *s, int session, int source, int type, const void
         }
         break;
         }
-    case MT_TEXT:
-        command(s, msg, sz);
+    case MT_CMD:
+        cmdctl_handle(s, source, msg, sz, CMDS, -1);
         break;
     }
 }
@@ -184,6 +191,6 @@ benchmarkdb_time(struct module* s) {
     self->start = sh_timer_now();
     int i;
     for (i=0; i<self->query_init; ++i) {
-        _sendtest(s);
+        sendtest(s);
     }
 }
