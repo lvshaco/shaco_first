@@ -18,7 +18,7 @@ hall_player_init(struct hall *self) {
 
 void
 hall_player_fini(struct hall *self) {
-    sh_hash_foreach(&self->acc2player, free);
+    //sh_hash_foreach(&self->acc2player, free);
     sh_hash_fini(&self->acc2player);
 }
 

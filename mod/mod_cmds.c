@@ -29,7 +29,7 @@ void
 cmds_free(struct server* self) {
     if (self == NULL)
         return;
-    sh_hash_foreach(&self->clients, free);
+    //sh_hash_foreach(&self->clients, free);
     sh_hash_fini(&self->clients);
     free(self);
 }

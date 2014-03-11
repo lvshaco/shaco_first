@@ -35,7 +35,7 @@ auth_free(struct auth *self) {
     if (self == NULL)
         return;
     redis_finireply(&self->reply);
-    sh_hash64_foreach(&self->conn2user, free);
+    //sh_hash64_foreach(&self->conn2user, free);
     sh_hash64_fini(&self->conn2user);
     free(self);
 }

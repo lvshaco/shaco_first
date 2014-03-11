@@ -70,7 +70,7 @@ void
 watchdog_free(struct watchdog *self) {
     if (self == NULL)
         return;
-    sh_hash64_foreach(&self->conn2user, free);
+    //sh_hash64_foreach(&self->conn2user, free);
     sh_hash64_fini(&self->conn2user);
     sh_hash_fini(&self->acc2user);
     free(self);

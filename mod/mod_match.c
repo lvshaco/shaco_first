@@ -88,10 +88,10 @@ match_free(struct match *self) {
     if (self == NULL)
         return;
 
-    sh_hash_foreach(&self->applyers, free);
+    //sh_hash_foreach(&self->applyers, free);
     sh_hash_fini(&self->applyers);
 
-    sh_hash_foreach(&self->rooms, free);
+    //sh_hash_foreach(&self->rooms, free);
     sh_hash_fini(&self->rooms);
     int i;
     for (i=0; i<N_MAX; ++i) {

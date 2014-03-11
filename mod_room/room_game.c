@@ -1369,6 +1369,6 @@ game_init(struct room *self) {
 void 
 game_fini(struct room *self) {
     sh_hash_fini(&self->players);
-    sh_hash_foreach(&self->room_games, free_room_game);
+    //sh_hash_foreach(&self->room_games, free_room_game);
     sh_hash_fini(&self->room_games);
 }

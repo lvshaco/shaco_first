@@ -210,7 +210,7 @@ void
 robot_free(struct robot* self) {
     if (self == NULL)
         return;
-    sh_hash_foreach(&self->agents, free);
+    //sh_hash_foreach(&self->agents, free);
     sh_hash_fini(&self->agents);
     memset(self->rests, 0, sizeof(self->rests));
     self->nagent = 0;

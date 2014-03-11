@@ -156,7 +156,6 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.py *.h *.c" {
   room_item.h
   room_luck.h
   room_map.h
-  room_pull.h
   room_tplt.h
   room.c
   room_ai.c
@@ -186,9 +185,6 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.py *.h *.c" {
   msg_client.h
   msg_server.h
   msg_sharetype.h
- }
- datadefine=datadefine{
-  tplt_struct.h
  }
  tplt=tplt{
   tplt.h
