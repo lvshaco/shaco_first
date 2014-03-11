@@ -1,52 +1,22 @@
 #include "sh.h"
+#include "cmdctl.h"
 #include "msg_server.h"
 #include "msg_client.h"
 #include "args.h"
 #include "memrw.h"
 #include <time.h>
 
-#define LITERAL(str) str, sizeof(str)
-
 struct cmdctl {
+    bool is_center;
     int cmds_handle;
     int cmd_handle;
 };
 
 ///////////////////
 
-struct ctl_command {
-    const char* name;
-    int (*fun)(struct module *s, struct args* A, struct memrw* rw);
-};
-
-#define CTL_OK 0
-#define CTL_NOCOMMAND 1
-#define CTL_FAIL 2
-#define CTL_ARGLESS 3
-#define CTL_ARGINVALID 4
-#define CTL_ARGTOOLONG 5
-#define CTL_NOMODULE 6
-
-static const char* STRERROR[] = {
-    "execute ok",
-    "no command",
-    "execute fail",
-    "execute less arg",
-    "execute invalid arg",
-    "execute too long arg",
-    "execute no module",
-};
-
-static inline const char*
-_strerror(int error) {
-    if (error >= 0 && error < sizeof(STRERROR)/sizeof(STRERROR[0]))
-        return STRERROR[error];
-    return "execute unknown error";
-}
-
 static inline bool
-_ishenter() {
-    return false; // todo
+_iscenter(struct cmdctl *self) {
+    return self->is_center;
 }
 
 ///////////////////
@@ -82,21 +52,21 @@ _reload(struct module* s, struct args* A, struct memrw* rw) {
 
 static int
 _stop(struct module* s, struct args* A, struct memrw* rw) {
-    if (!_ishenter()) {
+    if (!_iscenter(MODULE_SELF)) {
         sh_stop("stop command");
     }
     return CTL_OK;
 }
 static int
 _start(struct module* s, struct args* A, struct memrw* rw) {
-    if (_ishenter()) {
+    if (_iscenter(MODULE_SELF)) {
         system("./shaco-foot startall");
     }
     return CTL_OK;
 }
 static int
 _startmem(struct module* s, struct args* A, struct memrw* rw) {
-    if (_ishenter()) {
+    if (_iscenter(MODULE_SELF)) {
         system("./shaco-foot startall -m");
     }
     return CTL_OK;
@@ -111,16 +81,7 @@ _time(struct module* s, struct args* A, struct memrw* rw) {
     memrw_pos(rw, n);
     return CTL_OK;
 }
-
-static int
-_reloadres(struct module* s, struct args* A, struct memrw* rw) {
-    struct cmdctl *self = MODULE_SELF;
-    if (sh_module_send(MODULE_ID, self->cmd_handle, MT_TEXT, LITERAL("reloadres"))) {
-        return CTL_NOMODULE;
-    }
-    return CTL_OK;
-}
-
+/*
 static int
 _modcmd(struct module* s, struct args* A, struct memrw* rw) {
     struct cmdctl *self = MODULE_SELF;
@@ -139,10 +100,10 @@ _modcmd(struct module* s, struct args* A, struct memrw* rw) {
     sh_module_send(MODULE_ID, self->cmd_handle, MT_TEXT, cmd, off);
     return CTL_OK;
 }
-
+*/
 ///////////////////
 
-static struct ctl_command COMMAND_MAP[] = {
+static struct ctl_command CMDS[] = {
     { "getloglevel", _getloglevel },
     { "setloglevel", _setloglevel },
     { "reload",      _reload },
@@ -150,8 +111,7 @@ static struct ctl_command COMMAND_MAP[] = {
     { "start",       _start },
     { "startmem",    _startmem },
     { "time",        _time },
-    { "reloadres",   _reloadres },
-    { "modcmd",      _modcmd },
+    //{ "modcmd",      _modcmd },
     { NULL, NULL },
 };
 
@@ -179,63 +139,24 @@ cmdctl_init(struct module* s) {
         sh_handler(sh_getstr("cmd_handle", ""), SUB_LOCAL, &self->cmd_handle)) {
         return 1;
     }
+    int handle;
+    if (sh_handler("centers", SUB_LOCAL, &handle))
+        self->is_center = false;
+    else
+        self->is_center = true;
     return 0;
-}
-
-static int 
-execute(struct module *s, struct args* A, struct memrw* rw) {
-    const char* name = A->argv[0]; 
-    const struct ctl_command* c = COMMAND_MAP;
-    while (c->name) {
-        if (strcmp(c->name, name) == 0 && c->fun) {
-            return c->fun(s, A, rw);
-        }
-        c++;
-    }
-    return CTL_NOCOMMAND;
-}
-
-static void
-handle_command(struct module *s, int source, int connid, void *msg, int sz) {
-    struct args A;
-    args_parsestrl(&A, 0, msg, sz);
-    if (A.argc == 0) {
-        return; // null
-    }
-    UM_DEFVAR2(UM_CMDS, res, UM_MAXSZ);
-    UD_CAST(UM_TEXT, text, res->wrap);
-    res->connid = connid;
-    int headsz = sizeof(*res) + sizeof(*text);
-    int msgsz;
-    struct memrw rw;
-    memrw_init(&rw, text->str, UM_MAXSZ-headsz);
-
-    int error = execute(s, &A, &rw);
-    if (RW_EMPTY(&rw)) {
-        int n = snprintf(rw.begin, rw.sz, "[%s] %s", A.argv[0], _strerror(error));
-        msgsz = headsz + n;
-    } else {
-        msgsz = headsz + RW_CUR(&rw);
-    }
-    sh_module_send(MODULE_ID, source, MT_UM, res, msgsz);
 }
 
 void
 cmdctl_main(struct module *s, int session, int source, int type, const void *msg, int sz) {
+    struct cmdctl *self = MODULE_SELF;
     switch (type) {
     case MT_UM: {
         UM_CAST(UM_BASE, base, msg);
         switch (base->msgid) {
         case IDUM_CMDS: {
-            UM_CAST(UM_CMDS, cm, msg);
-            UM_CAST(UM_BASE, sub, cm->wrap);
-            switch (sub->msgid) {
-            case IDUM_TEXT: {
-                UM_CASTCK(UM_TEXT, text, sub, sz-sizeof(*cm));
-                handle_command(s, source, cm->connid, text->str, sz-sizeof(*cm)-sizeof(*text));
-                break;
-                }
-            }
+            UM_CAST(UM_CMDS, cmd, msg);
+            cmdctl_handle(s, source, cmd, sz, CMDS, self->cmd_handle);
             break;
             }
         }

@@ -9,6 +9,6 @@ struct robot;
 
 int robot_tplt_init(struct robot *self);
 void robot_tplt_fini(struct robot *self);
-void robot_tplt_main(struct module *s, int session, int source, int type, const void *msg, int sz);
+int robot_tplt_main(struct module *s);
 
 #endif

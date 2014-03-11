@@ -1,4 +1,5 @@
 #include "sh.h"
+#include "match_cmdctl.h"
 #include "match.h"
 #include "msg_server.h"
 #include "msg_client.h"
@@ -722,6 +723,9 @@ match_main(struct module *s, int session, int source, int type, const void *msg,
         }
     case MT_MONITOR:
         // todo
+        break;
+    case MT_CMD:
+        cmdctl_handle(s, source, msg, sz, CMDS, -1);
         break;
     }
 }

@@ -1,7 +1,7 @@
 #include "sh.h"
 #include "hall_attribute.h"
 #include "robot.h"
-#include "robot_tplt.h"
+#include "robot_cmdctl.h"
 #include "msg_server.h"
 #include "msg_client.h"
 
@@ -277,8 +277,8 @@ robot_main(struct module *s, int session, int source, int type, const void *msg,
         }
         break;
         }
-    case MT_TEXT:
-        robot_tplt_main(s, session, source, type, msg, sz);
+    case MT_CMD:
+        cmdctl_handle(s, source, msg, sz, CMDS, -1);
         break;
     }
 }

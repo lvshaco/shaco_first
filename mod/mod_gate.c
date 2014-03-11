@@ -1,5 +1,6 @@
 #include "sh.h"
 #include "freeid.h"
+#include "cmdctl.h"
 #include "msg_client.h"
 #include "msg_server.h"
 
@@ -31,6 +32,21 @@ struct gate {
     struct client* p;
 };
 
+// command
+static int
+playercount(struct module *s, struct args *A, struct memrw *rw) {
+    struct gate *self = MODULE_SELF;
+    int n = snprintf(rw->ptr, RW_SPACE(rw), "%d(nclient)", self->used);
+    memrw_pos(rw, n); 
+    return CTL_OK;
+}
+
+static struct ctl_command CMDS[] = {
+    { "playercount", playercount },
+    { NULL, NULL },
+};
+
+// gate
 static inline void
 update_load(struct module *s) {
     struct gate *self = MODULE_SELF;
@@ -305,6 +321,9 @@ gate_main(struct module* s, int session, int source, int type, const void *msg, 
         }
         break;
         }
+    case MT_CMD:
+        cmdctl_handle(s, source, msg, sz, CMDS, -1);
+        break;
     }
 }
 

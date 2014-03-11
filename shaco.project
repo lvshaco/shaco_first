@@ -96,6 +96,7 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.py *.h *.c" {
   cnet.c
  }
  mod=mod{
+  cmdctl.h
   mod_auth.c
   mod_benchmark.c
   mod_benchmarkdb.c
@@ -124,6 +125,7 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.py *.h *.c" {
   hall.h
   hall_attribute.h
   hall_award.h
+  hall_cmdctl.h
   hall_luck.h
   hall_play.h
   hall_player.h
@@ -146,6 +148,7 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.py *.h *.c" {
   room.h
   room_ai.h
   room_buff.h
+  room_cmdctl.h
   room_dump.h
   room_fight.h
   room_game.h
@@ -163,18 +166,17 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.py *.h *.c" {
   room_genmap.c
   room_item.c
   room_map.c
-  room_pull.c
   room_tplt.c
  }
  mod_robot=mod_robot{
   robot.h
+  robot_cmdctl.h
   robot_tplt.h
   robot_tplt.c
  }
  mod_match=mod_match{
   match.h
-  match_autopull.h
-  match_autopull.c
+  match_cmdctl.h
  }
  mod_share=mod_share{
   luck_random.h

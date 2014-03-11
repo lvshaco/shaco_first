@@ -1,4 +1,5 @@
 #include "sh_module.h"
+#include "cmdctl.h"
 #include <stdlib.h>
 
 struct tmp {
@@ -34,6 +35,9 @@ tmp_main(struct module *s, int session, int source, int type, const void *msg, i
         }
         break;
         }
+    case MT_CMD:
+        cmdctl_handle(s, source, msg, sz, NULL, -1);
+        break;
     }
 
 }

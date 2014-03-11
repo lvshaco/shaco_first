@@ -48,10 +48,10 @@ struct redis_replyitempool {
 };
 
 struct redis_reader {
-    int cap;
-    int sz; 
-    int pos;
-    int pos_last;
+    int cap; // buf大小
+    int sz;  // 数据大小
+    int pos; // 数据解析位置
+    int pos_last; // 上次数据解析位置
     char* buf;
     bool my;
 };

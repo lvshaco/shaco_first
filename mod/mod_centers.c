@@ -52,9 +52,9 @@ centers_free(struct centers* self) {
 int
 centers_init(struct module* s) {
     struct centers *self = MODULE_SELF;
-    self->node_handle = module_query_id("node");
-    if (self->node_handle == -1)
+    if (sh_handler("node", SUB_LOCAL, &self->node_handle)) {
         return 1;
+    }
     return 0;
 }
 

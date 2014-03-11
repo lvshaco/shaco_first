@@ -31,17 +31,14 @@ hall_tplt_fini(struct hall *self) {
     }
 }
 
-void
-hall_tplt_main(struct module *s, int session, int source, int type, const void *msg, int sz) {
+int
+hall_tplt_main(struct module *s) {
     struct hall *self = MODULE_SELF;
-    if (type != MT_TEXT)
-        return;
-
-    if (!strncmp("reloadres", msg, sz)) {
-        if (!load_tplt(self)) {
-            sh_info("reloadres tplt ok");
-        } else {
-            sh_error("reloadres tplt fail");
-        }
+    if (!load_tplt(self)) {
+        sh_info("reloadres tplt ok");
+        return 0;
+    } else {
+        sh_error("reloadres tplt fail");
+        return 1;
     }
 }
