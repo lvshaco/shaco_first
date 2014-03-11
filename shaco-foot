@@ -2,27 +2,35 @@
 
 SERVERS="rpacc rpuser rprank gateload uniqueol match robot watchdog auth hall room gate route"
 
+error() {
+    echo -ne "\033[40;31;1m"
+    echo "$@"
+    echo -ne "\033[0m"
+}
+info() {
+    echo -ne "\033[40;32;1m"
+    echo "$@"
+    echo -ne "\033[0m"
+}
 ls() {
+    local total=14
     ps -ef |grep shaco |grep config
     local n=`ps -ef |grep shaco |grep config |wc -l`
-    if [ ${n} -eq 14 ] 
+    if [ ${n} -eq $total ] 
     then
-        echo -ne "\033[40;32;1m"
-        echo "start node count [${n}] OK"
+        info "node count [${n}] OK"
     else
-        echo -ne "\033[40;31;1m"
-        echo "start node count [${n}] FAIL"
+        error "node count [${n} < ${total}] FAIL"
     fi
-    echo -ne "\033[0m"
     ps -ef |grep commandd |grep lua
 }
 startone() {
     if [ $MEMCHECK -eq 0 ]
     then
-        echo "start ${1}"
+        info "start ${1}"
         ./shaco config_${1}.lua --sh_daemon 1
     else
-        echo "start-memcheck ${1}"
+        info "start-memcheck ${1}"
         valgrind -v \
         --leak-check=full \
         --show-reachable=yes \
@@ -31,6 +39,38 @@ startone() {
         ./shaco config_${1}.lua --sh_daemon 1
     fi
     sleep ${2}
+}
+stopone() {
+    local list="ps -ef |grep shaco |grep config |grep config_${1}.lua"
+    info -n "stop ${1}"
+    
+    local n=`eval "${list} |wc -l"`
+    if [ ${n} -eq 0 ]
+    then
+        error " NONE"
+        return
+    fi
+
+    local a=`eval "${list} | awk -F' ' '{print \\$2}'"`
+    OLD_IFS="$IFS"
+    IFS=$"\n"
+    arr=($a)
+    IFS="$OLD_IFS"
+    for pid in ${arr[@]}
+    do
+        printf " $pid"
+        while [ 1 ]
+        do
+            if [ -d /proc/$pid ]
+            then
+                kill -2 $pid
+                sleep ${2}
+            else
+                break
+            fi
+        done
+    done
+    info " OK"
 }
 startcmdd() {
     cd tool && 2>&1 lua commandd.lua 0.0.0.0 7999 -d > ~/log/commandd.log
@@ -50,11 +90,30 @@ start() {
     done
     ls
 }
-stop() {
-    if [ $MEMCHECK -eq 0 ]
-    then pkill -2 shaco
-    else pkill mem
+stopall() {
+    local col=9
+    if [ $MEMCHECK -ne 0 ]
+    then
+        col=15
     fi
+    local list="ps -ef |grep shaco |grep config |awk -F ' ' '{print \$$col}'"
+    local a=`eval "${list}"`
+    OLD_IFS="$IFS"
+    IFS=$'\n'
+    arr=($a)
+    IFS="$OLD_IFS"
+    for one in ${arr[@]}
+    do
+        one=${one#config_}
+        one=${one%.lua}
+        stopone $one 0.1
+    done
+}
+stop() {
+    for one in $@;do
+        stopone $one 0.1
+    done
+    ls
 }
 stopcmdd() {
     pkill lua
@@ -92,8 +151,11 @@ startall)
 start)
     start "$@"
     ;;
+stopall)
+    stopall
+    ;;
 stop)
-    stop
+    stop "$@"
     ;;
 startcmdd)
     startcmdd
