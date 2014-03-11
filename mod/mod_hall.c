@@ -1,6 +1,5 @@
 #include "sh.h"
 #include "hall.h"
-#include "hall_tplt.h"
 #include "hall_player.h"
 #include "hall_playerdb.h"
 #include "hall_role.h"
@@ -8,9 +7,11 @@
 #include "hall_award.h"
 #include "hall_play.h"
 #include "hall_washgold.h"
+#include "hall_cmdctl.h"
 #include "msg_server.h"
 #include "msg_client.h"
 
+// hall
 struct hall *
 hall_create() {
     struct hall *self = malloc(sizeof(*self));
@@ -116,10 +117,10 @@ hall_main(struct module *s, int session, int source, int type, const void *msg, 
         }
         break;
         }
-    case MT_TEXT:
-        hall_tplt_main(s, session, source, type, msg, sz);
-        break;
     case MT_MONITOR:
+        break;
+    case MT_CMD:
+        cmdctl_handle(s, source, msg, sz, CMDS, -1);
         break;
     }
 }

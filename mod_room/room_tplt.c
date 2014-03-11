@@ -93,22 +93,20 @@ room_tplt_fini(struct room *self) {
     }
 }
 
-void
-room_tplt_main(struct module *s, int session, int source, int type, const void *msg, int sz) {
+int
+room_tplt_main(struct module *s) {
     struct room *self = MODULE_SELF;
-    if (type != MT_TEXT)
-        return;
-
-    if (!strncmp("reloadres", msg, sz)) {
-        if (!load_tplt(self)) {
-            sh_info("reloadres tplt ok");
-            if (!load_mapdata(self)) {
-                sh_info("reloadres mapdata ok");
-            } else {
-                sh_error("reloadres mapdata fail");
-            } 
+    if (!load_tplt(self)) {
+        sh_info("reloadres tplt ok");
+        if (!load_mapdata(self)) {
+            sh_info("reloadres mapdata ok");
+            return 0;
         } else {
-            sh_error("reloadres tplt ok");
-        }
+            sh_error("reloadres mapdata fail");
+            return 1;
+        } 
+    } else {
+        sh_error("reloadres tplt ok");
+        return 1;
     }
 }

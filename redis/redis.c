@@ -66,8 +66,9 @@ _reader_setbuf(struct redis_reader* reader, char* buf, int bufcap) {
     reader->sz = 0;
     reader->pos = 0;
     reader->pos_last = 0;
-    reader->cap = bufcap;
+    
     if (bufcap > 0) {
+        reader->cap = bufcap;
         if (buf) {
             reader->buf = buf;
             reader->my = false;
@@ -76,6 +77,7 @@ _reader_setbuf(struct redis_reader* reader, char* buf, int bufcap) {
             reader->my = true; 
         }
     } else {
+        reader->cap = 0;
         reader->buf = NULL;
         reader->my = false;
     }
@@ -349,7 +351,8 @@ redis_resetreply(struct redis_reply* reply) {
         reader->pos_last = 0;
         break;
     case REDIS_SUCCEED:
-        if (reader->pos >= reader->sz) {
+        assert(reader->pos <= reader->sz);
+        if (reader->pos == reader->sz) {
             reader->sz = 0;
             reader->pos = 0;
             reader->pos_last = 0;

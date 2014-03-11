@@ -1,5 +1,6 @@
 #include "sh.h"
 #include "sh_hash.h"
+#include "cmdctl.h"
 #include "redis.h"
 #include "msg_client.h"
 #include "msg_server.h"
@@ -180,6 +181,9 @@ auth_main(struct module *s, int session, int source, int type, const void *msg, 
         }
         break;
         }
+    case MT_CMD:
+        cmdctl_handle(s, source, msg, sz, NULL, -1);
+        break;
     }
 }
 

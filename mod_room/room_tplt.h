@@ -10,7 +10,7 @@ struct room;
 
 int room_tplt_init(struct room* self);
 void room_tplt_fini(struct room* self);
-void room_tplt_main(struct module *s, int session, int source, int type, const void *msg, int sz);
+int room_tplt_main(struct module *s);
 
 // helper function
 static inline struct item_tplt*

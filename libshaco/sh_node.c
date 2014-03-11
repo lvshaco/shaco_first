@@ -194,7 +194,7 @@ sh_module_exit(int handle) {
 }
 
 int 
-sh_module_subshribe(const char *name, int flag) {
+sh_module_subscribe(const char *name, int flag) {
     if (name[0] == '\0') {
         return -1;
     }
@@ -377,7 +377,7 @@ sh_module_has(int vhandle, int handle) {
 
 int 
 sh_handler(const char *name, int flag, int *handle) {
-    *handle = sh_module_subshribe(name, flag);
+    *handle = sh_module_subscribe(name, flag);
     if (*handle == -1) {
         sh_error("Subshribe handle %s fail", name);
         return 1;

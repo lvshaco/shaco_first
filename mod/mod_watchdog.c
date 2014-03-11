@@ -1,4 +1,5 @@
 #include "sh.h"
+#include "cmdctl.h"
 #include "msg_server.h"
 #include "msg_client.h"
 
@@ -41,6 +42,23 @@ struct watchdog {
     struct sh_hash acc2user;
 };
 
+// command
+static int
+playercount(struct module *s, struct args *A, struct memrw *rw) {
+    struct watchdog *self = MODULE_SELF;
+    uint32_t ntotal = self->conn2user.used;
+    uint32_t nverifyed = self->acc2user.used;
+    int n = snprintf(rw->ptr, RW_SPACE(rw), "%u(verifyed) %u(all)", nverifyed, ntotal);
+    memrw_pos(rw, n); 
+    return CTL_OK;
+}
+
+static struct ctl_command CMDS[] = {
+    { "playercount", playercount },
+    { NULL, NULL },
+};
+
+// watchdog
 struct watchdog *
 watchdog_create() {
     struct watchdog *self = malloc(sizeof(*self));
@@ -458,5 +476,8 @@ watchdog_main(struct module *s, int session, int source, int type, const void *m
         }
         break;
         }
+    case MT_CMD:
+        cmdctl_handle(s, source, msg, sz, CMDS, -1);
+        break;
     }
 }

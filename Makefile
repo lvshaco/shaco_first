@@ -127,12 +127,14 @@ $(mod_so): %.so: $(mod_dir)/%.c
 	gcc $(CFLAGS) $(SHARED) -o $@ $< -Iinclude/libshaco -Inet -Ibase -Imsg
 
 mod_match.so: $(mod_dir)/mod_match.c \
-	mod_match/match.h
+	mod_match/match.h \
+	mod_match/match_cmdctl.h
 	@rm -f $@
-	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Iinclude/libshaco -Inet -Ibase -Imsg -Imod_match
+	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Iinclude/libshaco -Inet -Ibase -Imsg -Imod_match -Imod
 
 mod_room.so: $(mod_dir)/mod_room.c \
 	mod_room/room.c \
+	mod_room/room_cmdctl.h \
 	mod_room/room_game.c \
 	mod_room/room_game.h \
 	mod_room/room_tplt.c \
@@ -152,7 +154,7 @@ mod_room.so: $(mod_dir)/mod_room.c \
 	mod_room/room_dump.c \
 	mod_room/room_dump.h
 	@rm -f $@
-	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Iinclude/libshaco -Inet -Ibase -Imsg -Imod_room -Imod_share -Itplt -Idatadefine -Wl,-rpath,. tplt.so 
+	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Iinclude/libshaco -Inet -Ibase -Imsg -Imod -Imod_room -Imod_share -Itplt -Idatadefine -Wl,-rpath,. tplt.so 
 
 mod_log.so: $(mod_dir)/mod_log.c
 	@rm -f $@
@@ -181,6 +183,7 @@ mod_auth.so: $(mod_dir)/mod_auth.c
 	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Iinclude/libshaco -Inet -Ibase -Imsg -Iredis -Wl,-rpath,. redis.so
 
 mod_hall.so: $(mod_dir)/mod_hall.c \
+	mod_hall/hall_cmdctl.h \
 	mod_hall/hall_tplt.c \
 	mod_hall/hall_tplt.h \
 	mod_hall/hall_player.c \
@@ -201,16 +204,17 @@ mod_hall.so: $(mod_dir)/mod_hall.c \
 	mod_hall/hall_play.c \
 	mod_hall/hall_play.h
 	@rm -f $@
-	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Iinclude/libshaco -Inet -Ibase -Itplt -Idatadefine -Imsg -Iredis -Imod_hall -Imod_share -Wl,-rpath,. redis.so tplt.so
+	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Iinclude/libshaco -Inet -Ibase -Itplt -Idatadefine -Imsg -Iredis -Imod_hall -Imod_share -Imod -Wl,-rpath,. redis.so tplt.so
 
 mod_robot.so: $(mod_dir)/mod_robot.c \
 	mod_hall/hall_attribute.c \
 	mod_hall/hall_attribute.h \
 	mod_robot/robot.h \
+	mod_robot/robot_cmdctl.h \
 	mod_robot/robot_tplt.c \
 	mod_robot/robot_tplt.h
 	@rm -f $@
-	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Iinclude/libshaco -Inet -Ibase -Imsg -Iredis -Itplt -Idatadefine -Imod_hall -Imod_robot -Wl,-rpath,. redis.so tplt.so
+	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Iinclude/libshaco -Inet -Ibase -Imsg -Iredis -Itplt -Idatadefine -Imod_hall -Imod_robot -Imod -Wl,-rpath,. redis.so tplt.so
 
 lur.so: $(lur_src)
 	@rm -f $@

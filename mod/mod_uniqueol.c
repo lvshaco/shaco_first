@@ -1,4 +1,5 @@
 #include "sh.h"
+#include "cmdctl.h"
 #include "msg_server.h"
 
 #define UNIQUE_INIT 1
@@ -123,7 +124,7 @@ process_unique(struct module *s, int source, struct UM_BASE *base) {
 }
 
 void
-uniqueol_main(struct module *s, int session, int source, int type, const void *msg, int n) {
+uniqueol_main(struct module *s, int session, int source, int type, const void *msg, int sz) {
     switch (type) {
     case MT_UM: {
         UM_CAST(UM_BASE, base, msg);
@@ -132,6 +133,9 @@ uniqueol_main(struct module *s, int session, int source, int type, const void *m
         break;
     case MT_MONITOR:
         // todo
+        break;
+    case MT_CMD:
+        cmdctl_handle(s, source, msg, sz, NULL, -1);
         break;
     }
 }

@@ -19,7 +19,7 @@ _open(struct dlmodule* dl) {
     }
     char fname[PATH_MAX];
     snprintf(fname, sizeof(fname), "./%s", tmp);
-    void* handle = dlopen(fname, RTLD_NOW | RTLD_GLOBAL);
+    void* handle = dlopen(fname, RTLD_NOW | RTLD_LOCAL);
     if (handle == NULL) {
         sh_error("dlmodule %s open error: %s", dl->name, dlerror());
         return 1;

@@ -1,4 +1,5 @@
 #include "sh.h"
+#include "cmdctl.h"
 #include "msg_server.h"
 #include "redis.h"
 #include "freelist.h"
@@ -215,6 +216,9 @@ redisproxy_main(struct module *s, int session, int source, int type, const void 
         }
         break;
         }
+    case MT_CMD:
+        cmdctl_handle(s, source, msg, sz, NULL, -1);
+        break;
     }
 }
 
