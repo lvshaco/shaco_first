@@ -107,20 +107,26 @@ _disconnect_node(struct module *s, int connid) {
 static void *
 _block_read(int id, int *msgsz, int *err) {
     for (;;) {
+        *err = 0;
         struct mread_buffer buf;
-        int nread = sh_net_read(id, false, &buf, err);
-        if (*err == 0) {
+        int nread = sh_net_read(id, &buf, err);
+        if (nread > 0) {
             if (buf.sz > 6) {
                 void *msg = buf.ptr+6;
                 int sz = sh_from_littleendian16((uint8_t*)buf.ptr) + 2;
                 if (buf.sz >= sz) {
                     buf.ptr += sz;
                     buf.sz -= sz;
-                    sh_net_dropread(id, nread-buf.sz);
+                    int drop = nread - buf.sz;
+                    if (drop) {
+                        sh_net_dropread(id, nread-buf.sz);
+                    }
                     *msgsz = sz-6;
                     return msg;
                 }
             }
+        } else if (nread == 0) {
+            continue;
         } else {
             return NULL;
         }
@@ -455,20 +461,11 @@ node_init(struct module* s) {
 
 static void
 _read(struct module *s, struct net_message *nm) {
-    int id = nm->connid; 
-    int step = 0; 
-    int drop = 1;     
-    int err;
-    for (;;) {
-        struct mread_buffer buf;
-        err = 0;
-        int nread = sh_net_read(id, drop==0, &buf, &err);
-        if (nread <= 0) {
-            if (!err)
-                return;
-            else
-                goto errout;
-        }
+    int id = nm->connid;
+    int err = 0; 
+    struct mread_buffer buf;
+    int nread = sh_net_read(id, &buf, &err); 
+    if (nread > 0) {
         for (;;) {
             if (buf.sz < 6) {
                 break;
@@ -488,17 +485,13 @@ _read(struct module *s, struct net_message *nm) {
             sh_module_send(source, dest, type, buf.ptr+6, msgsz-6);
             buf.ptr += msgsz;
             buf.sz  -= msgsz;
-            if (++step > 1000) {
-                sh_net_dropread(id, nread-buf.sz);
-                return;
-            }
         }
-        if (err) {
-            sh_net_close_socket(id, true);
-            goto errout;
+        int drop = nread - buf.sz;
+        if (drop) {
+            sh_net_dropread(id, drop);
         }
-        drop = nread-buf.sz;
-        sh_net_dropread(id, drop);       
+    } else if (nread < 0) {
+        goto errout;
     }
     return;
 errout:

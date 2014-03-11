@@ -307,8 +307,9 @@ _readto(struct net *self, struct socket *s, void *buf, int sz, int *err) {
         *err = _read_close(s);
         if (*err) {
             _close_socket(self, s);
-        }
-        return -1;
+            return -1;
+        } else
+            return 0;
     }
     for (;;) {
         nbyte = _socket_read(s->fd, buf, sz);
@@ -372,7 +373,7 @@ net_block_readto(struct net *self, int id, void *buf, int sz, int *err) {
     }
     return sz-remain;
 }
-
+/*
 int
 net_read(struct net *self, int id, bool force, struct mread_buffer *buf, int *err) {
     struct socket *s = _get_socket(self, id);
@@ -422,6 +423,56 @@ net_dropread(struct net *self, int id, int sz) {
         } else {
             assert(0);
         }
+    }
+}
+*/
+
+int
+net_read(struct net *self, int id, struct mread_buffer *buf, int *err) {
+    struct socket *s = _get_socket(self, id);
+    if (s == NULL) {
+        return -1;
+    }
+    struct netbuf_block *rb = s->rb;
+    assert(rb->rptr == 0);
+    void *wptr = RB_WPTR(rb);
+    int space  = RB_SPACE(rb);
+    if (space == 0) {
+        *err = NET_ERR_NOBUF; // full, msg too large
+        return -1;
+    }
+    int nread = _readto(self, s, wptr, space, err);
+    if (nread > 0) {
+        rb->wptr += nread;
+        buf->ptr = RB_RPTR(rb);
+        buf->sz = RB_NREAD(rb);
+        return buf->sz; // more data, parse it
+    }
+    return nread; // no more data, check err
+}
+
+void
+net_dropread(struct net *self, int id, int sz) {
+    struct socket *s = _get_socket(self, id);
+    if (s == NULL) {
+        return;
+    }
+    assert(sz > 0);
+    struct netbuf_block *rb = s->rb;
+    assert(rb->rptr == 0);
+    rb->rptr += sz; // forward read
+    
+    int remain = rb->wptr - rb->rptr;
+    if (remain > 0) {
+        void *begin = rb+1;
+        memmove(begin, begin + rb->rptr, remain);
+        rb->rptr = 0;
+        rb->wptr= remain;
+    } else if (remain == 0) {
+        rb->rptr = 0;
+        rb->wptr = 0;
+    } else {
+        assert(0);
     }
 }
 

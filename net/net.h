@@ -40,7 +40,7 @@ int net_block_send(struct net* self, int id, void* data, int sz, int *err);
 int net_readto(struct net *self, int id, void *buf, int sz, int *err);
 int net_block_readto(struct net *self, int id, void *buf, int sz, int *err);
 
-int net_read(struct net *self, int id, bool force, struct mread_buffer *buf, int *err);
+int net_read(struct net *self, int id, struct mread_buffer *buf, int *err);
 void net_dropread(struct net *self, int id, int sz);
 
 int net_poll(struct net *self, int timeout);

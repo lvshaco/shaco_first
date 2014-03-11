@@ -452,8 +452,8 @@ start_room(struct module *s, struct applyer **as, int n) {
     sh_hash_insert(&self->rooms, ro->id, ro);
     notify_create_room(s, ro, as, n);
 
-    if (single_p(ro)) {
-        if (ro->type == ROOM_TYPE_NORMAL) {
+    if (ro->type == ROOM_TYPE_NORMAL) {
+        if (single_p(ro)) {
             ro->autoswitch = true;
             autopull_init(self, ro);
         } 

@@ -116,8 +116,8 @@ sh_net_readto(int id, void* buf, int space, int* e) {
 }
 
 int
-sh_net_read(int id, bool force, struct mread_buffer* buf, int* e) { 
-    return net_read(N, id, force, buf, e); 
+sh_net_read(int id, struct mread_buffer* buf, int* e) { 
+    return net_read(N, id, buf, e); 
 }
 
 void sh_net_dropread(int id, int sz) { 

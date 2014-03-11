@@ -43,18 +43,10 @@ _handleumdef(int id, int ut, struct UM_BASE* um) {
 static void
 _read(struct net_message* nm) {
     int id = nm->connid;
-    int step = 0;
-    int drop = 1;
-    int err;
-    for (;;) {
-        struct mread_buffer buf;
-        int nread = net_read(N, id, drop==0, &buf, &err);
-        if (nread <= 0) {
-            if (!err)
-                return;
-            else
-                goto errout;
-        }
+    int err = 0; 
+    struct mread_buffer buf;
+    int nread = net_read(N, id, &buf, &err); 
+    if (nread > 0) {
         for (;;) {
             if (buf.sz < 2) {
                 break;
@@ -68,17 +60,13 @@ _read(struct net_message* nm) {
             _handleum(id, nm->ut, um);
             buf.ptr += sz;
             buf.sz  -= sz;
-            if (++step > 10) {
-                net_dropread(N, id, nread-buf.sz);
-                return;
-            }
         }
-        //if (err) {
-            //net_close_socket(N, id, true);
-            //goto errout;
-        //}
-        drop = nread - buf.sz;
-        net_dropread(N, id, drop);       
+        int drop = nread - buf.sz;
+        if (drop) {
+            net_dropread(N, id, drop);
+        }
+    } else if (nread < 0) {
+        goto errout;
     }
     return;
 errout:

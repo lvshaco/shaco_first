@@ -348,7 +348,7 @@ stat(const struct tmemberstat *st, int rank) {
 }
 
 static void 
-client_handle(struct module *s, struct client *c, void *msg, int sz) {
+handle(struct module *s, struct client *c, void *msg, int sz) {
     struct robotcli *self = MODULE_SELF;
     c->recv_package++;
     c->recv_bytes += sz;
@@ -598,19 +598,11 @@ read_msg(struct module *s, struct net_message* nm) {
     struct client* c = client_get(self, id);
     assert(c);
     assert(c->connid == id);
-    int step = 0;
-    int drop = 1;
-    int err;
-    for (;;) {
-        err = 0; 
-        struct mread_buffer buf;
-        int nread = sh_net_read(id, drop==0, &buf, &err);
-        if (nread <= 0) {
-            if (!err)
-                return;
-            else
-                goto errout;
-        }
+
+    int err = 0; 
+    struct mread_buffer buf;
+    int nread = sh_net_read(id, &buf, &err); 
+    if (nread > 0) {
         for (;;) {
             if (buf.sz < 2) {
                 break;
@@ -619,20 +611,16 @@ read_msg(struct module *s, struct net_message* nm) {
             if (buf.sz < sz) {
                 break;
             }
-            client_handle(s, c, buf.ptr+2, sz-2);
+            handle(s, c, buf.ptr+2, sz-2);
             buf.ptr += sz;
             buf.sz  -= sz;
-            if (++step > 10) {
-                sh_net_dropread(id, nread-buf.sz);
-                return;
-            }
         }
-        if (err) {
-            sh_net_close_socket(id, true);
-            goto errout;
+        int drop = nread - buf.sz;
+        if (drop) {
+            sh_net_dropread(id, drop);
         }
-        drop = nread - buf.sz;
-        sh_net_dropread(id, drop);       
+    } else if (nread < 0) {
+        goto errout;
     }
     return;
 errout:

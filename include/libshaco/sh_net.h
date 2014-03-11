@@ -10,7 +10,7 @@ int sh_net_connect(const char* addr, int port, bool block, int serviceid, int ut
 int sh_net_block_connect(const char* addr, int port, int serviceid, int ut, int *err);
 void sh_net_poll(int timeout);
 int sh_net_readto(int id, void* buf, int space, int* e);
-int sh_net_read(int id, bool force, struct mread_buffer* buf, int* e);
+int sh_net_read(int id, struct mread_buffer* buf, int* e);
 void sh_net_dropread(int id, int sz);
 int sh_net_send(int id, void* data, int sz);
 int sh_net_block_send(int id, void *data, int sz, int *err);
