@@ -242,16 +242,15 @@ _read_bulkitem(struct redis_reply* reply) {
         item->value.len = i;
         item->value.p = READ_PTR(reader);
     }
-    int len = item->value.len;
-    if (len <= 0) {
-        item->value.p = "";
-        //item->value.len = 0;
-        len = 0;
+    //if (item->value.len <= 0) {
+        //item->value.p = "";
+    //}
+    if (item->value.len >= 0) {
+        if (_readbytes(reader, item->value.len+2) == NULL) {
+            return REDIS_NEXTTIME;
+        }
+        ASSERTD(memcmp(READ_PTR(reader)-2, "\r\n", 2) == 0);
     }
-    if (_readbytes(reader, len+2) == NULL) {
-        return REDIS_NEXTTIME;
-    }
-    ASSERTD(memcmp(READ_PTR(reader)-2, "\r\n", 2) == 0);
     //*(READ_PTR(reader)-2) = '\0';
     return _moveto_nextitem(reply);
 }

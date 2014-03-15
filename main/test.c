@@ -218,7 +218,17 @@ void test_redis() {
     int r;
     int i;
 
-    // 1
+    // -1
+    tmp = "$-1\r\n";
+    sz = strlen(tmp);
+    strncpy(&reader->buf[reader->sz], tmp, sz);
+    reader->sz += sz;
+    r = redis_getreply(&reply);
+    assert(r == REDIS_SUCCEED);
+    redis_walkreply(&reply);
+    redis_resetreply(&reply); 
+
+    // 0 
     tmp = "*2\r\n$0\r\n\r\n$1\r\na\r\n";
     sz = strlen(tmp);
     strncpy(&reader->buf[reader->sz], tmp, sz);
@@ -227,7 +237,7 @@ void test_redis() {
     assert(r == REDIS_SUCCEED);
     redis_walkreply(&reply);
     redis_resetreply(&reply); 
-return;
+
     // 1
     tmp = "$6\r\nfoobar\r\n";
     sz = strlen(tmp);
@@ -317,7 +327,7 @@ return;
     // 8
     redis_resetreply(&reply); 
 
-    tmp = "$0\r\n";
+    tmp = "$0\r\n\r\n";
     sz = strlen(tmp);
     strncpy(&reader->buf[reader->sz], tmp, sz);
     reader->sz += sz;
@@ -1632,7 +1642,7 @@ main(int argc, char* argv[]) {
     //test_args();
     //test_freeid();
     //test_hashid();
-    //test_redis();
+    test_redis();
     //test_freelist();
     //test_elog2();
     //test_elog3(times);
@@ -1645,7 +1655,7 @@ main(int argc, char* argv[]) {
     //test_redis_command(times);
     //test_redis_command2(times);
     //test_redis_command3(times);
-    test_itoa(times);
+    //test_itoa(times);
     //test_hash32(times);
     //test_hash64(times);
     //test_hash32_for(times);
