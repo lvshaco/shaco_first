@@ -139,8 +139,7 @@ cmdctl_init(struct module* s) {
         sh_handler(sh_getstr("cmd_handle", ""), SUB_LOCAL, &self->cmd_handle)) {
         return 1;
     }
-    int handle;
-    if (sh_handler("centers", SUB_LOCAL, &handle))
+    if (module_query_id("centers") == -1)
         self->is_center = false;
     else
         self->is_center = true;

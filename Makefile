@@ -250,7 +250,7 @@ shaco-cli: $(cli_src)
 	gcc $(CFLAGS) -o $@ $^ -lpthread
 
 t: main/test.c shaco.so net.so lur.so base.so redis.so elog.so
-	gcc $(CFLAGS) -o $@ $^ -Iinclude/libshaco -Ilur -Inet -Ibase -Iredis -Ielog $(LDFLAGS) redis.so 
+	gcc $(CFLAGS) -o $@ $^ -Iinclude/libshaco -Imsg -Ilur -Inet -Ibase -Iredis -Ielog $(LDFLAGS) redis.so 
 
 robot: main/robot.c cnet/cnet.c cnet/cnet.h net.so
 	gcc $(CFLAGS) -o $@ $^ -Ilur -Icnet -Inet -Ibase -Imsg -Wl,-rpath,. net.so

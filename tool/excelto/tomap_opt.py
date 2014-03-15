@@ -97,9 +97,15 @@ def parse_blocksheet(infile, map_config, outfile):
         op.write(struct.pack("B", num))
         curoff += num
 
+    
     for i in range(depth):
         for typeid in typeids[i]:
             op.write(struct.pack("B", typeid))
+    
+    unpackoff = depth * 2 + curoff
+    packoff = (unpackoff+3)/4*4
+    for i in range(packoff-unpackoff):
+        op.write(struct.pack("B", 0))
 
     for h in range(height):
         item = items[h+3]
@@ -165,11 +171,11 @@ def parse_blocksheet(infile, map_config, outfile):
                 itemrate = 100
             flag = isassign
             op.write(struct.pack("H", flag))
-            op.write(struct.pack("B", cellrate))
-            op.write(struct.pack("B", itemrate))
+            op.write(struct.pack("H", cellrate))
+            op.write(struct.pack("H", itemrate))
             op.write(struct.pack("I", cellid))
             op.write(struct.pack("I", itemid))
-            op.write(struct.pack("H", block))
+            op.write(struct.pack("I", block))
             #if block > 0:
                 #log.write("isassign %d, ctype %d, cellrate %d, itemrate %d, cellid %d, \
                     #itemid %d, in(%d,%d), block(%d)\n"%

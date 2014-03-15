@@ -31,8 +31,8 @@ rprank   = {ip=iip, port=8502, conn=256},
 
 open_node_map = {
 center = {ip=iip, port=18000, handler="cmds", clientmax=100, clientlive=6, wbuffer=0, verify=0},
-route  = {ip=oip, port=18100, handler="route", clientmax=10000, clientlive=0, wbuffer=0},
-gate   = {ip=oip, port=18200, handler="watchdog",clientmax=11000, clientlive=hb, wbuffer=128*1024, load="gate_load"},
+route  = {ip=oip, port=18100, handler="route", clientmax=20000, clientlive=0, wbuffer=0},
+gate   = {ip=oip, port=18200, handler="watchdog",clientmax=20000, clientlive=hb, wbuffer=128*1024, load="gate_load"},
 }
 
 function def_node(name, id)
@@ -41,7 +41,7 @@ function def_node(name, id)
     node_ip   = node.ip
     node_port = node.port
 
-    sh_loglevel = "DEBUG"
+    sh_loglevel = "INFO"
     sh_connmax = node.conn
     sh_module = "log,node"
     if name == "center" then

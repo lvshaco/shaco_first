@@ -106,7 +106,7 @@ _get_module(int vhandle) {
 }
 
 static int
-_subshribe(const char *name) {
+_subscribe(const char *name) {
     struct _module_vector *sers = &R->sers;
     struct _module *s;
     int i;
@@ -206,7 +206,7 @@ sh_module_subscribe(const char *name, int flag) {
         }
     }
     if (flag & SUB_REMOTE) {
-        handle = _subshribe(name);
+        handle = _subscribe(name);
         if (handle != -1) {
             char msg[128];
             int n = snprintf(msg, sizeof(msg), "SUB %s", name); 
@@ -280,7 +280,7 @@ sh_module_send(int source, int dest, int type, const void *msg, int sz) {
     if (dest & 0x10000) {
         struct _module *s = _get_module(dest);
         if (s == NULL) {
-            sh_error("No subshribe remote module %04x", dest);
+            sh_error("No subscribe remote module %04x", dest);
             return 1;
         }
         int h = _first_handle(s);
@@ -379,7 +379,7 @@ int
 sh_handler(const char *name, int flag, int *handle) {
     *handle = sh_module_subscribe(name, flag);
     if (*handle == -1) {
-        sh_error("Subshribe handle %s fail", name);
+        sh_error("Subscribe handle %s fail", name);
         return 1;
     }
     return 0;

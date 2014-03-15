@@ -37,65 +37,63 @@ rank_init(struct module* s) {
 }
 
 static int
-_refresh_rank(struct module *s, const char* type, time_t now, uint32_t* base) {
+db(struct module *s, const char *cmd, int len) {
     struct rank *self = MODULE_SELF;
+    UM_DEFVAR2(UM_REDISQUERY, rq, UM_MAXSZ);
+    rq->needreply = 0;
+    rq->needrecord = 1;
+    rq->cbsz = 0;
+    assert(len < UM_MAXSZ - sizeof(*rq));
+    memcpy(rq->data, cmd, len);
+    int msgsz = sizeof(*rq) + len;
+    return sh_module_send(MODULE_ID, self->rprank_handle, MT_UM, rq, msgsz);
+}
+
+static void
+_refresh_rank(struct module *s, const char* type, time_t now, uint32_t* base) {
     char strtime[24];
     struct tm tmnow  = *localtime(&now); 
     strftime(strtime, sizeof(strtime), "%y%m%d-%H:%M:%S", &tmnow);
 
-    UM_DEFVAR2(UM_REDISQUERY, rq, UM_MAXSZ);
-    rq->needreply = 0;
-    rq->needrecord = 1;
-    rq->cbsz = 0;
-    struct memrw rw;
-    memrw_init(&rw, rq->data, UM_MAXSZ - sizeof(*rq));
-    int len = snprintf(rw.ptr, RW_SPACE(&rw), 
-            "MULTI\r\n"
-            "SET rank:%s_refresh_time %s\r\n"
-            "ZUNIONSTORE rank:%s_%s 1 rank:%s\r\n"
-            "EXEC\r\n",
-            type, strtime, type, strtime, type);
-    memrw_pos(&rw, len);
-    int msgsz = sizeof(*rq) + RW_CUR(&rw);
-    return sh_module_send(MODULE_ID, self->rprank_handle, MT_UM, rq, msgsz);
+    int len;
+    char buf[1024];
+    char *cmd = buf;
+    
+    len = redis_format(&cmd, sizeof(buf), "MULTI");
+    db(s, cmd, len);
+    len = redis_format(&cmd, sizeof(buf), "SET rank:%s_refresh_time %s", type, strtime);
+    db(s, cmd, len);
+    len = redis_format(&cmd, sizeof(buf), "ZUNIONSTORE rank:%s_%s 1 rank:%s", type, strtime, type);
+    db(s, cmd, len);
+    len = redis_format(&cmd, sizeof(buf), "EXEC");
+    db(s, cmd, len);
 }
 
-static int
+static void
 _insert_rank(struct module *s, const char* type, const char* oldtype, uint32_t charid, uint64_t score) { 
-    struct rank *self = MODULE_SELF;
-    UM_DEFVAR2(UM_REDISQUERY, rq, UM_MAXSZ);
-    rq->needreply = 0;
-    rq->needrecord = 1;
-    rq->cbsz = 0;
-    struct memrw rw;
-    memrw_init(&rw, rq->data, UM_MAXSZ - sizeof(*rq));
     int len;
+    char buf[1024];
+    char *cmd = buf;
     if (oldtype[0] == '\0') {
         if (type[0]) {
-            len = snprintf(rw.ptr, RW_SPACE(&rw), 
-                    "ZADD rank:%s %llu %u\r\n"
-                    "ZREMRANGEBYRANK rank:%s -100001 -100001\r\n",
-                    type, (unsigned long long int)score, (unsigned int)charid, type);
-        } else {
-            return 1;
-        }
+            len = redis_format(&cmd, sizeof(buf), "ZADD rank:%s %U %u", type, score, charid);
+            db(s, cmd, len);
+            len = redis_format(&cmd, sizeof(buf), "ZREMRANGEBYRANK rank:%s -100001 -100001", type);
+            db(s, cmd, len);
+        } 
     } else {
         if (type[0]) {
-            len = snprintf(rw.ptr, RW_SPACE(&rw), 
-                    "ZREM rank:%s %u\r\n"
-                    "ZADD rank:%s %llu %u\r\n"
-                    "ZREMRANGEBYRANK rank:%s -100001 -100001\r\n",
-                    oldtype, (unsigned int)charid,
-                    type, (unsigned long long int)score, (unsigned int)charid, type);
+            len = redis_format(&cmd, sizeof(buf), "ZREM rank:%s %u", oldtype, charid);
+            db(s, cmd, len);
+            len = redis_format(&cmd, sizeof(buf), "ZADD rank:%s %U %u", type, score, charid);
+            db(s, cmd, len);
+            len = redis_format(&cmd, sizeof(buf), "ZREMRANGEBYRANK rank:%s -100001 -100001", type);
+            db(s, cmd, len);
         } else {
-            len = snprintf(rw.ptr, RW_SPACE(&rw), 
-                    "ZREM rank:%s %u\r\n",
-                    oldtype, (unsigned int)charid);
+            len = redis_format(&cmd, sizeof(buf), "ZREM rank:%s %u", oldtype, charid);
+            db(s, cmd, len);
         }
     }
-    memrw_pos(&rw, len);
-    int msgsz = sizeof(*rq) + RW_CUR(&rw);
-    return sh_module_send(MODULE_ID, self->rprank_handle, MT_UM, rq, msgsz);
 }
 /*
 static int
@@ -124,14 +122,12 @@ _refresh_db(struct module *s) {
     uint32_t now = sh_timer_now()/1000;
     uint32_t base; 
     if (self->next_normal_refresh_time <= now) {
-        if (_refresh_rank(s, "normal", now, &base) == 0) {
-            self->next_normal_refresh_time = base + 7 * SC_DAY_SECS;
-        }
+        _refresh_rank(s, "normal", now, &base);
+        self->next_normal_refresh_time = base + 7 * SC_DAY_SECS;
     }
     if (self->next_dashi_refresh_time <= now) {
-        if (_refresh_rank(s, "dashi",  now, &base) == 0) {
-            self->next_dashi_refresh_time = base + 7 * SC_DAY_SECS;
-        }
+        _refresh_rank(s, "dashi",  now, &base);
+        self->next_dashi_refresh_time = base + 7 * SC_DAY_SECS;
     }
 }
 

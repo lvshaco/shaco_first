@@ -160,7 +160,7 @@ query(struct module *s, int source, struct UM_REDISQUERY *rq, int sz) {
     }
     int cbsz = rq->cbsz;
     char* dataptr = rq->data + cbsz;
-    int lastpos = 0; 
+    /*int lastpos = 0; 
     int n = 0;
     int i;
     for (i=0; i<datasz-1;) {
@@ -174,18 +174,16 @@ query(struct module *s, int source, struct UM_REDISQUERY *rq, int sz) {
     }
     if (lastpos != datasz) {
         return; // need endswith \r\n
-    }
+    }*/
     char* cbptr = rq->data;
-    for (i=0; i<n; ++i) {
-        struct querylink* ql = FREELIST_PUSH(querylink, 
-                                             &self->queryq, 
-                                             sizeof(struct querylink) + cbsz);
-        ql->source = source;
-        ql->needreply = rq->needreply;
-        ql->cbsz = cbsz;
-        if (cbsz > 0) {
-            memcpy(ql->cb, cbptr, cbsz);
-        }
+    struct querylink* ql = FREELIST_PUSH(querylink, 
+                                         &self->queryq, 
+                                         sizeof(struct querylink) + cbsz);
+    ql->source = source;
+    ql->needreply = rq->needreply;
+    ql->cbsz = cbsz;
+    if (cbsz > 0) {
+        memcpy(ql->cb, cbptr, cbsz);
     }
     if (self->connid != -1) {
         char *tmp = malloc(datasz);
@@ -199,6 +197,7 @@ query(struct module *s, int source, struct UM_REDISQUERY *rq, int sz) {
     }
 // todo, delete
     dataptr[datasz-1] = '\0';
+    sh_rec("--------------------------------------");
     sh_rec(dataptr);
 
 }
@@ -262,41 +261,43 @@ read(struct module *s, struct net_message* nm) {
             goto errout;
         }
         int nread = sh_net_readto(id, buf, space, &e);
-        if (nread <= 0) {
+        if (nread > 0) {
+            reply->reader.sz += nread;
+            int result = redis_getreply(reply);
+            int K = 0;
+            while (result == REDIS_SUCCEED) {
+                handle_reply(s);
+                redis_resetreply(reply); 
+                result = redis_getreply(reply);
+                K++;
+            }
+            redis_resetreply(reply);
+            if (K > 0) {
+                self->times++;
+                self->allcount+=K;
+                if (self->maxcount < K)
+                    self->maxcount = K;
+            }
+            if (result == REDIS_ERROR) {
+                e = NETE_REDISREPLY;
+                goto errout;
+            }
+            if (nread < space) {
+                break; // net read over
+            }
+        } else if (nread < 0) {
             goto errout;
-        }
-        reply->reader.sz += nread;
-        int result = redis_getreply(reply);
-        int K = 0;
-        while (result == REDIS_SUCCEED) {
-            handle_reply(s);
-            redis_resetreply(reply); 
-            result = redis_getreply(reply);
-            K++;
-        }
-        redis_resetreply(reply);
-        if (K > 0) {
-            self->times++;
-            self->allcount+=K;
-            if (self->maxcount < K)
-                self->maxcount = K;
-        }
-        if (result == REDIS_ERROR) {
-            e = NETE_REDISREPLY;
-            goto errout;
-        }
-        if (nread < space) {
-            break; // net read over
+        } else {
+            goto out;
         }
     }
+out:
     return; 
 errout:
-    if (e) {
-        sh_net_close_socket(id, true);
-        nm->type = NETE_SOCKERR;
-        nm->error = e;
-        module_net(nm->ud, nm);
-    }
+    sh_net_close_socket(id, true);
+    nm->type = NETE_SOCKERR;
+    nm->error = e;
+    module_net(nm->ud, nm);
 }
 
 void

@@ -242,16 +242,17 @@ _read_bulkitem(struct redis_reply* reply) {
         item->value.len = i;
         item->value.p = READ_PTR(reader);
     }
-    if (item->value.len <= 0) {
+    int len = item->value.len;
+    if (len <= 0) {
         item->value.p = "";
         //item->value.len = 0;
-    } else { 
-        if (_readbytes(reader, item->value.len+2) == NULL) {
-            return REDIS_NEXTTIME;
-        }
-        ASSERTD(memcmp(READ_PTR(reader)-2, "\r\n", 2) == 0);
-        //*(READ_PTR(reader)-2) = '\0';
+        len = 0;
     }
+    if (_readbytes(reader, len+2) == NULL) {
+        return REDIS_NEXTTIME;
+    }
+    ASSERTD(memcmp(READ_PTR(reader)-2, "\r\n", 2) == 0);
+    //*(READ_PTR(reader)-2) = '\0';
     return _moveto_nextitem(reply);
 }
 
@@ -467,72 +468,72 @@ redis_walkreply(struct redis_reply* reply) {
     _walk_reply(reply->stack[0], 0);
 }
 
-int 
-redis_command(char *buf, int sz, const char *cmd, const char *fmt, ...) {
-    va_list ap; 
-    char tmp[24];
-    const char *s; 
-    int l, p;
-
-    s = fmt;
-    l = strlen(s) + 1;
-    p = snprintf(buf, sz, "*%d\r\n", l);
-    buf += p;
-    sz  -= p;
-    if (sz <= 0) {
-        return 1;
+static int 
+itoa(int v, char *p) {
+    int n = 0;
+    bool plus = true;
+    if (v<0) {
+        p[n] = '-';
+        v = -v;
+        n++;
+        plus = false;
     }
+    do {
+        int c = v%10;
+        v /= 10;
+        p[n] = c + '0';
+        n++;
+    } while (v);
+    p[n] = '\0';
 
-    s = cmd;
-    l = strlen(s);
-    p = snprintf(buf, sz, "$%d\r\n%s\r\n", l, s);
-    buf += p;
-    sz  -= p;
-    if (sz <= 0) {
-        return 1;
-    }
+    int i;
+    if (plus) {
+        for (i=0; i<n/2; ++i) {
+            char t = p[i];
+            p[i] = p[n-i-1];
+            p[n-i-1] = t;
 
-    va_start(ap, fmt);
-    while (*fmt) {
-        switch (*fmt++) {
-        case 's':
-            s = va_arg(ap, const char*);
-            break;
-        case 'd': {
-            long long int arg = va_arg(ap, long long int);
-            snprintf(tmp, sizeof(tmp), "%lld", arg);
-            s = tmp;
-            break;
-            }
-        case 'f':{
-            double arg = va_arg(ap, double);
-            snprintf(tmp, sizeof(tmp), "%f", arg);
-            s = tmp;
-            break;
-            }
-        default:
-            return 1;
         }
-        l = strlen(s);
-        p = snprintf(buf, sz, "$%d\r\n%s\r\n", l, s);
-        buf += p;
-        sz  -= p;
-        if (sz <= 0) {
-            return 1;
+    } else {
+        for (i=1; i<(n+1)/2; ++i) {
+            char t = p[i];
+            p[i] = p[n-i];
+            p[n-i] = t;
         }
     }
-    va_end(ap);
-    return 0;
+    return n;
 }
 
-char *
-redis_formatcommand(const char *fmt, ...) {
+static int
+ntoa(unsigned int v, char *p) {
+    int n = 0;
+    do {
+        unsigned int c = v%10;
+        v /= 10;
+        p[n] = c + '0';
+        n++;
+    } while (v);
+    p[n] = '\0';
+
+    int i;
+    for (i=0; i<n/2; ++i) {
+        char t = p[i];
+        p[i] = p[n-i-1];
+        p[n-i-1] = t;
+
+    }
+    return n;
+}
+
+int
+redis_format(char **buf, int sz, const char *fmt, ...) {
+    assert(buf);
     struct bytes {
         char *p;
         int sz;
     };
-    int argsz = 16;
-    int argc = 1;
+    int argsz = 4;
+    int argc = 0;
     int total = 0;
     struct bytes *argv = malloc(sizeof(struct bytes) * argsz); 
     argv[0].p = NULL;
@@ -548,61 +549,10 @@ redis_formatcommand(const char *fmt, ...) {
     va_start(ap, fmt);
      
     while (*fmt) {
-        switch (*fmt) {
-        case '%':
-            if (newarg) {
-                arg = &argv[argc-1];
-                l = fmt - newarg;
-                arg->p = realloc(arg->p, arg->sz+l);
-                memcpy(arg->p + arg->sz, newarg, l);
-                arg->sz += l;
-                total += l;
-                newarg = NULL;
-            }
-            switch (*(++fmt)) {
-            case 's': {
-                s = va_arg(ap, const char*);
-                l = strlen(s); 
-                }
-                break;
-            case 'd':
-                s = tmp;
-                l = snprintf(tmp, sizeof(tmp), "%d", va_arg(ap, int));
-                break;
-            case 'u':
-                s = tmp;
-                l = snprintf(tmp, sizeof(tmp), "%u", va_arg(ap, int));
-                break;
-            case 'f':
-                s = tmp;
-                l = snprintf(tmp, sizeof(tmp), "%f", va_arg(ap, double));
-                break;
-            case '%':
-                s = "%";
-                l = 1;
-                break;
-            default:
-                goto err;
-            }
-            arg = &argv[argc-1]; 
-            arg->p = realloc(arg->p, arg->sz+l);
-            memcpy(arg->p + arg->sz, s, l);
-            arg->sz += l;
-            total += l;
-            break;
-        case ' ':
-            arg = &argv[argc-1];
-            if (newarg) {
-                l = fmt - newarg;
-                arg->p = realloc(arg->p, arg->sz+l);
-                memcpy(arg->p + arg->sz, newarg, l);
-                arg->sz += l;
-                
-                total += l;
-                newarg = NULL;
-            }
-            if (arg->p) {
-                if (argc >= argsz) {
+        if (*fmt != ' ') {
+            if (!newarg) {
+                newarg = fmt;
+                if (argc == argsz) {
                     argsz *= 2;
                     argv = realloc(argv, sizeof(struct bytes) * argsz);
                 }
@@ -610,23 +560,86 @@ redis_formatcommand(const char *fmt, ...) {
                 argv[argc].sz = 0;
                 argc++;
             }
-            break;
-        default:
-            if (!newarg) {
-                newarg = fmt;
+            if (*fmt == '%') {
+                if (fmt > newarg) {
+                    l = fmt - newarg;
+                    arg = &argv[argc-1]; 
+                    arg->p = realloc(arg->p, arg->sz+l);
+                    memcpy(arg->p + arg->sz, newarg, l);
+                    arg->sz += l;
+
+                    total += l;
+                }
+                switch (*(++fmt)) {
+                case 's': {
+                    s = va_arg(ap, const char*);
+                    l = strlen(s); 
+                    }
+                    break;
+                case 'b':
+                    s = va_arg(ap, const char*);
+                    l = va_arg(ap, size_t);
+                    break;
+                case 'd':
+                    s = tmp;
+                    l = itoa(va_arg(ap, int), tmp);  
+                    break;
+                case 'u':
+                    s = tmp;
+                    l = ntoa(va_arg(ap, unsigned int), tmp);
+                    break;
+                case 'U':
+                    s = tmp;
+                    l = snprintf(tmp, sizeof(tmp), "%llu", va_arg(ap, unsigned long long));
+                    break;
+                case 'f':
+                    s = tmp;
+                    l = snprintf(tmp, sizeof(tmp), "%.3f", va_arg(ap, double));
+                    break;
+                case '%':
+                    s = "%";
+                    l = 1;
+                    break;
+                default:
+                    goto err;
+                }
+                if (l > 0) {
+                    arg = &argv[argc-1]; 
+                    arg->p = realloc(arg->p, arg->sz+l);
+                    memcpy(arg->p + arg->sz, s, l);
+                    arg->sz += l;
+
+                    total += l;
+                }
+
+                newarg = fmt+1;
             }
-            break;
+        } else {
+            if (newarg) {
+                l = fmt - newarg;
+                if (l) {
+                    arg = &argv[argc-1];
+                    arg->p = realloc(arg->p, arg->sz+l);
+                    memcpy(arg->p + arg->sz, newarg, l);
+                    arg->sz += l;
+                    
+                    total += l;
+                }
+                newarg = NULL;
+            }
         }
         fmt++;
     }
     if (newarg) {
-        arg = &argv[argc-1];
         l = fmt - newarg;
-        arg->p = realloc(arg->p, arg->sz+l);
-        memcpy(arg->p + arg->sz, newarg, l);
-        arg->sz += l;
-        
-        total += l;
+        if (l) {
+            arg = &argv[argc-1];
+            arg->p = realloc(arg->p, arg->sz+l);
+            memcpy(arg->p + arg->sz, newarg, l);
+            arg->sz += l;
+            
+            total += l;
+        }
         newarg = NULL;
     }
     va_end(ap);
@@ -634,310 +647,46 @@ redis_formatcommand(const char *fmt, ...) {
     if (argc == 0) {
         goto err;
     }
-    if (argv[argc-1].p == NULL) {
-        argc--;
+    
+    int msz = total+1+13+15*argc;
+    if (*buf == NULL) {
+        *buf = malloc(msz);
+    } else {
+        if (sz < msz)
+            goto err;
     }
-    char *cmd = malloc(total+1+13+15*argc);
-    char *p = cmd;
-
-    l = sprintf(p, "*%d\r\n", argc);
-    p += l;
+    char *p = *buf;
+    
+    *p++ = '*';
+    p += itoa(argc, p);
+    *p++ = '\r';
+    *p++ = '\n';
+    
     int i;
     for (i=0; i<argc; ++i) {
         arg = &argv[i];
-        l = sprintf(p, "$%d\r\n", arg->sz);
-        p += l;
-        memcpy(p, arg->p, arg->sz);
-        p += arg->sz;
+
+        *p++ = '$';
+        p += itoa(arg->sz, p);
         *p++ = '\r';
         *p++ = '\n';
+
+        if (arg->p) {
+            memcpy(p, arg->p, arg->sz);
+            p += arg->sz;
+        }
+        *p++ = '\r';
+        *p++ = '\n';
+        
         free(arg->p);
     }
     *p = '\0';
     free(argv);
-    return cmd;
+    return p - *buf;
 err:
     for (i=0; i<argc; ++i) {
         free(argv[i].p);
     }
     free(argv);
-    return "";
-}
-
-char *
-redis_formatcommand2(char *cmd, int sz,const char *fmt, ...) {
-    struct bytes {
-        char p[512];
-        int sz;
-    };
-    int argsz = 64;
-    int argc = 1;
-    int total = 0;
-    struct bytes argv[64];
-    argv[0].sz = 0;
-  
-    int l;
-    const char *s;
-    char tmp[24];
-    const char *newarg = NULL;
-    struct bytes *arg;
-    
-    va_list ap;
-    va_start(ap, fmt);
-     
-    while (*fmt) {
-        if (*fmt != '%') {
-            if (*fmt == ' ') {
-                arg = &argv[argc-1];
-                if (newarg) {
-                    l = fmt - newarg;
-                    //arg->p = realloc(arg->p, arg->sz+l);
-                    memcpy(arg->p + arg->sz, newarg, l);
-                    arg->sz += l;
-                    
-                    total += l;
-                    newarg = NULL;
-                }
-                if (arg->sz) {
-                    if (argc >= argsz) {
-                        assert(0);
-                        //argsz *= 2;
-                        //argv = realloc(argv, sizeof(struct bytes) * argsz);
-                    }
-                    //argv[argc].p = NULL;
-                    argv[argc].sz = 0;
-                    argc++;
-                }
-            } else {
-                if (!newarg) {
-                    newarg = fmt;
-                }
-            }
-        } else {
-            if (newarg) {
-                arg = &argv[argc-1];
-                l = fmt - newarg;
-                //arg->p = realloc(arg->p, arg->sz+l);
-                memcpy(arg->p + arg->sz, newarg, l);
-                arg->sz += l;
-                total += l;
-                newarg = NULL;
-            }
-            switch (*(++fmt)) {
-            case 's': {
-                s = va_arg(ap, const char*);
-                l = strlen(s); 
-                }
-                break;
-            case 'd':
-                s = tmp;
-                l = snprintf(tmp, sizeof(tmp), "%d", va_arg(ap, int));
-                break;
-            case 'u':
-                s = tmp;
-                l = snprintf(tmp, sizeof(tmp), "%u", va_arg(ap, int));
-                break;
-            case 'f':
-                s = tmp;
-                l = snprintf(tmp, sizeof(tmp), "%f", va_arg(ap, double));
-                break;
-            case '%':
-                s = "%";
-                l = 1;
-                break;
-            default:
-                goto err;
-            }
-            arg = &argv[argc-1]; 
-            //arg->p = realloc(arg->p, arg->sz+l);
-            memcpy(arg->p + arg->sz, s, l);
-            arg->sz += l;
-            total += l;
-        }
-        fmt++;
-    }
-    if (newarg) {
-        arg = &argv[argc-1];
-        l = fmt - newarg;
-        //arg->p = realloc(arg->p, arg->sz+l);
-        memcpy(arg->p + arg->sz, newarg, l);
-        arg->sz += l;
-        
-        total += l;
-        newarg = NULL;
-    }
-    va_end(ap);
-
-    if (argc == 0) {
-        goto err;
-    }
-    if (argv[argc-1].sz == 0) {
-        argc--;
-    }
-    //char *cmd = malloc(total+1+13+15*argc);
-    char *p = cmd;
-
-    l = sprintf(p, "*%d\r\n", argc);
-    p += l;
-    int i;
-    for (i=0; i<argc; ++i) {
-        arg = &argv[i];
-        l = sprintf(p, "$%d\r\n", arg->sz);
-        p += l;
-        memcpy(p, arg->p, arg->sz);
-        p += arg->sz;
-        *p++ = '\r';
-        *p++ = '\n';
-        //free(arg->p);
-    }
-    *p = '\0';
-    //free(argv);
-    return cmd;
-err:
-    //for (i=0; i<argc; ++i) {
-        //free(argv[i].p);
-    //}
-    //free(argv);
-    return "";
-}
-
-char *
-redis_formatcommand3(char *cmd, int sz,const char *fmt, ...) {
-    struct bytes {
-        char p[512];
-        int sz;
-    };
-  
-    int l;
-    const char *s;
-    char tmp[24];
-    const char *newarg = NULL;
-    struct bytes *arg;
-   
-    
-    va_list ap;
-    va_start(ap, fmt);
-   
-    int argc = 0;
-    bool newone = false;
-    const char *f = fmt;
-    while (*f++) {
-        if (*f == ' ') {
-            if (newone) {
-                argc++;
-                newone = false;
-            }
-        } else {
-            if (!newone) {
-                newone = true;
-            }
-        }
-    }
-    if (newone) {
-        argc++;
-        newone = false;
-    }
-    
-    char *p = cmd;
-    l = sprintf(p, "*%d\r\n", argc);
-    p += l;
-
-    struct bytes tmpdata;
-    arg = &tmpdata;
-    arg->sz = 0;
-
-    while (*fmt) {
-        switch (*fmt) {
-        case '%':
-            if (newarg) {
-                l = fmt-newarg;
-                memcpy(arg->p+arg->sz, newarg, l);
-                arg->sz += l;
-
-                newarg = NULL;
-            }
-            switch (*(++fmt)) {
-            case 's': {
-                s = va_arg(ap, const char*);
-                l = strlen(s); 
-                }
-                break;
-            case 'd':
-                s = tmp;
-                l = snprintf(tmp, sizeof(tmp), "%d", va_arg(ap, int));
-                break;
-            case 'u':
-                s = tmp;
-                l = snprintf(tmp, sizeof(tmp), "%u", va_arg(ap, int));
-                break;
-            case 'f':
-                s = tmp;
-                l = snprintf(tmp, sizeof(tmp), "%f", va_arg(ap, double));
-                break;
-            case '%':
-                s = "%";
-                l = 1;
-                break;
-            default:
-                goto err;
-            }
-            memcpy(arg->p + arg->sz, s, l);
-            arg->sz += l;
-            break;
-        case ' ':
-            if (newarg) {
-                l = fmt-newarg;
-                memcpy(arg->p+arg->sz, newarg, l);
-                arg->sz += l;
-
-                newarg = NULL;
-            }
-            if (arg->sz) {
-                l = sprintf(p, "$%d\r\n", arg->sz);
-                p += l;
-                memcpy(p, arg->p, arg->sz);
-                p += arg->sz;
-                *p++ = '\r';
-                *p++ = '\n';
-
-                arg->sz = 0;
-            }
-            break;
-        default:
-            if (!newarg) {
-                newarg = fmt;
-            }
-            break;
-        }
-        fmt++;
-    }
-   
-    if (newarg) {
-        l = fmt-newarg;
-        arg->sz += l;
-        memcpy(arg->p+arg->sz, newarg, l);
-        
-        newarg = NULL;
-    }
-    if (arg->sz) {
-        l = sprintf(p, "$%d\r\n", arg->sz);
-        p += l;
-        memcpy(p, arg->p, arg->sz);
-        p += arg->sz;
-        *p++ = '\r';
-        *p++ = '\n';
-
-        arg->sz = 0;
-    }
-    
-    *p = '\0';
-    va_end(ap);
-
-    return cmd;
-err:
-    //for (i=0; i<argc; ++i) {
-        //free(argv[i].p);
-    //}
-    //free(argv);
-    return "";
+    return 0;
 }

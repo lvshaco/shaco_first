@@ -6,7 +6,7 @@
 struct genmap_cell {
     uint32_t cellid;
     uint32_t itemid;
-    uint16_t block;
+    uint32_t block;
 };
 
 struct genmap {

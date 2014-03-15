@@ -31,8 +31,8 @@ _rp_read(struct readptr* rp, void* value, int sz) {
 
 static int 
 _check(struct roommap* self, int sz) {
-    int depth = ROOMMAP_DEPTH(self);
-    if (depth <= 0)
+    self->depth = (self->header.height+99)/100;
+    if (self->depth <= 0)
         return 1;
 
     int ncell = ROOMMAP_NCELL(self);
@@ -43,7 +43,7 @@ _check(struct roommap* self, int sz) {
 
     struct readptr rp = { self->data, self->data, 
                           sz - sizeof(self->header) };
-    for (i=0; i<depth; ++i) {
+    for (i=0; i<self->depth; ++i) {
         if (_rp_read(&rp, &th, sizeof(th))) {
             return 1;
         }
@@ -77,7 +77,17 @@ _build(struct roommap* self) {
     struct roommap_typeid_header* th = (struct roommap_typeid_header*)self->data; 
     struct roommap_typeid* ti = (struct roommap_typeid*)(th + depth);
     self->typeid_entry = ti;
-    self->cell_entry = (struct roommap_cell*)(ti + th[depth-1].offset + th[depth-1].num);
+
+    int off = depth * sizeof(struct roommap_typeid_header);
+    off += (th[depth-1].offset + th[depth-1].num) * sizeof(struct roommap_typeid);
+    int pack_off = (off+3)/4*4;
+
+    //void *p1 = (char*)self->data + off;
+    //void *p2 = (char*)self->data + pack_off;
+    //void *p3 = (struct roommap_cell*)(ti + th[depth-1].offset + th[depth-1].num);
+    //sh_info("pack_off %d, p1 %p, p2 %p, p3 %p", pack_off, p1, p2, p3);
+    //self->cell_entry = (struct roommap_cell*)(ti + th[depth-1].offset + th[depth-1].num);
+    self->cell_entry = (struct roommap_cell*)((char*)self->data + pack_off);
     return 0;
 }
 

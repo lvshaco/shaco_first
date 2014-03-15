@@ -113,15 +113,9 @@ stop() {
     for one in $@;do
         stopone $one 0.1
     done
-    ls
 }
 stopcmdd() {
     pkill lua
-}
-restartall() {
-    stop
-    sleep 2
-    startall
 }
 
 USAGE="Usage: shaco-foot [startall] [start [svr .. ]] [stop] [ls] [startcmdd] [stopcmdd] -m"
@@ -143,7 +137,12 @@ done
 
 case "$CMD" in
 restartall)
-    restartall
+    stopall
+    startall
+    ;;
+restart)
+    stop "$@"
+    start "$@"
     ;;
 startall)
     startall

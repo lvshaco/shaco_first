@@ -396,8 +396,8 @@ _connect_to_center(struct module* s) {
 static inline int
 _subscribe_module(struct module *s, const char *name) {
     struct remote *self = MODULE_SELF;
-    int handle;
-    if (!sh_handler(name, SUB_LOCAL, &handle)) {
+    int handle = module_query_id(name);
+    if (handle != -1) {
         _connect_module(s, name, handle); // if local has mod also, connect it
     }
     return sh_module_vsend(MODULE_ID, self->center_handle, "SUB %s", name);
@@ -451,7 +451,8 @@ node_init(struct module* s) {
     if (_listen(s)) {
         return 1;
     }
-    if (sh_handler("centers", SUB_LOCAL, &self->center_handle)) {
+    self->center_handle = module_query_id("centers");
+    if (self->center_handle == -1) {
         if (_connect_to_center(s)) {
             return 1;
         }

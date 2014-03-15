@@ -48,32 +48,32 @@ _db(struct module *s, struct player* p, int8_t type) {
     switch (type) {
     case PDB_QUERY: {
         rq->needreply = 1;
-        int len = snprintf(rw.ptr, RW_SPACE(&rw), "get acc:%u:user\r\n", accid);
+        int len = redis_format(&rw.ptr, RW_SPACE(&rw), "get acc:%u:user", accid);
         memrw_pos(&rw, len);
         }
         break;
     case PDB_CHECKNAME: {
         rq->needreply = 1;
-        int len = snprintf(rw.ptr, RW_SPACE(&rw), "get user:%s:name\r\n", cdata->name);
+        int len = redis_format(&rw.ptr, RW_SPACE(&rw), "get user:%s:name", cdata->name);
         memrw_pos(&rw, len);
         }
         break;
     case PDB_SAVENAME: {
         rq->needreply = 1;
-        int len = snprintf(rw.ptr, RW_SPACE(&rw), "set user:%s:name 1\r\n", cdata->name);
+        int len = redis_format(&rw.ptr, RW_SPACE(&rw), "set user:%s:name 1", cdata->name);
         memrw_pos(&rw, len);
         }
         break;
     case PDB_CHARID: {
         rq->needreply = 1;
-        int len = snprintf(rw.ptr, RW_SPACE(&rw), "incr user:id\r\n");
+        int len = redis_format(&rw.ptr, RW_SPACE(&rw), "incr user:id");
         memrw_pos(&rw, len);
         }
         break;
     case PDB_LOAD: {
         rq->needreply = 1;
         uint32_t charid = cdata->charid;
-        int len = snprintf(rw.ptr, RW_SPACE(&rw), "hmget user:%u"
+        int len = redis_format(&rw.ptr, RW_SPACE(&rw), "hmget user:%u"
                 " name"
                 " level"
                 " exp"
@@ -93,8 +93,7 @@ _db(struct module *s, struct player* p, int8_t type) {
                 " pages"
                 " nring"
                 " rings"
-                " states"
-                "\r\n", charid);
+                " states", charid);
         memrw_pos(&rw, len);
         }
         break;
@@ -102,15 +101,14 @@ _db(struct module *s, struct player* p, int8_t type) {
         rq->needreply = 1;
         uint32_t charid = cdata->charid;
         char_create(cdata);
-        int len = snprintf(rw.ptr, RW_SPACE(&rw), "hmset user:%u"
+        int len = redis_format(&rw.ptr, RW_SPACE(&rw), "hmset user:%u"
                 " name %s"
                 " level %u"
                 " exp %u"
                 " coin %u"
                 " diamond %u"
                 " package %u"
-                " role %u"
-                "\r\n", charid,
+                " role %u", charid,
                 cdata->name,
                 cdata->level, 
                 cdata->exp, 
@@ -124,7 +122,7 @@ _db(struct module *s, struct player* p, int8_t type) {
     case PDB_BINDCHARID: {
         rq->needreply = 1;
         uint32_t charid = cdata->charid;
-        int len = snprintf(rw.ptr, RW_SPACE(&rw), "set acc:%u:user %u\r\n",
+        int len = redis_format(&rw.ptr, RW_SPACE(&rw), "set acc:%u:user %u",
                 accid, charid);
         memrw_pos(&rw, len);
         }
@@ -133,40 +131,27 @@ _db(struct module *s, struct player* p, int8_t type) {
         rq->needreply = 0;
         rq->needrecord = 1;
         uint32_t charid = cdata->charid;
-
-        char strownrole[sh_bytestr_encode_leastn(sizeof(cdata->ownrole))];
-        sh_bytestr_encode((uint8_t*)cdata->ownrole, sizeof(cdata->ownrole), 
-                          strownrole, sizeof(strownrole));
-        char strpages[sh_bytestr_encode_leastn(sizeof(rdata->pages))];
-        sh_bytestr_encode((uint8_t*)rdata->pages, min(rdata->npage, sizeof(rdata->pages)), 
-                          strpages, sizeof(strpages));
-        char strrings[sh_bytestr_encode_leastn(sizeof(rdata->rings))];
-        sh_bytestr_encode((uint8_t*)rdata->rings, min(rdata->nring, sizeof(rdata->rings)), 
-                          strrings, sizeof(strrings));
-        char strstates[sh_bytestr_encode_leastn(sizeof(cdata->roles_state))];
-        sh_bytestr_encode((uint8_t*)cdata->roles_state, sizeof(cdata->roles_state), 
-                          strstates, sizeof(strstates));
-        int len = snprintf(rw.ptr, RW_SPACE(&rw), "hmset user:%u"
+        int len = redis_format(&rw.ptr, RW_SPACE(&rw), "hmset user:%u"
                 " level %u"
                 " exp %u"
                 " coin %u"
                 " diamond %u"
                 " package %u"
                 " role %u"
-                " luck_factor %.3f"
+                " luck_factor %f"
                 " last_washgold_refresh_time %u"
                 " washgold %u"
                 " last_state_refresh_time %u"
                 " score1 %u"
                 " score2 %u"
-                " ownrole %s"
                 " usepage %u"
                 " npage %u"
-                " pages %s"
                 " nring %u"
-                " rings %s"
-                " states %s"
-                "\r\n", charid,
+                " ownrole %b"
+                " pages %b"
+                " rings %b"
+                " states %b",
+                charid,
                 cdata->level, 
                 cdata->exp, 
                 cdata->coin, 
@@ -179,14 +164,18 @@ _db(struct module *s, struct player* p, int8_t type) {
                 cdata->last_state_refresh_time,
                 cdata->score_normal,
                 cdata->score_dashi,
-                strownrole,
                 rdata->usepage,
                 rdata->npage,
-                strpages,
                 rdata->nring,
-                "strrings", // todo
-                strstates
+                cdata->ownrole, sizeof(cdata->ownrole),
+                rdata->pages, rdata->npage,
+                rdata->rings, rdata->nring,
+                cdata->roles_state, sizeof(cdata->roles_state)
                 );
+        if (len == 0) {
+            sh_error("PDB_SAVE error, %u", charid);
+            return 1;
+        }
         memrw_pos(&rw, len);
         }
         break;
@@ -252,21 +241,25 @@ _loadpdb(struct player* p, struct redis_replyitem* item) {
     CHECK(cdata->score_normal = redis_bulkitem_toul(si++));
     CHECK(cdata->score_dashi = redis_bulkitem_toul(si++));
     CHECK(
-    sh_bytestr_decode(si->value.p, si->value.len, (uint8_t*)cdata->ownrole, sizeof(cdata->ownrole));
+    memcpy(cdata->ownrole, si->value.p, min(sizeof(cdata->ownrole), si->value.len));
+    //sh_bytestr_decode(si->value.p, si->value.len, (uint8_t*)cdata->ownrole, sizeof(cdata->ownrole));
     si++;)
     CHECK(rdata->usepage = redis_bulkitem_toul(si++));
     CHECK(rdata->npage = redis_bulkitem_toul(si++));
     CHECK(
-    sh_bytestr_decode(si->value.p, si->value.len, (uint8_t*)rdata->pages, sizeof(rdata->pages));
+    memcpy(rdata->pages, si->value.p, min(sizeof(rdata->pages), si->value.len));
+    //sh_bytestr_decode(si->value.p, si->value.len, (uint8_t*)rdata->pages, sizeof(rdata->pages));
     si++;
     );
     CHECK(rdata->nring = redis_bulkitem_toul(si++));
     CHECK(
-    sh_bytestr_decode(si->value.p, si->value.len, (uint8_t*)rdata->rings, sizeof(rdata->rings));
+    memcpy(rdata->rings, si->value.p, min(sizeof(rdata->rings), si->value.len));
+    //sh_bytestr_decode(si->value.p, si->value.len, (uint8_t*)rdata->rings, sizeof(rdata->rings));
     si++;
     );
     CHECK(
-    sh_bytestr_decode(si->value.p, si->value.len, (uint8_t*)cdata->roles_state, sizeof(cdata->roles_state));
+    memcpy(cdata->roles_state, si->value.p, min(sizeof(cdata->roles_state), si->value.len));
+    //sh_bytestr_decode(si->value.p, si->value.len, (uint8_t*)cdata->roles_state, sizeof(cdata->roles_state));
     si++;)
     return SERR_OK;
 }

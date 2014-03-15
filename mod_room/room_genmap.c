@@ -7,9 +7,10 @@
 static uint64_t next = 1;
 
 static inline int 
-_rand(void) {
+_rand(int base) {
     next = next * 1103515245 + 12345;
-    return((uint32_t)(next/65536) % 32768);
+    //return((uint32_t)(next/65536) % 32768);
+    return((uint32_t)(next/65536) % base);
 }
 
 static inline void 
@@ -20,7 +21,8 @@ _srand(uint32_t seed) {
 static inline int
 _randhit(int base, int rate) {
     if (rate < base)
-        return _rand() % base < rate;
+        //return _rand() % base < rate;
+        return _rand(base) < rate;
     else
         return 1;
 }
@@ -45,12 +47,13 @@ _randcell(const struct map_tplt* tplt, struct roommap* m, uint16_t h) {
     int type, texid;
     if (_randhit(10000, h-1)) {
         type = CELL_SHI;
-        texid  = _spectex(tplt, type);
+        texid = _spectex(tplt, type);
     } else {
         int index = (h-1)/100;
         struct roommap_typeidlist tilist = roommap_gettypeidlist(m, index);
         if (tilist.first && tilist.num > 0)
-            type = tilist.first[_rand() % tilist.num].id;
+            //type = tilist.first[_rand() % tilist.num].id;
+            type = tilist.first[_rand(tilist.num)].id;
         else
             type = 0;
         texid = _colortex(tplt, index);

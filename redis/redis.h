@@ -72,22 +72,10 @@ void redis_resetreplybuf(struct redis_reply* reply, char* buf, int cap);
 
 void redis_walkreply(struct redis_reply* reply);
 int  redis_command(char *buf, int sz, const char *cmd, const char *fmt, ...);
-char *redis_formatcommand(const char *fmt, ...)
-#ifdef __GNUC__
-__attribute__((format(printf, 1, 2)))
-#endif
-;
-
-char *redis_formatcommand2(char *cmd, int sz, const char *fmt, ...)
-#ifdef __GNUC__
-__attribute__((format(printf, 3, 4)))
-#endif
-;
-
-char *redis_formatcommand3(char *cmd, int sz, const char *fmt, ...)
-#ifdef __GNUC__
-__attribute__((format(printf, 3, 4)))
-#endif
+int redis_format(char **buf, int sz, const char *fmt, ...)
+//#ifdef __GNUC__
+//__attribute__((format(printf, 3, 4)))
+//#endif
 ;
 
 static inline int

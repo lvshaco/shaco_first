@@ -8,6 +8,7 @@
 #include "elog_include.h"
 #include "sh_hash.h"
 #include "sh_array.h"
+#include "msg_sharetype.h"
 #include <stdint.h>
 #include <stdarg.h>
 #include <stdio.h>
@@ -216,6 +217,17 @@ void test_redis() {
     int sz;
     int r;
     int i;
+
+    // 1
+    tmp = "*2\r\n$0\r\n\r\n$1\r\na\r\n";
+    sz = strlen(tmp);
+    strncpy(&reader->buf[reader->sz], tmp, sz);
+    reader->sz += sz;
+    r = redis_getreply(&reply);
+    assert(r == REDIS_SUCCEED);
+    redis_walkreply(&reply);
+    redis_resetreply(&reply); 
+return;
     // 1
     tmp = "$6\r\nfoobar\r\n";
     sz = strlen(tmp);
@@ -827,56 +839,85 @@ test(int times) {
     printf("t1 : %d\n", (int)(t2-t1));
 }
 
+struct kv {
+    const char *k;
+    char *v;
+};
+
+struct sql {
+    const char *cmd;
+    char *key;
+    int nkv;
+    struct kv *kvs;
+};
+
+void
+sql_prepare(struct sql *s) {
+    s->cmd = "hmset";
+    s->key = "aaaaaaaaaaa";
+    s->nkv = 15;
+    s->kvs = malloc(sizeof(struct kv) * s->nkv);
+    int i;
+    for (i=0; i<s->nkv; ++i) {
+        s->kvs[i].k = "levelall";
+        s->kvs[i].v = "00000000000000000000000000000000000000000000000000000000000000000000";
+    }
+};
+
+void
+sql_format(struct sql *s, char *tmp, int sz) {
+    int n = 0;
+    n += sh_snprintf(tmp+n, sz-n, "*%d\r\n", 2 + s->nkv);
+    n += sh_snprintf(tmp+n, sz-n, "$%d\r\n%s\r\n", (int)strlen(s->key), s->key);
+    int i;
+    for (i=0; i<s->nkv; ++i) {
+        n += sh_snprintf(tmp+n, sz-n, "$%d\r\n%s\r\n", (int)strlen(s->kvs[i].k), s->kvs[i].k);
+        n += sh_snprintf(tmp+n, sz-n, "$%d\r\n%s\r\n", (int)strlen(s->kvs[i].v), s->kvs[i].v);
+    }
+}
+
 void
 test_redis_command(int times) {
     uint64_t t1, t2;
     int i;
 
+    //----------------------------------------------------
+    struct sql s;
+    sql_prepare(&s);
+    
+    t1 = _elapsed();
+    char tmp[2048];
+    for (i=0; i<times; ++i) {
+        sql_format(&s, tmp, sizeof(tmp));
+    }
+    t2 = _elapsed();
+    printf("tttt : %d\n", (int)(t2-t1));
+
+    //----------------------------------------------------
     t1 = _elapsed();
     for (i=0; i<times; ++i) {
-        char *cmd = redis_formatcommand("hmset user:%s"
-                    " level %s"
-                    " exp %s"
-                    " coin %s"
-                    " diamond %s"
-                    " package %s"
-                    " role %s"
-                    " skin %s"
-                    " score1 %s"
-                    " score2 %s"
-                    " ownrole %s"
-                    " usepage %s"
-                    " npage %s"
-                    " pages %s"
-                    " nring %s"
-                    " rings %s",
-                    "1",
-                    "10",
-                    "1000",
-                    "9999",
-                    "999",
-                    "100",
-                    "10",
-                    "11",
-                    "100",
-                    "200",
-                    "123123",
-                    "2",
-                    "10",
-                    "strpages",
-                    "123",
-                    "strings");
-        //printf(cmd);
+        char *cmd = NULL;
+        redis_format(&cmd, 0, "set foo bar");
         free(cmd);
     }
     t2 = _elapsed();
-    printf("t1 : %d\n", (int)(t2-t1));
+    printf("t0 : %d\n", (int)(t2-t1));
 
-
-    char tmp2[10240];
     t1 = _elapsed();
     for (i=0; i<times; ++i) {
-        redis_formatcommand2(tmp2, sizeof(tmp2), "hmset user:%s"
+        char *cmd = NULL;
+        redis_format(&cmd, 0, "SET %s %s %s %s %s %s %s %s %s %s %s %s %s","foo","bar", "111", "222", "333", "444", "555", "666", "777", "888", "999", "000", "111");
+        free(cmd);
+    }
+    t2 = _elapsed();
+    printf("t00 : %d\n", (int)(t2-t1));
+
+    //--------------------------------------------------
+    
+    t1 = _elapsed();
+    for (i=0; i<times; ++i) {
+        char *tmp0 = malloc(1024);
+        snprintf(tmp0, 1024, "hmset user:%s"
                     " level %s"
                     " exp %s"
                     " coin %s"
@@ -908,17 +949,57 @@ test_redis_command(int times) {
                     "strpages",
                     "123",
                     "strings");
+        free(tmp0);
+    }
+    t2 = _elapsed();
+    printf("snprintf : %d\n", (int)(t2-t1));
+    //--------------------------------------------------
+   
+    t1 = _elapsed();
+    for (i=0; i<times; ++i) {
+        char *cmd = tmp;
+        assert(redis_format(&cmd, sizeof(tmp), "hmset user:%d"
+                    " level %d"
+                    " exp %d"
+                    " coin %d"
+                    " diamond %d"
+                    " package %d"
+                    " role %d"
+                    " skin %d"
+                    " score1 %d"
+                    " score2 %d"
+                    " ownrole %d"
+                    " usepage %d"
+                    " npage %d"
+                    " pages %d"
+                    " nring %d"
+                    " rings %d",
+                    100000,
+                    100000,
+                    100000,
+                    100000,
+                    100000,
+                    100000,
+                    100000,
+                    100000,
+                    100000,
+                    100000,
+                    100000,
+                    100000,
+                    100000,
+                    100000,
+                    100000,
+                    100000));
         //printf(cmd);
         //free(cmd);
     }
     t2 = _elapsed();
-    printf("t2 : %d\n", (int)(t2-t1));
-    //printf(tmp2);
+    printf("ti : %d\n", (int)(t2-t1));
 
-    char tmp3[10240];
     t1 = _elapsed();
     for (i=0; i<times; ++i) {
-        redis_formatcommand3(tmp3, sizeof(tmp3), "hmset user:%s"
+        char *cmd = tmp;
+        assert(redis_format(&cmd, sizeof(tmp), "hmset user:%s"
                     " level %s"
                     " exp %s"
                     " coin %s"
@@ -934,84 +1015,383 @@ test_redis_command(int times) {
                     " pages %s"
                     " nring %s"
                     " rings %s",
-                    "1",
-                    "10",
-                    "1000",
-                    "9999",
-                    "999",
-                    "100",
-                    "10",
-                    "11",
-                    "100",
-                    "200",
-                    "123123",
-                    "2",
-                    "10",
-                    "strpages",
-                    "123",
-                    "strings");
-    } 
-    t2 = _elapsed();
-    printf("t3 ------- : %d\n", (int)(t2-t1));
-    //printf(tmp3);
-
-    char tmp[1024];
-    t1 = _elapsed();
-    for (i=0; i<times; ++i) {
-        snprintf(tmp, sizeof(tmp), "hmset user:%s"
-                    " level %s"
-                    " exp %s"
-                    " coin %s"
-                    " diamond %s"
-                    " package %s"
-                    " role %s"
-                    " skin %s"
-                    " score1 %s"
-                    " score2 %s"
-                    " ownrole %s"
-                    " usepage %s"
-                    " npage %s"
-                    " pages %s"
-                    " nring %s"
-                    " rings %s",
-                    "1",
-                    "10",
-                    "1000",
-                    "9999",
-                    "999",
-                    "100",
-                    "10",
-                    "11",
-                    "100",
-                    "200",
-                    "123123",
-                    "2",
-                    "10",
-                    "strpages",
-                    "123",
-                    "strings");
+                    "10000000000000000000000000000000000000000000000000000000000000000000000000",
+                    "100000000000000000000000000000000000000000000000000000000000000000000000000",
+                    "1000000000000000000000000000000000000000000000000000000000000000000000000",
+                    "9999000000000000000000000000000000000000000000000000000000000000000000000",
+                    "99900000000000000000000000000000000000000000000000000000000000000000000000",
+                    "1000000000000000000000000000000000000000000000000000000000000000000000000",
+                    "100000000000000000000000000000000000000000000000000000000000000000000000",
+                    "1100000000000000000000000000000000000000000000000000000000000000000000000",
+                    "1000000000000000000000000000000000000000000000000000000000000000000000000",
+                    "2000000000000000000000000000000000000000000000000000000000000000000000000",
+                    "1231230000000000000000000000000000000000000000000000000000000000000000000",
+                    "200000000000000000000000000000000000000000000000000000000000000000000000",
+                    "1000000000000000000000000000000000000000000000000000000000000000000000",
+                    "strpages000000000000000000000000000000000000000000000000000000000",
+                    "1230000000000000000000000000000000000000000000000000000000000000000000",
+                    "string00000000000000000000000000000000000000000000000000000000000000s"));
+        //printf(cmd);
     }
     t2 = _elapsed();
-    printf("t : %d\n", (int)(t2-t1));
+    printf("t1 : %d\n", (int)(t2-t1));
+}
+
+void
+test_redis_command2(int times) {
+    uint64_t t1, t2;
+    int i;
+    char tmp[1024];
+    //----------------------------------------------------
+    int arr[10];
+    for (i=0; i<10; ++i) {
+        arr[i] = i*10000000;
+    }
+
+    t1 = _elapsed();
+    for (i=0; i<times; ++i) {
+        char *cmd = NULL;
+        redis_format(&cmd, 0, "SET %b", arr, sizeof(arr));
+        free(cmd);
+    }
+    t2 = _elapsed();
+    printf("t00 : %d\n", (int)(t2-t1));
+
+    //--------------------------------------------
+    
+    char right[1024];
+    char *cmd;
+    int nright;
+  
+    printf("+++++++++++++++++++++TTT\n");
+    cmd = right;
+    nright = redis_format(&cmd, sizeof(right), "SET user:%s:kk:%d:bb", "1", 2);
+    printf(right);
+
+    cmd = tmp;
+    assert(redis_format(&cmd, sizeof(tmp), "   SET user:%s:kk:%d:bb    ", "1", 2) == nright);
+    assert(!memcmp(cmd, right, nright));
+
+    assert(redis_format(&cmd, sizeof(tmp), "  SET     user:%s:kk:%d:bb    ", "1", 2) == nright);
+    assert(!memcmp(cmd, right, nright));
+
+    printf("+++++++++++++++++++++SSS\n");
+    cmd = right;
+    nright = redis_format(&cmd, sizeof(right), "SET %s ", "");
+    printf(right);
+
+    cmd = tmp;
+    assert(redis_format(&cmd, sizeof(tmp), "SET     %s", "") == nright);
+    assert(!memcmp(cmd, right, nright));
+
+    assert(redis_format(&cmd, sizeof(tmp), "   SET     %s   ", "") == nright);
+    assert(!memcmp(cmd, right, nright));
+
+
+    printf("+++++++++++++++++++++CCC\n");
+    cmd = right;
+
+    nright = redis_format(&cmd, sizeof(right), "hmset user:%s"
+                    " level %s"
+                    " exp %s"
+                    " coin %s"
+                    " diamond %s"
+                    " package %s"
+                    " role %s"
+                    " skin %s"
+                    " score1 %s"
+                    " score2 %s"
+                    " ownrole %s"
+                    " usepage %s"
+                    " npage %s"
+                    " pages %s"
+                    " nring %s"
+                    " rings %s",
+                    "1",
+                    "10",
+                    "1000",
+                    "9999",
+                    "999",
+                    "100",
+                    "10",
+                    "11",
+                    "100",
+                    "200",
+                    "123123",
+                    "2",
+                    "10",
+                    "strpages",
+                    "123",
+                    "strings");
+    printf("len %d\n", nright);
+    printf(right);
+
+    cmd = tmp;
+    assert(redis_format(&cmd, sizeof(tmp), "  hmset    user:%s"
+                    " level %s   "
+                    " exp %s    "
+                    " coin %s   "
+                    " diamond %s"
+                    " package %s"
+                    " role %s"
+                    " skin %s"
+                    " score1 %s"
+                    " score2 %s"
+                    " ownrole %s"
+                    " usepage %s"
+                    " npage %s"
+                    " pages %s"
+                    " nring %s"
+                    " rings %s",
+                    "1",
+                    "10",
+                    "1000",
+                    "9999",
+                    "999",
+                    "100",
+                    "10",
+                    "11",
+                    "100",
+                    "200",
+                    "123123",
+                    "2",
+                    "10",
+                    "strpages",
+                    "123",
+                    "strings") == nright);
+    assert(!memcmp(cmd, right, nright));
+
+    assert(redis_format(&cmd, sizeof(tmp), "hmset user:%s"
+                    " level %s"
+                    " exp %s"
+                    " coin %s"
+                    " diamond %s"
+                    " package %s"
+                    " role %s"
+                    " skin %s"
+                    " score1 %s"
+                    " score2 %s"
+                    " ownrole %s"
+                    " usepage %s"
+                    " npage %s"
+                    " pages %s"
+                    " nring %s"
+                    " rings %s",
+                    "1",
+                    "10",
+                    "1000",
+                    "9999",
+                    "999",
+                    "100",
+                    "10",
+                    "11",
+                    "100",
+                    "200",
+                    "123123",
+                    "2",
+                    "10",
+                    "strpages",
+                    "123",
+                    "strings") == nright);
+    assert(!memcmp(cmd, right, nright));
+}
+
+void
+test_redis_command3(int times) {
+    uint32_t charid = 10;
+    struct chardata data;
+    struct chardata *cdata = &data;
+    struct ringdata *rdata = &cdata->ringdata;
+    cdata->level = 100;
+    cdata->exp = 101;
+    cdata->coin = 102;
+    cdata->diamond = 103;
+    cdata->package = 104;
+    cdata->role = 105;
+    cdata->luck_factor = 106.123;
+    cdata->last_washgold_refresh_time = 107;
+    cdata->washgold = 108;
+    cdata->last_state_refresh_time = 109;
+    cdata->score_normal = 110;
+    cdata->score_dashi = 111;
+    rdata->usepage = 112;
+    rdata->npage = 0; 
+    rdata->nring = 0;
+    int i;
+    for (i=0; i<sizeof(cdata->ownrole); ++i) {
+        cdata->ownrole[i] = i+1;
+    }
+    //rdata->pages = 0;
+    //rdata->rings, 0,//rdata->nring,
+    for (i=0; i<sizeof(cdata->roles_state); ++i) {
+        cdata->roles_state[i] = (i+1)*10;
+    }
+    char tmp[2048];
+    char *cmd = tmp;
+    int len = redis_format(&cmd, sizeof(tmp), "hmset user:%u"
+                " level %u"
+                " exp %u"
+                " coin %u"
+                " diamond %u"
+                " package %u"
+                " role %u"
+                " luck_factor %f"
+                " last_washgold_refresh_time %u"
+                " washgold %u"
+                " last_state_refresh_time %u"
+                " score1 %u"
+                " score2 %u"
+                " usepage %u"
+                " npage %u"
+                " nring %u"
+                " ownrole %b"
+                " pages %b"
+                " rings %b"
+                " states %b",
+                charid,
+                cdata->level, 
+                cdata->exp, 
+                cdata->coin, 
+                cdata->diamond, 
+                cdata->package,
+                cdata->role,
+                cdata->luck_factor,
+                cdata->last_washgold_refresh_time,
+                cdata->washgold,
+                cdata->last_state_refresh_time,
+                cdata->score_normal,
+                cdata->score_dashi,
+                rdata->usepage,
+                rdata->npage,
+                rdata->nring,
+                cdata->ownrole, sizeof(cdata->ownrole),
+                rdata->pages, rdata->npage,
+                rdata->rings, rdata->nring,
+                cdata->roles_state, sizeof(cdata->roles_state)
+                );
+
+    printf("len %d\n", len); 
+    printf(cmd);
+    //--------------------------------------------
+    
+    len = redis_format(&cmd, sizeof(tmp), "hmset user:%u"
+                " ownrole %b"
+                " pages %b"
+                " rings %b"
+                " states %b",
+                charid,
+                cdata->ownrole, sizeof(cdata->ownrole),
+                rdata->pages, rdata->npage,
+                rdata->rings, rdata->nring,
+                cdata->roles_state, sizeof(cdata->roles_state)
+                );
+
+    printf("len %d\n", len); 
+    printf(cmd);
+    //--------------------------------------------
 
 }
 
-int itoa(int i, char tmp[16]) {
+int 
+itoa(int v, char *p) {
     int n = 0;
-    char *p = tmp;
-    if (i<0) {
+    bool plus = true;
+    if (v<0) {
         p[n] = '-';
-        i = -i;
+        v = -v;
         n++;
+        plus = false;
     }
     do {
-        int c = i%10;
-        i /= 10;
+        int c = v%10;
+        v /= 10;
         p[n] = c + '0';
         n++;
-    } while (i);
+    } while (v);
     p[n] = '\0';
+
+    int i;
+    if (plus) {
+        for (i=0; i<n/2; ++i) {
+            char t = p[i];
+            p[i] = p[n-i-1];
+            p[n-i-1] = t;
+
+        }
+    } else {
+        for (i=1; i<(n+1)/2; ++i) {
+            char t = p[i];
+            p[i] = p[n-i];
+            p[n-i] = t;
+        }
+    }
     return n;
+}
+
+int
+ntoa(unsigned int v, char *p) {
+    int n = 0;
+    do {
+        unsigned int c = v%10;
+        v /= 10;
+        p[n] = c + '0';
+        n++;
+    } while (v);
+    p[n] = '\0';
+
+    int i;
+    for (i=0; i<n/2; ++i) {
+        char t = p[i];
+        p[i] = p[n-i-1];
+        p[n-i-1] = t;
+
+    }
+    return n;
+}
+
+int
+lntoa(uint64_t v, char *p) {
+    int n = 0;
+    do {
+        uint64_t c = v%10;
+        v /= 10;
+        p[n] = c + '0';
+        n++;
+    } while (v);
+    p[n] = '\0';
+
+    int i;
+    for (i=0; i<n/2; ++i) {
+        char t = p[i];
+        p[i] = p[n-i-1];
+        p[n-i-1] = t;
+
+    }
+    return n;
+}
+
+void
+test_itoa(int times) {
+    unsigned int i1;
+    scanf("%d", &i1);
+    char tmp[16];
+    int i;
+
+    uint64_t t1, t2;
+    t1 = _elapsed();
+    for (i=0; i<times; ++i) {
+        snprintf(tmp, sizeof(tmp), "%llu",1234567890123456789LL);
+    }
+    t2 = _elapsed(); 
+    printf("snprintf [%s] use time : %d\n", tmp, (int)(t2-t1));
+
+    t1 = _elapsed();
+    for (i=0; i<times; ++i) {
+        char *p = tmp;
+        lntoa(1234567890123456789L, p);
+    }
+    t2 = _elapsed(); 
+    printf("itoa [%s] use time : %d\n", tmp, (int)(t2-t1));
 }
 
 void
@@ -1252,17 +1632,20 @@ main(int argc, char* argv[]) {
     //test_args();
     //test_freeid();
     //test_hashid();
-    test_redis();
+    //test_redis();
     //test_freelist();
     //test_elog2();
     //test_elog3(times);
     //test_log(times);
     //test_elog4(times);
-    test_redisnew(times);
+    //test_redisnew(times);
     //test_copy(times);
     //test_encode();
     //test(times);
     //test_redis_command(times);
+    //test_redis_command2(times);
+    //test_redis_command3(times);
+    test_itoa(times);
     //test_hash32(times);
     //test_hash64(times);
     //test_hash32_for(times);

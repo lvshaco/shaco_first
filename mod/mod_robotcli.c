@@ -54,6 +54,7 @@ static void
 client_init(struct client *c, int id) {
     memset(c, 0, sizeof(*c));
     c->connid = -1;
+    c->status = S_INVALID;
     c->id = id;
     snprintf(c->account, sizeof(c->account), "%s%d", ACC_PREFIX, id);
 }
@@ -68,6 +69,7 @@ static inline void
 client_disconnect(struct client *c) { 
     assert(c->connid != -1);
     c->connid = -1;
+    c->status = S_INVALID;
 }
 
 static inline void
@@ -200,10 +202,11 @@ client_sync_position(struct client *c, uint32_t depth) {
 
 struct robotcli {
     struct freeid fi;
-    struct client* clients;
+    struct client *clients;
     int max;
     int startid;
 
+    uint64_t last_time;
     int nconnect_route_ok;
     int nconnect_route_fail;
     int nconnect_gate_ok;
@@ -219,6 +222,14 @@ struct robotcli {
     int ngame_start;
     int ngame_over; 
 };
+
+static inline struct client*
+client_get(struct robotcli* self, int connid) {
+    int id = freeid_find(&self->fi, connid);
+    assert(id >= 0 && id < self->max);
+    struct client* c = &self->clients[id];
+    return c;
+}
 
 static void
 check_total_connect_route_ok(struct robotcli *self) {
@@ -245,28 +256,26 @@ check_total_login_ok(struct robotcli *self) {
 }
 
 static void
-on_connect(struct robotcli* self, int connid) {
+on_connect(struct robotcli* self, int ut, int connid) {
     int id = freeid_alloc(&self->fi, connid);
     assert(id >= 0 && id < self->max);
-
-    struct client* c = &self->clients[id];
+    struct client *c = &self->clients[id];
     client_bind_connection(c, connid);
     sh_net_subscribe(connid, true);
-    
-    switch (c->status) {
-    case S_CONNECT_ROUTE:
+  
+    switch (ut) {
+    case CONN_ROUTE:
         self->nconnect_route_ok++;
         check_total_connect_route_ok(self);
         client_request_gate(c);
         break;
-    case S_CONNECT_GATE:
+    case CONN_GATE:
         self->nconnect_gate_ok++;
         check_total_connect_gate_ok(self);
         client_login_account(c); 
         break;
     default:
         assert(0);
-        break;
     }
 }
 
@@ -549,8 +558,9 @@ clients_init(struct module *s) {
 
     int i;
     for (i=0; i<self->max; ++i) { 
-        client_init(&self->clients[i], self->startid+i);
-        client_connect_route(s, &self->clients[i], ip, port);
+        struct client* c = &self->clients[i];
+        client_init(c, self->startid+i);
+        client_connect_route(s, c, ip, port);
     }
 }
 
@@ -571,24 +581,17 @@ robotcli_init(struct module *s) {
         sh_error("Client max over connection max");
         return 1;
     }
+    sh_info("client max %d, connection max %d", cmax, hmax);
     self->max = cmax;
     self->clients = malloc(sizeof(struct client) * cmax);
     memset(self->clients, 0, sizeof(struct client) * cmax);
     freeid_init(&self->fi, cmax, hmax);
-   
-    clients_init(s);
     
+    clients_init(s);
+
+    self->last_time = sh_timer_now();
     sh_timer_register(MODULE_ID, 200);
     return 0;
-}
-
-static inline struct client*
-client_get(struct robotcli* self, int connid) {
-    int id = freeid_find(&self->fi, connid);
-    assert(id >= 0 && id < self->max);
-    struct client* c = &self->clients[id];
-    assert(c->connid != -1);
-    return c;
 }
 
 static void
@@ -637,7 +640,7 @@ robotcli_net(struct module* s, struct net_message* nm) {
         read_msg(s, nm);
         break;
     case NETE_CONNECT:
-        on_connect(self, nm->connid);
+        on_connect(self, nm->ut, nm->connid);
         break;
     case NETE_CONNERR:
         on_connecterr(self, nm->ut, nm->error);
@@ -654,6 +657,9 @@ robotcli_time(struct module* s) {
     struct client *c;
    
     uint64_t now = sh_timer_now();
+    sh_info("frame time: %u", (uint32_t)(now - self->last_time));
+    self->last_time = now;
+
     int i;
     for (i=0; i<self->max; ++i) {
         c = &self->clients[i];
@@ -673,7 +679,6 @@ robotcli_time(struct module* s) {
                 c->last_sync_pos = now;
             }
             if (now - c->last_use_item >= 500) {
-                // 221318, 100501
                 if (c->item_index >= sizeof(ITEMS)/sizeof(ITEMS[0]))
                     c->item_index = 0;
                 int itemid = ITEMS[c->item_index++];

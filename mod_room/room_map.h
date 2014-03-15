@@ -28,23 +28,24 @@ struct roommap_typeidlist {
 struct roommap_cell {
     uint16_t isassign:1; // or is rand typed need rand
     uint16_t dummy:15;
-    uint8_t  cellrate;
-    uint8_t  itemrate;
+    uint16_t  cellrate;
+    uint16_t  itemrate;
     uint32_t cellid;
     uint32_t itemid;
-    uint16_t block;
+    uint32_t block;
 };
 
 struct roommap {
     struct roommap_typeid* typeid_entry;
     struct roommap_cell*   cell_entry;
+    uint32_t depth;
     struct roommap_header  header;
     char data[];
 };
 
 #pragma pack()
 
-#define ROOMMAP_DEPTH(m)        (((m)->header.height+99)/100)
+#define ROOMMAP_DEPTH(m)        ((m)->depth)
 #define ROOMMAP_TID_HEADER(m)   ((struct roommap_typeid_header*)((m)->data))
 #define ROOMMAP_TID_ENTRY(m)    ((m)->typeid_entry)
 #define ROOMMAP_CELL_ENTRY(m)   ((m)->cell_entry)

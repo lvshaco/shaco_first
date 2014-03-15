@@ -82,7 +82,7 @@ login(struct module *s, int source, uint64_t conn, uint32_t wsession, struct UM_
     memrw_write(&rw, ur->account, sizeof(ur->account));
     rq->cbsz = RW_CUR(&rw);
     // eg : hmget acc:wa_account_1 id passwd
-    int len = snprintf(rw.ptr, RW_SPACE(&rw), "hmget acc:%s id passwd\r\n", ur->account);
+    int len = redis_format(&rw.ptr, RW_SPACE(&rw), "hmget acc:%s id passwd", ur->account);
     memrw_pos(&rw, len);
     int msgsz = sizeof(*rq) + RW_CUR(&rw);
     sh_module_send(MODULE_ID, self->rpacc_handle, MT_UM, rq, msgsz);
