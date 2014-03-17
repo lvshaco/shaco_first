@@ -41,10 +41,7 @@
 // play
 #define IDUM_PLAYB          IDUM_CBEGIN+40
 #define IDUM_PLAY           IDUM_CBEGIN+41
-//#define IDUM_PLAYBEGIN      IDUM_CBEGIN+42
-//#define IDUM_PLAYJOIN       IDUM_CBEGIN+43
-//#define IDUM_PLAYUNJOIN     IDUM_CBEGIN+44
-//#define IDUM_PLAYDONE       IDUM_CBEGIN+45
+#define IDUM_PLAYCANCEL     IDUM_CBEGIN+42
 #define IDUM_PLAYE          IDUM_CBEGIN+46
 
 // washgold
@@ -293,6 +290,10 @@ struct UM_WASHGOLD_INFO { // S->C
 struct UM_PLAY {
     _UM_HEADER;
     int8_t type; // see ROOM_TYPE*
+};
+
+struct UM_PLAYCANCEL {
+    _UM_HEADER;
 };
 
 struct UM_PLAYFAIL {

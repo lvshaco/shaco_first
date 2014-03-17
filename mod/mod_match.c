@@ -175,7 +175,7 @@ notify_create_room(struct module *s, struct room *ro, struct applyer **as, int n
     sh_trace("Match notify create room %u", ro->id);
     UM_DEFVAR(UM_CREATEROOM, create);
     create->type = ro->type;
-    create->mapid = sh_rand(&self->randseed) % 2 + 1; // 1,2 todo
+    create->mapid = sh_rand(&self->randseed) % 10  + 1; // 1,2 todo
     create->id = ro->id;
     create->max_member = max(2, n); // todo, now 2
     create->nmember = n;
@@ -636,19 +636,21 @@ robot_apply(struct module *s, int source, struct UM_ROBOT_APPLY *ra) {
     apply(s, source, true, &ra->info);
 }
 
-/*
 static void
 apply_cancel(struct module *s, int source, uint32_t uid) {
     struct match *self = MODULE_SELF;
     struct applyer *ar = sh_hash_find(&self->applyers, uid);
-    if (ar &&
-        ar->status == S_WAITING) {
+    if (ar == NULL) {
+        return;
+    }
+    if (ar->status == S_WAITING) {
+        sh_trace("Match applyer %u waiting cancel", ar->uid);
         leave_waiting(self, ar);
         sh_hash_remove(&self->applyers, uid);
         free(ar);
     }
 }
-*/
+
 static void
 logout(struct module *s, uint32_t uid) { 
     struct match *self = MODULE_SELF;
@@ -689,10 +691,10 @@ match_main(struct module *s, int session, int source, int type, const void *msg,
             UM_CAST(UM_MATCH, ma, msg);
             UM_CAST(UM_BASE, wrap, ma->wrap);
             switch (wrap->msgid) {
-            //case IDUM_APPLYCANCEL: {
-                //apply_cancel(s, source, ma->uid);
-                //break;
-                //}
+            case IDUM_APPLYCANCEL: {
+                apply_cancel(s, source, ma->uid);
+                break;
+                }
             case IDUM_LOGOUT: {
                 logout(s, ma->uid);
                 break;

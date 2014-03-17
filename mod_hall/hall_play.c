@@ -56,6 +56,20 @@ play(struct module *s, struct player *pr, int type) {
 }
 
 static void
+play_cancel(struct module *s, struct player *pr) {
+    struct hall *self = MODULE_SELF;
+    if (pr->status == PS_WAITING) { 
+        pr->status = PS_HALL;
+        UM_DEFWRAP(UM_MATCH, ma, UM_APPLYCANCEL, ac);
+        ma->uid = UID(pr);
+        sh_module_send(MODULE_ID, self->match_handle, MT_UM, ma, sizeof(*ma)+sizeof(*ac));
+        sh_trace("Play %u notify match play cancel", UID(pr));
+    } else {
+        sh_trace("Play %u receive play cancel, but status %d", UID(pr), pr->status);
+    }
+}
+
+static void
 play_fail(struct module *s, struct player *pr, struct UM_PLAYFAIL *fail) {
     if (pr->status == PS_WAITING) { 
         pr->status = PS_HALL;
@@ -125,6 +139,10 @@ hall_play_main(struct module *s, struct player *pr, const void *msg, int sz) {
     case IDUM_PLAY: {
         UM_CASTCK(UM_PLAY, pl, base, sz);
         play(s, pr, pl->type);
+        break;
+        }
+    case IDUM_PLAYCANCEL: {
+        play_cancel(s, pr);
         break;
         }
     case IDUM_PLAYFAIL: {
