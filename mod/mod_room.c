@@ -16,6 +16,7 @@ room_free(struct room* self) {
     if (self == NULL)
         return;
     game_fini(self);
+    room_tplt_fini(self);
     free(self);
 }
 

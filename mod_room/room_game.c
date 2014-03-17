@@ -58,7 +58,6 @@ member_free(struct room *self, struct player* m) {
     sh_array_fini(&m->total_delay);
     sh_array_fini(&m->total_effect);
     ai_fini(m);
-    m->is_robot = false;
     if (m->online) {
         sh_hash_remove(&self->players, UID(m));
         m->online = false;     

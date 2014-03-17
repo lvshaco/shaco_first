@@ -126,6 +126,7 @@ build_detail(struct agent *ag, struct tmemberdetail *detail) {
     memcpy(detail->name, cdata->name, sizeof(cdata->name));
     detail->level = cdata->level;
     detail->role = cdata->role;
+    detail->state = role_state(cdata);
     detail->score_dashi = cdata->score_dashi;
     detail->attri = cdata->attri;
 }
@@ -211,7 +212,8 @@ void
 robot_free(struct robot* self) {
     if (self == NULL)
         return;
-    //sh_hash_foreach(&self->agents, free);
+    // malloc total agent, so free total once in here
+    sh_hash_foreach(&self->agents, free);
     sh_hash_fini(&self->agents);
     memset(self->rests, 0, sizeof(self->rests));
     self->nagent = 0;
