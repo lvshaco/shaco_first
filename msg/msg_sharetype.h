@@ -33,6 +33,7 @@
 #define SERR_CRENOMAP       43
 #define SERR_CREMAP         44
 #define SERR_ROOMIDCONFLICT 45
+#define SERR_PLAYCANCEL     46
 
 #define SERR_NOROOMJOIN     50
 #define SERR_NOROOMLOGIN    51

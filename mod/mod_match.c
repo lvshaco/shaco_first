@@ -646,6 +646,7 @@ apply_cancel(struct module *s, int source, uint32_t uid) {
     if (ar->status == S_WAITING) {
         sh_trace("Match applyer %u waiting cancel", ar->uid);
         leave_waiting(self, ar);
+        response_play_fail(s, ar, SERR_PLAYCANCEL);
         sh_hash_remove(&self->applyers, uid);
         free(ar);
     }
