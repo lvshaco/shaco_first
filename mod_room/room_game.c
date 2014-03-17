@@ -31,11 +31,13 @@
 static inline void
 set_effect_state(struct player *m, int state) {
     m->detail.attri.effect_states |= 1<<state;
+    m->refresh_flag |= REFRESH_ATTRI;
 }
 
 static inline void
 clr_effect_state(struct player *m, int state) {
     m->detail.attri.effect_states &= ~(1<<state);
+    m->refresh_flag |= REFRESH_ATTRI;
 }
 
 static inline bool
@@ -1139,15 +1141,14 @@ sync_press(struct module *s, struct player *m, const struct UM_ROLEPRESS *press)
 
     if (has_effect_state(m, EFFECT_STATE_PROTECT_ONCE)) {
         clr_effect_state(m, EFFECT_STATE_PROTECT_ONCE);
+    } else if (has_effect_state(m, EFFECT_STATE_PROTECT)) {
         return;
     }
-    if (has_effect_state(m, EFFECT_STATE_PROTECT)) {
-        return;
-    }
-    int oxygen = m->base.oxygen/10;
-    if (reduce_oxygen(m, oxygen) > 0) {
-        m->refresh_flag |= REFRESH_ATTRI;
-    }
+    // todo 临时屏蔽
+    //int oxygen = m->base.oxygen/10;
+    //if (reduce_oxygen(m, oxygen) > 0) {
+        //m->refresh_flag |= REFRESH_ATTRI;
+    //}
     on_refresh_attri(s, m, ro);
 
     multicast_msg(s, ro, press, sizeof(*press), UID(m));
@@ -1231,7 +1232,7 @@ room_game_update(struct module *s, struct room_game *ro) {
     for (i=0; i<ro->np; ++i) {
         struct player *m = &ro->p[i];
         if (is_online(m)) {
-            int oxygen = role_oxygen_time_consume(&m->detail.attri);
+            int oxygen = role_oxygen_time_consume(&ro->gattri, &m->detail.attri);
             if (reduce_oxygen(m, oxygen) > 0) {
                 m->refresh_flag |= REFRESH_ATTRI;
             }

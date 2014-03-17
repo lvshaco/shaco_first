@@ -3,6 +3,7 @@
 
 #include "msg_sharetype.h"
 #include <stdint.h>
+#include <math.h>
 
 static inline void 
 ground_attri_build(int32_t difficulty, struct groundattri* ga) {
@@ -16,7 +17,7 @@ ground_attri_build(int32_t difficulty, struct groundattri* ga) {
     factor *= factor;
     factor += 0.5;
     ga->difficulty = difficulty;
-    ga->shaketime = 1800 * (1- (difficulty-1)/20.0);
+    ga->shaketime = 1600 * (1- (difficulty-1)/16.0);
     ga->cellfallspeed = 4.167 + (difficulty-1) * 0.833;
     ga->waitdestroy = ga->shaketime * 2/3.0;
     ga->destroytime = 400 * (1 - (difficulty-1)/15.0);
@@ -24,7 +25,7 @@ ground_attri_build(int32_t difficulty, struct groundattri* ga) {
 
 static inline float
 role_body_factor(struct char_attribute* cattri) {
-    return (1+(5-cattri->body*0.01)/20.0);
+    return 1-(5-cattri->body*0.01)/10.0;
 }
 
 static inline void 
@@ -42,9 +43,9 @@ role_attri_build(const struct groundattri* ga,
     cattri->charfallspeed += cattri->charfallspeed * cattri->charfallspeedadd;
 
     cattri->jmpspeed = 2 * cattri->movespeed * factor;
-    cattri->jmpacctime = 0.24 * ga->shaketime * (2-factor);
+    cattri->jmpacctime = 0.18 * ga->shaketime * (2-factor);
 
-    cattri->rebirthtime = 2200 * (1-(ga->difficulty-1)/20.0) * (2-factor)*(2-bodyfactor);
+    cattri->rebirthtime = 2500 * (2-bodyfactor);
     cattri->rebirthtime += cattri->rebirthtime * cattri->rebirthtimeadd;
 
     cattri->dodgedistance = (factor * factor * 5 + 10)/60.0;
@@ -52,9 +53,9 @@ role_attri_build(const struct groundattri* ga,
 }
 
 static inline float
-role_oxygen_time_consume(struct char_attribute* cattri) {
+role_oxygen_time_consume(struct groundattri *ga, struct char_attribute* cattri) {
     float bodyfactor = role_body_factor(cattri);
-    return 10* (2-bodyfactor);
+    return (1.05 * ga->cellfallspeed + 2) * pow(2-bodyfactor, 0.4);
 }
 
 #endif
