@@ -7,6 +7,8 @@
 #include <stdarg.h>
 #include <stdio.h>
 
+#define SH_LITERAL(str) str, sizeof(str)
+
 // const cstring to int32, eg: "GMAP"
 #define sh_cstr_to_int32(cstr) ({ \
     int32_t i32 = 0;                   \

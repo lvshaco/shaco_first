@@ -6,11 +6,18 @@
 #include "msg_server.h"
 #include "memrw.h"
 
+static const char *PASSWD = "7c4a8d09ca3762af61e59520943dc26494f8941b";
+#define T_QUERY 0
+#define T_GETID 1
+#define T_SETID 2
+#define T_SETPASSWD 3
+
 struct user {
     uint64_t conn;
     int watchdog_source;
     uint32_t wsession;
     //uint64_t logintime;
+    uint32_t accid;
     char account[ACCOUNT_NAME_MAX+1];
     char passwd[ACCOUNT_PASSWD_MAX+1];
 };
@@ -56,6 +63,28 @@ auth_init(struct module *s) {
 }
 
 static void
+db(struct module *s, struct user *ur, int8_t type, const char *cmd, int len) {
+    assert(len);
+    struct auth *self = MODULE_SELF;
+    UM_DEFVAR2(UM_REDISQUERY, rq, UM_MAXSZ);
+    rq->needreply = 1;
+    rq->needrecord = 0;
+    struct memrw rw;
+    memrw_init(&rw, rq->data, UM_MAXSZ - sizeof(*rq));
+    memrw_write(&rw, &ur->conn, sizeof(ur->conn));
+    //memrw_write(&rw, &ur->wsession, sizeof(ur->wsession));
+    memrw_write(&rw, ur->account, sizeof(ur->account));
+    memrw_write(&rw, &type, sizeof(type));
+    rq->cbsz = RW_CUR(&rw);
+
+    memcpy(rw.ptr, cmd, len);
+    memrw_pos(&rw, len);
+
+    int msgsz = sizeof(*rq) + RW_CUR(&rw);
+    sh_module_send(MODULE_ID, self->rpacc_handle, MT_UM, rq, msgsz);
+}
+
+static void
 login(struct module *s, int source, uint64_t conn, uint32_t wsession, struct UM_LOGINACCOUNT *la) {
     struct auth *self = MODULE_SELF; 
     struct user *ur = sh_hash64_find(&self->conn2user, conn);
@@ -71,21 +100,10 @@ login(struct module *s, int source, uint64_t conn, uint32_t wsession, struct UM_
     //ur->logintime = sh_timer_now();
     memcpy(ur->account, la->account, sizeof(ur->account));
     memcpy(ur->passwd, la->passwd, sizeof(ur->passwd));
-    
-    UM_DEFVAR2(UM_REDISQUERY, rq, UM_MAXSZ);
-    rq->needreply = 1;
-    rq->needrecord = 0;
-    struct memrw rw;
-    memrw_init(&rw, rq->data, UM_MAXSZ - sizeof(*rq));
-    memrw_write(&rw, &ur->conn, sizeof(ur->conn));
-    //memrw_write(&rw, &ur->wsession, sizeof(ur->wsession));
-    memrw_write(&rw, ur->account, sizeof(ur->account));
-    rq->cbsz = RW_CUR(&rw);
-    // eg : hmget acc:wa_account_1 id passwd
-    int len = redis_format(&rw.ptr, RW_SPACE(&rw), "hmget acc:%s id passwd", ur->account);
-    memrw_pos(&rw, len);
-    int msgsz = sizeof(*rq) + RW_CUR(&rw);
-    sh_module_send(MODULE_ID, self->rpacc_handle, MT_UM, rq, msgsz);
+  
+    char cmd[1024], *tmp = cmd;
+    int len = redis_format(&tmp, sizeof(cmd), "hmget acc:%s id passwd", ur->account);
+    db(s, ur, T_QUERY, cmd, len);
 }
 
 static inline void
@@ -126,31 +144,109 @@ process_redis(struct module *s, struct UM_REDISREPLY *rep, int sz) {
     if (memcmp(ur->account, account, sizeof(account))) {
         return;
     }
-    redis_resetreplybuf(&self->reply, rw.ptr, RW_SPACE(&rw));
-    if (redis_getreply(&self->reply) != REDIS_SUCCEED) {
-        notify_login_fail(s, ur, SERR_DBREPLY);
-        return;
+    int8_t type;
+    memrw_read(&rw, &type, sizeof(type));
+
+    int len;
+    char cmd[1024], *tmp = cmd;
+    
+    int serr = SERR_UNKNOW;
+    switch (type) {
+    case T_QUERY: {
+        redis_resetreplybuf(&self->reply, rw.ptr, RW_SPACE(&rw));
+        if (redis_getreply(&self->reply) != REDIS_SUCCEED) {
+            serr = SERR_DBREPLY;
+            break;
+        }
+        struct redis_replyitem* item = self->reply.stack[0];
+        if (item->type != REDIS_REPLY_ARRAY) {
+            serr = SERR_DBREPLYTYPE;
+            break;
+        }
+        int n = item->value.i;
+        if (n != 2) {
+            serr = SERR_DBERR;
+            break;
+        }
+        uint32_t accid = redis_bulkitem_toul(&item->child[0]);
+        if (accid == 0) {
+            len = redis_format(&tmp, sizeof(cmd), "incr acc:id");
+            db(s, ur, T_GETID, cmd, len);
+            //notify_login_fail(s, ur, SERR_NOACC);
+            return;
+        }
+        if (!strncmp(ur->passwd, item->child[1].value.p, item->child[1].value.len)) {
+            ur->accid = accid;
+            serr = SERR_OK;
+        } else {
+            serr = SERR_ACCVERIFY;
+        }
+        break;
+        }
+    case T_GETID: {
+        redis_resetreplybuf(&self->reply, rw.ptr, RW_SPACE(&rw));
+        if (redis_getreply(&self->reply) != REDIS_SUCCEED) {
+            serr = SERR_DBREPLY;
+            break;
+        }
+        struct redis_replyitem* item = self->reply.stack[0];        
+        if (item->type != REDIS_REPLY_INTEGER) {
+            serr = SERR_DBREPLYTYPE;
+            break;
+        }
+        uint32_t accid = (uint32_t)item->value.u;
+        if (accid > 0) {
+            ur->accid = accid;
+            len = redis_format(&tmp, sizeof(cmd), "hsetnx acc:%s id %u", ur->account, accid);
+            db(s, ur, T_SETID, cmd, len);
+            return;
+        } else {
+            serr = SERR_UNIQUEACCID;
+        }
+        break;
+        }
+    case T_SETID: {
+        redis_resetreplybuf(&self->reply, rw.ptr, RW_SPACE(&rw));
+        if (redis_getreply(&self->reply) != REDIS_SUCCEED) {
+            serr = SERR_DBREPLY;
+            break;
+        }
+        struct redis_replyitem* item = self->reply.stack[0];
+        if (item->type != REDIS_REPLY_INTEGER) {
+            serr = SERR_DBREPLYTYPE;
+            break;
+        }
+        int r = (uint32_t)item->value.u;
+        if (r == 1) {
+            len = redis_format(&tmp, sizeof(cmd), "hset acc:%s passwd %s", ur->account, PASSWD);
+            db(s, ur, T_SETPASSWD, cmd, len);
+            return;
+        } else {
+            serr = SERR_ACCEXIST;
+        }
+        break;
+        }
+    case T_SETPASSWD: {
+        redis_resetreplybuf(&self->reply, rw.ptr, RW_SPACE(&rw));
+        if (redis_getreply(&self->reply) != REDIS_SUCCEED) {
+            serr = SERR_DBREPLY;
+            break;
+        }
+        struct redis_replyitem* item = self->reply.stack[0];
+        if (item->type != REDIS_REPLY_INTEGER) {
+            serr = SERR_DBREPLYTYPE;
+            break;
+        }
+        serr = SERR_OK;
+        break;
+        }
     }
-    struct redis_replyitem* item = self->reply.stack[0];
-    if (item->type != REDIS_REPLY_ARRAY) {
-        notify_login_fail(s, ur, SERR_DBREPLYTYPE);
-        return;
+
+    if (serr == SERR_OK) {
+        notify_login_ok(s, ur, ur->accid);
+    } else {
+        notify_login_fail(s, ur, serr);
     }
-    int n = item->value.i;
-    if (n != 2) {
-        notify_login_fail(s, ur, SERR_DBERR);
-        return;
-    }
-    uint32_t accid = redis_bulkitem_toul(&item->child[0]);
-    if (accid == 0) {
-        notify_login_fail(s, ur, SERR_NOACC);
-        return;
-    }
-    if (strncmp(ur->passwd, item->child[1].value.p, item->child[1].value.len)) {
-        notify_login_fail(s, ur, SERR_ACCVERIFY);
-        return;
-    }
-    notify_login_ok(s, ur, accid);
     sh_hash64_remove(&self->conn2user, conn);
     free(ur);
 }

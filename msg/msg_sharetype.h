@@ -15,10 +15,12 @@
 #define SERR_NODB           13
 #define SERR_DBDATAERR      14
 #define SERR_REQGATE        15
-#define SERR_NOREGION       20
+#define SERR_UNIQUEACCID    20
 #define SERR_NOACC          21
 #define SERR_ACCVERIFY      22
-#define SERR_REGGATE        23
+#define SERR_ACCCREATE      23
+#define SERR_ACCEXIST       24
+
 #define SERR_NOCHAR         30
 #define SERR_NAMEEXIST      31
 #define SERR_RELOGIN        32

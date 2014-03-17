@@ -7,8 +7,6 @@
 #include "msg_server.h"
 #include "msg_client.h"
 
-#define LITERAL(str) str, sizeof(str)
-
 struct ctl_command {
     const char* name;
     int (*fun)(struct module *s, struct args* A, struct memrw* rw);
