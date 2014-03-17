@@ -54,26 +54,26 @@ room_game_time(struct room_game *ro) {
 }
 
 static void
-member_free(struct player* m) {
+member_free(struct room *self, struct player* m) {
+    sh_array_fini(&m->total_delay);
+    sh_array_fini(&m->total_effect);
+    ai_fini(m);
+    m->is_robot = false;
     if (m->online) {
-        sh_array_fini(&m->total_delay);
-        sh_array_fini(&m->total_effect);
-        ai_fini(m);
-        m->is_robot = false;
-        m->online = false;
+        sh_hash_remove(&self->players, UID(m));
+        m->online = false;     
     }
 }
 
 static void
-free_room_game(void *pointer) {
-    struct room_game *ro = pointer;
+free_room_game(struct room *self, struct room_game *ro) {
     if (ro->map) {
         genmap_free(ro->map);
         ro->map = NULL;
     }
     int i;
     for (i=0; i<ro->np; ++i) {
-        member_free(&ro->p[i]);
+        member_free(self, &ro->p[i]);
     }
     room_item_fini(ro);
     free(ro);
@@ -402,9 +402,11 @@ member_over(struct module *s, struct room_game *ro, struct player *m, int flag) 
         int gosz = UM_GAMEOVER_size(go);
         sh_module_send(MODULE_ID, m->watchdog_source, MT_UM, cg, sizeof(*cg)+gosz);
     }
-    
-    sh_hash_remove(&self->players, UID(m));
-    member_free(m);
+   
+    if (m->online) {
+        sh_hash_remove(&self->players, UID(m));
+        m->online = false;
+    }
 }
 
 static void
@@ -514,7 +516,7 @@ room_game_create(struct module *s, int source, struct UM_CREATEROOM *create) {
     ro->map = mymap;
     ro->status = ROOMS_CREATE;
     ro->statustime = sh_timer_now();
-        
+    ro->starttime = sh_timer_now(); 
     ro->gattri.randseed = map_randseed;
     ro->gattri.mapid = create->mapid;
     ground_attri_build(mapt->difficulty, &ro->gattri); 
@@ -573,7 +575,7 @@ room_game_destroy(struct module *s, struct room_game *ro) {
         }
     }
     sh_hash_remove(&self->room_games, ro->id);
-    free_room_game(ro);
+    free_room_game(self, ro);
 }
 
 static void
@@ -1073,6 +1075,10 @@ login(struct module *s, int source, uint32_t roomid, float luck_factor,
         notify_play_fail(s, source, accid, SERR_NOMEMBER);
         return NULL; // someting wrong
     }
+    // free first
+    member_free(self, m);
+
+    // fill new data
     m->luck_factor = luck_factor;
     m->detail = *detail; 
     role_attri_build(&ro->gattri, &m->detail.attri);
@@ -1084,11 +1090,13 @@ login(struct module *s, int source, uint32_t roomid, float luck_factor,
     sh_array_init(&m->total_delay, sizeof(struct buff_delay), 1);
     sh_array_init(&m->total_effect, sizeof(struct buff_effect), 1);
 
-    m->logined = true;
-    m->online = true;
+    m->logined = true; 
     m->watchdog_source = source;
     m->brain = NULL; 
+    {
     assert(!sh_hash_insert(&self->players, accid, m));
+    m->online = true;
+    }
     return m;
 }
 
@@ -1109,7 +1117,7 @@ robot_login(struct module *s, int source, const struct UM_ROBOT_LOGINROOM *lr) {
     struct player *m = login(s, source, lr->roomid, 0.5f, &lr->detail);
     if (m) {
         sh_trace("Room %u robot %u login ok", lr->roomid, lr->detail.accid);
-        ai_init(m, lr->level);
+        ai_init(m, lr->ai);
         notify_game_info(s, m);
         loadok(s, m);
     } else {
@@ -1370,6 +1378,5 @@ game_init(struct room *self) {
 void 
 game_fini(struct room *self) {
     sh_hash_fini(&self->players);
-    //sh_hash_foreach(&self->room_games, free_room_game);
     sh_hash_fini(&self->room_games);
 }

@@ -260,6 +260,7 @@ leave_waiting(struct match *self, struct applyer *ar) {
 static struct room * 
 create_room(struct match *self, struct applyer *leader, int room_handle) {
     struct room *ro = alloc_room(self);
+    memset(ro, 0, sizeof(*ro));
     uint32_t id = alloc_roomid(self);
     while (sh_hash_find(&self->rooms, id)) { // make sure wrap repeat
         id = alloc_roomid(self);
@@ -267,13 +268,10 @@ create_room(struct match *self, struct applyer *leader, int room_handle) {
     ro->id = id;
     ro->start_time = sh_timer_now();
     ro->room_handle = room_handle;
-    ro->joinable = false;
     ro->match_score = leader->match_score;
     ro->match_slot = leader->match_slot;
     ro->type = leader->type;
     ro->status = S_CREATING;
-    ro->nmember = 0;
-    memset(ro->members, 0, sizeof(ro->members));
     return ro;
 }
 

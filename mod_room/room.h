@@ -104,7 +104,6 @@ struct room_game {
     int8_t status; // ROOMS_
     uint64_t statustime;
     uint64_t starttime;
-    uint32_t pull_next_time;
     int8_t maxp;
     int8_t np;
     struct player p[MEMBER_MAX];

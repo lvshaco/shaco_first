@@ -35,7 +35,7 @@ struct tplt;
 
 struct agent { 
     int status;
-    int level;
+    int ai;
     struct chardata data;
     uint32_t last_change_role_time;
     struct agent *next;

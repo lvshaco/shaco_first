@@ -25,6 +25,7 @@ build_detail(struct player *pr, struct tmemberdetail *detail) {
     detail->accid = cdata->accid;
     detail->charid = cdata->charid;
     memcpy(detail->name, cdata->name, sizeof(cdata->name));
+    detail->level = cdata->level;
     detail->role = cdata->role;
     detail->state = role_state(cdata);
     detail->score_dashi = cdata->score_dashi;

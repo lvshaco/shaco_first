@@ -6,8 +6,8 @@
 #include "msg_client.h"
 
 static inline struct agent_list *
-index_rest_list(struct robot *self, int level) {
-    int idx = level-1;
+index_rest_list(struct robot *self, int ai) {
+    int idx = ai-1;
     assert(idx >= 0 && idx < AI_MAX);
     return &self->rests[idx];
 }
@@ -21,8 +21,8 @@ alloc_agent(struct robot *self) {
 }
 
 static struct agent *
-agent_pull(struct robot *self, int level) {
-    struct agent_list *rest = index_rest_list(self, level);
+agent_pull(struct robot *self, int ai) {
+    struct agent_list *rest = index_rest_list(self, ai);
     
     struct agent *ag = rest->head;
     if (ag == NULL)
@@ -41,7 +41,7 @@ agent_fight(struct robot *self, struct agent *ag) {
 
 static void
 agent_rest(struct robot *self, struct agent *ag) {
-    struct agent_list *rest = index_rest_list(self, ag->level);
+    struct agent_list *rest = index_rest_list(self, ag->ai);
     ag->status = S_REST;
     if (rest->head) {
         assert(rest->tail != NULL);
@@ -69,12 +69,12 @@ rand_role(struct robot *self) {
 }
 
 static inline void
-init_agent_data(struct module *s, struct agent *ag, int idx, int level) {
+init_agent_data(struct module *s, struct agent *ag, int idx, int ai) {
     struct robot *self = MODULE_SELF;
     struct chardata *cdata = &ag->data;
-    ag->level = level;
+    ag->ai= ai;
     cdata->charid = CHARID_BEGIN+idx;
-    snprintf(cdata->name, sizeof(cdata->name), "wabao%02d_%d", level, cdata->charid);
+    snprintf(cdata->name, sizeof(cdata->name), "wabao%02d_%d", ai, cdata->charid);
     cdata->accid = ACCID_BEGIN+idx;
     cdata->role = rand_role(self);
     hall_attribute_main(self->T, cdata);
@@ -124,6 +124,7 @@ build_detail(struct agent *ag, struct tmemberdetail *detail) {
     detail->accid = cdata->accid;
     detail->charid = cdata->charid;
     memcpy(detail->name, cdata->name, sizeof(cdata->name));
+    detail->level = cdata->level;
     detail->role = cdata->role;
     detail->score_dashi = cdata->score_dashi;
     detail->attri = cdata->attri;
@@ -170,7 +171,7 @@ enter_room(struct module *s, struct agent *ag, struct UM_ENTERROOM *er) {
         agent_fight(self, ag);
         UM_DEFFIX(UM_ROBOT_LOGINROOM, lr);
         lr->roomid = er->roomid;
-        lr->level = ag->level;
+        lr->ai = ag->ai;
         build_detail(ag, &lr->detail);
         sh_module_send(MODULE_ID, er->room_handle, MT_UM, lr, sizeof(*lr));
         sh_trace("Robot %u send enter room to handle %x", UID(ag), er->room_handle);

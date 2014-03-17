@@ -339,7 +339,7 @@ struct UM_ROBOT_APPLY {
 struct UM_ROBOT_LOGINROOM {
     _UM_HEADER;
     uint32_t roomid;
-    uint8_t level;
+    uint8_t ai;
     struct tmemberdetail detail;
 };
 

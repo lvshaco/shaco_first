@@ -47,7 +47,6 @@ struct room {
     uint64_t start_time;
     uint32_t autopull_time;
     int room_handle;
-    int can_join;
     int joinable;
     int autoswitch;
     uint32_t match_score;
