@@ -34,6 +34,7 @@ startone() {
         valgrind -v \
         --leak-check=full \
         --show-reachable=yes \
+        --track-origins=yes \
         --suppressions=shaco.supp \
         --log-file=$HOME/log/${1}.vallog \
         ./shaco config_${1}.lua --sh_daemon 1

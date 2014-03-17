@@ -74,14 +74,12 @@ static void
 play_fail(struct module *s, struct player *pr, struct UM_PLAYFAIL *fail) {
     if (pr->status == PS_WAITING) { 
         pr->status = PS_HALL;
-        UM_DEFWRAP(UM_CLIENT, cl, UM_PLAYFAIL, pl);
-        cl->uid = UID(pr);
-        *pl = *fail;
-        sh_module_send(MODULE_ID, pr->watchdog_source, MT_UM, cl, sizeof(*cl)+sizeof(*pl));
-        sh_trace("Play %u notify client play fail", UID(pr));
-    } else {
-        sh_trace("Play %u receive play fail, but status %d", UID(pr), pr->status);
     }
+    UM_DEFWRAP(UM_CLIENT, cl, UM_PLAYFAIL, pl);
+    cl->uid = UID(pr);
+    *pl = *fail;
+    sh_module_send(MODULE_ID, pr->watchdog_source, MT_UM, cl, sizeof(*cl)+sizeof(*pl));
+    sh_trace("Play %u notify client play fail", UID(pr));
 }
 
 static void
