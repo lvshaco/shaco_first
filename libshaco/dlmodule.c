@@ -100,11 +100,29 @@ dlmodule_close(struct dlmodule* dl) {
 
 int
 dlmodule_reload(struct dlmodule* dl) {
-    if (dl->name == NULL) {
-        return 1;
+    if (dl->name) {
+        if (dl->handle) {
+            _dlclose(dl);
+        }
+        return _open(dl);
     }
-    if (dl->handle) {
-        _dlclose(dl);
+    return 1;
+}
+
+int
+dlmodule_unload(struct dlmodule* dl) {
+    if (dl->name) {
+        if (dl->handle) {
+            _dlclose(dl);
+        }
+        return 0;
     }
-    return _open(dl);
+    return 1;
+}
+
+int
+dlmodule_reopen(struct dlmodule* dl) {
+    if (dl->name)
+        return _open(dl);
+    return 1;
 }

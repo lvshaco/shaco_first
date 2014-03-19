@@ -102,7 +102,7 @@ sh_net_send(int id, void* data, int sz) {
     if (n > 0) {
         _dispatch_one(&nm);
     }
-    return n;
+    return n == 0 ? 0 : 1;
 }
 
 int 

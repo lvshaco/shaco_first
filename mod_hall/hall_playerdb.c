@@ -38,8 +38,7 @@ _db(struct module *s, struct player* p, int8_t type) {
     uint32_t accid = cdata->accid;
 
     UM_DEFVAR2(UM_REDISQUERY, rq, UM_MAXSZ);
-    rq->needreply = 0;
-    rq->needrecord = 0;
+    rq->flag = 0;
     struct memrw rw;
     memrw_init(&rw, rq->data, UM_MAXSZ - sizeof(*rq));
     memrw_write(&rw, &type, sizeof(type)); 
@@ -47,31 +46,25 @@ _db(struct module *s, struct player* p, int8_t type) {
     rq->cbsz = RW_CUR(&rw);
     switch (type) {
     case PDB_QUERY: {
-        rq->needreply = 1;
+        rq->flag |= RQUERY_REPLY;
         int len = redis_format(&rw.ptr, RW_SPACE(&rw), "get acc:%u:user", accid);
         memrw_pos(&rw, len);
         }
         break;
     case PDB_CHECKNAME: {
-        rq->needreply = 1;
-        int len = redis_format(&rw.ptr, RW_SPACE(&rw), "get user:%s:name", cdata->name);
-        memrw_pos(&rw, len);
-        }
-        break;
-    case PDB_SAVENAME: {
-        rq->needreply = 1;
-        int len = redis_format(&rw.ptr, RW_SPACE(&rw), "set user:%s:name 1", cdata->name);
+        rq->flag |= RQUERY_REPLY;
+        int len = redis_format(&rw.ptr, RW_SPACE(&rw), "setnx user:%s:name 1", cdata->name);
         memrw_pos(&rw, len);
         }
         break;
     case PDB_CHARID: {
-        rq->needreply = 1;
+        rq->flag |= RQUERY_REPLY;
         int len = redis_format(&rw.ptr, RW_SPACE(&rw), "incr user:id");
         memrw_pos(&rw, len);
         }
         break;
     case PDB_LOAD: {
-        rq->needreply = 1;
+        rq->flag |= RQUERY_REPLY;
         uint32_t charid = cdata->charid;
         int len = redis_format(&rw.ptr, RW_SPACE(&rw), "hmget user:%u"
                 " name"
@@ -98,7 +91,7 @@ _db(struct module *s, struct player* p, int8_t type) {
         }
         break;
     case PDB_CREATE: {
-        rq->needreply = 1;
+        rq->flag |= RQUERY_REPLY;
         uint32_t charid = cdata->charid;
         char_create(cdata);
         int len = redis_format(&rw.ptr, RW_SPACE(&rw), "hmset user:%u"
@@ -120,7 +113,7 @@ _db(struct module *s, struct player* p, int8_t type) {
         }
         break;
     case PDB_BINDCHARID: {
-        rq->needreply = 1;
+        rq->flag |= RQUERY_REPLY;
         uint32_t charid = cdata->charid;
         int len = redis_format(&rw.ptr, RW_SPACE(&rw), "set acc:%u:user %u",
                 accid, charid);
@@ -128,8 +121,7 @@ _db(struct module *s, struct player* p, int8_t type) {
         }
         break;
     case PDB_SAVE: {
-        rq->needreply = 0;
-        rq->needrecord = 1;
+        rq->flag |= RQUERY_BACKUP;
         uint32_t charid = cdata->charid;
         int len = redis_format(&rw.ptr, RW_SPACE(&rw), "hmset user:%u"
                 " level %u"
@@ -316,11 +308,16 @@ hall_playerdb_process_redis(struct module *s, struct UM_REDISREPLY *rep, int sz)
             break;
         }
         struct redis_replyitem* item = self->reply.stack[0];
-        if (item->type != REDIS_REPLY_STRING) {
+        if (item->type != REDIS_REPLY_INTEGER) {
             serr = SERR_DBREPLYTYPE;
             break;
         }
-        if (!redis_bulkitem_isnull(item)) {
+        int r = (uint32_t)item->value.u;
+        if (r == 1) {
+            p->status = PS_CHARUNIQUEID;
+            _db(s, p, PDB_CHARID);
+            return;
+        } else {
             p->status = PS_WAITCREATECHAR;
             // limit create char times
             p->createchar_times++;
@@ -330,27 +327,6 @@ hall_playerdb_process_redis(struct module *s, struct UM_REDISREPLY *rep, int sz)
                 serr = SERR_NAMEEXIST;
             }
             break;
-        }
-        p->status = PS_SAVECHARNAME;
-        _db(s, p, PDB_SAVENAME);
-        return;
-        }
-        break;
-    case PDB_SAVENAME: {
-        redis_resetreplybuf(&self->reply, rw.ptr, RW_SPACE(&rw));
-        if (redis_getreply(&self->reply) != REDIS_SUCCEED) {
-            serr = SERR_DBREPLY;
-            break;
-        }
-        struct redis_replyitem* item = self->reply.stack[0];
-        if (item->type == REDIS_REPLY_STATUS) {
-            p->status = PS_CHARUNIQUEID;
-            _db(s, p, PDB_CHARID);
-            return;
-        } else if (item->type == REDIS_REPLY_ERROR) {
-            serr = SERR_DBERR;
-        } else {
-            serr = SERR_DBREPLYTYPE;
         }
         }
         break;

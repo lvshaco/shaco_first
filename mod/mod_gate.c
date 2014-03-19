@@ -32,20 +32,6 @@ struct gate {
     struct client* p;
 };
 
-// command
-static int
-playercount(struct module *s, struct args *A, struct memrw *rw) {
-    struct gate *self = MODULE_SELF;
-    int n = snprintf(rw->ptr, RW_SPACE(rw), "%d(nclient)", self->used);
-    memrw_pos(rw, n); 
-    return CTL_OK;
-}
-
-static struct ctl_command CMDS[] = {
-    { "playercount", playercount },
-    { NULL, NULL },
-};
-
 // gate
 static inline void
 update_load(struct module *s) {
@@ -271,51 +257,6 @@ send_to_client(struct client *cl, void *data, int sz) {
 }
 
 void
-gate_main(struct module* s, int session, int source, int type, const void *msg, int sz) {
-    struct gate* self = MODULE_SELF;
-    switch (type) {
-    case MT_UM: {
-        UM_CAST(UM_BASE, base, msg);
-        switch (base->msgid) {
-        case IDUM_GATE: {
-            UM_CAST(UM_GATE, ga, msg); 
-            UM_CAST(UM_BASE, sub, ga->wrap);
-            int connid = ga->connid; 
-            struct client *cl = get_client(self, connid);
-            if (cl == NULL) {
-                sh_trace("Client %d send %d sz %d, but closed", 
-                        connid, sub->msgid, sz-(int)sizeof(*ga));
-                return;
-            }
-            sh_trace("Client %d send %d sz %d", 
-                        connid, sub->msgid, sz-(int)sizeof(*ga));
-            switch (sub->msgid) {
-            case IDUM_LOGOUT: {
-                UM_CAST(UM_LOGOUT, lo, sub);
-                if (lo->err == SERR_OK) {
-                    disconnect_client(s, cl, true);
-                } else {
-                    send_to_client(cl, lo, sizeof(*lo));
-                    disconnect_client(s, cl, false);
-                }
-                break;
-                }
-            default:
-                send_to_client(cl, ga->wrap, sz-sizeof(*ga));
-                break;
-            }
-            break;
-            } 
-        }
-        break;
-        }
-    case MT_CMD:
-        cmdctl_handle(s, source, msg, sz, CMDS, -1);
-        break;
-    }
-}
-
-void
 gate_net(struct module* s, struct net_message* nm) {
     struct gate* self = MODULE_SELF;
     struct client* c;
@@ -402,5 +343,68 @@ gate_time(struct module* s) {
         default:
             break;
         }
+    }
+}
+
+static int
+command(struct module *s, int source, int connid, const char *msg, int len, struct memrw *rw) {
+    struct gate *self = MODULE_SELF;
+    struct args A;
+    args_parsestrl(&A, 0, msg, len);
+    if (A.argc == 0) {
+        return CTL_ARGLESS;
+    }
+    const char *cmd = A.argv[0];
+    if (!strcmp(cmd, "playercount")) {
+        int n = snprintf(rw->ptr, RW_SPACE(rw), "%d(nclient)", self->used);
+        memrw_pos(rw, n); 
+    } else {
+        return CTL_NOCMD;
+    }
+    return CTL_OK;
+}
+
+void
+gate_main(struct module* s, int session, int source, int type, const void *msg, int sz) {
+    struct gate* self = MODULE_SELF;
+    switch (type) {
+    case MT_UM: {
+        UM_CAST(UM_BASE, base, msg);
+        switch (base->msgid) {
+        case IDUM_GATE: {
+            UM_CAST(UM_GATE, ga, msg); 
+            UM_CAST(UM_BASE, sub, ga->wrap);
+            int connid = ga->connid; 
+            struct client *cl = get_client(self, connid);
+            if (cl == NULL) {
+                sh_trace("Client %d send %d sz %d, but closed", 
+                        connid, sub->msgid, sz-(int)sizeof(*ga));
+                return;
+            }
+            sh_trace("Client %d send %d sz %d", 
+                        connid, sub->msgid, sz-(int)sizeof(*ga));
+            switch (sub->msgid) {
+            case IDUM_LOGOUT: {
+                UM_CAST(UM_LOGOUT, lo, sub);
+                if (lo->err == SERR_OK) {
+                    disconnect_client(s, cl, true);
+                } else {
+                    send_to_client(cl, lo, sizeof(*lo));
+                    disconnect_client(s, cl, false);
+                }
+                break;
+                }
+            default:
+                send_to_client(cl, ga->wrap, sz-sizeof(*ga));
+                break;
+            }
+            break;
+            } 
+        }
+        break;
+        }
+    case MT_CMD:
+        cmdctl(s, source, msg, sz, command);
+        break;
     }
 }

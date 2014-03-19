@@ -135,7 +135,7 @@ uniqueol_main(struct module *s, int session, int source, int type, const void *m
         // todo
         break;
     case MT_CMD:
-        cmdctl_handle(s, source, msg, sz, NULL, -1);
+        cmdctl(s, source, msg, sz, NULL);
         break;
     }
 }

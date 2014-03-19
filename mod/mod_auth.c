@@ -67,8 +67,7 @@ db(struct module *s, struct user *ur, int8_t type, const char *cmd, int len) {
     assert(len);
     struct auth *self = MODULE_SELF;
     UM_DEFVAR2(UM_REDISQUERY, rq, UM_MAXSZ);
-    rq->needreply = 1;
-    rq->needrecord = 0;
+    rq->flag = RQUERY_REPLY;
     struct memrw rw;
     memrw_init(&rw, rq->data, UM_MAXSZ - sizeof(*rq));
     memrw_write(&rw, &ur->conn, sizeof(ur->conn));
@@ -278,7 +277,7 @@ auth_main(struct module *s, int session, int source, int type, const void *msg, 
         break;
         }
     case MT_CMD:
-        cmdctl_handle(s, source, msg, sz, NULL, -1);
+        cmdctl(s, source, msg, sz, NULL);
         break;
     }
 }

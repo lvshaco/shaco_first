@@ -12,6 +12,7 @@
 #include "sh_monitor.h"
 #include "sh_util.h"
 #include "sh_hash.h"
+#include "sh_array.h"
 
 #include <stdbool.h>
 #include <stdlib.h>

@@ -40,8 +40,7 @@ static int
 db(struct module *s, const char *cmd, int len) {
     struct rank *self = MODULE_SELF;
     UM_DEFVAR2(UM_REDISQUERY, rq, UM_MAXSZ);
-    rq->needreply = 0;
-    rq->needrecord = 1;
+    rq->flag = RQUERY_BACKUP;
     rq->cbsz = 0;
     assert(len < UM_MAXSZ - sizeof(*rq));
     memcpy(rq->data, cmd, len);
@@ -100,8 +99,7 @@ static int
 _query_refresh_time(struct module *s, const char* type) {
     struct rank *self = MODULE_SELF;
     UM_DEFVAR2(UM_REDISQUERY, rq, UM_MAXSZ);
-    rq->needreply = 1;
-    rq->needrecord = 0;
+    rq->flag = RQUERY_REPLY;
     rq->cbsz = 0;
     struct memrw rw;
     memrw_init(&rw, rq->data, rq->msgsz - sizeof(*rq));

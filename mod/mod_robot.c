@@ -281,7 +281,7 @@ robot_main(struct module *s, int session, int source, int type, const void *msg,
         break;
         }
     case MT_CMD:
-        cmdctl_handle(s, source, msg, sz, CMDS, -1);
+        cmdctl(s, source, msg, sz, command);
         break;
     }
 }

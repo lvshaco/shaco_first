@@ -20,5 +20,7 @@ struct dlmodule {
 int dlmodule_load(struct dlmodule* dl, const char* name);
 void dlmodule_close(struct dlmodule* dl);
 int dlmodule_reload(struct dlmodule* dl);
+int dlmodule_unload(struct dlmodule* dl);
+int dlmodule_reopen(struct dlmodule* dl);
 
 #endif

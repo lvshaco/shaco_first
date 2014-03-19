@@ -187,12 +187,15 @@ struct UM_MINLOADFAIL {
     _UM_HEADER;
 };
 
+#define RQUERY_REPLY 1
+#define RQUERY_BACKUP 2
+#define RQUERY_SHARDING 4
+
 // redisproxy
 struct UM_REDISQUERY {
     _UM_HEADER;
-    uint16_t needreply:1;
-    uint16_t needrecord:1;
-    uint16_t cbsz:14; 
+    uint8_t flag; // RQUERY_
+    uint16_t cbsz; 
     char data[];
 };
 

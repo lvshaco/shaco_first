@@ -14,9 +14,23 @@ playercount(struct module *s, struct args *A, struct memrw *rw) {
     return CTL_OK;
 }
 
-static struct ctl_command CMDS[] = {
-    { "playercount", playercount },
-    { NULL, NULL },
-};
+
+static int
+command(struct module *s, int source, int connid, const char *msg, int len, struct memrw *rw) {
+    //struct match *self = MODULE_SELF;
+
+    struct args A;
+    args_parsestrl(&A, 0, msg, len);
+    if (A.argc == 0) {
+        return CTL_ARGLESS;
+    }
+    const char *cmd = A.argv[0];
+    if (!strcmp(cmd, "playercount")) {
+        return playercount(s, &A, rw);
+    } else {
+        return CTL_NOCMD;
+    }
+    return CTL_OK;
+}
 
 #endif

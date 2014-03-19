@@ -10,5 +10,3 @@ sh_module = "log,node,cmdctl,benchmarkdb"
 
 benchmark_query_init = 0
 benchmark_query = 0
-
-cmd_handle="benchmarkdb"

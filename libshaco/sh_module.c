@@ -30,38 +30,12 @@ _find(const char* name) {
     }
     return NULL;
 }
-/*
-static struct module *
-_find_by_module_name(const char *name) {
-    int i;
-    for (i=0; i<array_size(S->sers); ++i) {
-        struct module* s = array_get(S->sers, i);
-        if (s && strcmp(s->dl.name, name) == 0) {
-            return s;
-        }
-    }
-    return NULL;
-}
-*/
+
 static inline void
 _insert(struct module* s) {
     s->moduleid = array_push(S->sers, s);
 }
-/*
-static struct module*
-_remove(const char* name) {
-    int i;
-    for (i=0; i<array_size(S->sers); ++i) {
-        struct module* s = array_get(S->sers, i);
-        if (s && strcmp(s->name, name) == 0) {
-            assert(s->moduleid >= 0);
-            array_set(S->sers, s->moduleid, NULL);
-            return s;
-        }
-    }
-    return NULL;
-}
-*/
+
 static int
 _create(const char* name) {
     char tmp[128];
@@ -108,10 +82,29 @@ _prepare(struct module* s) {
 static int
 _reload(struct module* s) {
     //assert(s->dl.handle); donot do this
-    if (dlmodule_reload(&s->dl)) {
-        return 1;
+    // foreach all same so 
+    struct module *m;
+    int i;
+    for (i=0; i<array_size(S->sers); ++i) {
+        m = array_get(S->sers, i); 
+        if (m && !strcmp(m->dl.name, s->dl.name)) {
+            if (dlmodule_unload(&m->dl)) {
+                sh_error("unload module %s fail", m->name);
+            } else {
+                sh_info("unload module %s ok", m->name);
+            }
+        }
     }
-    sh_info("reload module %s ok", s->name);
+    for (i=0; i<array_size(S->sers); ++i) {
+        m = array_get(S->sers, i); 
+        if (m && m->dl.handle == NULL) {
+            if (dlmodule_reopen(&m->dl)) {
+                sh_error("reopen module %s fail", m->name);
+            } else {
+                sh_info("reopen module %s ok", m->name);
+            }
+        }
+    }
     return 0;
 }
 

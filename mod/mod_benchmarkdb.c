@@ -25,9 +25,7 @@ sendcmd(struct module *s, const char* cmd) {
     struct benchmarkdb* self = MODULE_SELF;
     size_t len = strlen(cmd);
     UM_DEFVAR2(UM_REDISQUERY, rq, UM_MAXSZ);
-    rq->needreply = 1; 
-    rq->needrecord = 0;
-    rq->cbsz = 0;
+    rq->flag = RQUERY_REPLY; 
     struct memrw rw;
     memrw_init(&rw, rq->data, UM_MAXSZ - sizeof(*rq));
     memrw_write(&rw, cmd, len);
@@ -60,40 +58,6 @@ sendtest(struct module *s) {
         sendcmd(s, cmd);
     }
 }
-
-// command
-static int
-db(struct module *s, struct args *A, struct memrw *rw) {
-    struct benchmarkdb* self = MODULE_SELF;
-    if (A->argc < 5) {
-        return CTL_ARGLESS;
-    }
-    // modcmd "mode" startid count init
-    sh_strncpy(self->mode, A->argv[1], sizeof(self->mode));
-    self->startid = strtol(A->argv[2], NULL, 10);
-    int count = strtol(A->argv[3], NULL, 10);
-    int init  = strtol(A->argv[4], NULL, 10);
-    
-    self->start = sh_timer_now();
-    self->curid = self->startid;
-    if (init <= 0)
-        init =  1;
-    self->query_init = min(count, init);
-    self->query = count;
-    self->query_send = 0;
-    self->query_recv = 0;
-    self->query_done = 0;
-    int i;
-    for (i=1; i<=count; ++i) {
-        sendtest(s);
-    }
-    return CTL_OK;
-}
-
-static struct ctl_command CMDS[] = {
-    { "db", db },
-    { NULL, NULL },
-};
 
 // benchmarkdb
 struct benchmarkdb*
@@ -136,7 +100,7 @@ benchmarkdb_init(struct module* s) {
 }
 
 static void
-process_redis(struct module *s, struct UM_REDISREPLY *rep, int sz) {
+handle_redis(struct module *s, struct UM_REDISREPLY *rep, int sz) {
     struct benchmarkdb *self = MODULE_SELF;
     struct memrw rw;
     memrw_init(&rw, rep->data, sz - sizeof(*rep));
@@ -161,6 +125,37 @@ process_redis(struct module *s, struct UM_REDISREPLY *rep, int sz) {
     sendtest(s);
 }
 
+static int
+command(struct module *s, int source, int connid, const char *msg, int len, struct memrw *rw) {
+    struct benchmarkdb* self = MODULE_SELF;
+
+    struct args A;
+    args_parsestrl(&A, 0, msg, len);
+    if (A.argc < 5) {
+        return CTL_ARGLESS;
+    }
+    // modcmd "mode" startid count init
+    sh_strncpy(self->mode, A.argv[1], sizeof(self->mode));
+    self->startid = strtol(A.argv[2], NULL, 10);
+    int count = strtol(A.argv[3], NULL, 10);
+    int init  = strtol(A.argv[4], NULL, 10);
+    
+    self->start = sh_timer_now();
+    self->curid = self->startid;
+    if (init <= 0)
+        init =  1;
+    self->query_init = min(count, init);
+    self->query = count;
+    self->query_send = 0;
+    self->query_recv = 0;
+    self->query_done = 0;
+    int i;
+    for (i=1; i<=count; ++i) {
+        sendtest(s);
+    }
+    return CTL_OK;
+}
+
 void
 benchmarkdb_main(struct module *s, int session, int source, int type, const void *msg, int sz) {
     switch (type) {
@@ -169,14 +164,14 @@ benchmarkdb_main(struct module *s, int session, int source, int type, const void
         switch (base->msgid) {
         case IDUM_REDISREPLY: {
             UM_CAST(UM_REDISREPLY, rep, msg);
-            process_redis(s, rep, sz);
+            handle_redis(s, rep, sz);
             break;
             }
         }
         break;
         }
     case MT_CMD:
-        cmdctl_handle(s, source, msg, sz, CMDS, -1);
+        cmdctl(s, source, msg, sz, command);
         break;
     }
 }

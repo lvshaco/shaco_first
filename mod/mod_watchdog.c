@@ -42,22 +42,6 @@ struct watchdog {
     struct sh_hash acc2user;
 };
 
-// command
-static int
-playercount(struct module *s, struct args *A, struct memrw *rw) {
-    struct watchdog *self = MODULE_SELF;
-    uint32_t ntotal = self->conn2user.used;
-    uint32_t nverifyed = self->acc2user.used;
-    int n = snprintf(rw->ptr, RW_SPACE(rw), "%u(verifyed) %u(all)", nverifyed, ntotal);
-    memrw_pos(rw, n); 
-    return CTL_OK;
-}
-
-static struct ctl_command CMDS[] = {
-    { "playercount", playercount },
-    { NULL, NULL },
-};
-
 // watchdog
 struct watchdog *
 watchdog_create() {
@@ -405,6 +389,27 @@ process_client(struct module *s, uint32_t accid, const void *msg, int sz) {
     sh_module_send(MODULE_ID, ur->gate_source, MT_UM, g, sizeof(*g) + sz);
 }
 
+static int
+command(struct module *s, int source, int connid, const char *msg, int len, struct memrw *rw) {
+    struct watchdog *self = MODULE_SELF;
+
+    struct args A;
+    args_parsestrl(&A, 0, msg, len);
+    if (A.argc == 0) {
+        return CTL_ARGLESS;
+    }
+    const char *cmd = A.argv[0];
+    if (!strcmp(cmd, "playercount")) {
+        uint32_t ntotal = self->conn2user.used;
+        uint32_t nverifyed = self->acc2user.used;
+        int n = snprintf(rw->ptr, RW_SPACE(rw), "%u(verifyed) %u(all)", nverifyed, ntotal);
+        memrw_pos(rw, n); 
+    } else {
+        return CTL_NOCMD;
+    }
+    return CTL_OK;
+}
+
 void
 watchdog_main(struct module *s, int session, int source, int type, const void *msg, int sz) {
     struct watchdog *self = MODULE_SELF;
@@ -477,7 +482,7 @@ watchdog_main(struct module *s, int session, int source, int type, const void *m
         break;
         }
     case MT_CMD:
-        cmdctl_handle(s, source, msg, sz, CMDS, -1);
+        cmdctl(s, source, msg, sz, command);
         break;
     }
 }

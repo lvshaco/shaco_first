@@ -24,6 +24,7 @@ int    sh_array_foreach(struct sh_array *self, sh_array_each_t func, void *ud);
 //inline
 //size_t sh_array_capacity(struct sh_array *self);
 //size_t sh_array_size(struct sh_array *self);
+//int    sh_array_idx(struct sh_array *self);
 //void * sh_array_get(struct sh_array *self, size_t idx);
 //void * sh_array_push(struct sh_array *self);
 //void * sh_array_pop(struct sh_array *self);
@@ -38,6 +39,15 @@ sh_array_capacity(struct sh_array *self) {
 static inline size_t
 sh_array_n(struct sh_array *self) {
     return self->nelem;
+}
+
+static inline int
+sh_array_idx(struct sh_array *self, void *value) {
+    int idx = ((char*)value - (char*)self->elem) / self->size;
+    if (idx >= 0 && idx < self->nelem)
+        return idx;
+    else
+        return -1;
 }
 
 static inline void *

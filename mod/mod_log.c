@@ -76,5 +76,6 @@ log_init(struct module* s) {
 void
 log_main(struct module* s, int session, int source, int type, const void *msg, int sz) {
     struct log* self = MODULE_SELF;
+    //elog_append(self->el, "ppp", 3);
     elog_append(self->el, msg, sz);
 }

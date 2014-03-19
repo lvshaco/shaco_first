@@ -13,21 +13,25 @@ struct ctl_command {
 };
 
 #define CTL_OK 0
-#define CTL_NOCOMMAND 1
+#define CTL_NOCMD 1
 #define CTL_FAIL 2
 #define CTL_ARGLESS 3
 #define CTL_ARGINVALID 4
 #define CTL_ARGTOOLONG 5
 #define CTL_NOMODULE 6
+#define CTL_SOMEFAIL 7
+#define CTL_FORWARD 8
 
 static const char* STRERROR[] = {
     "execute ok",
-    "no command",
+    "execute no command",
     "execute fail",
     "execute less arg",
     "execute invalid arg",
     "execute too long arg",
     "execute no module",
+    "execute something fail",
+    "", // forward no response
 };
 
 static inline const char*
@@ -50,45 +54,60 @@ _execute(struct module *s, struct args* A, struct memrw* rw,
             c++;
         }
     }
-    return CTL_NOCOMMAND;
+    return CTL_NOCMD;
 }
 
 static inline void
-cmdctl_handle(struct module *s, int source, const void *msg, int sz, 
-        const struct ctl_command *cmdmap, int forward_handle) {
+_response(struct module *s, int source, int connid, const char *msg, int len) {
+    UM_DEFVAR2(UM_CMDS, res, UM_MAXSZ);                                             
+    UD_CAST(UM_TEXT, text, res->wrap);                                              
+    res->connid = connid;                                                           
     
-    UM_CAST(UM_CMDS, cmd, msg); 
-    UM_CAST(UM_BASE, sub, cmd->wrap);
+    int headsz = sizeof(*res) + sizeof(*text);
+    int bodysz = min(len, UM_MAXSZ - headsz);
+    memcpy(text->str, msg, bodysz);
+
+    sh_module_send(MODULE_ID, source, MT_UM, res, headsz + bodysz);
+}
+
+typedef int (*cmdctl_handle_t)(
+        struct module *s, 
+        int source, 
+        int connid, 
+        const char *msg, 
+        int len, 
+        struct memrw *rw);
+
+static inline void
+cmdctl(struct module *s, int source, const void *msg, int sz, cmdctl_handle_t func) {
+    UM_CAST(UM_CMDS, cmds, msg); 
+    UM_CAST(UM_BASE, sub, cmds->wrap);
     if (sub->msgid != IDUM_TEXT) {
         return;
     }
-    UM_CASTCK(UM_TEXT, it, sub, sz - sizeof(*cmd));
-    
-    struct args A;
-    args_parsestrl(&A, 0, it->str, sz - sizeof(*cmd) - sizeof(*it));
-    if (A.argc == 0) {
-        return; // null
-    }
+    UM_CASTCK(UM_TEXT, text, sub, sz - sizeof(*cmds));
 
-    UM_DEFVAR2(UM_CMDS, res, UM_MAXSZ);                                             
-    UD_CAST(UM_TEXT, rt, res->wrap);                                              
-    res->connid = cmd->connid;                                                           
-    int headsz = sizeof(*res) + sizeof(*rt);                                      
+    char *cmd = text->str;
+    int   len = sz - sizeof(*cmds) - sizeof(*text);
+
+    char tmp[1024];
     struct memrw rw;                                                                
-    memrw_init(&rw, rt->str, UM_MAXSZ-headsz);                                    
-                                                                                    
-    int err = _execute(s, &A, &rw, cmdmap);
-    if (err == CTL_NOCOMMAND) {
-        if (forward_handle != -1) {
-            sh_module_send(source, forward_handle, MT_CMD, cmd, sz);
-            return;
+    memrw_init(&rw, tmp, sizeof(tmp));
+
+    int err;
+    if (func) {
+        err = func(s, source, cmds->connid, cmd, len, &rw);
+        if (err == CTL_FORWARD) {
+            return; // forward mod deal
         }
+    } else {
+        err = CTL_NOCMD;
     }
     if (RW_EMPTY(&rw)) {
-        int n = snprintf(rw.begin, rw.sz, "[%s] %s", A.argv[0], _strerror(err));
+        int n = snprintf(rw.begin, rw.sz, "%s", _strerror(err));
         memrw_pos(&rw, n);
     }
-    sh_module_send(MODULE_ID, source, MT_UM, res, headsz + RW_CUR(&rw));
+    _response(s, source, cmds->connid, rw.begin, RW_CUR(&rw));
 }
 
 #endif
