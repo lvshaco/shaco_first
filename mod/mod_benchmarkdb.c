@@ -6,7 +6,7 @@
 #include "args.h"
 
 struct benchmarkdb {               
-    int rpuser_handle;             
+    int rpuser_handle;
     char mode[16];                 
     int startid;                   
     int curid;                     

@@ -19,6 +19,7 @@ struct hall {
     int match_handle;
     int watchdog_handle;
     int rpuser_handle;
+    int rpuseruni_handle;
     int rprank_handle;
     int tick;
     uint32_t randseed;

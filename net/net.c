@@ -26,7 +26,7 @@ static const char *STRERROR[] = {
     "net error msg",
     "net error no socket",
     "net error create socket",
-    "net error write buffer over"
+    "net error write buffer over",
     "net error no buffer",
     "net error listen",
     "net error connect",

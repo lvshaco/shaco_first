@@ -195,7 +195,7 @@ struct UM_MINLOADFAIL {
 struct UM_REDISQUERY {
     _UM_HEADER;
     uint8_t flag; // RQUERY_
-    uint16_t cbsz; 
+    uint16_t cbsz;  // if RQUERY_SHARDING, then first 4 bytes must be the key
     char data[];
 };
 

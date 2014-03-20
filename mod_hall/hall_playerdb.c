@@ -29,6 +29,9 @@ char_create(struct chardata *cdata) {
     cdata->diamond = 100000; // todo
 }
 
+#define SEND_RP(handle) \
+    sh_module_send(MODULE_ID, handle, MT_UM, rq, sizeof(*rq) + RW_CUR(&rw))
+
 static int
 _db(struct module *s, struct player* p, int8_t type) {
     struct hall *self = MODULE_SELF;
@@ -38,33 +41,40 @@ _db(struct module *s, struct player* p, int8_t type) {
     uint32_t accid = cdata->accid;
 
     UM_DEFVAR2(UM_REDISQUERY, rq, UM_MAXSZ);
-    rq->flag = 0;
     struct memrw rw;
     memrw_init(&rw, rq->data, UM_MAXSZ - sizeof(*rq));
-    memrw_write(&rw, &type, sizeof(type)); 
     memrw_write(&rw, &accid, sizeof(accid));
+    memrw_write(&rw, &type, sizeof(type)); 
     rq->cbsz = RW_CUR(&rw);
     switch (type) {
     case PDB_QUERY: {
-        rq->flag |= RQUERY_REPLY;
+        rq->flag = RQUERY_REPLY;
         int len = redis_format(&rw.ptr, RW_SPACE(&rw), "get acc:%u:user", accid);
         memrw_pos(&rw, len);
+        return SEND_RP(self->rpuseruni_handle);
         }
-        break;
     case PDB_CHECKNAME: {
-        rq->flag |= RQUERY_REPLY;
+        rq->flag = RQUERY_REPLY;
         int len = redis_format(&rw.ptr, RW_SPACE(&rw), "setnx user:%s:name 1", cdata->name);
         memrw_pos(&rw, len);
+        return SEND_RP(self->rpuseruni_handle);
         }
-        break;
     case PDB_CHARID: {
-        rq->flag |= RQUERY_REPLY;
+        rq->flag = RQUERY_REPLY;
         int len = redis_format(&rw.ptr, RW_SPACE(&rw), "incr user:id");
         memrw_pos(&rw, len);
+        return SEND_RP(self->rpuseruni_handle);
         }
-        break;
+    case PDB_BINDCHARID: {
+        rq->flag = RQUERY_REPLY;
+        uint32_t charid = cdata->charid;
+        int len = redis_format(&rw.ptr, RW_SPACE(&rw), "set acc:%u:user %u",
+                accid, charid);
+        memrw_pos(&rw, len);
+        return SEND_RP(self->rpuseruni_handle);
+        }
     case PDB_LOAD: {
-        rq->flag |= RQUERY_REPLY;
+        rq->flag = RQUERY_REPLY|RQUERY_SHARDING;
         uint32_t charid = cdata->charid;
         int len = redis_format(&rw.ptr, RW_SPACE(&rw), "hmget user:%u"
                 " name"
@@ -88,10 +98,10 @@ _db(struct module *s, struct player* p, int8_t type) {
                 " rings"
                 " states", charid);
         memrw_pos(&rw, len);
+        return SEND_RP(self->rpuser_handle);
         }
-        break;
     case PDB_CREATE: {
-        rq->flag |= RQUERY_REPLY;
+        rq->flag = RQUERY_REPLY|RQUERY_SHARDING;
         uint32_t charid = cdata->charid;
         char_create(cdata);
         int len = redis_format(&rw.ptr, RW_SPACE(&rw), "hmset user:%u"
@@ -110,18 +120,10 @@ _db(struct module *s, struct player* p, int8_t type) {
                 cdata->package,
                 cdata->role);
         memrw_pos(&rw, len);
+        return SEND_RP(self->rpuser_handle);
         }
-        break;
-    case PDB_BINDCHARID: {
-        rq->flag |= RQUERY_REPLY;
-        uint32_t charid = cdata->charid;
-        int len = redis_format(&rw.ptr, RW_SPACE(&rw), "set acc:%u:user %u",
-                accid, charid);
-        memrw_pos(&rw, len);
-        }
-        break;
     case PDB_SAVE: {
-        rq->flag |= RQUERY_BACKUP;
+        rq->flag = RQUERY_BACKUP|RQUERY_SHARDING;
         uint32_t charid = cdata->charid;
         int len = redis_format(&rw.ptr, RW_SPACE(&rw), "hmset user:%u"
                 " level %u"
@@ -169,12 +171,11 @@ _db(struct module *s, struct player* p, int8_t type) {
             return 1;
         }
         memrw_pos(&rw, len);
+        return SEND_RP(self->rpuser_handle);
         }
-        break;
     default:
         return 1;
     }
-    return sh_module_send(MODULE_ID, self->rpuser_handle, MT_UM, rq, sizeof(*rq) + RW_CUR(&rw)); 
 }
 
 int 
@@ -264,8 +265,8 @@ hall_playerdb_process_redis(struct module *s, struct UM_REDISREPLY *rep, int sz)
     uint32_t accid = 0;
     struct memrw rw;
     memrw_init(&rw, rep->data, sz - sizeof(*rep));
-    memrw_read(&rw, &type, sizeof(type));
     memrw_read(&rw, &accid, sizeof(accid));
+    memrw_read(&rw, &type, sizeof(type));
 
     struct player* p = sh_hash_find(&self->acc2player, accid);
     if (p == NULL) {

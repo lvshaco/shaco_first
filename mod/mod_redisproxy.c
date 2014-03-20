@@ -123,7 +123,7 @@ qlist_pop(struct qlist *ql) {
 
 // instance
 static int
-instance_init(struct instance *inst, const char *addr) {
+instance_addr(struct instance *inst, const char *addr) {
     char tmp[64];
     sh_strncpy(tmp, addr, sizeof(tmp));
     char *p = strchr(tmp, ':');
@@ -133,9 +133,12 @@ instance_init(struct instance *inst, const char *addr) {
     *p = '\0';
     sh_strncpy(inst->ip, tmp, sizeof(inst->ip));
     inst->port = strtol(p+1, NULL, 10);
+    return 0;
+}
 
-    inst->connid = -1; 
-
+static int
+instance_init(struct instance *inst) {
+    inst->connid = -1;    
     redis_initreply(&inst->reply, 512, 16*1024);
     qlist_init(&inst->ql);
     return 0;
@@ -237,6 +240,7 @@ static int
 instance_reset(struct instance *inst, struct module *s) {
     instance_disconnect(inst, s);
     instance_fini(inst);
+    instance_init(inst);
     return instance_login(inst, s);
 }
 
@@ -317,20 +321,22 @@ init_instances(struct module *s) {
 
     self->ninst = sharding_mod;
     self->insts = malloc(sizeof(self->insts[0]) * self->ninst);
-    memset(self->insts, 0, sizeof(self->insts[0]) * self->ninst);
-
+    int i;
+    for (i=0; i<self->ninst; ++i) {
+        instance_init(&self->insts[i]);
+    }
     struct instance *inst;
-    int i = 0; 
+    int n = 0; 
     char *one, *ptr;
     ptr = NULL;
     one = strtok_r(buf, ",", &ptr);
     while (one) {
-        if (i >= self->ninst) {
+        if (n >= self->ninst) {
             sh_error("Redis sharding_mod must equal instance count");
             return 1;
         }
-        inst = &self->insts[i++];
-        if (instance_init(inst, one)) {
+        inst = &self->insts[n++];
+        if (instance_addr(inst, one)) {
             sh_error("Redis instance `%s` init fail", one);
             return 1;
         }
@@ -368,8 +374,8 @@ handle_query(struct module *s, int source, struct UM_REDISQUERY *rq, int sz) {
     }
     uint32_t slot, key;
     if (rq->flag & RQUERY_SHARDING) {
-        assert(cbsz == 4);
-        key = sh_from_littleendian32(cb);
+        assert(cbsz >= 4);
+        key = *((uint32_t*)cb); //sh_from_littleendian32(cb);
         slot = key & (self->ninst - 1);
     } else {
         slot = 0;
@@ -507,6 +513,7 @@ redisproxy_net(struct module* s, struct net_message* nm) {
         char tmp[128];
         sh_error("Redis %s disconnect: %s", strinst, sh_net_error(nm->error));
         instance_fini(inst);
+        instance_init(inst);
         }
         break;
     }
