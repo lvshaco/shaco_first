@@ -28,12 +28,10 @@ local function update_res(client, args)
 end
 
 local function reload_res(client, args)
-    do_shell_command(client, strfmt(
-    [[cd %s && 
-     2>&1 ./shaco-cli --cmd ":hall reloadres" && 
-     2>&1 ./shaco-cli --cmd ":room reloadres" && 
-     2>&1 ./shaco-cli --cmd ":robot reloadres"]], 
-     do_shell_path))
+    --do_shell_command(client, strfmt('cd %s && 2>&1 ./shaco-cli --cmd ":hall reloadres" && 2>&1 ./shaco-cli --cmd ":room reloadres" && 2>&1 ./shaco-cli --cmd ":robot reloadres"', do_shell_path))
+    do_shell_command(client, strfmt('cd %s && 2>&1 ./shaco-cli --cmd ":hall reloadres"', do_shell_path))
+    do_shell_command(client, strfmt('cd %s && 2>&1 ./shaco-cli --cmd ":room reloadres"', do_shell_path))
+    do_shell_command(client, strfmt('cd %s && 2>&1 ./shaco-cli --cmd ":robot reloadres"', do_shell_path))
 end
 
 local command_map = {
