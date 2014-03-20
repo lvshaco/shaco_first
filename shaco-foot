@@ -95,7 +95,7 @@ stopall() {
     local col=9
     if [ $MEMCHECK -ne 0 ]
     then
-        col=15
+        col=16
     fi
     local list="ps -ef |grep shaco |grep config |awk -F ' ' '{print \$$col}'"
     local a=`eval "${list}"`
