@@ -69,7 +69,7 @@ process_washgold(struct module *s, struct player *pr) {
     cdata->coin += gain + extra;
     // no db hear
     sync_washgold_result(s, pr, gain, extra);
-    //hall_sync_money(s, pr);
+    hall_sync_money(s, pr);
 }
 
 static void
