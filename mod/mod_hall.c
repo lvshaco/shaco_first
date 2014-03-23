@@ -86,9 +86,6 @@ hall_main(struct module *s, int session, int source, int type, const void *msg, 
                 hall_player_main(s, source, pr, wrap, sz-sizeof(*ha));
                 break;
             default:
-                if (pr->status != PS_LOGIN) {
-                    return;
-                }
                 if (wrap->msgid >= IDUM_AWARDB && wrap->msgid <= IDUM_AWARDE) {
                     hall_award_main(s, pr, wrap, sz-sizeof(*ha)); 
                 } else if (wrap->msgid >= IDUM_ROLEB && wrap->msgid <= IDUM_ROLEE) {
