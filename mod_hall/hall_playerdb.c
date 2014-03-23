@@ -55,7 +55,7 @@ _db(struct module *s, struct player* p, int8_t type) {
         }
     case PDB_CHECKNAME: {
         rq->flag = RQUERY_REPLY;
-        int len = redis_format(&rw.ptr, RW_SPACE(&rw), "setnx user:%s:name 1", cdata->name);
+        int len = redis_format(&rw.ptr, RW_SPACE(&rw), "setnx user:%s:name %u", cdata->name, cdata->charid);
         memrw_pos(&rw, len);
         return SEND_RP(self->rpuseruni_handle);
         }
@@ -288,9 +288,9 @@ hall_playerdb_process_redis(struct module *s, struct UM_REDISREPLY *rep, int sz)
         }
         uint32_t charid = redis_bulkitem_toul(item);
         if (charid == 0) {
-            p->status = PS_WAITCREATECHAR;
-            serr = SERR_NOCHAR;
-            break;
+            p->status = PS_CHARUNIQUEID;
+            _db(s, p, PDB_CHARID);
+            return;
         }
         //if (_hashplayer(p, charid)) {
             //serr = SERR_WORLDFULL;
@@ -314,9 +314,9 @@ hall_playerdb_process_redis(struct module *s, struct UM_REDISREPLY *rep, int sz)
             break;
         }
         int r = (uint32_t)item->value.u;
-        if (r == 1) {
-            p->status = PS_CHARUNIQUEID;
-            _db(s, p, PDB_CHARID);
+        if (r == 1) { 
+            p->status = PS_CREATECHAR;
+            _db(s, p, PDB_CREATE);
             return;
         } else {
             p->status = PS_WAITCREATECHAR;
@@ -352,9 +352,8 @@ hall_playerdb_process_redis(struct module *s, struct UM_REDISREPLY *rep, int sz)
             //break;
         //}
         p->data.charid = charid;
-        p->status = PS_CREATECHAR;
-        _db(s, p, PDB_CREATE);
-        return;
+        p->status = PS_WAITCREATECHAR;
+        serr = SERR_NOCHAR;
         }
         break;
     case PDB_CREATE: {
