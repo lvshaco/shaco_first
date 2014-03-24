@@ -52,7 +52,7 @@ loadbalance_init(struct module *s) {
         return 1;
     }
     if (self->publisher_vhandle == self->subscriber_vhandle) {
-        sh_error("Target is equal Subscriber");
+        sh_error("Publisher is equal Subscriber");
         return 1;
     }
     return 0;
