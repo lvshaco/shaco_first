@@ -3,20 +3,20 @@
 #include "msg_server.h"
 
 /*
-loadbalance_target : 负载均衡目标
-loadbalance_subscriber : 负载均衡目标的订阅者
+loadbalance_publisher : 负载均衡发布者
+loadbalance_subscriber : 负载均衡订阅者
 */
 
-struct target_vector {
+struct publisher_vector {
     int cap;
     int sz;
     struct module_info *p;
 };
 
 struct loadbalance {
-    int target_vhandle;
+    int publisher_vhandle;
     int subscriber_vhandle;
-    struct target_vector targets;
+    struct publisher_vector publishers;
 };
 
 struct loadbalance *
@@ -30,7 +30,7 @@ void
 loadbalance_free(struct loadbalance *self) {
     if (self == NULL)
         return;
-    free(self->targets.p);
+    free(self->publishers.p);
     free(self);
 }
 
@@ -41,9 +41,9 @@ loadbalance_init(struct module *s) {
     if (sh_handle_publish(MODULE_NAME, PUB_SER)) {
         return 1;
     }
-    const char *target = sh_getstr("loadbalance_target", ""); 
-    self->target_vhandle = sh_monitor_register(target, &h);
-    if (self->target_vhandle == -1) {
+    const char *publisher = sh_getstr("loadbalance_publisher", ""); 
+    self->publisher_vhandle = sh_monitor_register(publisher, &h);
+    if (self->publisher_vhandle == -1) {
         return 1;
     }
     const char *subscriber = sh_getstr("loadbalance_subscriber", "");
@@ -51,7 +51,7 @@ loadbalance_init(struct module *s) {
     if(self->subscriber_vhandle == -1) {
         return 1;
     }
-    if (self->target_vhandle == self->subscriber_vhandle) {
+    if (self->publisher_vhandle == self->subscriber_vhandle) {
         sh_error("Target is equal Subscriber");
         return 1;
     }
@@ -59,7 +59,7 @@ loadbalance_init(struct module *s) {
 }
 
 static struct module_info *
-find_module(struct target_vector *ts, int handle) {
+find_module(struct publisher_vector *ts, int handle) {
     int i;
     for (i=0; i<ts->sz; ++i) {
         if (ts->p[i].handle == handle) {
@@ -70,7 +70,7 @@ find_module(struct target_vector *ts, int handle) {
 }
 
 static struct module_info *
-find_or_insert_module(struct target_vector *ts, int handle) {
+find_or_insert_module(struct publisher_vector *ts, int handle) {
     struct module_info *one = find_module(ts, handle);
     if (one) {
         return one;
@@ -88,7 +88,7 @@ find_or_insert_module(struct target_vector *ts, int handle) {
 }
 
 static int
-remove_module(struct target_vector *ts, int handle) {
+remove_module(struct publisher_vector *ts, int handle) {
     int i;
     for (i=0; i<ts->sz; ++i) {
         if (ts->p[i].handle == handle) {
@@ -103,10 +103,10 @@ remove_module(struct target_vector *ts, int handle) {
 }
 
 static inline void
-target_start(struct module *s, int handle, const void *msg, int sz) {
+publisher_start(struct module *s, int handle, const void *msg, int sz) {
     struct loadbalance *self = MODULE_SELF;
     assert(sz >= (40+2));
-    struct module_info *one = find_or_insert_module(&self->targets, handle);
+    struct module_info *one = find_or_insert_module(&self->publishers, handle);
     assert(one);
     memcpy(one->ip, msg, 40);
     one->port = sh_from_littleendian16(msg+40);
@@ -118,9 +118,9 @@ target_start(struct module *s, int handle, const void *msg, int sz) {
 }
 
 static inline void
-target_exit(struct module *s, int handle) {
+publisher_exit(struct module *s, int handle) {
     struct loadbalance *self = MODULE_SELF;
-    if (remove_module(&self->targets, handle)) {
+    if (remove_module(&self->publishers, handle)) {
         return;
     }
     UM_DEFFIX(UM_SERVICEDEL, sd);
@@ -132,15 +132,15 @@ static inline void
 subscriber_start(struct module *s, int handle) {
     struct loadbalance *self = MODULE_SELF;
     UM_DEFVAR(UM_SERVICEINFO, si);
-    si->ninfo = self->targets.sz;
-    memcpy(si->info, self->targets.p, sizeof(si->info[0])* si->ninfo);
+    si->ninfo = self->publishers.sz;
+    memcpy(si->info, self->publishers.p, sizeof(si->info[0])* si->ninfo);
     sh_module_send(MODULE_ID, handle, MT_UM, si, UM_SERVICEINFO_size(si));
 }
 
 static void
 update_load(struct module *s, int handle, int load) {
     struct loadbalance *self = MODULE_SELF;
-    struct module_info *one = find_or_insert_module(&self->targets, handle);
+    struct module_info *one = find_or_insert_module(&self->publishers, handle);
     assert(one);
     one->load = load;
 
@@ -158,16 +158,16 @@ loadbalance_main(struct module *s, int session, int source, int type, const void
         assert(sz >= 5);
         int type = ((uint8_t*)(msg))[0];
         int vhandle = sh_from_littleendian32(msg+1);
-        if (vhandle == self->target_vhandle) {
+        if (vhandle == self->publisher_vhandle) {
             switch (type) {
             case MONITOR_START: {
                 // todo
                 int diff = 5+40+2;
-                target_start(s, source, msg+diff, sz-diff);
+                publisher_start(s, source, msg+diff, sz-diff);
                 }
                 break;
             case MONITOR_EXIT:
-                target_exit(s, source);
+                publisher_exit(s, source);
                 break;
             }
         }
