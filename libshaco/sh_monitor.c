@@ -60,14 +60,13 @@ sh_monitor_register(const char *name, const struct sh_monitor_handle *h) {
 int 
 sh_monitor_trigger_start(int vhandle, int handle, const struct sh_node_addr *addr) {
     struct sh_monitor *m = find(vhandle);
-    if (m) {
-        uint8_t msg[5 + sizeof(struct sh_node_addr)];
+    if (m && 
+        m->handle[MONITOR_START] != -1) {
+        uint8_t msg[5 + sizeof(addr->waddr) + 2];
         uint8_t *p = msg;
         *p++ = MONITOR_START;
         sh_to_littleendian32(vhandle, p); p+=4;
-        memcpy(p, addr->naddr, sizeof(addr->naddr)); p+=sizeof(addr->naddr);
-        sh_to_littleendian16(addr->nport, p); p+=2;
-        memcpy(p, addr->gaddr, sizeof(addr->gaddr)); p+=sizeof(addr->gaddr);
+        memcpy(p, addr->waddr, sizeof(addr->waddr)); p+=sizeof(addr->waddr);
         sh_to_littleendian16(addr->gport, p); p+=2;
         return sh_module_send(handle, m->handle[MONITOR_START], MT_MONITOR, msg, sizeof(msg));
     }
@@ -77,7 +76,8 @@ sh_monitor_trigger_start(int vhandle, int handle, const struct sh_node_addr *add
 int 
 sh_monitor_trigger_exit(int vhandle, int handle) {
     struct sh_monitor *m = find(vhandle);
-    if (m) {
+    if (m &&
+        m->handle[MONITOR_EXIT] != -1) {
         uint8_t msg[5];
         msg[0] = MONITOR_EXIT;
         sh_to_littleendian32(vhandle, &msg[1]);

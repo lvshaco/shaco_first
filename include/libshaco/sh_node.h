@@ -22,6 +22,7 @@
 struct sh_node_addr {
     char naddr[40];
     char gaddr[40];
+    char waddr[40];
     int  nport;
     int  gport;
 };

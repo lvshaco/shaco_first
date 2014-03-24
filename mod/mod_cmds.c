@@ -83,7 +83,7 @@ handle_result(struct module *s, int source, int connid, void *msg, int sz) {
         return;
     }
     char prefix[32];
-    int npre = snprintf(prefix, sizeof(prefix), "[%08X] ", source);
+    int npre = snprintf(prefix, sizeof(prefix), "[%04X] ", source);
     npre = min(npre, sizeof(prefix)-1);
     int len = sizeof(struct UM_TEXT) + sz + npre;
     UM_DEFWRAP2(UM_GATE, ga, len);

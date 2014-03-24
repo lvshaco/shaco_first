@@ -9,12 +9,13 @@
 #define IDUM_NBEGIN 0
 #define IDUM_NEND   999 
 
-#define IDUM_SERVICEINFO    IDUM_NBEGIN+1
-#define IDUM_SERVICEDEL     IDUM_NBEGIN+2
-#define IDUM_SERVICELOAD    IDUM_NBEGIN+3
-#define IDUM_HALL       IDUM_NBEGIN+4
-#define IDUM_NETDISCONN IDUM_NBEGIN+5
-#define IDUM_GATE       IDUM_NBEGIN+6
+#define IDUM_SERVICEINIT    IDUM_NBEGIN+1
+#define IDUM_SERVICEADD     IDUM_NBEGIN+2
+#define IDUM_SERVICEDEL     IDUM_NBEGIN+3
+#define IDUM_SERVICELOAD    IDUM_NBEGIN+4
+#define IDUM_HALL       IDUM_NBEGIN+5
+#define IDUM_NETDISCONN IDUM_NBEGIN+6
+#define IDUM_GATE       IDUM_NBEGIN+7
 #define IDUM_AUTH       IDUM_NBEGIN+8
 #define IDUM_ROOM       IDUM_NBEGIN+9
 #define IDUM_MATCH      IDUM_NBEGIN+10
@@ -130,13 +131,18 @@ struct module_info {
     int32_t load;
 };
 
-struct UM_SERVICEINFO {
+struct UM_SERVICEADD {
+    _UM_HEADER;
+    struct module_info info;
+};
+
+struct UM_SERVICEINIT {
     _UM_HEADER;
     uint8_t ninfo;
     struct module_info info[0];
 };
 static inline uint16_t
-UM_SERVICEINFO_size(struct UM_SERVICEINFO *um) {
+UM_SERVICEINIT_size(struct UM_SERVICEINIT *um) {
     return sizeof(*um) + sizeof(um->info[0]) * um->ninfo;
 }
 

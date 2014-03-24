@@ -4,6 +4,7 @@
 #include <stdint.h>
 
 // shaco 错误号
+#define SERR_OKUNFORCE      -1
 #define SERR_OK 0
 #define SERR_UNKNOW         1
 #define SERR_TIMEOUT        2

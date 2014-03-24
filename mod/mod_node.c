@@ -26,9 +26,13 @@ struct remote {
 
 // node 
 static inline void
-_update_node(struct _node *no, const char *naddr, int nport, const char *gaddr, int gport) {
+_update_node(struct _node *no, 
+        const char *naddr, int nport, 
+        const char *gaddr, int gport,
+        const char *waddr) {
     sh_strncpy(no->addr.naddr, naddr, sizeof(no->addr.naddr));
     sh_strncpy(no->addr.gaddr, gaddr, sizeof(no->addr.gaddr));
+    sh_strncpy(no->addr.waddr, waddr, sizeof(no->addr.waddr));
     no->addr.nport = nport;
     no->addr.gport = gport;
 }
@@ -156,7 +160,7 @@ _dsend(struct remote *self, int connid, int source, int dest, int type, const vo
         memcpy(tmp+6, msg, sz);
         return sh_net_send(connid, tmp, len);
     } else {
-        sh_error("Too large msg from %0x to %0x", source, dest);
+        sh_error("Too large msg from %04x to %04x", source, dest);
         return 1;
     }
 }
@@ -170,7 +174,7 @@ _vdsend(struct remote *self, int connid, int source, int dest, const char *fmt, 
     n = vsnprintf(msg, sizeof(msg), fmt, ap);
     va_end(ap);
     if (n >= sizeof(msg)) {
-        sh_error("Too large msg %s from %0x to %0x", fmt, source, dest);
+        sh_error("Too large msg %s from %04x to %04x", fmt, source, dest);
         return 1;
     }
     return _dsend(self, connid, source, dest, MT_TEXT, msg, n);
@@ -206,7 +210,7 @@ _vsend(struct remote *self, int source, int dest, const char *fmt, ...) {
     n = vsnprintf(msg, sizeof(msg), fmt, ap);
     va_end(ap);
     if (n >= sizeof(msg)) {
-        sh_error("Too large msg %s from %0x to %0x", fmt, source, dest);
+        sh_error("Too large msg %s from %04x to %04x", fmt, source, dest);
         return 1;
     }
     return _send(self, source, dest, MT_TEXT, msg, n);
@@ -225,7 +229,8 @@ _init_mynode(struct remote *self) {
             sh_getstr("node_ip", "0"), 
             sh_getint("node_port", 0),
             sh_getstr("gate_ip", "0"), 
-            sh_getint("gate_port", 0));
+            sh_getint("gate_port", 0),
+            sh_getstr("wan_ip", "0"));
     return 0;
 }
 
@@ -237,6 +242,7 @@ _listen(struct module *s) {
         sh_net_listen(my->addr.naddr, my->addr.nport, 0, s->moduleid, 0)) {
         return 1;
     }
+    sh_info("listen node on %s:%u", my->addr.naddr, my->addr.nport);
     return 0;
 }
 
@@ -335,8 +341,11 @@ _broadcast_node(struct module *s, int id) {
             continue;
         if (other->connid == -1) 
             continue;
-        _vsend(self, MODULE_ID, other->node_handle, "ADDR %d %s %u %s %u",
-                id, no->addr.naddr, no->addr.nport, no->addr.gaddr, no->addr.gport);
+        _vsend(self, MODULE_ID, other->node_handle, "ADDR %d %s %u %s %u %s",
+                id, 
+                no->addr.naddr, no->addr.nport, 
+                no->addr.gaddr, no->addr.gport,
+                no->addr.waddr);
     }
 
     // get other
@@ -347,8 +356,11 @@ _broadcast_node(struct module *s, int id) {
         if (other->connid == -1 ||
             no->connid == -1)
             continue;
-        _vsend(self, MODULE_ID, no->node_handle, "ADDR %d %s %u %s %u",
-                i, other->addr.naddr, other->addr.nport, other->addr.gaddr, other->addr.gport);
+        _vsend(self, MODULE_ID, no->node_handle, "ADDR %d %s %u %s %u %s",
+                i, 
+                other->addr.naddr, other->addr.nport, 
+                other->addr.gaddr, other->addr.gport,
+                other->addr.waddr);
     }
     return 0;
 }
@@ -375,15 +387,18 @@ _connect_to_center(struct module* s) {
         sh_error("Reg center node fail");
         return 1;
     }
-    _update_node(no, addr, port, "", 0);
+    _update_node(no, addr, port, "", 0, "");
     _bound_node_connection(no, connid);
     _bound_node_entry(no, node_handle);
     self->center_handle = center_handle;
 
     int self_handle = sh_handleid(self->myid, MODULE_ID);
     struct _node *me = _my_node(self);
-    if (_vsend(self, self_handle, center_handle, "REG %d %s %u %s %u %d",
-                self->myid, me->addr.naddr, me->addr.nport, me->addr.gaddr, me->addr.gport, 
+    if (_vsend(self, self_handle, center_handle, "REG %d %s %u %s %u %s %d",
+                self->myid, 
+                me->addr.naddr, me->addr.nport, 
+                me->addr.gaddr, me->addr.gport, 
+                me->addr.waddr,
                 self_handle)) {
         sh_error("Reg self to center fail");
         return 1;
@@ -556,14 +571,15 @@ node_main(struct module *s, int session, int source, int type, const void *msg, 
     const char *cmd = A.argv[0];
 
     if (!strcmp(cmd, "REG")) {
-        if (A.argc != 7)
+        if (A.argc != 8)
             return;
         int id = strtol(A.argv[1], NULL, 10);
         const char *naddr = A.argv[2];
         int nport = strtol(A.argv[3], NULL, 10);
         const char *gaddr = A.argv[4];
         int gport = strtol(A.argv[5], NULL, 10);
-        int node_handle = strtol(A.argv[6], NULL, 10);
+        const char *waddr = A.argv[6];
+        int node_handle = strtol(A.argv[7], NULL, 10);
         if (id <= 0) {
             sh_error("Reg invalid node(%d)", id);
             return;
@@ -577,23 +593,24 @@ node_main(struct module *s, int session, int source, int type, const void *msg, 
             if (no->connid != -1) {
                 sh_error("Node(%d:%d) has connected", id, no->connid);
             } else {
-                _update_node(no, naddr, nport, gaddr, gport);
+                _update_node(no, naddr, nport, gaddr, gport, waddr);
                 _bound_node_entry(no, node_handle);
                 _connect_node(s, no);
             } 
         }
     } else if (!strcmp(cmd, "ADDR")) {
-        if (A.argc != 6)
+        if (A.argc != 7)
             return;
         int id = strtol(A.argv[1], NULL, 10);
         const char *naddr = A.argv[2];
         int nport = strtol(A.argv[3], NULL, 10);
         const char *gaddr = A.argv[4];
         int gport = strtol(A.argv[5], NULL, 10);
+        const char *waddr = A.argv[6];
         if (id > 0) {
             struct _node *no = _get_node(self, id);
             if (no) {
-                _update_node(no, naddr, nport, gaddr, gport);
+                _update_node(no, naddr, nport, gaddr, gport, waddr);
             }
         }
     } else if (!strcmp(cmd, "BROADCAST")) {

@@ -3,9 +3,12 @@
 -- the key prefix by "_" will no be read
 
 local iip = "127.0.0.1"
-local oip = "192.168.1.145"
+local oip = "192.168.1.140"
+--local wip = "116.228.135.50"
+local wip = oip
+
 web_addr = "192.168.1.145"
-log_dir = "/home/game/log"
+log_dir = "/home/lvxiaojun/log"
 local hb = 10
 
 node_map = {
@@ -32,7 +35,7 @@ rprank   = {ip=iip, port=8502, conn=256},
 open_node_map = {
 center = {ip=iip, port=18000, handler="cmds", clientmax=100, clientlive=6, wbuffer=0, verify=0},
 route  = {ip=oip, port=18100, handler="route", clientmax=20000, clientlive=0, wbuffer=0},
-gate   = {ip=oip, port=18200, handler="watchdog",clientmax=20000, clientlive=hb, wbuffer=128*1024, load="gate_load"},
+gate   = {ip=oip, port=18200, handler="watchdog",clientmax=20000, clientlive=hb, wbuffer=128*1024, load="gateload", wip=wip},
 }
 
 function def_node(name, id)
@@ -56,6 +59,7 @@ function def_node(name, id)
     if open then
         gate_ip = open.ip
         gate_port = open.port
+        wan_ip = open.wip
         gate_wbuffermax = open.wbuffer
         gate_clientmax  = open.clientmax
         gate_clientlive = open.clientlive
