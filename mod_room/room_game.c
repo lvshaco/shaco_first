@@ -1060,6 +1060,7 @@ static struct player *
 login(struct module *s, int source, uint32_t roomid, float luck_factor, 
         const struct tmemberdetail *detail) {
     struct room *self = MODULE_SELF;
+    struct player *m;
 
     uint32_t accid  = detail->accid;
     struct room_game *ro = sh_hash_find(&self->room_games, roomid); 
@@ -1068,7 +1069,7 @@ login(struct module *s, int source, uint32_t roomid, float luck_factor,
         notify_play_fail(s, source, accid, SERR_NOROOMLOGIN);
         return NULL; // someting wrong
     }
-    struct player *m = member_get(ro, accid);
+    m = member_get(ro, accid);
     if (m == NULL || m->online) {
         notify_exit_room(s, source, accid);
         notify_play_fail(s, source, accid, SERR_NOMEMBER);

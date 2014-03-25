@@ -27,8 +27,8 @@ login(struct module *s, int source, uint32_t accid) {
     struct hall *self = MODULE_SELF;
     struct player *pr = sh_hash_find(&self->acc2player, accid);
     if (pr) {
-        sh_trace("Player %u relogin", accid);
-        return; // relogin
+        sh_warning("Player %u relogin, free old", accid);
+        free_player(self, pr); // just free old
     }
     pr = malloc(sizeof(*pr));
     memset(pr, 0, sizeof(*pr));

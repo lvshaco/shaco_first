@@ -292,10 +292,6 @@ hall_playerdb_process_redis(struct module *s, struct UM_REDISREPLY *rep, int sz)
             _db(s, p, PDB_CHARID);
             return;
         }
-        //if (_hashplayer(p, charid)) {
-            //serr = SERR_WORLDFULL;
-            //break;
-        //}
         p->data.charid = charid;
         p->status = PS_LOADCHAR;
         _db(s, p, PDB_LOAD);
@@ -347,10 +343,6 @@ hall_playerdb_process_redis(struct module *s, struct UM_REDISREPLY *rep, int sz)
             serr = SERR_UNIQUECHARID;
             break;
         }
-        //if (_hashplayer(p, charid)) {
-            //serr = SERR_WORLDFULL;
-            //break;
-        //}
         p->data.charid = charid;
         p->status = PS_WAITCREATECHAR;
         serr = SERR_NOCHAR;

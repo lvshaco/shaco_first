@@ -26,6 +26,7 @@ void * sh_hash_remove(struct sh_hash *h, uint32_t key);
 void * sh_hash_pop(struct sh_hash *h);
 void sh_hash_foreach(struct sh_hash *h, void (*cb)(void *pointer));
 void sh_hash_foreach2(struct sh_hash *h, void (*cb)(void *pointer, void *ud), void *ud);
+void sh_hash_foreach3(struct sh_hash *h, void (*cb)(uint32_t key, void *pointer, void *ud), void *ud);
 
 // hash64
 struct sh_hash64_slot {

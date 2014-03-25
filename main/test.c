@@ -1622,6 +1622,163 @@ test_rand(int times) {
     printf("rand sum %d\n", sum);
 }
 
+//--------------------------unique----------------------
+struct unique {
+    int source;
+    int n;
+    uint8_t *p; 
+};
+
+#define id_idx(id) ((id) >>3)
+#define id_bit(id) ((id) & 7)
+
+void
+unique_init(struct unique *uni, int init, int source) {
+    int n = 1;
+    while (n < init)
+        n *= 2;
+    uni->source = source;
+    uni->n = n;
+    uni->p = malloc(sizeof(uni->p[0]) * n);
+    memset(uni->p, 0, sizeof(uni->p[0]) * n); 
+}
+
+void
+unique_fini(struct unique *uni) {
+    if (uni == NULL)
+        return;
+    free(uni->p);
+}
+
+void
+unique_use(struct unique *uni, uint32_t id) {
+    uint32_t idx = id_idx(id);
+    uint32_t bit = id_bit(id);
+    if (idx >= uni->n) {
+        int old = uni->n;
+        while (uni->n <= idx) {
+            uni->n *= 2;
+        }
+        uni->p = realloc(uni->p, sizeof(uni->p[0]) * uni->n);
+        memset(uni->p + old, 0, sizeof(uni->p[0]) * (uni->n - old));
+    }
+    uni->p[idx] |= 1<<bit;
+}
+
+int
+unique_unuse(struct unique *uni, uint32_t id) {
+    uint32_t idx = id_idx(id);
+    uint32_t bit = id_bit(id);
+    if (idx < uni->n) {
+        uni->p[idx] &= ~(1<<bit);
+        return 0;        
+    }
+    return 1;
+}
+
+bool
+unique_isuse(struct unique *uni, uint32_t id) {
+    uint32_t idx = id_idx(id);
+    uint32_t bit = id_bit(id);
+    if (idx < uni->n) {
+        return uni->p[idx] & (1<<bit);
+    }
+    return false;
+}
+
+struct uniqueol {
+    int requester_handle;
+    int cap;
+    int sz;
+    struct unique* unis;
+};
+
+struct unique *
+find_unique(struct uniqueol *self, int source) {
+    int i;
+    for (i=0; i<self->sz; ++i) {
+        if (self->unis[i].source == source) {
+            return &self->unis[i];
+        }
+    }
+    return NULL;
+}
+
+#define UNIQUE_INIT 1
+
+struct unique *
+push_unique(struct uniqueol *self, int source) {
+    if (self->sz == self->cap) {
+        self->cap *= 2;
+        if (self->cap == 0)
+            self->cap = 1;
+        self->unis = realloc(self->unis, self->cap * sizeof(self->unis[0]));
+    }
+    struct unique *uni = &self->unis[self->sz];
+    unique_init(uni, UNIQUE_INIT, source);
+    self->sz++;
+    return uni;
+}
+
+void
+rm_unique(struct uniqueol *self, int source) {
+    struct unique *uni;
+    int i;
+    for (i=0; i<self->sz; ++i) {
+        uni = &self->unis[i];
+        if (uni->source == source) {
+            for (; i<self->sz-1; ++i) {
+                self->unis[i] = self->unis[i+1];
+            }
+            unique_fini(uni);
+            self->sz--;
+            return;
+        }
+    }
+}
+
+static void
+test_unique(int times) {
+    int i,j;
+    uint64_t t1, t2;
+    struct uniqueol U;
+    memset(&U, 0, sizeof(U));
+    for (i=0; i<32; ++i) {
+        push_unique(&U, i+1);
+    }
+    t1 = _elapsed(); 
+    for (i=0; i<times; ++i) {
+        for (j=0; j<32; ++j) {
+            unique_use(&U.unis[j], i+1);
+        }
+    }
+    t2 = _elapsed(); 
+    printf("1 t3 : %d\n", (int)(t2-t1));
+
+    struct sh_hash h;
+    sh_hash_init(&h, 1000000);
+    t1 = _elapsed(); 
+    for (i=0; i<times; ++i) {
+        sh_hash_insert(&h, i+1, (void*)(intptr_t)1);
+    }
+    t2 = _elapsed(); 
+    printf("2 t3 : %d\n", (int)(t2-t1));
+ 
+    t1 = _elapsed(); 
+    for (i=0; i<times; ++i) {
+        sh_hash_find(&h, i+1);
+    }
+    t2 = _elapsed(); 
+    printf("2 t3 : %d\n", (int)(t2-t1));
+
+    t1 = _elapsed(); 
+    for (i=0; i<times; ++i) {
+        sh_hash_remove(&h, i+1);
+    }
+    t2 = _elapsed(); 
+    printf("3 t3 : %d\n", (int)(t2-t1));
+}
+
 int 
 main(int argc, char* argv[]) {
     int times = 1;
@@ -1642,7 +1799,7 @@ main(int argc, char* argv[]) {
     //test_args();
     //test_freeid();
     //test_hashid();
-    test_redis();
+    //test_redis();
     //test_freelist();
     //test_elog2();
     //test_elog3(times);
@@ -1662,7 +1819,7 @@ main(int argc, char* argv[]) {
     //test_syslog(times);
     //test_array(times);
     //test_rand(times);
-
+    test_unique(times);
     uint64_t t2 = _elapsed();
     printf("main use time %d\n", (int)(t2-t1));
     return 0;

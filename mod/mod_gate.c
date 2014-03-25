@@ -25,8 +25,9 @@ struct gate {
     int load_size;
     int load_max_interval;
     int last_load;
-    uint64_t last_load_time;
+    uint64_t last_load_time; 
     int handler;
+    bool handler_down;
     int livetime;
     bool need_verify;
 
@@ -53,8 +54,6 @@ update_load(struct module *s, bool force) {
 
         UM_DEFFIX(UM_UPDATELOAD, load);
         load->value = cur_load;
-        sh_trace("Load value %d update to %0x, force %d, diff %d, time %d", load->value, self->load_handle,
-                force, diff_load, (int)(now - self->last_load_time));
         sh_module_send(MODULE_ID, self->load_handle, MT_UM, load, sizeof(*load));
 
         self->last_load = cur_load;
@@ -78,12 +77,33 @@ free_clients(struct gate *self) {
     self->p = NULL;
 }
 
+static inline void
+send_to_client(int connid, void *data, int sz) {
+    uint8_t *tmp = malloc(sz+2);
+    sh_to_littleendian16(sz, tmp);
+    memcpy(tmp+2, data, sz);
+    sh_net_send(connid, tmp, sz+2);
+}
+
+static inline void
+notify_logout(int connid, int err) {
+    UM_DEFFIX(UM_LOGOUT, lo);
+    lo->err = err;
+    send_to_client(connid, lo, sizeof(*lo));
+}
+
 static inline struct client*
 accept_client(struct module *s, int connid) {
     struct gate *self = MODULE_SELF;
     assert(connid != -1);
+    if (self->handler_down) {
+        notify_logout(connid, SERR_GATEHANDLEEXIT);
+        sh_net_close_socket(connid, true);
+        return NULL;
+    }
     int id = freeid_alloc(&self->fi, connid);
     if (id == -1) {
+        notify_logout(connid, SERR_GATEFULL);
         sh_net_close_socket(connid, true);
         return NULL;
     }
@@ -179,16 +199,19 @@ gate_init(struct module* s) {
         if (sh_handle_publish(MODULE_NAME, PUB_SER))
             return 1;
     }
-    const char* hname = sh_getstr("gate_handler", ""); 
-    if (sh_handler(hname, SUB_LOCAL|SUB_REMOTE, &self->handler)) {
-        return 1;
+    const char* hname = sh_getstr("gate_handler", "");
+    self->handler = module_query_id(hname);
+    if (self->handler == -1) {
+        struct sh_monitor_handle h = { MODULE_ID, MODULE_ID };
+        if (sh_monitor(hname, &h, &self->handler)) {
+            return 1;
+        }
     }
     self->load_handle = -1;
     const char *lname = sh_getstr("gate_load", "");
     if (lname[0] != '\0') {
         struct sh_monitor_handle h = { MODULE_ID, -1 };
-        self->load_handle = sh_monitor_register(lname, &h);
-        if (self->load_handle == -1) {
+        if (sh_monitor(lname, &h, &self->load_handle)) {
             return 1;
         }
     }
@@ -271,14 +294,6 @@ errout:
     nm->type = NETE_SOCKERR;
     nm->error = err;
     module_net(nm->ud, nm);
-}
-
-static inline void
-send_to_client(struct client *cl, void *data, int sz) {
-    uint8_t *tmp = malloc(sz+2);
-    sh_to_littleendian16(sz, tmp);
-    memcpy(tmp+2, data, sz);
-    sh_net_send(cl->connid, tmp, sz+2);
 }
 
 void
@@ -400,18 +415,30 @@ umsg(struct module *s, int source, const void *msg, int sz) {
                 disconnect_client(s, cl, true);
                 break;
             default:
-                send_to_client(cl, lo, sizeof(*lo));
+                send_to_client(connid, lo, sizeof(*lo));
                 disconnect_client(s, cl, false);
                 break;
             }
             }
             break;
         default:
-            send_to_client(cl, ga->wrap, sz-sizeof(*ga));
+            send_to_client(connid, ga->wrap, sz-sizeof(*ga));
             break;
         }
         break;
         } 
+    }
+}
+
+static void
+disconnect_all(struct module *s) {
+    struct gate *self = MODULE_SELF;
+    int i;
+    for (i=0; i<self->cmax; ++i) {
+        struct client *c = &self->p[i];
+        if (c->status != S_FREE) {
+            disconnect_client(s, c, true);
+        }
     }
 }
 
@@ -425,6 +452,14 @@ monitor(struct module *s, int source, const void *msg, int sz) {
     case MONITOR_START:
         if (vhandle == self->load_handle) {
             update_load(s, true);
+        } else if (vhandle == self->handler) {
+            self->handler_down = false;
+        }
+        break;
+    case MONITOR_EXIT:
+        if (vhandle == self->handler) {
+            disconnect_all(s);
+            self->handler_down = true;
         }
         break;
     }

@@ -40,8 +40,7 @@ route_init(struct module *s) {
     }
     struct sh_monitor_handle h = { -1, MODULE_ID };
     const char *loadbalance = sh_getstr("route_loadbalance", "");
-    self->loadbalance_handle = sh_monitor_register(loadbalance, &h);
-    if (self->loadbalance_handle == -1) {
+    if (sh_monitor(loadbalance, &h, &self->loadbalance_handle)) {
         return 1;
     }
     return 0;

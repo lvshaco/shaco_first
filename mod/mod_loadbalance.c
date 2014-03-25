@@ -42,13 +42,11 @@ loadbalance_init(struct module *s) {
         return 1;
     }
     const char *publisher = sh_getstr("loadbalance_publisher", ""); 
-    self->publisher_vhandle = sh_monitor_register(publisher, &h);
-    if (self->publisher_vhandle == -1) {
+    if (sh_monitor(publisher, &h, &self->publisher_vhandle)) {
         return 1;
     }
     const char *subscriber = sh_getstr("loadbalance_subscriber", "");
-    self->subscriber_vhandle = sh_monitor_register(subscriber, &h);
-    if(self->subscriber_vhandle == -1) {
+    if (sh_monitor(subscriber, &h, &self->subscriber_vhandle)) {
         return 1;
     }
     if (self->publisher_vhandle == self->subscriber_vhandle) {

@@ -4,68 +4,10 @@
 
 #define UNIQUE_INIT 1
 
-struct unique {
-    int n;
-    uint8_t *p; 
-};
-
 struct uniqueol {
     int requester_handle;
-    struct unique uni;
+    struct sh_hash uni;
 };
-
-static void
-unique_init(struct unique *uni, int init) {
-    int n = 1;
-    while (n < init)
-        n *= 2;
-    uni->n = n;
-    uni->p = malloc(sizeof(uni->p[0]) * n);
-    memset(uni->p, 0, sizeof(uni->p[0]) * n);
-}
-
-static void
-unique_fini(struct unique *uni) {
-    if (uni == NULL)
-        return;
-    free(uni->p);
-}
-
-static void
-unique_use(struct unique *uni, uint32_t id) {
-    uint32_t idx = id/8;
-    uint32_t bit = id%8;
-    if (idx >= uni->n) {
-        int old = uni->n;
-        while (uni->n <= idx) {
-            uni->n *= 2;
-        }
-        uni->p = realloc(uni->p, sizeof(uni->p[0]) * uni->n);
-        memset(uni->p + old, 0, sizeof(uni->p[0]) * (uni->n - old));
-    }
-    uni->p[idx] |= 1<<bit;
-}
-
-static inline int
-unique_unuse(struct unique *uni, uint32_t id) {
-    uint32_t idx = id/8;
-    uint32_t bit = id%8;
-    if (idx < uni->n) {
-        uni->p[idx] &= ~(1<<bit);
-        return 0;        
-    }
-    return 1;
-}
-
-static inline bool
-unique_isuse(struct unique *uni, uint32_t id) {
-    uint32_t idx = id/8;
-    uint32_t bit = id%8;
-    if (idx < uni->n) {
-        return uni->p[idx] & (1<<bit);
-    }
-    return false;
-}
 
 struct uniqueol *
 uniqueol_create() {
@@ -78,7 +20,8 @@ void
 uniqueol_free(struct uniqueol *self) {
     if (self == NULL)
         return;
-    unique_fini(&self->uni);
+    
+    sh_hash_fini(&self->uni);
     free(self);
 }
 
@@ -89,11 +32,12 @@ uniqueol_init(struct module *s) {
     if (sh_handle_publish(MODULE_NAME, PUB_SER)) {
         return 1;
     }
-    if (sh_handler(sh_getstr("uniqueol_requester", ""), 
-                SUB_REMOTE, &self->requester_handle)) {
+    struct sh_monitor_handle h = { -1, MODULE_ID };
+    const char *requester = sh_getstr("uniqueol_requester", "");
+    if (sh_monitor(requester, &h, &self->requester_handle)) {
         return 1;
     }
-    unique_init(&self->uni, UNIQUE_INIT);
+    sh_hash_init(&self->uni, UNIQUE_INIT);
     return 0;
 }
 
@@ -104,21 +48,52 @@ process_unique(struct module *s, int source, struct UM_BASE *base) {
     switch (base->msgid) {
     case IDUM_UNIQUEUSE: {
         UM_CAST(UM_UNIQUEUSE, use, base);
+        int status;
+        if (!sh_hash_insert(&self->uni, use->id, (void*)(intptr_t)source)) {
+            status = UNIQUE_USE_OK;
+        } else {
+            status = UNIQUE_HAS_USED;
+        }
         UM_DEFFIX(UM_UNIQUESTATUS, st);
         st->id = use->id;
-        if (!unique_isuse(&self->uni, use->id)) {
-            unique_use(&self->uni, use->id);
-            st->status = UNIQUE_USE_OK;
-        } else {
-            st->status = UNIQUE_HAS_USED;
-        }
+        st->status = status;
         sh_module_send(MODULE_ID, source, MT_UM, st, sizeof(*st));
         }
         break;
     case IDUM_UNIQUEUNUSE: {
         UM_CAST(UM_UNIQUEUNUSE, unuse, base);
-        unique_unuse(&self->uni, unuse->id);
+        sh_hash_remove(&self->uni, unuse->id);
         } 
+        break;
+    }
+}
+
+struct exitud {
+    struct uniqueol *self;
+    int source;
+};
+
+static void
+exitcb(uint32_t key, void *pointer, void *ud) {
+    struct exitud *ed = ud;
+    struct uniqueol *self = ed->self;
+    if ((int)(intptr_t)pointer == ed->source) {
+        sh_hash_remove(&self->uni, key);
+    }
+}
+
+static void
+monitor(struct module *s, int source, const void *msg, int sz) {
+    struct uniqueol *self = MODULE_SELF;
+    assert(sz >= 5);
+    int type = sh_monitor_type(msg);
+    int vhandle = sh_monitor_vhandle(msg);
+    switch (type) {
+    case MONITOR_EXIT:
+        if (vhandle == self->requester_handle) {
+            struct exitud ud = { self, source };
+            sh_hash_foreach3(&self->uni, exitcb, &ud);
+        }
         break;
     }
 }
@@ -132,7 +107,7 @@ uniqueol_main(struct module *s, int session, int source, int type, const void *m
         }
         break;
     case MT_MONITOR:
-        // todo
+        monitor(s, source, msg, sz);
         break;
     case MT_CMD:
         cmdctl(s, source, msg, sz, NULL);

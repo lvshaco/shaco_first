@@ -11,6 +11,7 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.py *.h *.c" {
  config_echo.lua
  config_gamelog.lua
  config_gate.lua
+ config_gate2.lua
  config_gateload.lua
  config_hall.lua
  config_match.lua
@@ -18,11 +19,9 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.py *.h *.c" {
  config_robotcli.lua
  config_room.lua
  config_route.lua
- config_rpacc.lua
- config_rprank.lua
- config_rpuser.lua
  config_uniqueol.lua
  config_watchdog.lua
+ config_watchdog2.lua
  libshaco=libshaco{
   dlmodule.c
   sh_array.c
@@ -169,9 +168,9 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.py *.h *.c" {
  }
  mod_robot=mod_robot{
   robot.h
+  robot_cmdctl.h
   robot_tplt.h
   robot_tplt.c
-  robot_cmdctl.h
  }
  mod_match=mod_match{
   match.h
@@ -211,6 +210,7 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.py *.h *.c" {
   elog_appender_rollfile.c
  }
  tool=tool{
+  commandc.lua
   commandd.lua
   pathconfig.lua
   concat.py

@@ -21,6 +21,7 @@
 #define SERR_ACCVERIFY      22
 #define SERR_ACCCREATE      23
 #define SERR_ACCEXIST       24
+#define SERR_GATEFULL       25
 
 #define SERR_NOCHAR         30
 #define SERR_NAMEEXIST      31
@@ -38,6 +39,7 @@
 #define SERR_ROOMIDCONFLICT 45
 #define SERR_PLAYCANCEL     46
 
+#define SERR_ROOMACCLOGINED 49
 #define SERR_NOROOMJOIN     50
 #define SERR_NOROOMLOGIN    51
 #define SERR_NOMEMBER       52
@@ -52,6 +54,12 @@
 #define SERR_ROOMFULL       61
 #define SERR_ROOMUNJOINABLE 62
 #define SERR_ROOMUNEXIST    63
+
+#define SERR_GATEEXIT       100
+#define SERR_HALLEXIT       101
+#define SERR_AUTHEXIT       102
+#define SERR_ROOMEXIT       103
+#define SERR_GATEHANDLEEXIT 104 // if in gate node, then = WATCHDOG EXIT
 
 #pragma pack(1)
 

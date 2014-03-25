@@ -112,8 +112,9 @@ redis_to_int64(struct redis_replyitem* item) {
     char tmp[32];
     int l = min(sizeof(tmp)-1, item->value.len);
     memcpy(tmp, item->value.p, l);
-    tmp[l] = '\0';
-    return strtold(tmp, NULL);
+    tmp[l] = '\0'; 
+    //return strtoll(tmp, NULL);
+    return atoll(tmp);
 }
 
 static inline bool

@@ -18,12 +18,15 @@
 #define CONN_HASH(gate_source, connid) \
     (((uint64_t)(gate_source)) << 32 | (connid))
 
+#define UID(ur) ((ur)->accid)
+
 struct user {
     int gate_source;
     int connid;
     uint32_t wsession;
     uint32_t accid;
     int status;
+    int auth_handle;
     int hall_handle;
     int room_handle;
 
@@ -31,6 +34,7 @@ struct user {
 };
  
 struct watchdog {
+    int gate_handle;
     int auth_handle;
     int hall_handle;
     int room_handle; 
@@ -68,10 +72,10 @@ watchdog_init(struct module *s) {
     }
     struct sh_monitor_handle h = {MODULE_ID, MODULE_ID};
     if (sh_monitor("uniqueol", &h, &self->uniqueol_handle) ||
-        sh_handler("gate", SUB_REMOTE, &self->auth_handle) ||
-        sh_handler("auth", SUB_REMOTE, &self->auth_handle) ||
-        sh_handler("hall", SUB_REMOTE, &self->hall_handle) ||
-        sh_handler("room", SUB_REMOTE, &self->room_handle)) {
+        sh_monitor("gate", &h, &self->gate_handle) ||
+        sh_monitor("auth", &h, &self->auth_handle) ||
+        sh_monitor("hall", &h, &self->hall_handle) ||
+        sh_monitor("room", &h, &self->room_handle)) {
         return 1;
     }
     sh_hash64_init(&self->conn2user, 1);
@@ -86,15 +90,7 @@ alloc_sessionid(struct watchdog *self) {
         id = ++self->wsession_alloctor;
     return id;
 }
-/*
-static inline void
-response_loginfail(struct module *s, int gate_source, int connid, int err) {
-    UM_DEFWRAP(UM_GATE, g, UM_LOGINACCOUNTFAIL, fail);
-    g->connid = connid;
-    fail->err = err;
-    sh_module_send(MODULE_ID, gate_source, MT_UM, g, sizeof(*g) + sizeof(*fail));
-}
-*/
+
 static inline struct user *
 alloc_user(struct watchdog *self, int gate_source, int connid) {
     struct user *ur = malloc(sizeof(*ur));
@@ -103,8 +99,10 @@ alloc_user(struct watchdog *self, int gate_source, int connid) {
     ur->connid = connid;
     ur->accid = 0;
     ur->status = S_ALLOC;
+    ur->auth_handle = -1;
     ur->hall_handle = -1;
     ur->room_handle = -1;
+    ur->account[0] = '\0';
     return ur;
 }
 
@@ -118,7 +116,7 @@ disconnect_client(struct module *s, int gate_source, int connid, int err) {
 }
 
 static void
-logout(struct module *s, struct user *ur, int8_t err, int dishonn) {
+logout(struct module *s, struct user *ur, int8_t err, int disconn) {
     struct watchdog *self = MODULE_SELF;
 
     uint64_t conn = CONN_HASH(ur->gate_source, ur->connid);
@@ -147,7 +145,7 @@ logout(struct module *s, struct user *ur, int8_t err, int dishonn) {
         int sz = sizeof(*ro) + sizeof(*lo);
         sh_module_send(MODULE_ID, ur->room_handle, MT_UM, ro, sz);
     } 
-    if (dishonn == DISCONNECT) {
+    if (disconn == DISCONNECT) {
         disconnect_client(s, ur->gate_source, ur->connid, err);
     } 
     free(ur);
@@ -168,8 +166,8 @@ process_gate(struct module *s, int source, int connid, const void *msg, int sz) 
             disconnect_client(s, source, connid, SERR_RELOGIN);
             return;
         }
-        int auth = sh_module_nextload(self->auth_handle);
-        if (auth == -1) {
+        int auth_handle = sh_module_nextload(self->auth_handle);
+        if (auth_handle == -1) {
             disconnect_client(s, source, connid, SERR_NOAUTHS);
             return;
         }
@@ -177,12 +175,12 @@ process_gate(struct module *s, int source, int connid, const void *msg, int sz) 
         memcpy(ur->account, la->account, sizeof(ur->account));
         assert(!sh_hash64_insert(&self->conn2user, conn, ur));
         ur->status = S_AUTH_VERIFY;
-
+        ur->auth_handle = auth_handle;
         UM_DEFWRAP(UM_AUTH, w, UM_LOGINACCOUNT, wla);
         w->conn = conn;
         w->wsession = ur->wsession;
         *wla = *la;
-        sh_module_send(MODULE_ID, auth, MT_UM, w, sizeof(*w) + sizeof(*wla));
+        sh_module_send(MODULE_ID, auth_handle, MT_UM, w, sizeof(*w) + sizeof(*wla));
         return;
     } 
     struct user *ur = sh_hash64_find(&self->conn2user, conn);
@@ -227,6 +225,7 @@ auth_ok(struct module *s, struct user *ur, uint32_t accid) {
         logout(s, ur, SERR_ACCINSERT, DISCONNECT);
         return;
     }
+    ur->auth_handle = -1;
     ur->accid = accid;
     ur->status = S_UNIQUE_VERIFY;
 
@@ -271,6 +270,9 @@ process_auth(struct module *s, int source, uint64_t conn, uint32_t wsession, con
         return;
     }
     if (ur->wsession != wsession) {
+        return;
+    }
+    if (ur->status != S_AUTH_VERIFY) {
         return;
     }
     UM_CAST(UM_BASE, base, msg);
@@ -339,16 +341,35 @@ login_room(struct module *s, struct UM_LOGINROOM *lr, int sz) {
     struct watchdog *self = MODULE_SELF;
     uint32_t accid  = lr->detail.accid;
     struct user *ur = sh_hash_find(&self->acc2user, accid);
-    if (ur == NULL) {
-        return;
+    if (ur &&
+        ur->status == S_HALL) {
+        if (sh_module_has(self->room_handle, lr->room_handle)) {
+            ur->status = S_ROOM;
+            ur->room_handle = lr->room_handle;
+            sh_module_send(MODULE_ID, ur->room_handle, MT_UM, lr, sz);
+        } else {
+            // todo notify hall exit room status (now match module do this)
+            //sh_module_send(MODULE_ID, ur->hall_handle, MT_UM, msg, sz);
+        }
     }
-    if (sh_module_has(self->room_handle, lr->room_handle)) {
-        ur->status = S_ROOM;
-        ur->room_handle = lr->room_handle;
-        sh_module_send(MODULE_ID, ur->room_handle, MT_UM, lr, sz);
-    } else {
-        // todo notify hall exit room status (now match module do this)
-        //sh_module_send(MODULE_ID, ur->hall_handle, MT_UM, msg, sz);
+}
+
+static inline void
+notify_exit_room(struct module *s, struct user *ur, int err) {
+    UM_DEFWRAP(UM_GATE, g, UM_GAMEEXIT, ge);
+    g->connid = ur->connid;
+    ge->err = err;
+    sh_module_send(MODULE_ID, ur->gate_source, MT_UM, g, sizeof(*g) + sizeof(*ge));
+}
+
+static inline void
+exit_room_directly(struct module *s, struct user *ur) {
+    ur->status = S_HALL;
+    ur->room_handle = -1;
+    if (ur->hall_handle != -1) {
+        UM_DEFFIX(UM_EXITROOM, exit);
+        exit->uid = UID(ur);
+        sh_module_send(MODULE_ID, ur->hall_handle, MT_UM, exit, sizeof(*exit));
     }
 }
 
@@ -356,14 +377,9 @@ static inline void
 exit_room(struct module *s, uint32_t uid) {
     struct watchdog *self = MODULE_SELF;
     struct user *ur = sh_hash_find(&self->acc2user, uid);
-    if (ur) {
-        ur->status = S_HALL;
-        ur->room_handle = -1;
-        if (ur->hall_handle != -1) {
-            UM_DEFFIX(UM_EXITROOM, exit);
-            exit->uid = uid;
-            sh_module_send(MODULE_ID, ur->hall_handle, MT_UM, exit, sizeof(*exit));
-        }
+    if (ur && 
+        ur->status == S_ROOM) { 
+        exit_room_directly(s, ur);
     }
 }
 
@@ -389,6 +405,143 @@ process_client(struct module *s, uint32_t accid, const void *msg, int sz) {
     sh_module_send(MODULE_ID, ur->gate_source, MT_UM, g, sizeof(*g) + sz);
 }
 
+static void
+umsg(struct module *s, int source, const void *msg, int sz) {
+    UM_CAST(UM_BASE, base, msg); 
+    switch (base->msgid) {
+    case IDUM_GATE: {
+        UM_CAST(UM_GATE, g, msg);
+        process_gate(s, source, g->connid, g->wrap, sz-sizeof(*g));
+        break;
+        }
+    case IDUM_AUTH: {
+        UM_CAST(UM_AUTH, w, msg);
+        process_auth(s, source, w->conn, w->wsession, w->wrap);
+        break;
+        }
+    case IDUM_UNIQUESTATUS: {
+        UM_CAST(UM_UNIQUESTATUS, u, msg);
+        process_unique(s, u->id, u->status);
+        break;
+        }
+    case IDUM_EXITHALL: {
+        UM_CAST(UM_EXITHALL, exit, msg);
+        exit_hall(s, exit->uid, exit->err);
+        break;
+        }
+    case IDUM_HALL: {
+        UM_CAST(UM_HALL, ha, msg);
+        process_hall(s, ha->uid, msg, sz);
+        break;
+        }
+    case IDUM_LOGINROOM: {
+        UM_CAST(UM_LOGINROOM, lr, msg);
+        login_room(s, lr, sz);
+        break;
+        }
+    case IDUM_EXITROOM: {
+        UM_CAST(UM_EXITROOM, exit, msg);
+        exit_room(s, exit->uid);
+        break;
+        }
+    case IDUM_ROOM: {
+        UM_CAST(UM_ROOM, ro, msg);
+        process_room(s, ro->uid, msg, sz);
+        break;
+        }
+    case IDUM_CLIENT: {
+        UM_CAST(UM_CLIENT, cl, msg);
+        process_client(s, cl->uid, cl->wrap, sz-sizeof(*cl));
+        break;
+        }
+    }
+}
+
+// monitor exit
+struct exitud {
+    struct module *s;
+    int source;
+};
+
+static void 
+gate_exitcb(void *pointer, void *ud) {
+    struct exitud *eu = ud;
+    struct module *s = eu->s;
+    struct user *ur = pointer;
+    if (ur->gate_source == eu->source) {
+        logout(s, ur, SERR_GATEEXIT, NODISCONNECT);
+    }
+}
+
+static void
+hall_exitcb(void *pointer, void *ud) {
+    struct exitud *eu = ud;
+    struct module *s = eu->s;
+    struct user *ur = pointer;
+    if (ur->hall_handle == eu->source) {
+        ur->hall_handle = -1; // clear first
+        logout(s, ur, SERR_HALLEXIT, DISCONNECT);
+    }
+}
+
+static void
+room_exitcb(void *pointer, void *ud) {
+    struct exitud *eu = ud;
+    struct module *s = eu->s;
+    struct user *ur = pointer;
+    if (ur->status == S_ROOM &&
+        ur->room_handle == eu->source) {
+        notify_exit_room(s, ur, SERR_ROOMEXIT);
+        exit_room_directly(s, ur);
+    }
+}
+
+static void
+auth_exitcb(void *pointer, void *ud) {
+    struct exitud *eu = ud;
+    struct module *s = eu->s;
+    struct user *ur = pointer;
+    if (ur->status == S_AUTH_VERIFY &&
+        ur->auth_handle == eu->source) {
+        auth_fail(s, ur, SERR_AUTHEXIT);
+    }
+}
+
+static void
+handle_exit(struct module *s, int source, void (*exitcb)(void*, void*)) {
+    struct watchdog *self = MODULE_SELF;
+    struct exitud ud = {s, source};
+    sh_hash64_foreach2(&self->conn2user, exitcb, &ud);
+}
+
+static void
+monitor(struct module *s, int source, const void *msg, int sz) {
+    struct watchdog *self = MODULE_SELF;
+    int type = sh_monitor_type(msg);
+    int vhandle = sh_monitor_vhandle(msg);
+    switch (type) {
+    case MONITOR_START:
+        // todo
+        if (vhandle == self->uniqueol_handle) {
+            self->is_uniqueol_ready = true;
+        }
+        break;
+    case MONITOR_EXIT:
+        if (vhandle == self->uniqueol_handle) {
+            self->is_uniqueol_ready = false;
+        } else if (vhandle == self->gate_handle) {
+            handle_exit(s, source, gate_exitcb);
+        } else if (vhandle == self->hall_handle) {
+            handle_exit(s, source, hall_exitcb);
+        } else if (vhandle == self->room_handle) {
+            handle_exit(s, source, room_exitcb);
+        } else if (vhandle == self->auth_handle) {
+            handle_exit(s, source, auth_exitcb);
+        }
+        break;
+    }
+}
+
 static int
 command(struct module *s, int source, int connid, const char *msg, int len, struct memrw *rw) {
     struct watchdog *self = MODULE_SELF;
@@ -412,75 +565,13 @@ command(struct module *s, int source, int connid, const char *msg, int len, stru
 
 void
 watchdog_main(struct module *s, int session, int source, int type, const void *msg, int sz) {
-    struct watchdog *self = MODULE_SELF;
     switch (type) {
-    case MT_UM: {
-        UM_CAST(UM_BASE, base, msg); 
-        switch (base->msgid) {
-        case IDUM_GATE: {
-            UM_CAST(UM_GATE, g, msg);
-            process_gate(s, source, g->connid, g->wrap, sz-sizeof(*g));
-            break;
-            }
-        case IDUM_AUTH: {
-            UM_CAST(UM_AUTH, w, msg);
-            process_auth(s, source, w->conn, w->wsession, w->wrap);
-            break;
-            }
-        case IDUM_UNIQUESTATUS: {
-            UM_CAST(UM_UNIQUESTATUS, u, msg);
-            process_unique(s, u->id, u->status);
-            break;
-            }
-        case IDUM_EXITHALL: {
-            UM_CAST(UM_EXITHALL, exit, msg);
-            exit_hall(s, exit->uid, exit->err);
-            break;
-            }
-        case IDUM_HALL: {
-            UM_CAST(UM_HALL, ha, msg);
-            process_hall(s, ha->uid, msg, sz);
-            break;
-            }
-        case IDUM_LOGINROOM: {
-            UM_CAST(UM_LOGINROOM, lr, msg);
-            login_room(s, lr, sz);
-            break;
-            }
-        case IDUM_EXITROOM: {
-            UM_CAST(UM_EXITROOM, exit, msg);
-            exit_room(s, exit->uid);
-            break;
-            }
-        case IDUM_ROOM: {
-            UM_CAST(UM_ROOM, ro, msg);
-            process_room(s, ro->uid, msg, sz);
-            break;
-            }
-        case IDUM_CLIENT: {
-            UM_CAST(UM_CLIENT, cl, msg);
-            process_client(s, cl->uid, cl->wrap, sz-sizeof(*cl));
-            break;
-            }
-        }
+    case MT_UM:
+        umsg(s, source, msg, sz);
         break;
-        }
-    case MT_MONITOR: {
-        int type = ((uint8_t*)msg)[0];
-        int vhandle = sh_from_littleendian32(msg+1);
-        if (vhandle == self->uniqueol_handle) {
-            // todo
-            switch (type) {
-            case MONITOR_START:
-                self->is_uniqueol_ready = true;
-                break;
-            case MONITOR_EXIT:
-                self->is_uniqueol_ready = false;
-                break;
-            }
-        }
+    case MT_MONITOR:
+        monitor(s, source, msg, sz);
         break;
-        }
     case MT_CMD:
         cmdctl(s, source, msg, sz, command);
         break;

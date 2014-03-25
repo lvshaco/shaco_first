@@ -54,7 +54,7 @@ auth_init(struct module *s) {
         return 1;
     }
     if (sh_handler("watchdog", SUB_REMOTE, &self->watchdog_handle) ||
-        sh_handler("rpacc", SUB_REMOTE, &self->rpacc_handle)) {
+        sh_handler("rpacc", SUB_LOCAL|SUB_REMOTE, &self->rpacc_handle)) {
         return 1;
     }
     redis_initreply(&self->reply, 512, 0);

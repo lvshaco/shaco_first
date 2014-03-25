@@ -4,10 +4,10 @@
 
 local iip = "127.0.0.1"
 local oip = "192.168.1.140"
-local wip = "116.228.135.50"
-
+--local wip = "116.228.135.50"
+local wip=oip
 web_addr = "192.168.1.145"
-log_dir = "/home/game/log"
+log_dir = "/home/lvxiaojun/log"
 local hb = 30
 
 node_map = {
@@ -19,10 +19,12 @@ match    = {ip=iip, port=8003, conn=256},
 robot    = {ip=iip, port=8004, conn=256},
 --
 route    = {ip=iip, port=8100, conn=256},
-watchdog = {ip=iip, port=8130, conn=256},
+watchdog1 = {ip=iip, port=8130, conn=256},
+watchdog2 = {ip=iip, port=8131, conn=256},
 auth     = {ip=iip, port=8160, conn=256},
 --
 gate     = {ip=iip, port=8200, conn=256},
+gate2     = {ip=iip, port=8201, conn=256},
 hall     = {ip=iip, port=8300, conn=256},
 room     = {ip=iip, port=8400, conn=256},
 --
@@ -33,8 +35,9 @@ rprank   = {ip=iip, port=8502, conn=256},
 
 open_node_map = {
 center = {ip=iip, port=18000, handler="cmds", clientmax=100, clientlive=6, wbuffer=0, verify=0},
-route  = {ip=oip, port=18100, handler="route", clientmax=20000, clientlive=0, wbuffer=0},
-gate   = {ip=oip, port=18200, handler="watchdog",clientmax=20000, clientlive=hb, wbuffer=128*1024, load="gateload", wip=wip},
+route  = {ip=oip, port=18100, handler="route", clientmax=10000, clientlive=0, wbuffer=0},
+gate   = {ip=oip, port=18200, handler="watchdog1",clientmax=10000, clientlive=hb, wbuffer=128*1024, load="gateload", wip=wip},
+gate2   = {ip=oip, port=18201, handler="watchdog2",clientmax=10000, clientlive=hb, wbuffer=128*1024, load="gateload", wip=wip},
 }
 
 function def_node(name, id)
@@ -43,7 +46,7 @@ function def_node(name, id)
     node_ip   = node.ip
     node_port = node.port
 
-    sh_loglevel = "INFO"
+    sh_loglevel = "TRACE"
     sh_connmax = node.conn
     sh_module = "log,node"
     if name == "center" then

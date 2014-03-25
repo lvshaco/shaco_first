@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SERVERS="gateload uniqueol match robot watchdog auth hall room gate route"
+SERVERS="gateload uniqueol match robot watchdog watchdog2 auth hall room gate gate2 route"
 
 error() {
     echo -ne "\033[40;31;1m"
@@ -12,15 +12,20 @@ info() {
     echo "$@"
     echo -ne "\033[0m"
 }
+count() {
+    NSERVER=1
+    for s in $SERVERS;do
+        NSERVER=$(($NSERVER+1))
+    done
+}
 ls() {
-    local total=11
     ps -ef |grep shaco |grep config
     local n=`ps -ef |grep shaco |grep config |wc -l`
-    if [ ${n} -eq $total ] 
+    if [ ${n} -eq $NSERVER ] 
     then
         info "node count [${n}] OK"
     else
-        error "node count [${n} < ${total}] FAIL"
+        error "node count [${n} < ${NSERVER}] FAIL"
     fi
     ps -ef |grep commandd |grep lua
 }
@@ -136,6 +141,7 @@ do
     esac
 done
 
+count
 case "$CMD" in
 restartall)
     stopall

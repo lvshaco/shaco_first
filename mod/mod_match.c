@@ -208,27 +208,6 @@ notify_waiting(struct module *s, struct applyer *ar, int tick) {
     sh_module_send(MODULE_ID, ar->hall_source, MT_UM, ma, sizeof(*ma)+sizeof(*pw));
 }
 
-/*
-static void
-notify_status(struct module *s, struct applyer *ar) {
-    switch (ar->status) {
-    case S_WAITING:
-        notify_waiting(s, ar);
-        break;
-    case S_CREATING:
-        // do noting
-        break;
-    case S_GAMING: {
-        struct room *ro = sh_hash_find(&self->rooms, ar->roomid);
-        if (ro) {
-            notify_enter_room(s, ar, ro);
-        }
-        break;
-        }
-    }
-}
-*/
-
 static inline struct waiter *
 applyer_to_waiter(struct match *self, struct applyer *ar) {
     assert(ar->type == ROOM_TYPE_DASHI);

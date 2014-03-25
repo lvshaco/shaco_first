@@ -99,6 +99,7 @@
 #define IDUM_GAMEOVER       IDUM_CBEGIN+806
 #define IDUM_GAMEMEMBER     IDUM_CBEGIN+807
 #define IDUM_ITEMUNEFFECT   IDUM_CBEGIN+808
+#define IDUM_GAMEEXIT       IDUM_CBEGIN+809
 
 // heartbeat
 #define IDUM_HEARTBEAT      IDUM_CBEGIN+900
@@ -394,6 +395,11 @@ static inline uint16_t
 UM_GAMEOVER_size(struct UM_GAMEOVER* um) {
     return sizeof(*um) + sizeof(um->stats[0])*um->nmember;
 }
+
+struct UM_GAMEEXIT {
+    _UM_HEADER;
+    int8_t err;
+};
 
 #pragma pack()
 
