@@ -502,6 +502,17 @@ handle(struct module *s, struct client *c, void *msg, int sz) {
         client_play(c, 0);
         break;
         }
+    case IDUM_GAMEEXIT: {
+        UM_CAST(UM_GAMEEXIT, ge, base);
+        client_over(c);
+        self->ngame_over++;
+        if (self->ngame_over == self->max) {
+            sh_info("Total(%d) game over ok", self->ngame_over);
+        }
+        sh_trace("***************GAME EXIT %d***************", ge->err);
+        client_play(c, 0);
+        break;
+        }
     }
 }
 
