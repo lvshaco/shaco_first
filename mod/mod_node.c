@@ -611,6 +611,10 @@ node_main(struct module *s, int session, int source, int type, const void *msg, 
             struct _node *no = _get_node(self, id);
             if (no) {
                 _update_node(no, naddr, nport, gaddr, gport, waddr);
+                // note:
+                // node need connect each other, for heartbeat;
+                // so now just simple connect all node
+                _connect_node(s, no); 
             }
         }
     } else if (!strcmp(cmd, "BROADCAST")) {
