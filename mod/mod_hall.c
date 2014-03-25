@@ -38,9 +38,9 @@ hall_init(struct module *s) {
     struct sh_monitor_handle h = { MODULE_ID, MODULE_ID };
     if (sh_monitor("watchdog", &h, &self->watchdog_handle) ||
         sh_monitor("match", &h, &self->match_handle) ||
-        sh_handler("rpuser", SUB_LOCAL|SUB_REMOTE, &self->rpuser_handle) ||
-        sh_handler("rpuseruni", SUB_LOCAL|SUB_REMOTE, &self->rpuseruni_handle) ||
-        sh_handler("rprank", SUB_LOCAL|SUB_REMOTE, &self->rprank_handle)) {
+        sh_handler("rpuser", SUB_LOCAL, &self->rpuser_handle) ||
+        sh_handler("rpuseruni", SUB_LOCAL, &self->rpuseruni_handle) ||
+        sh_handler("rprank", SUB_LOCAL, &self->rprank_handle)) {
         return 1;
     }
     self->randseed = sh_timer_now()/1000;
