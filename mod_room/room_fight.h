@@ -39,11 +39,11 @@ role_attri_build(const struct groundattri* ga,
     cattri->movespeed = ga->cellfallspeed*2/3.0 * factor;
     cattri->movespeed += cattri->movespeed * cattri->movespeedadd;
 
-    cattri->charfallspeed = ga->cellfallspeed * ((quick>5) ? factor : 1);
+    cattri->charfallspeed = ga->cellfallspeed * 1.1 * ((quick>5) ? factor : 1);
     cattri->charfallspeed += cattri->charfallspeed * cattri->charfallspeedadd;
 
     cattri->jmpspeed = 2 * cattri->movespeed * factor;
-    cattri->jmpacctime = 0.18 * ga->shaketime * (2-factor);
+    cattri->jmpacctime = 0.5 * ga->shaketime * (2-factor);
 
     cattri->rebirthtime = 2500 * (2-bodyfactor);
     cattri->rebirthtime += cattri->rebirthtime * cattri->rebirthtimeadd;
