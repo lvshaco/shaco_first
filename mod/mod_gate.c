@@ -45,7 +45,7 @@ update_load(struct module *s, bool force) {
         return;
     }
     uint64_t now = sh_timer_now();
-    int cur_load = self->used;
+    int cur_load = self->handler_down ? INT_MAX : self->used;
     int diff_load = abs(cur_load - self->last_load);
     if (force ||
         (self->load_size <= diff_load) ||
@@ -454,12 +454,14 @@ monitor(struct module *s, int source, const void *msg, int sz) {
             update_load(s, true);
         } else if (vhandle == self->handler) {
             self->handler_down = false;
+            update_load(s, false);
         }
         break;
     case MONITOR_EXIT:
         if (vhandle == self->handler) {
             disconnect_all(s);
             self->handler_down = true;
+            update_load(s, false); // set max load for down
         }
         break;
     }

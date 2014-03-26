@@ -118,15 +118,53 @@ umsg(struct module *s, int source, const void *msg, int sz) {
     }
 }
 
+struct exitud {
+    struct module *s;
+    int source;
+};
+
+static void
+watchdog_exitcb(void *pointer, void *ud) {
+    struct exitud *eu = ud;
+    struct player *pr = pointer;
+    if (pr->watchdog_source == eu->source) {
+        UM_DEFFIX(UM_LOGOUT, lo);
+        lo->err = SERR_WATCHDOGEXIT;
+        hall_player_main(eu->s, eu->source, pr, lo, sizeof(*lo));
+    }
+}
+
+static void
+match_exitcb(void *pointer, void *ud) {
+    struct exitud *eu = ud;
+    struct player *pr = pointer;
+    if (pr->status == PS_WAITING) {
+        UM_DEFFIX(UM_PLAYFAIL, pf);
+        pf->err = SERR_MATCHEXIT;
+        hall_play_main(eu->s, pr, pf, sizeof(*pf));
+    }
+}
+
 static void
 monitor(struct module *s, int source, const void *msg, int sz) {
-    //struct hall *self = MODULE_SELF;
+    struct hall *self = MODULE_SELF;
     int type = sh_monitor_type(msg);
-    //int vhandle = sh_monitor_vhandle(msg);
+    int vhandle = sh_monitor_vhandle(msg);
     switch (type) {
     case MONITOR_START:
+        if (vhandle == self->match_handle) {
+            self->match_down = false;
+        }
         break;
     case MONITOR_EXIT:
+        if (vhandle == self->watchdog_handle) {
+            struct exitud ud = { s, source };
+            sh_hash_foreach2(&self->acc2player, watchdog_exitcb, &ud);
+        } else if (vhandle == self->match_handle) {
+            struct exitud ud = { s, source };
+            sh_hash_foreach2(&self->acc2player, match_exitcb, &ud);
+            self->match_down = true;
+        }
         break;
     }
 }

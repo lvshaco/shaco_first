@@ -1061,8 +1061,13 @@ login(struct module *s, int source, uint32_t roomid, float luck_factor,
         const struct tmemberdetail *detail) {
     struct room *self = MODULE_SELF;
     struct player *m;
-
     uint32_t accid  = detail->accid;
+
+    m = sh_hash_find(&self->players, accid);
+    if (m) {
+        sh_warning("Room member %u relogin, free old", accid);
+        member_free(self, m); // just free old
+    }
     struct room_game *ro = sh_hash_find(&self->room_games, roomid); 
     if (ro == NULL) {
         notify_exit_room(s, source, accid);

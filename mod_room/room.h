@@ -24,7 +24,9 @@
 struct tplt;
 
 struct room {
+    int watchdog_handle;
     int match_handle;
+    int robot_handle;
     struct tplt *T;
     struct sh_hash *MH; 
     int tick;

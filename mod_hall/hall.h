@@ -16,6 +16,7 @@ struct tplt;
 
 struct hall {
     struct tplt *T;
+    bool match_down;
     int match_handle;
     int watchdog_handle;
     int rpuser_handle;

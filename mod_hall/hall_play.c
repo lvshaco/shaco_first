@@ -32,9 +32,21 @@ build_detail(struct player *pr, struct tmemberdetail *detail) {
     detail->attri = cdata->attri;
 }
 
+static inline void
+notify_match_down(struct module *s, struct player *pr) {
+    UM_DEFWRAP(UM_CLIENT, cl, UM_PLAYFAIL, pf);
+    cl->uid = UID(pr);
+    pf->err = SERR_MATCHEXIT;
+    sh_module_send(MODULE_ID, pr->watchdog_source, MT_UM, cl, sizeof(*cl)+sizeof(*pf));
+}
+
 static void
 play(struct module *s, struct player *pr, int type) {
     struct hall *self = MODULE_SELF;
+    if (self->match_down) {
+        notify_match_down(s, pr);
+        return;
+    }
     if (pr->status == PS_HALL) { 
         pr->status = PS_WAITING;
         UM_DEFFIX(UM_APPLY, ap);

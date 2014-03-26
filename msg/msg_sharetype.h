@@ -55,11 +55,15 @@
 #define SERR_ROOMUNJOINABLE 62
 #define SERR_ROOMUNEXIST    63
 
+// handle exit
 #define SERR_GATEEXIT       100
 #define SERR_HALLEXIT       101
 #define SERR_AUTHEXIT       102
 #define SERR_ROOMEXIT       103
 #define SERR_GATEHANDLEEXIT 104 // if in gate node, then = WATCHDOG EXIT
+#define SERR_WATCHDOGEXIT   105
+#define SERR_ROBOTEXIT      106
+#define SERR_MATCHEXIT      107
 
 #pragma pack(1)
 

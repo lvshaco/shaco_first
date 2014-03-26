@@ -106,9 +106,10 @@ match_init(struct module *s) {
     if (sh_handle_publish(MODULE_NAME, PUB_SER)) {
         return 1;
     }
-    if (sh_handler("hall", SUB_REMOTE, &self->hall_handle) ||
-        sh_handler("room", SUB_REMOTE, &self->room_handle) ||
-        sh_handler("robot", SUB_REMOTE, &self->robot_handle)) {
+    struct sh_monitor_handle h = { MODULE_ID, MODULE_ID };
+    if (sh_monitor("hall", &h, &self->hall_handle) ||
+        sh_monitor("room", &h, &self->room_handle) ||
+        sh_monitor("robot", &h, &self->robot_handle)) {
         return 1;
     }
     self->randseed = sh_timer_now()/1000;
@@ -630,12 +631,8 @@ apply_cancel(struct module *s, int source, uint32_t uid) {
 }
 
 static void
-logout(struct module *s, uint32_t uid) { 
+logout_direct(struct module *s, struct applyer *ar) {
     struct match *self = MODULE_SELF;
-    struct applyer *ar = sh_hash_find(&self->applyers, uid);
-    if (ar == NULL) {
-        return;
-    }
     sh_trace("Match applyer %u in room %u logout, status %d", ar->uid, ar->roomid, ar->status);
     switch (ar->status) {
     case S_WAITING:
@@ -645,64 +642,116 @@ logout(struct module *s, uint32_t uid) {
         leave_room(s, ar);
         break;
     }
-    sh_hash_remove(&self->applyers, uid);
+    sh_hash_remove(&self->applyers, ar->uid);
     free(ar);
 }
 
-void
-match_main(struct module *s, int session, int source, int type, const void *msg, int sz) {
-    switch (type) {
-    case MT_UM: {
-        UM_CAST(UM_BASE, base, msg);
-        switch (base->msgid) {
-        case IDUM_ROBOT_APPLY: {
-            UM_CAST(UM_ROBOT_APPLY, ra, msg);
-            robot_apply(s, source, ra);
-            break;
+static void
+logout(struct module *s, uint32_t uid) { 
+    struct match *self = MODULE_SELF;
+    struct applyer *ar = sh_hash_find(&self->applyers, uid);
+    if (ar == NULL) {
+        return;
+    }
+    logout_direct(s, ar); 
+}
+
+static void 
+umsg(struct module *s, int source, const void *msg, int sz) {
+    UM_CAST(UM_BASE, base, msg);
+    switch (base->msgid) {
+    case IDUM_ROBOT_APPLY: {
+        UM_CAST(UM_ROBOT_APPLY, ra, msg);
+        robot_apply(s, source, ra);
+        break;
+    }
+    case IDUM_APPLY: {
+        UM_CAST(UM_APPLY, ap, msg);
+        player_apply(s, source, ap);
+        break;
         }
-        case IDUM_APPLY: {
-            UM_CAST(UM_APPLY, ap, msg);
-            player_apply(s, source, ap);
+    case IDUM_MATCH: {
+        UM_CAST(UM_MATCH, ma, msg);
+        UM_CAST(UM_BASE, wrap, ma->wrap);
+        switch (wrap->msgid) {
+        case IDUM_APPLYCANCEL: {
+            apply_cancel(s, source, ma->uid);
             break;
             }
-        case IDUM_MATCH: {
-            UM_CAST(UM_MATCH, ma, msg);
-            UM_CAST(UM_BASE, wrap, ma->wrap);
-            switch (wrap->msgid) {
-            case IDUM_APPLYCANCEL: {
-                apply_cancel(s, source, ma->uid);
-                break;
-                }
-            case IDUM_LOGOUT: {
-                logout(s, ma->uid);
-                break;
-                }
-            }
-            break;
-            }
-        case IDUM_CREATEROOMRES: {
-            UM_CAST(UM_CREATEROOMRES, res, msg);
-            if (res->err == 0) {
-                create_room_ok(s, res->id);
-            } else {
-                create_room_fail(s, res->id, res->err);
-            }
-            break;
-            }
-        case IDUM_JOINROOMRES: {
-            UM_CAST(UM_JOINROOMRES, res, msg);
-            if (res->err == 0) {
-                join_room_ok(s, res->id, res->uid);
-            } else {
-                join_room_fail(s, res->id, res->uid, res->err);
-            }
+        case IDUM_LOGOUT: {
+            logout(s, ma->uid);
             break;
             }
         }
         break;
         }
+    case IDUM_CREATEROOMRES: {
+        UM_CAST(UM_CREATEROOMRES, res, msg);
+        if (res->err == 0) {
+            create_room_ok(s, res->id);
+        } else {
+            create_room_fail(s, res->id, res->err);
+        }
+        break;
+        }
+    case IDUM_JOINROOMRES: {
+        UM_CAST(UM_JOINROOMRES, res, msg);
+        if (res->err == 0) {
+            join_room_ok(s, res->id, res->uid);
+        } else {
+            join_room_fail(s, res->id, res->uid, res->err);
+        }
+        break;
+        }
+    }
+}
+
+struct exitud {
+    struct module *s;
+    int source;
+};
+
+static void
+applyer_exitcb(void *pointer, void *ud) {
+    struct exitud *eu = ud;
+    struct applyer *ar = pointer;
+    if (ar->hall_source == eu->source) {
+        logout_direct(eu->s, ar);
+    }
+}
+
+static void
+monitor(struct module *s, int source, const void *msg, int sz) {
+    struct match *self = MODULE_SELF;
+    int type = sh_monitor_type(msg);
+    int vhandle = sh_monitor_vhandle(msg);
+    switch (type) {
+    case MONITOR_START:
+        // do nothing
+        break;
+    case MONITOR_EXIT:
+        if (vhandle == self->hall_handle) {
+            struct exitud ud = { s, source };
+            sh_hash_foreach2(&self->applyers, applyer_exitcb, &ud);
+        } else if (vhandle == self->robot_handle) {
+            struct exitud ud = { s, source };
+            sh_hash_foreach2(&self->applyers, applyer_exitcb, &ud);
+        } else if (vhandle == self->room_handle) {
+            //struct exitud ud = { s, source };
+            //sh_hash_foreach2(&self->applyers, room_exitcb, &ud);
+        }
+        break;
+    }
+}
+
+void
+match_main(struct module *s, int session, int source, int type, const void *msg, int sz) {
+    switch (type) {
+    case MT_UM:
+        umsg(s, source, msg, sz);
+        break;
     case MT_MONITOR:
-        // todo
+        monitor(s, source, msg, sz);
         break;
     case MT_CMD:
         cmdctl(s, source, msg, sz, command);
