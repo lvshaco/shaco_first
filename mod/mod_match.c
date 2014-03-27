@@ -144,6 +144,16 @@ alloc_room(struct match *self) {
 }
 
 static inline void
+notify_over_room(struct module *s, struct applyer *ar, int err) {
+    sh_trace("Match notify %u over room, err %d", ar->uid, err);
+    UM_DEFWRAP(UM_MATCH, ma, UM_OVERROOM, or);
+    ma->uid = ar->uid;
+    or->uid = ar->uid;
+    or->err = err;
+    sh_module_send(MODULE_ID, ar->hall_source, MT_UM, ma, sizeof(*ma)+sizeof(*or));
+}
+
+static inline void
 response_play_fail(struct module *s, struct applyer *ar, int err) {
     sh_trace("Match notify %u play fail %d", ar->uid, err);
     UM_DEFWRAP(UM_MATCH, ma, UM_PLAYFAIL, pf);
@@ -267,6 +277,30 @@ destroy_room(struct match *self, struct room *ro) {
 }
 
 static void
+over_room(struct module *s, struct room *ro, int err, bool notify_room) { 
+    sh_trace("Match room %u over, err %d", ro->id, err); 
+    struct match *self = MODULE_SELF;
+    struct applyer *ar;
+    int i;
+    for (i=0; i<MEMBER_MAX; ++i) {
+        if (ro->members[i].uid == 0) {
+            continue;
+        }
+        ar = sh_hash_find(&self->applyers, ro->members[i].uid);
+        if (ar == NULL) {
+            continue;
+        }
+        notify_over_room(s, ar, err);
+        sh_hash_remove(&self->applyers, ar->uid);
+        free(ar);
+    }
+    if (notify_room) {
+        notify_destroy_room(s, ro);
+    }
+    destroy_room(self, ro);
+}
+
+static void
 create_room_ok(struct module *s, uint32_t id) {
     struct match *self = MODULE_SELF;
     sh_trace("Match room %u create ok", id);
@@ -295,13 +329,8 @@ create_room_ok(struct module *s, uint32_t id) {
 }
 
 static void
-create_room_fail(struct module *s, uint32_t id, int err) {
+create_room_fail_direct(struct module *s, struct room *ro, int err) {
     struct match *self = MODULE_SELF;
-    sh_trace("Match room %u create fail %d", id, err);
-    struct room *ro = sh_hash_find(&self->rooms, id);
-    if (ro == NULL) {
-        return;
-    }
     struct applyer *ar;
     int i;
     for (i=0; i<MEMBER_MAX; ++i) {
@@ -317,6 +346,16 @@ create_room_fail(struct module *s, uint32_t id, int err) {
         free(ar);
     }
     destroy_room(self, ro);
+}
+
+static void
+create_room_fail(struct module *s, uint32_t id, int err) {
+    struct match *self = MODULE_SELF;
+    sh_trace("Match room %u create fail %d", id, err);
+    struct room *ro = sh_hash_find(&self->rooms, id);
+    if (ro) {
+        create_room_fail_direct(s, ro, err);
+    }
 }
 
 static inline void
@@ -721,6 +760,22 @@ applyer_exitcb(void *pointer, void *ud) {
 }
 
 static void
+room_exitcb(void *pointer, void *ud) {
+    struct exitud *eu = ud;
+    struct room *ro = pointer;
+    if (ro->room_handle == eu->source) {
+        switch (ro->status) {
+        case S_CREATING:
+            create_room_fail_direct(eu->s, ro, SERR_ROOMEXIT);
+            break;
+        case S_GAMING:
+            over_room(eu->s, ro, SERR_ROOMEXIT, false);
+            break;
+        }
+    }
+}
+
+static void
 monitor(struct module *s, int source, const void *msg, int sz) {
     struct match *self = MODULE_SELF;
     int type = sh_monitor_type(msg);
@@ -737,8 +792,8 @@ monitor(struct module *s, int source, const void *msg, int sz) {
             struct exitud ud = { s, source };
             sh_hash_foreach2(&self->applyers, applyer_exitcb, &ud);
         } else if (vhandle == self->room_handle) {
-            //struct exitud ud = { s, source };
-            //sh_hash_foreach2(&self->applyers, room_exitcb, &ud);
+            struct exitud ud = { s, source };
+            sh_hash_foreach2(&self->rooms, room_exitcb, &ud);
         }
         break;
     }

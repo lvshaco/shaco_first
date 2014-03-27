@@ -1,6 +1,7 @@
 #!/bin/bash
 
-SERVERS="gateload uniqueol match robot watchdog watchdog2 auth hall room gate gate2 route"
+#SERVERS="gateload uniqueol match robot watchdog watchdog2 auth hall room gate gate2 route"
+SERVERS="gateload uniqueol match robot watchdog auth hall room gate route"
 
 error() {
     echo -ne "\033[40;31;1m"

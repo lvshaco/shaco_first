@@ -139,6 +139,17 @@ exit_room(struct module *s, struct player *pr) {
     }
 }
 
+static void
+over_room(struct module *s, struct player *pr, struct UM_OVERROOM *or) {
+    if (pr->status == PS_ROOM) {
+        pr->status = PS_HALL;
+        sh_module_send(MODULE_ID, pr->watchdog_source, MT_UM, or, sizeof(*or));
+        sh_trace("Play %u notify client over room, err %d", UID(pr), or->err);
+    } else {
+        sh_trace("Play %u receive over room, but status %d", UID(pr), pr->status);
+    }
+}
+
 void 
 hall_play_main(struct module *s, struct player *pr, const void *msg, int sz) {
     UM_CAST(UM_BASE, base, msg);
@@ -173,6 +184,11 @@ hall_play_main(struct module *s, struct player *pr, const void *msg, int sz) {
         }
     case IDUM_EXITROOM: {
         exit_room(s, pr);
+        break;
+        }
+    case IDUM_OVERROOM: {
+        UM_CAST(UM_OVERROOM, or, base);
+        over_room(s, pr, or);
         break;
         }
     }

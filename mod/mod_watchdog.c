@@ -126,7 +126,7 @@ logout(struct module *s, struct user *ur, int8_t err, int disconn) {
         sh_hash_remove(&self->acc2user, ur->accid);
     }
 
-    if (ur->status > S_UNIQUE_VERIFY) {
+    if (ur->status >= S_UNIQUE_VERIFY) {
         UM_DEFFIX(UM_UNIQUEUNUSE, uni);
         uni->id = ur->accid;
         sh_module_send(MODULE_ID, self->uniqueol_handle, MT_UM, uni, sizeof(*uni));
@@ -343,14 +343,9 @@ login_room(struct module *s, struct UM_LOGINROOM *lr, int sz) {
     struct user *ur = sh_hash_find(&self->acc2user, accid);
     if (ur &&
         ur->status == S_HALL) {
-        if (sh_module_has(self->room_handle, lr->room_handle)) {
-            ur->status = S_ROOM;
-            ur->room_handle = lr->room_handle;
-            sh_module_send(MODULE_ID, ur->room_handle, MT_UM, lr, sz);
-        } else {
-            // todo notify hall exit room status (now match module do this)
-            //sh_module_send(MODULE_ID, ur->hall_handle, MT_UM, msg, sz);
-        }
+        ur->status = S_ROOM;
+        ur->room_handle = lr->room_handle;
+        sh_module_send(MODULE_ID, ur->room_handle, MT_UM, lr, sz);
     }
 }
 
@@ -377,9 +372,25 @@ static inline void
 exit_room(struct module *s, uint32_t uid) {
     struct watchdog *self = MODULE_SELF;
     struct user *ur = sh_hash_find(&self->acc2user, uid);
-    if (ur && 
-        ur->status == S_ROOM) { 
+    if (ur == NULL)
+        return;
+    if (ur->status == S_ROOM) { 
+        sh_trace("Watchdog user %u receive exit room", uid);
         exit_room_directly(s, ur);
+    } else {
+        sh_trace("Watchdog user %u receive exit room, but status %d", uid, ur->status);
+    }
+}
+
+static inline void
+over_room(struct module *s, uint32_t uid, int err) {
+    struct watchdog *self = MODULE_SELF;
+    struct user *ur = sh_hash_find(&self->acc2user, uid);
+    if (ur && 
+        ur->status == S_ROOM) {
+        ur->status = S_HALL;
+        ur->room_handle = -1;
+        notify_exit_room(s, ur, err);
     }
 }
 
@@ -442,6 +453,11 @@ umsg(struct module *s, int source, const void *msg, int sz) {
     case IDUM_EXITROOM: {
         UM_CAST(UM_EXITROOM, exit, msg);
         exit_room(s, exit->uid);
+        break;
+        }
+    case IDUM_OVERROOM: {
+        UM_CAST(UM_OVERROOM, over, msg);
+        over_room(s, over->uid, over->err);
         break;
         }
     case IDUM_ROOM: {

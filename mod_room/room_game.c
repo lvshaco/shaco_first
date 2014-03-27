@@ -86,6 +86,7 @@ elapsed(uint64_t t, uint64_t elapse) {
 
 static inline void
 notify_exit_room(struct module *s, int source, uint32_t uid) {
+    sh_trace("Room notify %u exit room", uid);
     UM_DEFFIX(UM_EXITROOM, exit);
     exit->uid = uid;
     sh_module_send(MODULE_ID, source, MT_UM, exit, sizeof(*exit));
@@ -93,6 +94,7 @@ notify_exit_room(struct module *s, int source, uint32_t uid) {
 
 static inline void
 notify_play_fail(struct module *s, int source, uint32_t uid, int err) {
+    sh_trace("Room notify %u play fail %d", uid, err);
     UM_DEFWRAP(UM_CLIENT, cl, UM_PLAYFAIL, pf);
     cl->uid = uid;
     pf->err = err;
@@ -121,6 +123,7 @@ notify_join_room_game_result(struct module *s, int source, uint32_t id, uint32_t
 static inline void
 notify_award(struct module *s, struct room_game *ro, struct player *m, 
         const struct memberaward *award) {
+    sh_trace("Room %u notify %u award", ro->id, UID(m));
     UM_DEFWRAP(UM_HALL, ha, UM_GAMEAWARD, ga);
     ha->uid  = UID(m);
     ga->type = ro->type;
@@ -410,6 +413,8 @@ member_over(struct module *s, struct room_game *ro, struct player *m, int flag) 
 
 static void
 game_over(struct module *s, struct room_game* ro, bool death) {
+    struct room *self = MODULE_SELF;
+
     if (ro->status == ROOMS_OVER) {
         return;
     }
@@ -445,7 +450,15 @@ game_over(struct module *s, struct room_game* ro, bool death) {
             notify_award(s, ro, m, a);
         }
     }
-    
+
+    // switch to hall
+    for (i=0; i<np; ++i) {
+        m = sortm[i];
+        if (is_online(m)) {
+            notify_exit_room(s, m->watchdog_source, UID(m));
+        }
+    }
+
     // overinfo to client
     struct tmemberstat *st;
     UM_DEFVAR(UM_CLIENT, cg);
@@ -475,6 +488,15 @@ game_over(struct module *s, struct room_game* ro, bool death) {
         cg->uid = UID(m);
         if (is_online(m) && is_player(m)) {
             sh_module_send(MODULE_ID, m->watchdog_source, MT_UM, cg, sizeof(*cg)+gosz);
+        }
+    }
+
+    // remove member
+    for (i=0; i<np; ++i) {
+        m = &ro->p[i];
+        if (m->online) {
+            sh_hash_remove(&self->players, UID(m));
+            m->online = false;
         }
     }
 
@@ -1058,7 +1080,7 @@ loadok(struct module *s, struct player *m) {
 
 static struct player *
 login(struct module *s, int source, uint32_t roomid, float luck_factor, 
-        const struct tmemberdetail *detail) {
+        const struct tmemberdetail *detail) { 
     struct room *self = MODULE_SELF;
     struct player *m;
     uint32_t accid  = detail->accid;

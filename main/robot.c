@@ -275,11 +275,13 @@ _handleum(int id, int ut, struct UM_BASE* um) {
             _stat(&go->stats[i], i+1);
         }
         mylog("******************************************");
+        _play(TYPE);
         break;
         }
     case IDUM_GAMEEXIT: {
         UM_CAST(UM_GAMEEXIT, ge, um);
         mylog("***************GAME EXIT %d***************", ge->err);
+        _play(TYPE);
         break;
         }
     }

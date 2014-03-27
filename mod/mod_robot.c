@@ -241,45 +241,50 @@ robot_init(struct module* s) {
     return 0;
 }
 
-void
-robot_main(struct module *s, int session, int source, int type, const void *msg, int sz) {
+static void
+umsg(struct module *s, int source, const void *msg, int sz) {
     struct robot *self = MODULE_SELF;
-    switch (type) {
-    case MT_UM: {
-        UM_CAST(UM_BASE, base, msg);
-        switch (base->msgid) {
-        case IDUM_ROBOT_PULL: {
-            UM_CAST(UM_ROBOT_PULL, rp, msg);
-            pull(s, source, rp);
+    struct agent *ag;
+    UM_CAST(UM_BASE, base, msg);
+    switch (base->msgid) {
+    case IDUM_ROBOT_PULL: {
+        UM_CAST(UM_ROBOT_PULL, rp, msg);
+        pull(s, source, rp);
+        break;
+        }
+    case IDUM_MATCH: {
+        UM_CAST(UM_MATCH, ma, msg); 
+        ag = sh_hash_find(&self->agents, ma->uid);
+        if (ag == NULL) {
+            return;
+        }
+        UM_CAST(UM_BASE, sub, ma->wrap);
+        switch (sub->msgid) {
+        case IDUM_PLAYFAIL:
+            play_fail(s, ag);
             break;
-            }
-        case IDUM_MATCH: {
-            UM_CAST(UM_MATCH, ma, msg);
-            struct agent *ag = sh_hash_find(&self->agents, ma->uid);
-            if (ag == NULL) {
-                return;
-            }
-            UM_CAST(UM_BASE, sub, ma->wrap);
-            switch (sub->msgid) {
-            case IDUM_PLAYFAIL:
-                play_fail(s, ag);
-                break;
-            case IDUM_ENTERROOM: {
-                UM_CAST(UM_ENTERROOM, er, ma->wrap);
-                enter_room(s, ag, er);
-                break;
-                }
-            }
-            break;
-            }
-        case IDUM_EXITROOM: {
-            UM_CAST(UM_EXITROOM, exit, msg);
-            exit_room(s, exit->uid);
+        case IDUM_ENTERROOM: {
+            UM_CAST(UM_ENTERROOM, er, ma->wrap);
+            enter_room(s, ag, er);
             break;
             }
         }
         break;
         }
+    case IDUM_EXITROOM: {
+        UM_CAST(UM_EXITROOM, exit, msg);
+        exit_room(s, exit->uid);
+        break;
+        }
+    }
+}
+
+void
+robot_main(struct module *s, int session, int source, int type, const void *msg, int sz) {
+    switch (type) {
+    case MT_UM:
+        umsg(s, source, msg, sz);
+        break;
     case MT_CMD:
         cmdctl(s, source, msg, sz, command);
         break;
