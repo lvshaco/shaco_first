@@ -5,7 +5,7 @@
 #include "match.h"
 
 static int
-playercount(struct module *s, struct args *A, struct memrw *rw) {
+nuser(struct module *s, struct args *A, struct memrw *rw) {
     struct match *self = MODULE_SELF;
     uint32_t napplyer = self->applyers.used;
     uint32_t nroom = self->rooms.used;
@@ -14,6 +14,27 @@ playercount(struct module *s, struct args *A, struct memrw *rw) {
     return CTL_OK;
 }
 
+static int
+user(struct module *s, struct args *A, struct memrw *rw) {
+    struct match *self = MODULE_SELF;
+    if (A->argc < 2) {
+        return CTL_ARGLESS;
+    }
+    int n;
+    uint32_t accid = strtoul(A->argv[1], NULL, 10);
+    struct applyer *ar = sh_hash_find(&self->applyers, accid);
+    if (ar) {
+        n = snprintf(rw->ptr, RW_SPACE(rw), 
+                    "uid(%u) accid(%u) charid(%u) name(%s) "
+                    "robot(%d) type(%d) status(%d) roomid(%u) hall(%04x)",
+                    ar->uid, ar->brief.accid, ar->brief.charid, ar->brief.name, 
+                    ar->is_robot, ar->type, ar->status, ar->roomid, ar->hall_source);
+    } else {
+        n = snprintf(rw->ptr, RW_SPACE(rw), "none");
+    }
+    memrw_pos(rw, n);
+    return CTL_OK;
+}
 
 static int
 command(struct module *s, int source, int connid, const char *msg, int len, struct memrw *rw) {
@@ -25,8 +46,10 @@ command(struct module *s, int source, int connid, const char *msg, int len, stru
         return CTL_ARGLESS;
     }
     const char *cmd = A.argv[0];
-    if (!strcmp(cmd, "playercount")) {
-        return playercount(s, &A, rw);
+    if (!strcmp(cmd, "nuser")) {
+        return nuser(s, &A, rw);
+    } else if (!strcmp(cmd, "user")) {
+        return user(s, &A, rw);
     } else {
         return CTL_NOCMD;
     }

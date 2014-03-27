@@ -600,20 +600,50 @@ monitor(struct module *s, int source, const void *msg, int sz) {
 }
 
 static int
-command(struct module *s, int source, int connid, const char *msg, int len, struct memrw *rw) {
+nuser(struct module *s, struct args *A, struct memrw *rw) {
     struct watchdog *self = MODULE_SELF;
+    uint32_t ntotal = self->conn2user.used;
+    uint32_t nverifyed = self->acc2user.used;
+    int n = snprintf(rw->ptr, RW_SPACE(rw), "%u(verifyed) %u(all)", nverifyed, ntotal);
+    memrw_pos(rw, n);
+    return CTL_OK;
+}
 
+static int
+user(struct module *s, struct args *A, struct memrw *rw) {
+    struct watchdog *self = MODULE_SELF;
+    if (A->argc < 2) {
+        return CTL_ARGLESS;
+    }
+    int n;
+    uint32_t accid = strtoul(A->argv[1], NULL, 10);
+    struct user *ur = sh_hash_find(&self->acc2user, accid);
+    if (ur) {
+        n = snprintf(rw->ptr, RW_SPACE(rw), 
+                    "accid(%u) acc(%s) status(%d) connid(%d) wsession(%u) "
+                    "gate(%04x) auth(%04x) hall(%04x) room(%04x)", 
+                    ur->accid, ur->account, ur->status, ur->connid, ur->wsession,
+                    ur->gate_source, ur->auth_handle, ur->hall_handle, ur->room_handle);
+    } else {
+        n = snprintf(rw->ptr, RW_SPACE(rw), "none");
+    }
+    memrw_pos(rw, n);
+    return CTL_OK;
+}
+
+static int
+command(struct module *s, int source, int connid, const char *msg, int len, struct memrw *rw) {
+    //struct watchdog *self = MODULE_SELF;
     struct args A;
     args_parsestrl(&A, 0, msg, len);
     if (A.argc == 0) {
         return CTL_ARGLESS;
     }
     const char *cmd = A.argv[0];
-    if (!strcmp(cmd, "playercount")) {
-        uint32_t ntotal = self->conn2user.used;
-        uint32_t nverifyed = self->acc2user.used;
-        int n = snprintf(rw->ptr, RW_SPACE(rw), "%u(verifyed) %u(all)", nverifyed, ntotal);
-        memrw_pos(rw, n); 
+    if (!strcmp(cmd, "nuser")) {
+        return nuser(s, &A, rw);
+    } else if (!strcmp(cmd, "user")) {
+        return user(s, &A, rw);
     } else {
         return CTL_NOCMD;
     }

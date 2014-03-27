@@ -215,6 +215,41 @@ monitor(struct module *s, int source, const void *msg, int sz) {
     }
 }
 
+static int
+user(struct module *s, struct args *A, struct memrw *rw) {
+    struct uniqueol *self = MODULE_SELF;
+    if (A->argc < 2) {
+        return CTL_ARGLESS;
+    }
+    int n;
+    uint32_t accid = strtoul(A->argv[1], NULL, 10);
+    int source = (int)(intptr_t)sh_hash_find(&self->uni, accid);
+    if (source > 0) {
+        n = snprintf(rw->ptr, RW_SPACE(rw), "source(%04x)", source);
+    } else {
+        n = snprintf(rw->ptr, RW_SPACE(rw), "none");
+    }
+    memrw_pos(rw, n);
+    return CTL_OK;
+}
+
+static int
+command(struct module *s, int source, int connid, const char *msg, int len, struct memrw *rw) {
+    //struct uniqueol *self = MODULE_SELF;
+    struct args A;
+    args_parsestrl(&A, 0, msg, len);
+    if (A.argc == 0) {
+        return CTL_ARGLESS;
+    }
+    const char *cmd = A.argv[0];
+    if (!strcmp(cmd, "user")) {
+        return user(s, &A, rw);
+    } else {
+        return CTL_NOCMD;
+    }
+    return CTL_OK;
+}
+
 void
 uniqueol_main(struct module *s, int session, int source, int type, const void *msg, int sz) {
     switch (type) {
@@ -225,7 +260,7 @@ uniqueol_main(struct module *s, int session, int source, int type, const void *m
         monitor(s, source, msg, sz);
         break;
     case MT_CMD:
-        cmdctl(s, source, msg, sz, NULL);
+        cmdctl(s, source, msg, sz, command);
         break;
     }
 }

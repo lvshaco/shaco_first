@@ -86,7 +86,7 @@ startcmdd() {
 startall() {
     startone center 2
     for S in $SERVERS;do
-        startone $S 3.5
+        startone $S 0.5
     done
     sleep 1
     ls

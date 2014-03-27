@@ -476,7 +476,7 @@ command(struct module *s, int source, int connid, const char *msg, int len, stru
         return CTL_ARGLESS;
     }
     const char *cmd = A.argv[0];
-    if (!strcmp(cmd, "playercount")) {
+    if (!strcmp(cmd, "nuser")) {
         int n = snprintf(rw->ptr, RW_SPACE(rw), "%d(nclient)", self->used);
         memrw_pos(rw, n); 
     } else {

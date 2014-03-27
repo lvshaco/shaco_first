@@ -14,12 +14,38 @@ reloadres(struct module *s, struct args *A, struct memrw *rw) {
 }
 
 static int
-playercount(struct module *s, struct args *A, struct memrw *rw) {
+nuser(struct module *s, struct args *A, struct memrw *rw) {
     struct room *self = MODULE_SELF;
     uint32_t np = self->players.used;
     uint32_t nr = self->room_games.used;
     int n = snprintf(rw->ptr, RW_SPACE(rw), "%u(nplayer) %u(nroom)", np, nr);
     memrw_pos(rw, n); 
+    return CTL_OK;
+}
+
+static int
+user(struct module *s, struct args *A, struct memrw *rw) {
+    struct room *self = MODULE_SELF;
+    if (A->argc < 2) {
+        return CTL_ARGLESS;
+    }
+    int n;
+    uint32_t accid = strtoul(A->argv[1], NULL, 10);
+    struct player *m = sh_hash_find(&self->players, accid);
+    if (m) {
+        struct room_game *ro = room_member_to_game(m);
+        n = snprintf(rw->ptr, RW_SPACE(rw), 
+                    "accid(%u) charid(%u) name(%s) watchdog(%04x) "
+                    "logined(%d) online(%d) loadok(%d) robot(%d) "
+                    "room(%u) type(%d) status(%d)",
+                    m->detail.accid, m->detail.charid, m->detail.name, 
+                    m->watchdog_source,
+                    m->logined, m->online, m->loadok, m->is_robot,
+                    ro->id, ro->type, ro->status);
+    } else {
+        n = snprintf(rw->ptr, RW_SPACE(rw), "none");
+    }
+    memrw_pos(rw, n);
     return CTL_OK;
 }
 
@@ -72,8 +98,10 @@ command(struct module *s, int source, int connid, const char *msg, int len, stru
         return CTL_ARGLESS;
     }
     const char *cmd = A.argv[0];
-    if (!strcmp(cmd, "playercount")) {
-        return playercount(s, &A, rw);
+    if (!strcmp(cmd, "nuser")) {
+        return nuser(s, &A, rw);
+    } else if (!strcmp(cmd, "user")) {
+        return user(s, &A, rw);
     } else if (!strcmp(cmd, "reloadres"))  {
         return reloadres(s, &A, rw);
     } else if (!strcmp(cmd, "test_gamecreate")) {
