@@ -106,7 +106,7 @@ _get_module(int vhandle) {
 }
 
 static int
-_subscribe(const char *name) {
+_vhandle(const char *name) {
     struct _module_vector *sers = &R->sers;
     struct _module *s;
     int i;
@@ -117,6 +117,17 @@ _subscribe(const char *name) {
             return 0x10000 | i;
         }
     }
+    return -1;
+}
+static int
+_subscribe(const char *name) {
+    struct _module_vector *sers = &R->sers;
+    struct _module *s;
+    int vhandle = _vhandle(name);
+    if (vhandle != -1) {
+        return vhandle;
+    }
+    int n = sers->sz;
     if (n >= sers->cap) {
         sers->cap *= 2;
         if (sers->cap == 0)
@@ -139,7 +150,7 @@ _register(const char *name, int handle) {
         s = &sers->p[i];
         for (j=0; j<s->sz; ++j) {
             if (s->phandle[j].id == handle) {
-                return 1;
+                return -1;
             }
         }
     }
@@ -188,6 +199,26 @@ sh_module_exit(int handle) {
     int vhandle = _unregister(handle);
     if (vhandle != -1) {
         sh_monitor_trigger_exit(vhandle, handle);
+        return 0;
+    } else
+        return 1;
+}
+
+int 
+sh_module_startb(const char *name) {
+    int vhandle = _vhandle(name);
+    if (vhandle != -1) {
+        sh_monitor_trigger_startb(vhandle);
+        return 0;
+    } else
+        return 1;
+}
+
+int 
+sh_module_starte(const char *name) {
+    int vhandle = _vhandle(name);
+    if (vhandle != -1) {
+        sh_monitor_trigger_starte(vhandle);
         return 0;
     } else
         return 1;
@@ -313,7 +344,7 @@ sh_module_broadcast(int source, int dest, int type, const void *msg, int sz) {
 
 int 
 sh_module_vsend(int source, int dest, const char *fmt, ...) {
-    char msg[1024];
+    char msg[2028];
     va_list ap;
     va_start(ap, fmt);
     int n = vsnprintf(msg, sizeof(msg), fmt, ap);

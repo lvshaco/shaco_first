@@ -34,6 +34,8 @@
 #define IDUM_UNIQUEUSE    IDUM_NBEGIN+30
 #define IDUM_UNIQUEUNUSE  IDUM_NBEGIN+31
 #define IDUM_UNIQUESTATUS IDUM_NBEGIN+32
+#define IDUM_UNIQUEREADY  IDUM_NBEGIN+33
+#define IDUM_SYNCOK       IDUM_NBEGIN+35
 
 #define IDUM_MINLOADBEGIN IDUM_NBEGIN+100 // minload begin
 //#define IDUM_ACCOUNTLOGINREG IDUM_NBEGIN+100
@@ -176,6 +178,15 @@ struct UM_UNIQUESTATUS {
     uint32_t id;
     int8_t status; // see UNIQUE_USE_OK
 };
+
+struct UM_UNIQUEREADY {
+    _UM_HEADER;
+};
+
+struct UM_SYNCOK {
+    _UM_HEADER;
+};
+
 // end unique
 
 // cmd

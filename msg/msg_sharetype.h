@@ -64,6 +64,7 @@
 #define SERR_WATCHDOGEXIT   105
 #define SERR_ROBOTEXIT      106
 #define SERR_MATCHEXIT      107
+#define SERR_UNIQUEOLEXIT   108
 
 #pragma pack(1)
 

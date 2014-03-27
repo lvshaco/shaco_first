@@ -29,6 +29,8 @@ struct sh_node_addr {
 
 int sh_module_start(const char *name, int handle, const struct sh_node_addr *addr);
 int sh_module_exit(int handle);
+int sh_module_startb(const char *name);
+int sh_module_starte(const char *name);
 
 int sh_module_subscribe(const char *name, int flag);
 int sh_module_publish(const char *name, int flag);

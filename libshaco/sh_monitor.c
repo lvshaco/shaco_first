@@ -86,6 +86,32 @@ sh_monitor_trigger_exit(int vhandle, int handle) {
     return 1;
 }
 
+int 
+sh_monitor_trigger_startb(int vhandle) {
+    struct sh_monitor *m = find(vhandle);
+    if (m &&
+        m->handle[MONITOR_START] != -1) {
+        uint8_t msg[5];
+        msg[0] = MONITOR_STARTB;
+        sh_to_littleendian32(vhandle, &msg[1]);
+        return sh_module_send(-1, m->handle[MONITOR_START], MT_MONITOR, msg, sizeof(msg));
+    }
+    return 1;
+}
+
+int 
+sh_monitor_trigger_starte(int vhandle) {
+    struct sh_monitor *m = find(vhandle);
+    if (m &&
+        m->handle[MONITOR_START] != -1) {
+        uint8_t msg[5];
+        msg[0] = MONITOR_STARTE;
+        sh_to_littleendian32(vhandle, &msg[1]);
+        return sh_module_send(-1, m->handle[MONITOR_START], MT_MONITOR, msg, sizeof(msg));
+    }
+    return 1;
+}
+
 static void
 sh_monitor_init() {
     _M = malloc(sizeof(*_M));

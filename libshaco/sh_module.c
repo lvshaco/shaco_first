@@ -138,7 +138,6 @@ module_prepare(const char* name) {
             return _prepare(s);
         }
         return 1;
-        
     } else {
         int i;
         for (i=0; i<array_size(S->sers); ++i) {

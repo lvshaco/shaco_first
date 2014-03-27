@@ -7,9 +7,10 @@
 #define S_ALLOC 0
 #define S_AUTH_VERIFY 1
 #define S_UNIQUE_VERIFY 2
-#define S_HALL 3
-#define S_MATCH 4
-#define S_ROOM 5
+#define S_UNIQUE_VERIFY_OK 3
+#define S_HALL 4
+#define S_MATCH 5
+#define S_ROOM 6
 
 // disconnect
 #define DISCONNECT 1
@@ -126,7 +127,7 @@ logout(struct module *s, struct user *ur, int8_t err, int disconn) {
         sh_hash_remove(&self->acc2user, ur->accid);
     }
 
-    if (ur->status >= S_UNIQUE_VERIFY) {
+    if (ur->status >= S_UNIQUE_VERIFY_OK) {
         UM_DEFFIX(UM_UNIQUEUNUSE, uni);
         uni->id = ur->accid;
         sh_module_send(MODULE_ID, self->uniqueol_handle, MT_UM, uni, sizeof(*uni));
@@ -243,6 +244,7 @@ static void
 uniqueol_ok(struct module *s, struct user *ur) {
     struct watchdog *self = MODULE_SELF;
 
+    ur->status = S_UNIQUE_VERIFY_OK;
     int hall_handle = sh_module_minload(self->hall_handle);
     if (hall_handle == -1) {
         logout(s, ur, SERR_NOHALLS, DISCONNECT);
@@ -298,6 +300,9 @@ process_unique(struct module *s, uint32_t id, int status) {
     if (ur == NULL) {
         return;
     }
+    if (ur->status != S_UNIQUE_VERIFY) {
+        return;
+    }
     switch (status) {
     case UNIQUE_USE_OK:
         uniqueol_ok(s, ur);
@@ -327,10 +332,11 @@ process_room(struct module *s, uint32_t accid, const void *msg, int sz) {
 }
 
 static inline void
-exit_hall(struct module *s, uint32_t accid, int err) {
+exit_hall(struct module *s, int source, uint32_t accid, int err) {
     struct watchdog *self = MODULE_SELF;
     struct user *ur = sh_hash_find(&self->acc2user, accid);
-    if (ur) {
+    if (ur &&
+        ur->hall_handle == source) {
         ur->hall_handle = -1;
         logout(s, ur, err, DISCONNECT);
     }
@@ -418,6 +424,7 @@ process_client(struct module *s, uint32_t accid, const void *msg, int sz) {
 
 static void
 umsg(struct module *s, int source, const void *msg, int sz) {
+    struct watchdog *self = MODULE_SELF;
     UM_CAST(UM_BASE, base, msg); 
     switch (base->msgid) {
     case IDUM_GATE: {
@@ -435,9 +442,13 @@ umsg(struct module *s, int source, const void *msg, int sz) {
         process_unique(s, u->id, u->status);
         break;
         }
+    case IDUM_UNIQUEREADY: {
+        self->is_uniqueol_ready = true;
+        break;
+        }
     case IDUM_EXITHALL: {
         UM_CAST(UM_EXITHALL, exit, msg);
-        exit_hall(s, exit->uid, exit->err);
+        exit_hall(s, source, exit->uid, exit->err);
         break;
         }
     case IDUM_HALL: {
@@ -524,10 +535,40 @@ auth_exitcb(void *pointer, void *ud) {
 }
 
 static void
+uniqueol_exitcb(void *pointer, void *ud) {
+    struct exitud *eu = ud;
+    struct module *s = eu->s;
+    struct user *ur = pointer;
+    if (ur->status == S_UNIQUE_VERIFY) {
+        logout(s, ur, SERR_UNIQUEOLEXIT, DISCONNECT);
+    }
+}
+
+static void
 handle_exit(struct module *s, int source, void (*exitcb)(void*, void*)) {
     struct watchdog *self = MODULE_SELF;
     struct exitud ud = {s, source};
     sh_hash64_foreach2(&self->conn2user, exitcb, &ud);
+}
+
+static void
+uniqueol_startcb(void *pointer, void *ud) {
+    struct module *s = ud;
+    struct watchdog *self = MODULE_SELF;
+    struct user *ur = pointer;
+    if (ur->status >= S_UNIQUE_VERIFY_OK) {
+        UM_DEFFIX(UM_UNIQUEUSE, uni);
+        uni->id = ur->accid;
+        sh_module_send(MODULE_ID, self->uniqueol_handle, MT_UM, uni, sizeof(*uni));
+    }
+}
+
+static void
+uniqueol_start(struct module *s) {
+    struct watchdog *self = MODULE_SELF;
+    sh_hash_foreach2(&self->acc2user, uniqueol_startcb, s);
+    UM_DEFFIX(UM_SYNCOK, ok);
+    sh_module_send(MODULE_ID, self->uniqueol_handle, MT_UM, ok, sizeof(*ok));
 }
 
 static void
@@ -537,14 +578,14 @@ monitor(struct module *s, int source, const void *msg, int sz) {
     int vhandle = sh_monitor_vhandle(msg);
     switch (type) {
     case MONITOR_START:
-        // todo
         if (vhandle == self->uniqueol_handle) {
-            self->is_uniqueol_ready = true;
+            uniqueol_start(s);
         }
         break;
     case MONITOR_EXIT:
         if (vhandle == self->uniqueol_handle) {
             self->is_uniqueol_ready = false;
+            handle_exit(s, source, uniqueol_exitcb);
         } else if (vhandle == self->gate_handle) {
             handle_exit(s, source, gate_exitcb);
         } else if (vhandle == self->hall_handle) {

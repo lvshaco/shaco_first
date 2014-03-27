@@ -160,15 +160,21 @@ centers_main(struct module *s, int session, int source, int type, const void *ms
             return;
         if (insert_int(&slot->subs, source))
             return;
-        int i;
+        int i, n = 0;
+        char tmp[2048];
+        n += sh_snprintf(tmp, sizeof(tmp), "HANDLES %s:", name);
         for (i=0; i<slot->pubs.sz; ++i) {
             int pub_handle = slot->pubs.p[i];
             if (sh_nodeid_from_handle(pub_handle) !=
                 sh_nodeid_from_handle(source)) {
-                sh_module_vsend(MODULE_ID, source, 
-                        "HANDLE %s:%04x", name, slot->pubs.p[i]);
+                assert(sizeof(tmp) > n);
+                assert(sizeof(tmp) - n > 8);
+                n += sh_snprintf(tmp+n, sizeof(tmp)-n, "%04x,", slot->pubs.p[i]);
             }
         }
+        tmp[--n] = '\0';
+        sh_error("=================== handles %s", tmp);
+        sh_module_send(MODULE_ID, source, MT_TEXT, tmp, n);
     } else if (!strcmp(cmd, "PUB")) {
         if (A.argc != 2)
             return;

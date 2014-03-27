@@ -637,7 +637,7 @@ node_main(struct module *s, int session, int source, int type, const void *msg, 
             int handle = strtol(p+1, NULL, 16); 
             _publish_module(s, name, handle);
         }
-    } else if (!strcmp(cmd, "HANDLE")) {
+    } else if (!strcmp(cmd, "HANDLE")) { // after subscribe
         if (A.argc != 2)
             return;
         const char *name = A.argv[1];
@@ -647,5 +647,25 @@ node_main(struct module *s, int session, int source, int type, const void *msg, 
             int handle = strtol(p+1, NULL, 16); 
             _connect_module(s, name, handle);
         }
+    } else if (!strcmp(cmd, "HANDLES")) { // before subscribe
+        if (A.argc != 2)
+            return;
+        const char *name = A.argv[1];
+        sh_trace("Node HANNDLES %s", name);
+        char *p = strchr(name, ':');
+        if (p) {
+            p[0] = '\0';
+        } 
+        sh_module_startb(name);
+        if (p) {
+            char* saveptr = NULL;
+            char* one = strtok_r(p+1, ",", &saveptr);
+            while (one) {
+                int handle = strtol(one, NULL, 16);
+                _connect_module(s, name, handle);
+                one = strtok_r(NULL, ",", &saveptr);
+            }
+        }
+        sh_module_starte(name);
     }
 }
