@@ -3,7 +3,6 @@
 #include "args.h"
 #include "freeid.h"
 #include "hashid.h"
-#include "freelist.h"
 #include "redis.h"
 #include "elog_include.h"
 #include "sh_hash.h"
@@ -576,53 +575,6 @@ void test_redisnew(int times) {
     printf("test redis new, replycount %d, mustcount %d, use time: %d\n", 
             curcount, allcount, (int)(t2-t1));
     assert(curcount == allcount);
-}
-
-struct fldata {
-    int tag;
-};
-
-struct flink {
-    struct flink* next;
-    struct fldata data;
-};
-
-struct fltest {
-    FREELIST(flink);
-};
-
-void test_freelist() {
-    struct fltest fl;
-    FREELIST_INIT(&fl);
-
-    struct flink* d1, *d2;
-    d1 = FREELIST_PUSH(flink, &fl, sizeof(struct flink));
-    d1->data.tag = 1;
-    FREELIST_POP(flink, &fl);
-
-    d1 = FREELIST_PUSH(flink, &fl, sizeof(struct flink));
-    d1->data.tag = 1;
-
-    d2 = FREELIST_PUSH(flink, &fl, sizeof(struct flink));
-    d2->data.tag = 2;
-
-    struct flink* d;
-    d = FREELIST_POP(flink, &fl); 
-    {
-        assert(d);
-        assert(d->data.tag == 1);
-    } 
-    d = FREELIST_POP(flink, &fl);
-    {
-    assert(d->data.tag == 2);
-    assert(fl.sz == 2);
-    }
-    d1 = FREELIST_PUSH(flink, &fl, sizeof(struct flink));
-    d1->data.tag = 1;
-    d2 = FREELIST_PUSH(flink, &fl, sizeof(struct flink));
-    d2->data.tag = 2;
-    assert(fl.sz == 2);
-    FREELIST_FINI(flink, &fl);
 }
 
 void

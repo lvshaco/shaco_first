@@ -66,7 +66,6 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.py *.h *.c" {
   args.h
   array.h
   freeid.h
-  freelist.h
   hashid.h
   memrw.h
   mpool.h

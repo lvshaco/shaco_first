@@ -2,7 +2,6 @@
 #include "cmdctl.h"
 #include "msg_server.h"
 #include "redis.h"
-#include "freelist.h"
 #include "memrw.h"
 #include <stdbool.h>
 
