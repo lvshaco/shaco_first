@@ -656,12 +656,12 @@ check_enter_room_game(struct module *s, struct room_game *ro) {
     if (room_online_nplayer(ro) > 0) {
         room_game_enter(s, ro);
         return true;
-    // 如果服务器卡住，导致角色登陆房间过慢
-    //} else {
-        //room_game_destroy(s, ro);
-        //return false;
+    } else {
+        // maybe no player login, or 
+        // logined but logout now
+        room_game_destroy(s, ro);
+        return false;
     }
-    return false;
 }
 
 static bool
@@ -1074,6 +1074,7 @@ loadok(struct module *s, struct player *m) {
     if (!m->loadok) {
         struct room_game *ro = room_member_to_game(m);
         m->loadok = true;
+        sh_trace("Room %u player %u load ok", ro->id, UID(m));
         check_enter_room_game(s, ro);
     }
 }

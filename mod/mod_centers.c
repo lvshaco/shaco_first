@@ -173,7 +173,6 @@ centers_main(struct module *s, int session, int source, int type, const void *ms
             }
         }
         tmp[--n] = '\0';
-        sh_error("=================== handles %s", tmp);
         sh_module_send(MODULE_ID, source, MT_TEXT, tmp, n);
     } else if (!strcmp(cmd, "PUB")) {
         if (A.argc != 2)
