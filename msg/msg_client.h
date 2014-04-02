@@ -365,9 +365,14 @@ struct UM_ITEMEFFECT {
     _UM_HEADER;
     uint32_t spellid; // 释放者ID
     uint32_t oriitem; // 未知道具ID
-    uint32_t charid;  // 目标ID
     uint32_t itemid;  // 真实道具ID
+    uint8_t ntarget;
+    uint32_t targets[];  // 目标ID
 };
+static inline uint16_t
+UM_ITEMEFFECT_size(struct UM_ITEMEFFECT *um) {
+    return sizeof(*um) + sizeof(um->targets[0])*um->ntarget;
+}
 
 struct UM_ITEMUNEFFECT {
     _UM_HEADER;

@@ -344,7 +344,7 @@ sh_module_broadcast(int source, int dest, int type, const void *msg, int sz) {
 
 int 
 sh_module_vsend(int source, int dest, const char *fmt, ...) {
-    char msg[2028];
+    char msg[2048];
     va_list ap;
     va_start(ap, fmt);
     int n = vsnprintf(msg, sizeof(msg), fmt, ap);

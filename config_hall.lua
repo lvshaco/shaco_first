@@ -1,6 +1,6 @@
 require "config_base"
 def_node("hall", 80)
-sh_module=sh_module..",hall,redisproxy:rpuser,redisproxy:rpuseruni,redisproxy:rprank"
+sh_module=sh_module..",hall,rank,redisproxy:rpuser,redisproxy:rpuseruni,redisproxy:rprank"
 
 rpuser_requester="hall,benchmarkdb"
 rpuser_sharding_mod=32

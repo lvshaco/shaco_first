@@ -1044,16 +1044,16 @@ use_item(struct module *s, struct player *m, const struct UM_USEITEM *use) {
         }
     }
 
-    UM_DEFFIX(UM_ITEMEFFECT, ie);
+    UM_DEFVAR(UM_ITEMEFFECT, ie);
     ie->spellid = m->detail.charid;
     ie->oriitem = init_itemid;
     ie->itemid = item->id;
+    ie->ntarget = ntar;
     int i;
     for (i=0; i<ntar; ++i) {
-        struct player *one = tars[i];
-        ie->charid = one->detail.charid; 
-        multicast_msg(s, ro, ie, sizeof(*ie), 0);
+        ie->targets[i] = UID(tars[i]);
     }
+    multicast_msg(s, ro, ie, UM_ITEMEFFECT_size(ie), 0);
 }
 
 static inline int

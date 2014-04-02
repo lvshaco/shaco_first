@@ -40,7 +40,7 @@ hall_init(struct module *s) {
         sh_monitor("match", &h, &self->match_handle) ||
         sh_handler("rpuser", SUB_LOCAL, &self->rpuser_handle) ||
         sh_handler("rpuseruni", SUB_LOCAL, &self->rpuseruni_handle) ||
-        sh_handler("rprank", SUB_LOCAL, &self->rprank_handle)) {
+        sh_handler("rank", SUB_LOCAL, &self->rank_handle)) {
         return 1;
     }
     self->randseed = sh_timer_now()/1000;

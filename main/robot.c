@@ -243,14 +243,15 @@ _handleum(int id, int ut, struct UM_BASE* um) {
         mylog("game start");
         if (CHAR.accid % 2 == 0) {
         //_useitem(2);
-        _useitem(3);
+        _useitem(212010);
         //_useitem(4);
         }
         }
         break;
     case IDUM_ITEMEFFECT: {
         UM_CAST(UM_ITEMEFFECT, ie, um);
-        mylog("item effect %u, to char %u", ie->itemid, ie->charid);
+        mylog("item effect %u, nchar %u, to char %u", ie->itemid, 
+                ie->ntarget, ie->targets[0]);
         }
         break;
     case IDUM_ROLEINFO: {

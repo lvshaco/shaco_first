@@ -21,7 +21,7 @@ struct hall {
     int watchdog_handle;
     int rpuser_handle;
     int rpuseruni_handle;
-    int rprank_handle;
+    int rank_handle;
     int tick;
     uint32_t randseed;
     struct sh_hash acc2player;
