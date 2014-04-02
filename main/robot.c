@@ -250,8 +250,14 @@ _handleum(int id, int ut, struct UM_BASE* um) {
         break;
     case IDUM_ITEMEFFECT: {
         UM_CAST(UM_ITEMEFFECT, ie, um);
-        mylog("item effect %u, nchar %u, to char %u", ie->itemid, 
-                ie->ntarget, ie->targets[0]);
+        char tmp[1024];
+        int n = 0;
+        int i;
+        for (i=0; i<ie->ntarget; ++i) {
+            n += snprintf(tmp+n, sizeof(tmp)-n, " %u", ie->targets[i]);
+        }
+        mylog("item effect %u, nchar %u, to char %s", ie->itemid, 
+                ie->ntarget, tmp);
         }
         break;
     case IDUM_ROLEINFO: {

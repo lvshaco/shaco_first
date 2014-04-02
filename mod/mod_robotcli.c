@@ -469,7 +469,13 @@ handle(struct module *s, struct client *c, void *msg, int sz) {
         }
     case IDUM_ITEMEFFECT: {
         UM_CAST(UM_ITEMEFFECT, ie, base);
-        sh_trace("Client %d item effect %u, to char %u", c->id, ie->itemid, ie->charid);
+        char tmp[1024];
+        int n = 0;
+        int i;
+        for (i=0; i<ie->ntarget; ++i) {
+            n += snprintf(tmp+n, sizeof(tmp)-n, " %u", ie->targets[i]);
+        }
+        sh_trace("Client %d item effect %u, to char %s", c->id, ie->itemid, tmp);
         }
         break;
     case IDUM_ROLEINFO: {
