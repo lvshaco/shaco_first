@@ -38,11 +38,13 @@ _db(struct module *s, struct player* p, int8_t type) {
 
     struct chardata* cdata = &p->data;
     struct ringdata* rdata = &cdata->ringdata;
+    uint32_t charid = cdata->charid;
     uint32_t accid = cdata->accid;
 
     UM_DEFVAR2(UM_REDISQUERY, rq, UM_MAXSZ);
     struct memrw rw;
     memrw_init(&rw, rq->data, UM_MAXSZ - sizeof(*rq));
+    memrw_write(&rw, &charid, sizeof(charid));
     memrw_write(&rw, &accid, sizeof(accid));
     memrw_write(&rw, &type, sizeof(type)); 
     rq->cbsz = RW_CUR(&rw);
@@ -55,7 +57,7 @@ _db(struct module *s, struct player* p, int8_t type) {
         }
     case PDB_CHECKNAME: {
         rq->flag = RQUERY_REPLY;
-        int len = redis_format(&rw.ptr, RW_SPACE(&rw), "setnx user:%s:name %u", cdata->name, cdata->charid);
+        int len = redis_format(&rw.ptr, RW_SPACE(&rw), "setnx user:%s:name %u", cdata->name, charid);
         memrw_pos(&rw, len);
         return SEND_RP(self->rpuseruni_handle);
         }
@@ -67,7 +69,6 @@ _db(struct module *s, struct player* p, int8_t type) {
         }
     case PDB_BINDCHARID: {
         rq->flag = RQUERY_REPLY;
-        uint32_t charid = cdata->charid;
         int len = redis_format(&rw.ptr, RW_SPACE(&rw), "set acc:%u:user %u",
                 accid, charid);
         memrw_pos(&rw, len);
@@ -75,7 +76,6 @@ _db(struct module *s, struct player* p, int8_t type) {
         }
     case PDB_LOAD: {
         rq->flag = RQUERY_REPLY|RQUERY_SHARDING;
-        uint32_t charid = cdata->charid;
         int len = redis_format(&rw.ptr, RW_SPACE(&rw), "hmget user:%u"
                 " name"
                 " level"
@@ -102,7 +102,6 @@ _db(struct module *s, struct player* p, int8_t type) {
         }
     case PDB_CREATE: {
         rq->flag = RQUERY_REPLY|RQUERY_SHARDING;
-        uint32_t charid = cdata->charid;
         char_create(cdata);
         int len = redis_format(&rw.ptr, RW_SPACE(&rw), "hmset user:%u"
                 " name %s"
@@ -262,9 +261,11 @@ hall_playerdb_process_redis(struct module *s, struct UM_REDISREPLY *rep, int sz)
     struct hall *self = MODULE_SELF;
 
     int8_t type = 0; 
+    uint32_t charid = 0;
     uint32_t accid = 0;
     struct memrw rw;
     memrw_init(&rw, rep->data, sz - sizeof(*rep));
+    memrw_read(&rw, &charid, sizeof(charid));
     memrw_read(&rw, &accid, sizeof(accid));
     memrw_read(&rw, &type, sizeof(type));
 
