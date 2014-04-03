@@ -100,7 +100,6 @@ init_agents(struct module *s) {
         agent_rest(self, ag);
         sh_hash_insert(&self->agents, UID(ag), ag);
     }
-    self->nagent = count;
     return 0;
 }
 
@@ -216,7 +215,6 @@ robot_free(struct robot* self) {
     sh_hash_foreach(&self->agents, free);
     sh_hash_fini(&self->agents);
     memset(self->rests, 0, sizeof(self->rests));
-    self->nagent = 0;
     robot_tplt_fini(self);
     free(self);
 }

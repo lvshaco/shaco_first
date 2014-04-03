@@ -50,7 +50,6 @@ struct robot {
     struct tplt *T;
     int match_handle;
     int room_handle;
-    int nagent;
     struct sh_hash agents;
     struct agent_list rests[AI_MAX];
 };
