@@ -1051,7 +1051,7 @@ use_item(struct module *s, struct player *m, const struct UM_USEITEM *use) {
     ie->ntarget = ntar;
     int i;
     for (i=0; i<ntar; ++i) {
-        ie->targets[i] = UID(tars[i]);
+        ie->targets[i] = tars[i]->detail.charid;
     }
     multicast_msg(s, ro, ie, UM_ITEMEFFECT_size(ie), 0);
 }
