@@ -402,6 +402,11 @@ handle(struct module *s, struct client *c, void *msg, int sz) {
         }
         break;
         }
+    case IDUM_NOTIFYWEB: {
+        UM_CAST(UM_NOTIFYWEB, nw, base);
+        sh_trace("webaddr %s", nw->webaddr);
+        break;
+        }
     case IDUM_CHARINFO: {
         UM_CAST(UM_CHARINFO, ci, base);
         client_info(c, &ci->data);

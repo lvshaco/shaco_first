@@ -45,6 +45,8 @@ struct watchdog {
     uint32_t wsession_alloctor;
     struct sh_hash64 conn2user;
     struct sh_hash acc2user;
+
+    char webaddr[IP_LEN];
 };
 
 // watchdog
@@ -79,6 +81,8 @@ watchdog_init(struct module *s) {
         sh_monitor("room", &h, &self->room_handle)) {
         return 1;
     }
+    const char *webaddr = sh_getstr("web_addr", "");
+    sh_strncpy(self->webaddr, webaddr, sizeof(self->webaddr)); 
     sh_hash64_init(&self->conn2user, 1);
     sh_hash_init(&self->acc2user, 1);
     return 0;
@@ -250,6 +254,12 @@ uniqueol_ok(struct module *s, struct user *ur) {
         logout(s, ur, SERR_NOHALLS, DISCONNECT);
         return;
     }
+
+    UM_DEFWRAP(UM_GATE, g, UM_NOTIFYWEB, nw);
+    g->connid = ur->connid;
+    memcpy(nw->webaddr, self->webaddr, sizeof(nw->webaddr));
+    sh_module_send(MODULE_ID, ur->gate_source, MT_UM, g, sizeof(*g) + sizeof(*nw));
+
     ur->status = S_HALL;
     ur->hall_handle = hall_handle;
 

@@ -151,7 +151,7 @@ struct UM_NOTIFYGATE {
 
 struct UM_NOTIFYWEB {
     _UM_HEADER;
-    uint32_t webaddr;
+    char webaddr[IP_LEN];
 };
 
 ////////////////////////////////////////////////////////////
