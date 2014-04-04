@@ -131,6 +131,17 @@ notify_award(struct module *s, struct room_game *ro, struct player *m,
     sh_module_send(MODULE_ID, m->watchdog_source, MT_UM, ha, sizeof(*ha)+sizeof(*ga));
 }
 
+static inline void
+notify_item_noeffect(struct module *s, struct player *m, uint32_t initid, uint32_t itemid) {
+    UM_DEFWRAP(UM_CLIENT, cl, UM_ITEMEFFECT, ie); 
+    cl->uid = UID(m);
+    ie->spellid = m->detail.charid;
+    ie->oriitem = initid;
+    ie->itemid = itemid;
+    ie->ntarget = 0;
+    sh_module_send(MODULE_ID, m->watchdog_source, MT_UM, cl, sizeof(*cl)+sizeof(*ie));
+}
+
 static void
 multicast_msg(struct module *s, struct room_game* ro, const void *msg, int sz, uint32_t except) {
     UM_DEFWRAP2(UM_CLIENT, cl, sz); 
@@ -1030,6 +1041,7 @@ use_item(struct module *s, struct player *m, const struct UM_USEITEM *use) {
     struct player* tars[MEMBER_MAX];
     int ntar = get_effect_members(ro, m, item->target, tars);
     if (ntar <= 0) {
+        notify_item_noeffect(s, m, init_itemid, item->id);
         return;
     }
 
