@@ -666,12 +666,8 @@ void
 test_log(int times) {
     uint64_t t1, t2; 
     char data[1024];
-    long sz;
-    int i;
-    for (i=0; i<sizeof(data); ++i) {
-        data[i] = '0';
-    }
-    data[sizeof(data)-1] = '\0';
+    int i, sz;
+    int n = snprintf(data, sizeof(data), "filed1, field2, field3, field4, field5\r\n");
     FILE* fp = fopen("/tmp/test1.log", "w+");
     setbuf(fp, NULL);
 
@@ -680,12 +676,12 @@ test_log(int times) {
 
     t1 = _elapsed();
     for (i=0; i<times; ++i) {
-        fprintf(fp, data);
+        fwrite(data, n, 1, fp);
     }
     t2 = _elapsed();
     sz = ftell(fp);
     fclose(fp);
-    printf("write size: %ld, times: %d, fprintf used time: %d\n", sz, times, (int)(t2-t1));
+    printf("write size: %d, times: %d, fprintf used time: %d\n", sz, times, (int)(t2-t1));
 /*
     t1 = _elapsed();
     for (i=0; i<times; ++i) {
@@ -1755,7 +1751,7 @@ main(int argc, char* argv[]) {
     //test_freelist();
     //test_elog2();
     //test_elog3(times);
-    //test_log(times);
+    test_log(times);
     //test_elog4(times);
     //test_redisnew(times);
     //test_copy(times);
