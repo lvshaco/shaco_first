@@ -7,7 +7,7 @@
 # @version 
 # @Copyright shengjoy.com
 # @date 2012-12-19
-
+import time
 import struct
 import os
 from exparser import *
@@ -21,10 +21,11 @@ TYPEID_MAX = 10 # 0~9
 CTYPE_ITEM = 0
 CTYPE_CELL = 1
 
-def parse_blocksheet(infile, map_config, outfile):
+def parse_blocksheet(excel, map_config, outfile):
     #log.write("\nmap_config:")
     #print(map_config)
     # id, width, height, block, colortex, spectex
+
     mapid   = int(map_config["id"])
     width   = int(map_config["width"])
     height  = int(map_config["height"])
@@ -47,10 +48,8 @@ def parse_blocksheet(infile, map_config, outfile):
     outdir = os.path.dirname(outfile)
     outfile = os.path.join(outdir, "map%d.map"%mapid)
     op = file(outfile, "wb")
- 
-    sheet   = ep_open(infile, sheetname)
+    sheet   = ep_opensheet(excel, sheetname)
     table   = ep_parse_raw(sheet)
-
     items = table.items
     row   = len(items)-3
     col   = len(items[0])-4
@@ -187,9 +186,9 @@ def parse_mapsheet(infile, table, field_map, outfile):
     """
     序列化所有数据
     """
-    
+   
+    excel = ep_openexcel(infile)
     map_config = {}
-
     items = table.items
     for row in range(len(items)): 
         item = items[row]
@@ -197,7 +196,7 @@ def parse_mapsheet(infile, table, field_map, outfile):
             val = item[i]
             fvname = field_map_get_fvname(field_map, i)
             map_config[fvname] = val
-        parse_blocksheet(infile, map_config, outfile)
+        parse_blocksheet(excel, map_config, outfile)
 
 def _convert(infile, sheetdesc, out_dir):
     """

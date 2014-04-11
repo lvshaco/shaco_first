@@ -8,13 +8,21 @@
 # @Copyright shengjoy.com
 # @date 2012-12-19
 
+import time
 import sys
 import xlrd
 import re
 from xml.dom import minidom
 
 __all__ = [ "log",
-            "ep_parse_config", "ep_filter_fields", "ep_open", "ep_parse", "ep_parse_raw", "ep_table",
+            "ep_parse_config", 
+            "ep_filter_fields", 
+            "ep_openexcel",
+            "ep_opensheet",
+            "ep_open", 
+            "ep_parse", 
+            "ep_parse_raw", 
+            "ep_table",
             "field_map_get_fname", 
             "field_map_get_fvname", 
             "field_map_get_ftype", 
@@ -124,17 +132,23 @@ def ep_filter_fields(fields, type):
             field_map.append(field)
     return field_map
 
-def ep_open(excelname, sheetname):
-    """
-    打开excel
-    """
-    book = xlrd.open_workbook(excelname)
+def ep_openexcel(excelname):
+    return xlrd.open_workbook(excelname)
+
+def ep_opensheet(excel, sheetname):
     try:
-        sheet = book.sheet_by_name(sheetname)
+        sheet = excel.sheet_by_name(sheetname)
     except Exception, e:
         log.write("[error : %s]\n"%str(e))
         exit(1)
     return sheet
+
+def ep_open(excelname, sheetname):
+    """
+    打开excel
+    """
+    excel = ep_openexcel(excelname)
+    return ep_opensheet(excel, sheetname)
 
 def _get_fields_col(sheet, field_map):
     """
