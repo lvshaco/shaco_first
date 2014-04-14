@@ -147,7 +147,11 @@ def ep_open(excelname, sheetname):
     """
     打开excel
     """
+    #print("open %s ...\n"%excelname)
+    #t1=time.time()
     excel = ep_openexcel(excelname)
+    #t2=time.time()
+    #print("open %s use time %d\n"%(excelname, t2-t1))
     return ep_opensheet(excel, sheetname)
 
 def _get_fields_col(sheet, field_map):

@@ -45,7 +45,8 @@ def ec_convert(cfgfile, in_dir, out_dirs):
                     infile  = os.path.join(in_dir, excelname)
                     if not out_dirs.has_key(opt.name):
                         log.write("[!!!error] not set the out directory to#%s\n"%opt.name)
-                        return
+                        #return
+                        continue
                     out_dir = out_dirs[opt.name]
                     if not os.path.exists(out_dir):
                         os.mkdir(out_dir)
