@@ -116,11 +116,11 @@ attribute_refresh(struct tplt *T, struct chardata *cdata) {
     int state_value = cdata->roles_state[typeid]; 
     int state_id = role_state_id(state_value); 
     static struct effect_type state_effects[ROLE_STATE_MAX * 3] = { // todo
-        { EFFECT_LUCK, -50, 1 }, { EFFECT_OXYGEN, -50, 1 }, { EFFECT_INVALID, 0, 0 },
-        { EFFECT_LUCK, -10, 1 }, { EFFECT_OXYGEN, -50, 1 }, { EFFECT_INVALID, 0, 0 },
-        { EFFECT_INVALID, 0, 0 }, { EFFECT_INVALID, 0, 0 }, { EFFECT_INVALID, 0, 0 },
-        { EFFECT_LUCK,  10, 1 }, { EFFECT_OXYGEN,  10, 1 }, { EFFECT_INVALID, 0, 0 },
-        { EFFECT_LUCK,  50, 1 }, { EFFECT_OXYGEN,  50, 1 }, { EFFECT_INVALID, 0, 0 },
+        { EFFECT_LUCK, -50, 1 }, { EFFECT_OXYGEN, -60, 1 }, { EFFECT_QUICK, -10, 1 },
+        { EFFECT_LUCK, -20, 1 }, { EFFECT_OXYGEN, -30, 1 }, { EFFECT_QUICK,  -5, 1 },
+        { EFFECT_INVALID, 0, 0 }, { EFFECT_INVALID, 0, 0 }, { EFFECT_QUICK,   0, 0 },
+        { EFFECT_LUCK,  20, 1 }, { EFFECT_OXYGEN,  30, 1 }, { EFFECT_QUICK,   5, 1 },
+        { EFFECT_LUCK,  50, 1 }, { EFFECT_OXYGEN,  60, 1 }, { EFFECT_QUICK,  10, 1 },
     };
     struct effect_type* stateptr = &state_effects[state_id];
     for (i=0; i<3; ++i) {
