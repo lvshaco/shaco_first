@@ -130,16 +130,7 @@ centers_main(struct module *s, int session, int source, int type, const void *ms
     struct args A;
     if (args_parsestrl(&A, 0, msg, sz) < 1)
         return;
-    /*
-    char tmp[sz+1];
-    if (tmp == NULL) {
-        sh_error("Invalid command");
-        return;
-    }
-    memcpy(tmp, msg, sz);
-    tmp[sz] = '\0';
-    sh_info("[CENTERS] %s, %d", tmp, sz);
-    */
+    
     const char *cmd = A.argv[0];
 
     if (!strcmp(cmd, "REG")) {

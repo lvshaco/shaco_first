@@ -14,11 +14,13 @@ struct _int_vector {
 struct _node {
     int connid;
     int node_handle;
+    uint64_t last_hb_send_time;
     struct sh_node_addr addr; 
     struct _int_vector handles;
 };
 
 struct remote {
+    int hb_tick;
     int center_handle;
     int myid;
     struct _node nodes[NODE_MAX];
@@ -45,6 +47,7 @@ _bound_node_entry(struct _node *no, int handle) {
 static inline void
 _bound_node_connection(struct _node *no, int connid) {
     no->connid = connid;
+    no->last_hb_send_time = sh_timer_now();
 }
 
 static int
@@ -76,9 +79,14 @@ _my_node(struct remote *self) {
     return _get_node(self, self->myid);
 }
 
+static inline int
+center_id(struct remote *self) {
+    return sh_nodeid_from_handle(self->center_handle);
+}
+
 static bool
-_is_center(struct remote *self) {
-    return sh_nodeid_from_handle(self->center_handle) == 0;
+is_center(struct remote *self) {
+    return center_id(self) == 0;
 }
 
 static void
@@ -101,7 +109,7 @@ _disconnect_node(struct module *s, int connid) {
             sh_module_exit(no->handles.pi[i]);
         }
         no->handles.sz = 0;
-        if (_is_center(self)) {
+        if (is_center(self)) {
             sh_module_vsend(MODULE_ID, self->center_handle, "UNREG %d", id);
         }
     }
@@ -239,7 +247,8 @@ _listen(struct module *s) {
     struct remote *self = MODULE_SELF;
     struct _node *my = _my_node(self);
     if (my == NULL ||
-        sh_net_listen(my->addr.naddr, my->addr.nport, 0, s->moduleid, 0)) {
+        (my->addr.nport > 0 &&
+         sh_net_listen(my->addr.naddr, my->addr.nport, 0, s->moduleid, 0))) {
         return 1;
     }
     sh_info("listen node on %s:%u", my->addr.naddr, my->addr.nport);
@@ -294,7 +303,8 @@ _connect_node(struct module *s, struct _node *no) {
         return 1;
     }
     sh_net_subscribe(connid, true);
-    _bound_node_connection(no, connid);
+    _bound_node_connection(no, connid); 
+
     sh_info("Connect to node(%d:%d) %s:%u ok", id, connid, addr->naddr, addr->nport);
     return 0;
 }
@@ -472,6 +482,9 @@ node_init(struct module* s) {
             return 1;
         }
     }
+    int hb_tick = sh_getint_inrange("node_heartbeat", 3, 30);
+    self->hb_tick = hb_tick * 1000;
+    sh_timer_register(MODULE_ID, self->hb_tick);
     return 0;
 }
 
@@ -530,7 +543,7 @@ node_net(struct module* s, struct net_message* nm) {
         _read(s, nm);
         break;
     case NETE_ACCEPT:
-        if (_is_center(self)) {
+        if (is_center(self)) {
             _send_center_entry(s, nm->connid);
         }
         sh_net_subscribe(nm->connid, true);
@@ -549,20 +562,35 @@ node_net(struct module* s, struct net_message* nm) {
 }
 
 void
+node_time(struct module* s) {
+    struct remote *self = MODULE_SELF;
+
+    uint64_t now = sh_timer_now();
+    struct _node *no;
+    int i;
+    for (i=0; i<NODE_MAX; ++i) {
+        no = &self->nodes[i];
+        if (no->connid != -1) {
+            if (now - no->last_hb_send_time >= self->hb_tick) {
+                _dsend(self, no->connid, MODULE_ID, no->node_handle, MT_TEXT, "HB", 2);
+            }
+        }
+    }
+
+    int id = center_id(self);
+    if (id > 0) {
+        no = _get_node(self, id);
+        if (no && no->connid == -1) {
+            _connect_to_center(s);
+        }
+    }
+}
+
+void
 node_main(struct module *s, int session, int source, int type, const void *msg, int sz) {
-    if (type != MT_TEXT) {
+    if (type != MT_TEXT)
         return;
-    }
-    /*
-    char tmp[sz+1];
-    if (tmp == NULL) {
-        sh_error("Invalid command");
-        return;
-    }
-    memcpy(tmp, msg, sz);
-    tmp[sz] = '\0';
-    sh_info("[NODE] %s", tmp);
-    */
+
     struct remote *self = MODULE_SELF;
     struct args A;
     if (args_parsestrl(&A, 0, msg, sz) < 1)
@@ -611,10 +639,8 @@ node_main(struct module *s, int session, int source, int type, const void *msg, 
             struct _node *no = _get_node(self, id);
             if (no) {
                 _update_node(no, naddr, nport, gaddr, gport, waddr);
-                // note:
-                // node need connect each other, for heartbeat;
-                // so now just simple connect all node
-                _connect_node(s, no); 
+                // no need connect each other
+                //_connect_node(s, no); 
             }
         }
     } else if (!strcmp(cmd, "BROADCAST")) {

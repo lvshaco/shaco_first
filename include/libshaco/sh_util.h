@@ -147,4 +147,6 @@ sh_snprintf(char *str, size_t size, const char *format, ...) {
     return n;
 }
 
+int sh_fork(char *const argv[], int n);
+
 #endif

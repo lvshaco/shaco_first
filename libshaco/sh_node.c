@@ -14,6 +14,8 @@
 #define SID_MASK 0xff
 #define SUB_MAX  0xff
 #define NODE_MASK 0xff00
+#define VHANDLE_MASK (0x10000)
+#define VHANDLE(i) (VHANDLE_MASK | (i))
 
 struct _handle {
     int id;
@@ -114,11 +116,28 @@ _vhandle(const char *name) {
     for (i=0; i<n; ++i) {
         s = &sers->p[i];
         if (!strcmp(s->name, name)) {
-            return 0x10000 | i;
+            return VHANDLE(i);
         }
     }
     return -1;
 }
+
+static int
+find_vhandle_bynodeid(int nodeid) {
+    struct _module_vector *sers = &R->sers;
+    struct _module *s;
+    int i,j;
+    for (i=0; i<sers->sz; ++i) {
+        s = &sers->p[i];
+        for (j=0; j<s->sz; ++j) {
+            if (sh_nodeid_from_handle(s->phandle[j].id) == nodeid) {
+                return VHANDLE(i);
+            }
+        }
+    }
+    return -1;
+}
+
 static int
 _subscribe(const char *name) {
     struct _module_vector *sers = &R->sers;
@@ -138,7 +157,7 @@ _subscribe(const char *name) {
     memset(s, 0, sizeof(*s));
     sh_strncpy(s->name, name, sizeof(s->name));
     sers->sz++;
-    return 0x10000 | n;
+    return VHANDLE(n);
 }
 
 static int
@@ -158,7 +177,7 @@ _register(const char *name, int handle) {
         s = &sers->p[i];
         if (!strcmp(s->name, name)) {
             if (!_add_handle(s, handle)) {
-                return 0x10000 | i;
+                return VHANDLE(i);
             } else
                 return -1;
         }
@@ -176,7 +195,7 @@ _unregister(int handle) {
         for (j=0; j<s->sz; ++j) {
             if (!_rm_handle(s, handle)) {
                 sh_info("Handle(%s:%0x) exit", s->name, handle);
-                return 0x10000 | i;
+                return VHANDLE(i);
             }
         }
     }
@@ -199,6 +218,17 @@ sh_module_exit(int handle) {
     int vhandle = _unregister(handle);
     if (vhandle != -1) {
         sh_monitor_trigger_exit(vhandle, handle);
+        return 0;
+    } else
+        return 1;
+}
+
+int
+sh_module_suspend(int handle) {
+    int nodeid = sh_nodeid_from_handle(handle);
+    int vhandle = find_vhandle_bynodeid(nodeid);
+    if (vhandle != -1) {
+        sh_monitor_trigger_suspend(vhandle, handle);
         return 0;
     } else
         return 1;
@@ -308,7 +338,7 @@ send(int source, int dest, int type, const void *msg, int sz) {
 
 int 
 sh_module_send(int source, int dest, int type, const void *msg, int sz) {
-    if (dest & 0x10000) {
+    if (dest & VHANDLE_MASK) {
         struct _module *s = _get_module(dest);
         if (s == NULL) {
             sh_error("No subscribe remote module %04x", dest);
@@ -328,7 +358,7 @@ int
 sh_module_broadcast(int source, int dest, int type, const void *msg, int sz) {
     struct _module *s;
     int i, n=0;
-    if (dest & 0x10000) {
+    if (dest & VHANDLE_MASK) {
         s = _get_module(dest);
         if (s) {
             for (i=0; i<s->sz; ++i) {

@@ -13,6 +13,7 @@ struct sh_monitor_handle {
 #define MONITOR_MAX 2
 #define MONITOR_STARTB 2
 #define MONITOR_STARTE 3
+#define MONITOR_SUSPEND 4
 
 #define sh_monitor_type(msg) (((uint8_t*)(msg))[0])
 #define sh_monitor_vhandle(msg) sh_from_littleendian32((msg)+1)
@@ -20,6 +21,7 @@ struct sh_monitor_handle {
 int sh_monitor_register(const char *name, const struct sh_monitor_handle *h);
 int sh_monitor_trigger_start(int vhandle, int handle, const struct sh_node_addr *addr);
 int sh_monitor_trigger_exit(int vhandle, int handle);
+int sh_monitor_trigger_suspend(int vhandle, int handle);
 int sh_monitor_trigger_startb(int vhandle);
 int sh_monitor_trigger_starte(int vhandle);
 

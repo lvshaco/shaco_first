@@ -16,6 +16,8 @@
 #include <time.h>
 #include <unistd.h>
 #include <syslog.h>
+#include <signal.h>
+#include <sys/stat.h>
 
 static uint64_t
 _elapsed() {
@@ -1685,7 +1687,7 @@ rm_unique(struct uniqueol *self, int source) {
     }
 }
 
-static void
+void
 test_unique(int times) {
     int i,j;
     uint64_t t1, t2;
@@ -1727,6 +1729,40 @@ test_unique(int times) {
     printf("3 t3 : %d\n", (int)(t2-t1));
 }
 
+void
+test_system(int times) {
+    printf("system start-------------------------------------------------------\n");
+    system("./shaco config_center.lua --sh_daemon 1");
+    printf("system end-------------------------------------------------------\n");
+}
+
+void
+test_pid(int times) {
+    uint64_t t1, t2;
+    int i;
+    struct stat buf;
+    t1 = _elapsed();
+    for (i=0; i<times; ++i) {
+        assert(access("/proc/27147", F_OK) == 0);
+    }
+    t2 = _elapsed();
+    printf("access use time %d\n", (int)(t2-t1));
+
+    t1 = _elapsed();
+    for (i=0; i<times; ++i) {
+        stat("proc/27147", &buf);
+    }
+    t2 = _elapsed();
+    printf("stat use time %d\n", (int)(t2-t1));
+
+    t1 = _elapsed();
+    for (i=0; i<times; ++i) {
+        assert(kill(27147, 0) == 0);
+    }
+    t2 = _elapsed();
+    printf("kill 0 use time %d\n", (int)(t2-t1));
+}
+
 int 
 main(int argc, char* argv[]) {
     int times = 1;
@@ -1751,7 +1787,7 @@ main(int argc, char* argv[]) {
     //test_freelist();
     //test_elog2();
     //test_elog3(times);
-    test_log(times);
+    //test_log(times);
     //test_elog4(times);
     //test_redisnew(times);
     //test_copy(times);
@@ -1767,7 +1803,9 @@ main(int argc, char* argv[]) {
     //test_syslog(times);
     //test_array(times);
     //test_rand(times);
-    test_unique(times);
+    //test_unique(times);
+    //test_system(times);
+    test_pid(times);
     uint64_t t2 = _elapsed();
     printf("main use time %d\n", (int)(t2-t1));
     return 0;

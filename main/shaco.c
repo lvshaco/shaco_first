@@ -83,6 +83,25 @@ main(int argc, char* argv[]) {
         }
     }
 
+    int len = argc-1;
+    for (i=0; i<argc; ++i) {
+        len += strlen(argv[i]);
+    }
+    char *args = malloc(len+1);
+    char *p = args;
+    int n;
+    for (i=0; i<argc; ++i) {
+        strcpy(p, argv[i]);
+        n = strlen(argv[i]);
+        p += n;
+        *p = ' ';
+        p += 1;
+    }
+    *(p-1) = '\0';
+
+    sh_setenv("sh_startup_args", args);
+    free(args);
+
     if (sh_getint("sh_daemon", 0)) {
         daemon(1, 1);
     }

@@ -55,8 +55,19 @@ sh_getnum(const char* key, float def) {
         lua_pop(L, 1);
         return f;
     } else {
+        lua_pop(L, 1);
         return def;
     }
+}
+
+float 
+sh_getnum_inrange(const char *key, float min, float max) {
+    float f = sh_getnum(key, 0);
+    if (f < min)
+        f = min;
+    if (f > max)
+        f = max;
+    return f;
 }
 
 const char* 
@@ -69,6 +80,7 @@ sh_getstr(const char* key, const char* def) {
         lua_pop(L, 1);
         return str;
     } else {
+        lua_pop(L, 1);
         return def;
     }
 }

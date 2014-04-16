@@ -9,8 +9,8 @@ struct netbuf_block {
     int wptr;
 };
 
-#define RB_RPTR(rb) ((char*)((rb)+1) + (rb)->rptr)
-#define RB_WPTR(rb) ((char*)((rb)+1) + (rb)->wptr)
+#define RB_RPTR(rb) ((uint8_t*)((rb)+1) + (rb)->rptr)
+#define RB_WPTR(rb) ((uint8_t*)((rb)+1) + (rb)->wptr)
 #define RB_SPACE(rb) ((rb)->sz   - (rb)->wptr)
 #define RB_NREAD(rb) ((rb)->wptr - (rb)->rptr)
 

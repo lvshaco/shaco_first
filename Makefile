@@ -91,6 +91,8 @@ mod_so=\
 	mod_loadbalance.so \
 	mod_watchdog.so \
 	mod_uniqueol.so \
+	mod_keepalivec.so \
+	mod_keepalived.so \
 	mod_benchmarklog.so \
 	mod_benchmark.so \
 	mod_robotcli.so
