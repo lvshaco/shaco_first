@@ -23,6 +23,8 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.py *.h *.c" {
  config_watchdog.lua
  config_watchdog2.lua
  config_keepalived.lua
+ config_testc.lua
+ config_testd.lua
  libshaco=libshaco{
   dlmodule.c
   sh_array.c

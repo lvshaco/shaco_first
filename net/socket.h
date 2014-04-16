@@ -73,10 +73,10 @@ _socket_nonblocking(socket_t fd) {
 
 static inline int
 _socket_closeonexec(socket_t fd) {
-    int flag = fcntl(fd, F_GETFL, 0);
+    int flag = fcntl(fd, F_GETFD, 0);
     if (flag == -1)
         return -1;
-    return fcntl(fd, F_SETFL, flag | FD_CLOEXEC);
+    return fcntl(fd, F_SETFD, flag | FD_CLOEXEC);
 }
 
 static inline int

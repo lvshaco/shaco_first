@@ -86,13 +86,18 @@ c_create(struct keepalived *self, const char *args) {
     return c;
 }
 
+static void
+c_close_socket(struct keepalived *self, struct client *c) {
+    if (c->connid != -1) {
+        sh_net_close_socket(c->connid, true);
+    }
+}
+
 static int
 c_kick(struct keepalived *self, struct client *c) {
     sh_info("Keepalived client(%s) kick", c->args);
 
-    if (c->connid != -1) {
-        sh_net_close_socket(c->connid, true);
-    }
+    c_close_socket(self, c);
     if (c->args) {
         free(c->args);
         c->args = NULL;
@@ -135,6 +140,7 @@ static void
 c_kill(struct keepalived *self, struct client *c) {
     sh_info("Keepalived client(%d, %s) kill", c->pid, c->args);
 
+    c_close_socket(self, c);
     if (!kill(c->pid, SIGKILL)) {
         c->status = ST_KILLING;
     } else {
@@ -167,6 +173,8 @@ c_wait_start(struct keepalived *self, struct client *c, int ms) {
 static void
 c_stop(struct keepalived *self, struct client *c) {
     sh_info("Keepalived client(%d, %s) stop", c->pid, c->args);
+    
+    c_close_socket(self, c);
     if (!kill(c->pid, SIGINT)) {
         while (c_check_running(self, c)) {
             usleep(1000);
@@ -221,10 +229,13 @@ keepalived_init(struct module *s) {
    
     const char *ip = sh_getstr("keepalive_ip", "0");
     int port       = sh_getint("keepalive_port", 0);
-    if (sh_net_listen(ip, port, 0, MODULE_ID, 0)) {
+    int err;
+    int id = sh_net_listen(ip, port, 0, MODULE_ID, 0, &err);
+    if (id == -1) {
+        sh_error("Keepalived listen on %s:%d err: %s", ip, port, sh_net_error(err));
         return 1;
     }
-    sh_info("Keepalived listen on %s:%d", ip, port);
+    sh_info("Keepalived listen on %s:%d [%d]", ip, port, id);
     
     // 3 times of keepalive_tick
     self->suspend_time_max = sh_getint("keepalive_suspend_time_max", 9);

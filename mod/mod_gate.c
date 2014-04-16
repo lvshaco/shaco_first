@@ -184,10 +184,13 @@ listen_gate(struct module* s) {
     int wbuffermax = sh_getint("gate_wbuffermax", 0);
     if (addr[0] == '\0')
         return 1;
-    if (sh_net_listen(addr, port, wbuffermax, MODULE_ID, 0)) {
+    int err;
+    int id = sh_net_listen(addr, port, wbuffermax, MODULE_ID, 0, &err);
+    if (id == -1) {
+        sh_error("Gate listen on %s:%d err: %s", addr, port, sh_net_error(err));
         return 1;
     }
-    sh_info("Listen gate on %s:%u", addr, port);
+    sh_info("Gate listen on %s:%u [%d]", addr, port, id);
     return 0;
 }
 

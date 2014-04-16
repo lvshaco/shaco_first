@@ -51,14 +51,8 @@ _dispatch() {
 }
 
 int
-sh_net_listen(const char* addr, int port, int wbuffermax, int moduleid, int ut) {
-    int err;
-    int id = net_listen(N, addr, port, wbuffermax, moduleid, ut, &err);
-    if (id < 0) {
-        sh_error("Listen %s:%d fail: %s", addr, port, sh_net_error(err));
-        return 1;
-    }
-    return 0;
+sh_net_listen(const char* addr, int port, int wbuffermax, int moduleid, int ut, int *err) {
+    return net_listen(N, addr, port, wbuffermax, moduleid, ut, err);
 }
 
 int 

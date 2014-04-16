@@ -179,9 +179,16 @@ sh_fork(char *const argv[], int n) {
         }
         if (pid2 == 0) {
             execvp(argv[0], argv);
-            exit(0);
+            // !!! do not call exit(1), 
+            // exit will call the function register in atexit,
+            // this will call net fini, close the socket, 
+            // eg: epoll_ctl del event, listen socket disable
+            _exit(1);
+            return 0;
         } else {
-            exit(0);
+            // !!! do not call exit(1)
+            _exit(1);
+            return 0;
         }
     } else {
         if (waitpid(pid, NULL, 0) != pid)

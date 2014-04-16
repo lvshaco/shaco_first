@@ -246,12 +246,14 @@ static int
 _listen(struct module *s) {
     struct remote *self = MODULE_SELF;
     struct _node *my = _my_node(self);
-    if (my == NULL ||
-        (my->addr.nport > 0 &&
-         sh_net_listen(my->addr.naddr, my->addr.nport, 0, s->moduleid, 0))) {
+    assert(my);
+    int err;
+    int id = sh_net_listen(my->addr.naddr, my->addr.nport, 0, s->moduleid, 0, &err);
+    if (id == -1) {
+        sh_error("Node listen on %s:%d err: %s", my->addr.naddr, my->addr.nport, sh_net_error(err));
         return 1;
     }
-    sh_info("listen node on %s:%u", my->addr.naddr, my->addr.nport);
+    sh_info("Node listen on %s:%u [%d]", my->addr.naddr, my->addr.nport, id);
     return 0;
 }
 

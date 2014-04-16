@@ -17,7 +17,7 @@ gateload = {ip=iip, port=8001, conn=256},
 uniqueol = {ip=iip, port=8002, conn=256},
 match    = {ip=iip, port=8003, conn=256},
 robot    = {ip=iip, port=8004, conn=256},
-keepalived={ip=iip, port=8620, conn=256},
+keepalived={ip=iip, port=8621, conn=256},
 --
 route    = {ip=iip, port=8100, conn=256},
 watchdog1 = {ip=iip, port=8130, conn=256},

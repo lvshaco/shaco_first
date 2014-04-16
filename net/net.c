@@ -636,7 +636,8 @@ _accept(struct net *self, struct socket *listens) {
         return NULL;
     }
 
-    if (_socket_nonblocking(fd) == -1) {
+    if (_socket_nonblocking(fd) == -1 /*||
+        _socket_closeonexec(fd) == -1*/) {
         _close_socket(self, s);
         return NULL;
     }
