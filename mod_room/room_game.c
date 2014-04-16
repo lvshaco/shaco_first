@@ -1187,20 +1187,26 @@ static void
 sync_press(struct module *s, struct player *m, const struct UM_ROLEPRESS *press) {
     struct room_game *ro = room_member_to_game(m);
 
+    bool be_press = false;
     if (has_effect_state(m, EFFECT_STATE_PROTECT_ONCE)) {
         clr_effect_state(m, EFFECT_STATE_PROTECT_ONCE);
     } else if (has_effect_state(m, EFFECT_STATE_PROTECT)) {
         return;
+    } else {
+        be_press = true;
     }
     // todo 临时屏蔽
+    //if (be_press) {
     //int oxygen = m->base.oxygen/10;
     //if (reduce_oxygen(m, oxygen) > 0) {
         //m->refresh_flag |= REFRESH_ATTRI;
     //}
+    //}
     on_refresh_attri(s, m, ro);
 
-    multicast_msg(s, ro, press, sizeof(*press), UID(m));
-
+    if (be_press) {
+        multicast_msg(s, ro, press, sizeof(*press), UID(m));
+    }
     if (m->detail.attri.oxygen <= 0) {
         if (ro->type == ROOM_TYPE_NORMAL) {
             member_over(s, ro, m, F_CLIENT|F_OTHER|F_AWARD);
