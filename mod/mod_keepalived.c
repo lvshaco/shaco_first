@@ -39,8 +39,8 @@ struct client {
 };
 
 struct keepalived {
-    int suspend_tick;
-    int disconn_tick;
+    int suspend_time_max;
+    int disconn_time_max;
     int cap;
     int sz;
     struct client *p;
@@ -158,6 +158,7 @@ c_wait_start(struct keepalived *self, struct client *c, int ms) {
             break;
         }
     }
+    sh_info("Keepalived client(%d, %s) wait %dms", c->pid, c->args, n);
     if (killed) {
         c_start(self, c);
     }
@@ -192,6 +193,7 @@ c_disconned(struct keepalived *self, struct client *c) {
     if (c->status < ST_DISCONNED)
         c->status = ST_DISCONNED;
     c->connid = -1;
+    c->last_tick = sh_timer_now();
     sh_info("Keepalived client(%d, %s) disconned", c->pid, c->args);
 }
 
@@ -225,14 +227,14 @@ keepalived_init(struct module *s) {
     sh_info("Keepalived listen on %s:%d", ip, port);
     
     // 3 times of keepalive_tick
-    self->suspend_tick = sh_getint("keepalive_suspend_tick", 9);
-    if (self->suspend_tick < 3)
-        self->suspend_tick = 3;
-    self->suspend_tick *= 1000;
-    self->disconn_tick = sh_getint("keepalive_disconn_tick", 3);
-    if (self->disconn_tick < 1)
-        self->disconn_tick = 1;
-    self->disconn_tick *= 1000;
+    self->suspend_time_max = sh_getint("keepalive_suspend_time_max", 9);
+    if (self->suspend_time_max < 3)
+        self->suspend_time_max = 3;
+    self->suspend_time_max *= 1000;
+    self->disconn_time_max = sh_getint("keepalive_disconn_time_max", 3);
+    if (self->disconn_time_max < 1)
+        self->disconn_time_max = 1;
+    self->disconn_time_max *= 1000;
     sh_timer_register(MODULE_ID, 100);
     return 0;
 }
@@ -269,7 +271,6 @@ handle(struct module *s, int connid, const void *msg, int sz) {
         c = c_create(self, a);
         assert(c);
         c_started(self, c, connid, pid);
-        c->last_tick = sh_timer_now();
         return;
     } 
 }
@@ -345,14 +346,14 @@ keepalived_time(struct module *s) {
             c_start(self, c);
             break;
         case ST_RUN:
-            if (now - c->last_tick >= self->suspend_tick) {
+            if (now - c->last_tick >= self->suspend_time_max) {
                 c_kill(self, c);
                 c_wait_start(self, c, 10);
             }
             break;
         case ST_DISCONNED:
             if (c_check_running(self, c)) {
-                if (now - c->last_tick >= self->disconn_tick) {
+                if (now - c->last_tick >= self->disconn_time_max) {
                     c_kill(self, c);
                     c_wait_start(self, c, 10);
                 }
@@ -383,7 +384,7 @@ command(struct module *s, int source, int connid, const char *msg, int len, stru
         for (i=0; i<self->sz; ++i) {
             c = &self->p[i];
             a = c->args ? c->args : "unknown";
-            n = snprintf(rw->ptr, RW_SPACE(rw), "[%d] [%s] %d `%s`", 
+            n = snprintf(rw->ptr, RW_SPACE(rw), "\n[%2d] [%s] %d `%s`", 
                     i, str_status(c->status), c->pid, a);
             memrw_pos(rw, n);
         }

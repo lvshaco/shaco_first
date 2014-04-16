@@ -17,7 +17,7 @@ gateload = {ip=iip, port=8001, conn=256},
 uniqueol = {ip=iip, port=8002, conn=256},
 match    = {ip=iip, port=8003, conn=256},
 robot    = {ip=iip, port=8004, conn=256},
-keepalived={ip="127.0.0.1", port=8009, conn=256},
+keepalived={ip=iip, port=8620, conn=256},
 --
 route    = {ip=iip, port=8100, conn=256},
 watchdog1 = {ip=iip, port=8130, conn=256},
@@ -57,12 +57,11 @@ function def_node(name, id)
     end
     if name == "keepalived" then
         sh_module = sh_module .. ",keepalived"
-        node_port = 0;
     else
         sh_module = sh_module .. ",keepalivec"
     end
-    keepalive_ip = node_map["keepalived"].ip;
-    keepalive_port = node_map["keepalived"].port;
+    keepalive_ip = "127.0.0.1"
+    keepalive_port = 8422
 
     local open = open_node_map[name]
     if open then
