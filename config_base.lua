@@ -49,6 +49,7 @@ function def_node(name, id)
     sh_module = "log,node"
     if name == "center" then
         sh_module = sh_module .. ",centers,cmdctl,cmds"
+        keepalive_always = 1
     else
         local center = node_map["center"]
         center_ip   = center.ip

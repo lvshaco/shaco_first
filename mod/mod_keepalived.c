@@ -34,6 +34,7 @@ struct client {
     int connid;
     int status;
     pid_t pid;
+    bool alive_always;
     char *args;
     uint64_t last_tick;
 };
@@ -79,6 +80,7 @@ c_create(struct keepalived *self, const char *args) {
     c->connid = -1;
     c->status = ST_INVALID;
     c->pid = -1;
+    c->alive_always = false;
     c->args = strdup(args);
     c->last_tick = 0; 
 
@@ -172,8 +174,11 @@ c_wait_start(struct keepalived *self, struct client *c, int ms) {
 
 static void
 c_stop(struct keepalived *self, struct client *c) {
+    if (c->alive_always) {
+        return;
+    }
     sh_info("Keepalived client(%d, %s) stop", c->pid, c->args);
-    
+
     c_close_socket(self, c);
     if (!kill(c->pid, SIGINT)) {
         while (c_check_running(self, c)) {
@@ -187,10 +192,12 @@ c_stop(struct keepalived *self, struct client *c) {
 }
 
 static void
-c_started(struct keepalived *self, struct client *c, int connid, pid_t pid) {
+c_started(struct keepalived *self, struct client *c, int connid, 
+        pid_t pid, bool always) {
     c->status = ST_RUN;
     c->connid = connid;
     c->pid = pid;
+    c->alive_always = always;
     c->last_tick = sh_timer_now();
     sh_info("Keepalived client(%d, %s) started", c->pid, c->args);
 }
@@ -274,14 +281,15 @@ handle(struct module *s, int connid, const void *msg, int sz) {
     } 
     if (!strncmp(cmd, "START", ncmd)) {
         struct args A;
-        if (args_parsestrl(&A, 2, arg, sz-ncmd) != 2)
+        if (args_parsestrl(&A, 3, arg, sz-ncmd) != 3)
             return;
 
-        pid_t pid = strtol(A.argv[0], NULL, 10);
-        const char *a = A.argv[1];
+        bool always = strtol(A.argv[0], NULL, 10);
+        pid_t pid = strtol(A.argv[1], NULL, 10);
+        const char *a = A.argv[2];
         c = c_create(self, a);
         assert(c);
-        c_started(self, c, connid, pid);
+        c_started(self, c, connid, pid, always);
         return;
     } 
 }
@@ -395,8 +403,8 @@ command(struct module *s, int source, int connid, const char *msg, int len, stru
         for (i=0; i<self->sz; ++i) {
             c = &self->p[i];
             a = c->args ? c->args : "unknown";
-            n = snprintf(rw->ptr, RW_SPACE(rw), "\n[%2d] [%s] %d `%s`", 
-                    i, str_status(c->status), c->pid, a);
+            n = snprintf(rw->ptr, RW_SPACE(rw), "\n[%2d] [%d %s] %d `%s`", 
+                    i, c->alive_always, str_status(c->status), c->pid, a);
             memrw_pos(rw, n);
         }
     } else if (!strcmp(cmd, "kick")) {

@@ -4,6 +4,7 @@
 #include <unistd.h>
 
 struct keepalivec {
+    bool alive_always;
     int serverid;
     int hb_tick;
     int tick;
@@ -25,6 +26,7 @@ keepalivec_free(struct keepalivec *self) {
 static int
 connect(struct module *s) {
     struct keepalivec *self = MODULE_SELF;
+    self->alive_always = sh_getint("keepalive_always", 0);
     const char *ip = sh_getstr("keepalive_ip", "");
     int port = sh_getint("keepalive_port", 0);
     if (ip[0] == '\0' || port == 0) {
@@ -58,7 +60,8 @@ notify_startup(struct keepalivec *self) {
         return;
     pid_t pid = getpid();
     char cmd[1024];
-    int n = sh_snprintf(cmd, sizeof(cmd), "START %d %s", (int)pid, args);
+    int n = sh_snprintf(cmd, sizeof(cmd), "START %d %d %s", 
+            self->alive_always, (int)pid, args);
     uint8_t *msg = malloc(n+2);
     sh_to_littleendian16(n, msg);
     memcpy(msg+2, cmd, n);
