@@ -181,8 +181,8 @@ sh_fork(char *const argv[], int n) {
             execvp(argv[0], argv);
             // !!! do not call exit(1), 
             // exit will call the function register in atexit,
-            // this will call net fini, close the socket, 
-            // eg: epoll_ctl del event, listen socket disable
+            // this will call net fini, del epoll_ctl event
+            // eg: epoll_ctl del event, listen socket disabled!
             _exit(1);
             return 0;
         } else {
