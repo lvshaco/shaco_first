@@ -75,7 +75,7 @@ keepalivec_net(struct module* s, struct net_message* nm) {
     case NETE_CONNECT:
         self->serverid = nm->connid;
         self->connecting = false;
-        sh_error("Connect keepalived(%d) ok", nm->connid);
+        sh_info("Connect keepalived(%d) ok", nm->connid);
         notify_startup(self);
         break;
     case NETE_CONNERR:
