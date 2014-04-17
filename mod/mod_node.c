@@ -5,30 +5,95 @@
 
 #define NODE_MAX 256
 
-struct _int_vector {
+struct int_vector {
     int cap;
     int sz;
     int *pi;
 };
 
-struct _node {
+struct node {
     int connid;
     int node_handle;
     uint64_t last_hb_send_time;
     struct sh_node_addr addr; 
-    struct _int_vector handles;
+    struct int_vector handles;
 };
 
 struct remote {
     int hb_tick;
     int center_handle;
     int myid;
-    struct _node nodes[NODE_MAX];
+    struct node nodes[NODE_MAX];
+    struct sh_array subs;
+    struct sh_array pubs;
 };
+
+// sub pub cache
+struct sub_ent {
+    char *name;
+};
+
+struct pub_ent {
+    int handle;
+    char *name;
+};
+
+static void
+cache_sub(struct sh_array *subs, const char *name) {
+    struct sub_ent *ent;
+    int i;
+    for (i=0; i<subs->nelem; ++i) {
+        ent = sh_array_get(subs, i);
+        if (!strcmp(ent->name, name))
+            return;
+    }
+    ent = sh_array_push(subs);
+    ent->name = strdup(name);
+}
+
+static void
+cache_pub(struct sh_array *pubs, const char *name, int handle) {
+    struct pub_ent *ent;
+    int i;
+    for (i=0; i<pubs->nelem; ++i) {
+        ent = sh_array_get(pubs, i);
+        if (!strcmp(ent->name, name))
+            return;
+    }
+    ent = sh_array_push(pubs);
+    ent->handle = handle;
+    ent->name = strdup(name);
+}
+
+static void
+cache_init(struct remote *self) {
+    sh_array_init(&self->subs, sizeof(struct sub_ent), 1);
+    sh_array_init(&self->pubs, sizeof(struct pub_ent), 1);
+}
+
+static int
+cache_free_sub(void *ent, void *ud) {
+    free(((struct sub_ent*)ent)->name);
+    return 0;
+}
+
+static int
+cache_free_pub(void *ent, void *ud) {
+    free(((struct pub_ent*)ent)->name);
+    return 0;
+}
+
+static void
+cache_fini(struct remote *self) {
+    sh_array_foreach(&self->subs, cache_free_sub, NULL);
+    sh_array_foreach(&self->pubs, cache_free_pub, NULL);
+    sh_array_fini(&self->subs);
+    sh_array_fini(&self->pubs);
+}
 
 // node 
 static inline void
-_update_node(struct _node *no, 
+_update_node(struct node *no, 
         const char *naddr, int nport, 
         const char *gaddr, int gport,
         const char *waddr) {
@@ -40,19 +105,19 @@ _update_node(struct _node *no,
 }
 
 static inline void
-_bound_node_entry(struct _node *no, int handle) {
+_bound_node_entry(struct node *no, int handle) {
     no->node_handle = handle;
 }
 
 static inline void
-_bound_node_connection(struct _node *no, int connid) {
+_bound_node_connection(struct node *no, int connid) {
     no->connid = connid;
     no->last_hb_send_time = sh_timer_now();
 }
 
 static int
-_bound_handle_to_node(struct _node *no, int handle) {
-    struct _int_vector *handles = &no->handles;
+_bound_handle_to_node(struct node *no, int handle) {
+    struct int_vector *handles = &no->handles;
     int i;
     for (i=0; i<handles->sz; ++i) {
         if (handles->pi[i] == handle) {
@@ -69,12 +134,12 @@ _bound_handle_to_node(struct _node *no, int handle) {
     return 0;
 }
 
-static inline struct _node *
+static inline struct node *
 _get_node(struct remote *self, int id) {
     return (id>0 && id<NODE_MAX) ? &self->nodes[id] : NULL;
 }
 
-static inline struct _node *
+static inline struct node *
 _my_node(struct remote *self) {
     return _get_node(self, self->myid);
 }
@@ -92,7 +157,7 @@ is_center(struct remote *self) {
 static void
 _disconnect_node(struct module *s, int connid) {
     struct remote *self = MODULE_SELF;
-    struct _node *no = NULL;
+    struct node *no = NULL;
     int i;
     for (i=0; i<NODE_MAX; ++i) {
         if (self->nodes[i].connid == connid) {
@@ -196,7 +261,7 @@ _send(struct remote *self, int source, int dest, int type, const void *msg, size
         return 1;
     }
     int id = sh_nodeid_from_handle(dest);
-    struct _node *no = _get_node(self, id);
+    struct node *no = _get_node(self, id);
     if (no == NULL) {
         sh_error("Invalid nodeid from dest %04x", dest);
         return 1;
@@ -228,7 +293,7 @@ _vsend(struct remote *self, int source, int dest, const char *fmt, ...) {
 static int
 _init_mynode(struct remote *self) {
     self->myid = sh_getint("node_id", 0);
-    struct _node *no = _my_node(self);
+    struct node *no = _my_node(self);
     if (no == NULL) {
         sh_error("Invalid node_id %d", self->myid);
         return 1;
@@ -245,7 +310,7 @@ _init_mynode(struct remote *self) {
 static int
 _listen(struct module *s) {
     struct remote *self = MODULE_SELF;
-    struct _node *my = _my_node(self);
+    struct node *my = _my_node(self);
     assert(my);
     int err;
     int id = sh_net_listen(my->addr.naddr, my->addr.nport, 0, s->moduleid, 0, &err);
@@ -290,7 +355,7 @@ _block_read_center_entry(int id, int *center_handle, int *node_handle) {
 }
 
 static int
-_connect_node(struct module *s, struct _node *no) {
+_connect_node(struct module *s, struct node *no) {
     struct remote *self = MODULE_SELF;
     int id = no - self->nodes;
     if (no->connid != -1) {
@@ -314,7 +379,7 @@ _connect_node(struct module *s, struct _node *no) {
 static int
 _connect_module(struct module *s, const char *name, int handle) {
     struct remote *self = MODULE_SELF;
-    struct _node *no;
+    struct node *no;
     int id;
     id = sh_nodeid_from_handle(handle);
     if (id == 0)
@@ -338,7 +403,7 @@ _connect_module(struct module *s, const char *name, int handle) {
 static int
 _broadcast_node(struct module *s, int id) {
     struct remote *self = MODULE_SELF;
-    struct _node *no = _get_node(self, id);
+    struct node *no = _get_node(self, id);
     if (no == NULL) {
         return 1;
     }
@@ -348,7 +413,7 @@ _broadcast_node(struct module *s, int id) {
     int i;
     // boradcast me
     for (i=0; i<NODE_MAX; ++i) {
-        struct _node *other = &self->nodes[i];
+        struct node *other = &self->nodes[i];
         if (i == id || i == self->myid) 
             continue;
         if (other->connid == -1) 
@@ -362,7 +427,7 @@ _broadcast_node(struct module *s, int id) {
 
     // get other
     for (i=0; i<NODE_MAX; ++i) {
-        struct _node *other = &self->nodes[i];
+        struct node *other = &self->nodes[i];
         if (i == id)
             continue;
         if (other->connid == -1 ||
@@ -394,7 +459,7 @@ _connect_to_center(struct module* s) {
         return 1;
     }
     int center_id = sh_nodeid_from_handle(center_handle);
-    struct _node *no = _get_node(self, center_id);
+    struct node *no = _get_node(self, center_id);
     if (no == NULL) {
         sh_error("Reg center node fail");
         return 1;
@@ -405,7 +470,7 @@ _connect_to_center(struct module* s) {
     self->center_handle = center_handle;
 
     int self_handle = sh_handleid(self->myid, MODULE_ID);
-    struct _node *me = _my_node(self);
+    struct node *me = _my_node(self);
     if (_vsend(self, self_handle, center_handle, "REG %d %s %u %s %u %s %d",
                 self->myid, 
                 me->addr.naddr, me->addr.nport, 
@@ -423,6 +488,7 @@ _connect_to_center(struct module* s) {
 static inline int
 _subscribe_module(struct module *s, const char *name) {
     struct remote *self = MODULE_SELF;
+     
     int handle = module_query_id(name);
     if (handle != -1) {
         _connect_module(s, name, handle); // if local has mod also, connect it
@@ -433,6 +499,7 @@ _subscribe_module(struct module *s, const char *name) {
 static inline int
 _publish_module(struct module *s, const char *name, int handle) {
     struct remote *self = MODULE_SELF;
+ 
     handle &= 0xff;
     handle |= (self->myid << 8) & 0xff00;
     return sh_module_vsend(MODULE_ID, self->center_handle, "PUB %s:%04x", name, handle);
@@ -455,7 +522,9 @@ void
 node_free(struct remote* self) {
     if (self == NULL)
         return;
-    struct _node *no;
+
+    cache_fini(self); 
+    struct node *no;
     int i;
     for (i=0; i<NODE_MAX; ++i) {
         no = &self->nodes[i];
@@ -478,6 +547,7 @@ node_init(struct module* s) {
     if (_listen(s)) {
         return 1;
     }
+    cache_init(self); 
     self->center_handle = module_query_id("centers");
     if (self->center_handle == -1) {
         if (_connect_to_center(s)) {
@@ -568,7 +638,7 @@ node_time(struct module* s) {
     struct remote *self = MODULE_SELF;
 
     uint64_t now = sh_timer_now();
-    struct _node *no;
+    struct node *no;
     int i;
     for (i=0; i<NODE_MAX; ++i) {
         no = &self->nodes[i];
@@ -583,7 +653,18 @@ node_time(struct module* s) {
     if (id > 0) {
         no = _get_node(self, id);
         if (no && no->connid == -1) {
-            _connect_to_center(s);
+            if (!_connect_to_center(s)) {
+                struct sub_ent *se;
+                for (i=0; i<self->subs.nelem; ++i) {
+                    se = sh_array_get(&self->subs, i);
+                    _subscribe_module(s, se->name);
+                }
+                struct pub_ent *pe;
+                for (i=0; i<self->pubs.nelem; ++i) {
+                    pe = sh_array_get(&self->pubs, i);
+                    _publish_module(s, pe->name, pe->handle);
+                }
+            }
         }
     }
 }
@@ -618,7 +699,7 @@ node_main(struct module *s, int session, int source, int type, const void *msg, 
             sh_error("Reg self node(%d)", id);
             return;
         }
-        struct _node *no = _get_node(self, id);
+        struct node *no = _get_node(self, id);
         if (no) {
             if (no->connid != -1) {
                 sh_error("Node(%d:%d) has connected", id, no->connid);
@@ -638,7 +719,7 @@ node_main(struct module *s, int session, int source, int type, const void *msg, 
         int gport = strtol(A.argv[5], NULL, 10);
         const char *waddr = A.argv[6];
         if (id > 0) {
-            struct _node *no = _get_node(self, id);
+            struct node *no = _get_node(self, id);
             if (no) {
                 _update_node(no, naddr, nport, gaddr, gport, waddr);
                 // no need connect each other
@@ -654,6 +735,7 @@ node_main(struct module *s, int session, int source, int type, const void *msg, 
         if (A.argc != 2)
             return;
         const char *name = A.argv[1];
+        cache_sub(&self->subs, name);
         _subscribe_module(s, name); 
     } else if (!strcmp(cmd, "PUB")) {
         if (A.argc != 2)
@@ -663,6 +745,7 @@ node_main(struct module *s, int session, int source, int type, const void *msg, 
         if (p) {
             p[0] = '\0';
             int handle = strtol(p+1, NULL, 16); 
+            cache_pub(&self->pubs, name, handle);
             _publish_module(s, name, handle);
         }
     } else if (!strcmp(cmd, "HANDLE")) { // after subscribe
