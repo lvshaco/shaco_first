@@ -18,7 +18,6 @@ sh_sig_init() {
     act.sa_handler = _sigtermhandler;
     sigaction(SIGINT, &act, NULL);
     sigaction(SIGTERM, &act, NULL);
-
 }
 
 SH_LIBRARY_INIT_PRIO(sh_sig_init, NULL, 15);

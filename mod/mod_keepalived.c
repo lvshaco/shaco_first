@@ -6,14 +6,16 @@
 #include <signal.h>
 #include <errno.h>
 #include <unistd.h>
+#include <time.h>
 
 #define ST_INVALID      0
 #define ST_STARTING     1
 #define ST_RUN          2 
 #define ST_DISCONNED    3
 #define ST_KILLING      4
-#define ST_STOP         5
-#define ST_MAX          6
+#define ST_KILLED       5
+#define ST_STOP         6
+#define ST_MAX          7
 
 static const char *
 str_status(int status) {
@@ -23,6 +25,7 @@ str_status(int status) {
         "run",
         "disconned",
         "killing",
+        "killed",
         "stop",
     };
     assert(status >= ST_INVALID &&
@@ -34,6 +37,7 @@ struct client {
     int connid;
     int status;
     pid_t pid;
+    int sign;
     bool alive_always;
     char *args;
     uint64_t last_tick;
@@ -48,6 +52,14 @@ struct keepalived {
 };
 
 // client
+static struct client *
+c_get(struct keepalived *self, int i) {
+    if (i >= 0 && i < self->sz) {
+        return &self->p[i];
+    }
+    return NULL;
+}
+
 static struct client *
 c_find(struct keepalived *self, int connid) {
     int i;
@@ -120,7 +132,8 @@ c_check_running(struct keepalived *self, struct client *c) {
 
 static void
 c_start(struct keepalived *self, struct client *c) {
-    if (c->status == ST_STOP) {
+    if (c->status == ST_STOP ||
+        c->status == ST_RUN) {
         return;
     }
     sh_info("Keepalived client(%s) start", c->args);
@@ -143,11 +156,19 @@ c_kill(struct keepalived *self, struct client *c) {
     sh_info("Keepalived client(%d, %s) kill", c->pid, c->args);
 
     c_close_socket(self, c);
+    char tmp[1024];
+   
+    time_t now = time(NULL);
+    char buf[32];
+    strftime(buf, sizeof(buf), "%y%m%d-%H:%M:%S", localtime(&now));
+    sh_snprintf(tmp, sizeof(tmp), "./pstack %d >> %s-%d-%d.bt", c->pid, buf, c->sign, c->pid);
+    system(tmp);
     if (!kill(c->pid, SIGKILL)) {
         c->status = ST_KILLING;
     } else {
-        sh_error("Keepalived client(%d, %s) kill err: %s", 
+        sh_error("Keepalived client(%d, %s) kill err: %s, force to killed", 
                 c->pid, c->args, strerror(errno));
+        c->status = ST_KILLED;
     }
 }
 
@@ -193,10 +214,11 @@ c_stop(struct keepalived *self, struct client *c) {
 
 static void
 c_started(struct keepalived *self, struct client *c, int connid, 
-        pid_t pid, bool always) {
+        pid_t pid, int sign, bool always) {
     c->status = ST_RUN;
     c->connid = connid;
     c->pid = pid;
+    c->sign = sign;
     c->alive_always = always;
     c->last_tick = sh_timer_now();
     sh_info("Keepalived client(%d, %s) started", c->pid, c->args);
@@ -281,15 +303,16 @@ handle(struct module *s, int connid, const void *msg, int sz) {
     } 
     if (!strncmp(cmd, "START", ncmd)) {
         struct args A;
-        if (args_parsestrl(&A, 3, arg, sz-ncmd) != 3)
+        if (args_parsestrl(&A, 4, arg, sz-ncmd) != 4)
             return;
 
         bool always = strtol(A.argv[0], NULL, 10);
-        pid_t pid = strtol(A.argv[1], NULL, 10);
-        const char *a = A.argv[2];
+        int  sign = strtol(A.argv[1], NULL, 10);
+        pid_t pid = strtol(A.argv[2], NULL, 10);
+        const char *a = A.argv[3];
         c = c_create(self, a);
         assert(c);
-        c_started(self, c, connid, pid, always);
+        c_started(self, c, connid, pid, sign, always);
         return;
     } 
 }
@@ -412,24 +435,42 @@ command(struct module *s, int source, int connid, const char *msg, int len, stru
             return CTL_ARGLESS;
         }
         i = strtol(A.argv[1], NULL, 10);
-        if (i >= 0 && i < self->sz) {
-            c = &self->p[i];
+        c = c_get(self, i);
+        if (c) {
             c_kick(self, c);
         }
     } else if (!strcmp(cmd, "start")) {
-        for (i=0; i<self->sz; ++i) {
-            c = &self->p[i];
-            if (c->status != ST_RUN) {
+        if (A.argc < 2) {
+            for (i=0; i<self->sz; ++i) {
+                c = &self->p[i];
+                if (c->status == ST_STOP)
+                    c->status = ST_INVALID;
+                c_start(self, c);
+            }
+        } else {
+            i = strtol(A.argv[1], NULL, 10);
+            c = c_get(self, i);
+            if (c) {
                 if (c->status == ST_STOP)
                     c->status = ST_INVALID;
                 c_start(self, c);
             }
         }
     } else if (!strcmp(cmd, "stop")) {
-        for (i=0; i<self->sz; ++i) {
-            c = &self->p[i];
-            if (c->status == ST_RUN) {
-                c_stop(self, c);
+        if (A.argc < 2) {
+            for (i=0; i<self->sz; ++i) {
+                c = &self->p[i];
+                if (c->status == ST_RUN) {
+                    c_stop(self, c);
+                }
+            }
+        } else {
+            i = strtol(A.argv[1], NULL, 10);
+            c = c_get(self, i);
+            if (c) {
+                if (c->status == ST_RUN) {
+                    c_stop(self, c);
+                }
             }
         }
     } else {

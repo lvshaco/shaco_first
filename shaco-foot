@@ -125,7 +125,7 @@ stopcmdd() {
     pkill lua
 }
 
-USAGE="Usage: shaco-foot [startall] [start [svr .. ]] [stop] [ls] [startcmdd] [stopcmdd] -m"
+USAGE="Usage: shaco-foot [cmd] [startall] [start [svr .. ]] [stop] [ls] [startcmdd] [stopcmdd] -m"
 MEMCHECK=0
 CMD=$1
 shift
@@ -144,36 +144,15 @@ done
 
 count
 case "$CMD" in
-restartall)
-    stopall
-    startall
-    ;;
-restart)
-    stop "$@"
-    start "$@"
-    ;;
-startall)
-    startall
-    ;;
-start)
-    start "$@"
-    ;;
-stopall)
-    stopall
-    ;;
-stop)
-    stop "$@"
-    ;;
-startcmdd)
-    startcmdd
-    ;;
-stopcmdd)
-    stopcmdd
-    ;;
-ls)
-    ls
-    ;;
-*)
-    echo $USAGE
-    ;;
+restartall)     stopall;startall;;
+restart)        stop "$@";start "$@";;
+startall)       startall;;
+start)          start "$@";;
+stopall)        stopall;;
+stop)           stop "$@";;
+startcmdd)      startcmdd;;
+stopcmdd)       stopcmdd;;
+ls)             ls;;
+cmd)            ./shaco-cli --cmd "$@";;
+*)              echo $USAGE;;
 esac
