@@ -213,19 +213,11 @@ _block_read(int id, int *msgsz, int *err) {
 static int
 _dsend(struct remote *self, int connid, int source, int dest, int type, const void *msg, int sz) {
     if (sz <= UM_MAXSZ) {
-        /*if (type == MT_TEXT) {
-            char tmp[sz+1];
-            memcpy(tmp, msg, sz);
-            tmp[sz] = '\0';
-            sh_debug("send %s", tmp);
-        }
-       */ 
         int len = sz+6;
         source &= 0x00ff;
         source |= (self->myid << 8);
         dest   &= 0x00ff;
         dest   |= (type << 8);
-        //sh_debug("send connid %d, source %04x, dest %04x, type %d, sz %d", connid, source, dest, type, sz);
         uint8_t *tmp = malloc(len);
         sh_to_littleendian16(len-2, tmp);
         sh_to_littleendian16(source, tmp+2);
@@ -465,6 +457,7 @@ _connect_to_center(struct module* s) {
         return 1;
     }
     _update_node(no, addr, port, "", 0, "");
+    sh_net_subscribe(connid, true);
     _bound_node_connection(no, connid);
     _bound_node_entry(no, node_handle);
     self->center_handle = center_handle;
@@ -561,7 +554,7 @@ node_init(struct module* s) {
 }
 
 static void
-_read(struct module *s, struct net_message *nm) {
+r_read(struct module *s, struct net_message *nm) {
     int id = nm->connid;
     int err = 0; 
     struct mread_buffer buf;
@@ -612,7 +605,7 @@ node_net(struct module* s, struct net_message* nm) {
     struct remote *self = MODULE_SELF;
     switch (nm->type) {
     case NETE_READ:
-        _read(s, nm);
+        r_read(s, nm);
         break;
     case NETE_ACCEPT:
         if (is_center(self)) {
@@ -629,6 +622,9 @@ node_net(struct module* s, struct net_message* nm) {
     case NETE_SOCKERR:
         sh_error("node disconnect: %s, %d", sh_net_error(nm->error), nm->connid);
         _disconnect_node(s, nm->connid);
+        break;
+    default:
+        sh_error("node unknown net event %d, %d", nm->type, nm->connid);
         break;
     }
 }

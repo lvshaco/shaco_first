@@ -833,6 +833,7 @@ net_poll(struct net *self, int timeout) {
         struct net_message *oe = &self->ne[i];
         oe->type = NETE_INVALID;
         oe->error = 0;
+
         switch (s->status) {
         case STATUS_LISTENING:
             s = _accept(self, s);
