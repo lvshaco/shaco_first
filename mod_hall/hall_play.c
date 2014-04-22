@@ -43,6 +43,9 @@ notify_match_down(struct module *s, struct player *pr) {
 static void
 play(struct module *s, struct player *pr, int type) {
     struct hall *self = MODULE_SELF;
+    if (!ROOM_TYPE_VALID(type)) {
+        return;
+    }
     if (self->match_down) {
         notify_match_down(s, pr);
         return;

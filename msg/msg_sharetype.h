@@ -258,6 +258,9 @@ role_state(struct chardata *cdata) {
 // room type
 #define ROOM_TYPE_NORMAL 0 // 普通赛, 自由/合作模式
 #define ROOM_TYPE_DASHI  1 // 大师赛
+#define ROOM_TYPE_MAX    2
+#define ROOM_TYPE_VALID(type) ((type) >= ROOM_TYPE_NORMAL && (type) < ROOM_TYPE_MAX)
+
 #define MEMBER_MAX 8
 
 // 道具类型

@@ -611,7 +611,10 @@ lookup(struct module *s, struct applyer *ar, int target_type, int target_id) {
 static int
 apply(struct module *s, int source, bool is_robot, const struct apply_info *info) {
     struct match *self = MODULE_SELF;
-
+    
+    if (!ROOM_TYPE_VALID(info->type)) {
+        return 1;
+    }
     uint32_t uid = info->brief.accid;
     struct applyer *ar = sh_hash_find(&self->applyers, uid);
     if (ar) {
