@@ -139,6 +139,8 @@ int sh_net_socket_isclosed(int id) {
 static void
 sh_net_init() {
     int max = sh_getint("sh_connmax", 0);
+    if (max <= 0)
+        max = 1;
     signal(SIGHUP, SIG_IGN);
     signal(SIGPIPE, SIG_IGN);
     N = net_create(max, RDBUFFER_SIZE);

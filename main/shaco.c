@@ -60,29 +60,31 @@ usage(const char* app) {
 
 int 
 main(int argc, char* argv[]) {
-    const char* file = "config.lua";
-    if (argc > 1) {
-        file = argv[1];
-    }
-    
     sh_env_init();
-    sh_env_load(file);
 
-    int lastarg;
     int i;
-    for (i=2; i<argc; ++i) {
-        lastarg = i==argc-1;
-        if (!strncmp(argv[i], "--", 2) && 
-             argv[i][2] != '\0' &&
-            !lastarg) {
-            sh_setenv(&(argv[i][2]), argv[i+1]);
-            i++;
+    if (argc > 1) {
+        int start;
+        if (strncmp(argv[1], "--", 2)) {
+            sh_env_load(argv[1]);
+            start = 2;
         } else {
-            usage(argv[0]);
-            return 1;
+            start = 1;
+        }
+        int lastarg;
+        for (i=start; i<argc; ++i) {
+            lastarg = i==argc-1;
+            if (!strncmp(argv[i], "--", 2) && 
+                 argv[i][2] != '\0' &&
+                !lastarg) {
+                sh_setenv(&(argv[i][2]), argv[i+1]);
+                i++;
+            } else {
+                usage(argv[0]);
+                return 1;
+            }
         }
     }
-
     int len = argc-1;
     for (i=0; i<argc; ++i) {
         len += strlen(argv[i]);
