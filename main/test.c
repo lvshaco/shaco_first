@@ -1763,6 +1763,53 @@ test_pid(int times) {
     printf("kill 0 use time %d\n", (int)(t2-t1));
 }
 
+struct sock {
+    int i;
+    //char str[60];
+};
+
+struct sock_bitmap {
+    uint8_t b[1250];
+};
+
+void
+test_sock(int times) {
+    int cap = 5000;
+    struct sock *p = malloc(sizeof(*p) * cap);
+    memset(p, 0, sizeof(*p) * cap);
+
+    struct sock_bitmap sb;
+    memset(&sb, 0, sizeof(sb));
+
+    uint64_t t1, t2;
+    int i, j;
+    struct sock *s;
+
+    t1 = _elapsed();
+    for (i=0; i<times; ++i) {
+       for (j=0; j<cap; ++j) {
+           s = &p[j];
+           if (s->i == 1) {
+               break;
+           }
+       } 
+    }
+    t2 = _elapsed();
+    printf("sock use time %d\n", (int)(t2-t1));
+    
+    t1 = _elapsed();
+    for (i=0; i<times; ++i) {
+        for (j=0; j<cap; ++j) {
+            if (sb.b[j>>3] & (1<<sb.b[j&7])) {
+                assert(0);
+                break;
+            }
+        }
+    }
+    t2 = _elapsed();
+    printf("sock bitmap use time %d\n", (int)(t2-t1));
+}
+
 int 
 main(int argc, char* argv[]) {
     int times = 1;
@@ -1805,7 +1852,8 @@ main(int argc, char* argv[]) {
     //test_rand(times);
     //test_unique(times);
     //test_system(times);
-    test_pid(times);
+    //test_pid(times);
+    test_sock(times);
     uint64_t t2 = _elapsed();
     printf("main use time %d\n", (int)(t2-t1));
     return 0;

@@ -25,6 +25,7 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.py *.h *.c" {
  config_keepalived.lua
  config_testc.lua
  config_testd.lua
+ config_httpc.lua
  libshaco=libshaco{
   dlmodule.c
   sh_array.c
@@ -123,6 +124,7 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.py *.h *.c" {
   mod_watchdog.c
   mod_keepalived.c
   mod_keepalivec.c
+  mod_httpc.c
  }
  mod_hall=mod_hall{
   hall.h
@@ -239,5 +241,12 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.py *.h *.c" {
  }
  web=web{
   rank.lua
+ }
+ http-parser=http-parser{
+  http_parser.h
+  http_parser.c
+  parsertrace.c
+  test.c
+  url_parser.c
  }
 }

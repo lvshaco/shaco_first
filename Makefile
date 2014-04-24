@@ -119,6 +119,7 @@ all: \
 	mod_hall.so \
 	mod_auth.so \
 	mod_robot.so \
+	mod_httpc.so \
 	mod_benchmarkdb.so
 
 release: CFLAGS += -O2 -fno-strict-aliasing
@@ -127,6 +128,12 @@ release: all
 $(mod_so): %.so: $(mod_dir)/%.c
 	@rm -f $@
 	gcc $(CFLAGS) $(SHARED) -o $@ $< -Iinclude/libshaco -Inet -Ibase -Imsg
+
+mod_httpc.so: $(mod_dir)/mod_httpc.c \
+	http-parser/http_parser.c \
+	http-parser/http_parser.h
+	@rm -f $@
+	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Iinclude/libshaco -Inet -Ibase -Imsg -Ihttp-parser
 
 mod_match.so: $(mod_dir)/mod_match.c \
 	mod_match/match.h \
