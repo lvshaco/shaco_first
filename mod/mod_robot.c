@@ -69,7 +69,7 @@ rand_role(struct robot *self) {
 }
 
 static inline int
-rand_name(struct robot *self, int idx, struct agent *ag) {
+rand_name(struct robot *self, int idx, char name[CHAR_NAME_MAX]) {
     const struct tplt_holder* h1 = tplt_get_holder(self->T, TPLT_XING);
     if (h1 == NULL)
         return 1;
@@ -83,13 +83,21 @@ rand_name(struct robot *self, int idx, struct agent *ag) {
     if (n2 <= 0)
         return 1;
 
-    int i1 = idx/n2;
-    int i2 = idx%n2;
-    int i3 = -1;
-    if (i1 >= n1) {
-        i3 = i1/n1;
-        i1 %= n1;
-    }
+    int i3 = idx/(n1*n2) - 1;
+    idx %= (n1*n2);
+    int nmax = max(n1, n2);
+    int nmin = min(n1, n2); 
+    int off2 = (idx/nmax)%nmin;
+    int off1 = (idx%nmax);
+
+    int i1, i2;
+    if (n1 >= n2) {
+        i1 = (off1%n1);
+        i2 = (off1+off2)%n2;
+    } else {
+        i1 = (off1+off2)%n1;
+        i2 = (off1%n2);
+    } 
     const struct teshu_tplt *t3 = NULL;
     if (i3 >= 0) {
         const struct tplt_holder* h3 = tplt_get_holder(self->T, TPLT_TESHU);
@@ -103,24 +111,24 @@ rand_name(struct robot *self, int idx, struct agent *ag) {
     const struct xing_tplt *t1 = TPLT_HOLDER_FIRSTELEM(xing_tplt, h1);
     const struct ming_tplt *t2 = TPLT_HOLDER_FIRSTELEM(ming_tplt, h2);
 
-    sh_snprintf(ag->data.name, sizeof(ag->data.name), "%s%s%s", 
+    sh_snprintf(name, CHAR_NAME_MAX, "%s%s%s", 
             t1[i1].xing, t3 ? t3[i3].teshu : "", t2[i2].ming);
-    //sh_error("%d, name:%s", i3, ag->data.name);
+    sh_error("%d, name:%s", i3, name);
     return 0;
 
 }
 
-static inline void
-init_agent_data(struct module *s, struct agent *ag, int idx, int ai) {
+static inline int
+init_agent_data(struct module *s, struct agent *ag, int idx, int ai, const char *name) {
     struct robot *self = MODULE_SELF;
     struct chardata *cdata = &ag->data;
     ag->ai= ai;
     cdata->charid = CHARID_BEGIN+idx;
-    //snprintf(cdata->name, sizeof(cdata->name), "wabao%02d_%d", ai, cdata->charid);
-    rand_name(self, idx, ag);
     cdata->accid = ACCID_BEGIN+idx;
     cdata->role = rand_role(self);
+    sh_strncpy(ag->data.name, name, sizeof(ag->data.name));
     hall_attribute_main(self->T, cdata);
+    return 0;
 }
 
 static int
@@ -129,17 +137,22 @@ init_agents(struct module *s) {
     sh_hash_init(&self->agents, 1);
     memset(self->rests, 0, sizeof(self->rests));
     // todo
-    int count = 100;
+    int count = 36;
     if (count > ROBOT_MAX) {
         count = ROBOT_MAX;
     }
+    char name[CHAR_NAME_MAX];
+    struct agent *ag;
     int i;
     for (i=0; i<count; ++i) {
-        struct agent *ag = alloc_agent(self);
+        if (rand_name(self, i, name)) {
+            return 1;
+        }
+        ag = alloc_agent(self);
         if (ag == NULL) {
             return 1;
         }
-        init_agent_data(s, ag, i, rand()%10+1);
+        init_agent_data(s, ag, i, rand()%10+1, name);
         agent_rest(self, ag);
         sh_hash_insert(&self->agents, UID(ag), ag);
     }
