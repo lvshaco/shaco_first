@@ -182,8 +182,8 @@ struct ringdata {
 #define EFFECT_REVERSE          56
 #define EFFECT_SEX              57
 
-#define EFFECT_STATE_PROTECT    0 // 压不坏的防护罩
-#define EFFECT_STATE_PROTECT_ONCE 1 // 一次性防护罩 
+#define EFFECT_STATE_PROTECT    1 // 压不坏的防护罩
+#define EFFECT_STATE_PROTECT_ONCE 2 // 一次性防护罩 
 
 struct char_attribute {
     int32_t oxygen;     // 氧气
