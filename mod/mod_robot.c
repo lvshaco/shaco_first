@@ -104,7 +104,7 @@ rand_name(struct robot *self, int idx, struct agent *ag) {
     const struct ming_tplt *t2 = TPLT_HOLDER_FIRSTELEM(ming_tplt, h2);
 
     sh_snprintf(ag->data.name, sizeof(ag->data.name), "%s%s%s", 
-            t1[i1].xing, t2[i2].ming, t3 ? t3[i3].teshu : "");
+            t1[i1].xing, t3 ? t3[i3].teshu : "", t2[i2].ming);
     //sh_error("%d, name:%s", i3, ag->data.name);
     return 0;
 
