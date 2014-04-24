@@ -46,7 +46,8 @@ def _serialize_to_file(table, field_map, outfile):
             elif (ftype == "uint64" or ftype == "int64") and flen == 8:
                 op.write(struct.pack("Q", val and long(val) or 0))
             elif ftype == "string":
-                op.write(struct.pack("%ds" % flen, str(val)))
+                op.write(struct.pack("%ds" % (flen-1), str(val)))
+                op.write(struct.pack("c", '\0'))
             elif ftype == "uarray":
                 if val:
                     subv = map(lambda x: int(x), val.split(","))

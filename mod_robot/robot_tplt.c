@@ -8,6 +8,9 @@ load_tplt(struct robot *self) {
 #define TBLFILE(name) "./res/tbl/"#name".tbl"
     struct tplt_desc desc[] = {
         { TPLT_ROLE, sizeof(struct role_tplt), 1, TBLFILE(role), 0, TPLT_VIST_VEC32},
+        { TPLT_XING, sizeof(struct xing_tplt), 1, TBLFILE(xing), 0, TPLT_VIST_VEC32},
+        { TPLT_MING, sizeof(struct ming_tplt), 1, TBLFILE(ming), 0, TPLT_VIST_VEC32},
+        { TPLT_TESHU, sizeof(struct teshu_tplt), 1, TBLFILE(teshu), 0, TPLT_VIST_VEC32},
     };
     self->T = tplt_create(desc, sizeof(desc)/sizeof(desc[0]));
     return self->T ? 0 : 1;

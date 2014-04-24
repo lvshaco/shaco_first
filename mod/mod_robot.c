@@ -68,13 +68,56 @@ rand_role(struct robot *self) {
     return 0;
 }
 
+static inline int
+rand_name(struct robot *self, int idx, struct agent *ag) {
+    const struct tplt_holder* h1 = tplt_get_holder(self->T, TPLT_XING);
+    if (h1 == NULL)
+        return 1;
+    const struct tplt_holder* h2 = tplt_get_holder(self->T, TPLT_MING);
+    if (h2 == NULL)
+        return 1;
+    int n1 = TPLT_HOLDER_NELEM(h1);
+    if (n1 <= 0)
+        return 1;
+    int n2 = TPLT_HOLDER_NELEM(h2);
+    if (n2 <= 0)
+        return 1;
+
+    int i1 = idx/n2;
+    int i2 = idx%n2;
+    int i3 = -1;
+    if (i1 >= n1) {
+        i3 = i1/n1;
+        i1 %= n1;
+    }
+    const struct teshu_tplt *t3 = NULL;
+    if (i3 >= 0) {
+        const struct tplt_holder* h3 = tplt_get_holder(self->T, TPLT_TESHU);
+        if (h3 == NULL)
+            return 1;
+        int n3 = TPLT_HOLDER_NELEM(h3);
+        if (i3 >= n3)
+            return 1;
+        t3 = TPLT_HOLDER_FIRSTELEM(teshu_tplt, h3);
+    }
+    const struct xing_tplt *t1 = TPLT_HOLDER_FIRSTELEM(xing_tplt, h1);
+    const struct ming_tplt *t2 = TPLT_HOLDER_FIRSTELEM(ming_tplt, h2);
+
+    sh_snprintf(ag->data.name, sizeof(ag->data.name), "%s%s%s", 
+            t1[i1].xing, t2[i2].ming, t3 ? t3[i3].teshu : "");
+    //sh_error("%d, name:%s", i3, ag->data.name);
+    return 0;
+
+}
+
 static inline void
 init_agent_data(struct module *s, struct agent *ag, int idx, int ai) {
     struct robot *self = MODULE_SELF;
     struct chardata *cdata = &ag->data;
     ag->ai= ai;
     cdata->charid = CHARID_BEGIN+idx;
-    snprintf(cdata->name, sizeof(cdata->name), "wabao%02d_%d", ai, cdata->charid);
+    //snprintf(cdata->name, sizeof(cdata->name), "wabao%02d_%d", ai, cdata->charid);
+    rand_name(self, idx, ag);
     cdata->accid = ACCID_BEGIN+idx;
     cdata->role = rand_role(self);
     hall_attribute_main(self->T, cdata);

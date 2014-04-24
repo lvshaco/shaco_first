@@ -74,7 +74,7 @@
 // character
 #define ACCOUNT_NAME_MAX 48
 #define ACCOUNT_PASSWD_MAX 40
-#define CHAR_NAME_MAX 32
+#define CHAR_NAME_MAX 32 
 #define ROLE_MAX 8
 #define ROLE_CLOTHES_MAX 7
 #define ROLE_TYPEID(roleid) ((roleid)/10-1)
