@@ -4,6 +4,7 @@
 #include "room_game.h"
 #include "room_genmap.h"
 #include "msg_client.h"
+#include <math.h>
 
 #define AI_S_MOVE 0
 #define AI_S_FOCUS 1
@@ -32,12 +33,12 @@ struct ai_brain {
 
 static inline float
 fall_speed_base(struct player *m) {
-    return m->base.charfallspeed;
+    return m->base.charfallspeed * 0.75;
 }
 
 static inline float
-fall_speed_standard(struct ai_brain *brain) {
-    return (60+brain->level*20)/100.f;
+fall_speed_standard(struct player *m) {
+    return fall_speed_base(m)*pow(m->brain->level, 0.4)*0.17;
 }
 
 static inline float
@@ -162,15 +163,18 @@ ai_speed(struct room_game *ro, struct player *m) {
     struct player *front = player_front(ro, m);
     if (front) {
         if (front->speed_new > front->speed_old) {
-            speed = fall_speed_standard(brain);
+            speed = fall_speed_standard(m);
         } else {
             speed = fall_speed_base(m);
         }
     } else {
-        speed = fall_speed_standard(brain);
+        speed = fall_speed_standard(m);
     }
     int buff_value = 0; // todo
     int down_block = down_block_count(ro, m->depth);
+    int d = MAP_DEPTH(m->depth);
+    int ntype = MAP_NTYPE(ro->map, d);
+    down_block = down_block * 5 - pow(ntype, 4.5);
     return speed * (1+buff_value/100.f - down_block/100.f);
 }
 
@@ -262,7 +266,9 @@ ai_lookup_oxygen(struct room *self, struct room_game *ro, struct player *m) {
     struct ai_brain *brain = m->brain;
     struct ai_target target;
     if (!lookup_target(self, ro, m, ITEM_T_OXYGEN, &target)) {
-        float limit_per = 0.8 + 0.2*(1.2 - min(1.2, brain->level/7.0));
+        int height = ro->map->height;
+        float limit_per = 0.3 + 0.2*(1.2 - min(1.2, brain->level/7.0)) + 
+            0.5 * ((height - m->depth)/height);
         float oxygen_per = oxygen_percent(m);
         sh_trace("AI %u lookup oxygen (%u in %u,%u b %u) oxygen_per %f limit_per %f", 
                 UID(m), 
@@ -335,7 +341,7 @@ ai_main(struct module *s, struct room_game *ro, struct player *m) {
 
     bool is_trans = m->depth % 100 > 94;
     if (is_trans) { 
-        float trans_speed = fall_speed_base(m) * (1+buff_value/100.f);
+        float trans_speed = fall_speed_base(m) * 1.33 * (1+buff_value/100.f);
         brain->dir = 1;
         brain->speed = trans_speed;
         sh_trace("AI %u [trans] speed %f depth %d", UID(m), brain->speed, m->depth);

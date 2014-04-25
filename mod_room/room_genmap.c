@@ -105,14 +105,21 @@ genmap_create(const struct map_tplt* tplt, struct roommap* m, uint32_t randseed)
     if (m->header.height < h || m->header.width < w)
         return NULL;
 
-    struct genmap* self = (struct genmap*)malloc(sizeof(*self) + 
-            sizeof(struct genmap_cell) * w*h);
+    struct genmap* self = (struct genmap*)malloc(sizeof(*self));
+    self->depth = m->depth;
+    self->ntypes = malloc(sizeof(self->ntypes[0]) * m->depth);
+    self->cells = malloc(sizeof(self->cells[0]) * w*h);
     self->width = w;
     self->height = h;
 
+    uint32_t i;
+    for (i=0; i<m->depth; ++i) {
+        struct roommap_typeidlist tl = roommap_gettypeidlist(m, i);
+        self->ntypes[i] = tl.num;
+    }
     struct genmap_cell* pout = self->cells;
     struct roommap_cell* pin = ROOMMAP_CELL_ENTRY(m);
-    uint32_t i;
+    
     for (i=0; i<h*w; ++i) {
         _gencell(tplt, m, i/w+1, &pin[i], &pout[i]);
     }
