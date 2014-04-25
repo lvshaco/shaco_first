@@ -175,7 +175,7 @@ ai_speed(struct room_game *ro, struct player *m) {
     int down_block = down_block_count(ro, m->depth);
     int d = MAP_DEPTH(m->depth);
     int ntype = MAP_NTYPE(ro->map, d);
-    down_block = down_block * 5 - pow(ntype, 4.5);
+    down_block = down_block * 5 - pow(5-ntype, 4.5);
     speed *= (1+buff_value/100.f - down_block/100.f);
     return speed > 0 ? speed : 0;
 }
