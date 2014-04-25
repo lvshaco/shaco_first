@@ -887,14 +887,18 @@ item_effect_member(struct module *s, struct room_game *ro, struct player *m,
             effectptr[n-1].isper = item->valuet##n; \
             effectptr[n-1].value = item->value##n;  \
         }
-        FILL_EFFECT(1);
-        FILL_EFFECT(2);
-        FILL_EFFECT(3);
-
         int i;
-        for (i=0; i<BUFF_EFFECT; ++i) {
-            effectptr[i].value = item_effectone(m, &effectptr[i]);
-            effectptr[i].isper = false;
+        if (!is_robot(m)) {
+            FILL_EFFECT(1);
+            FILL_EFFECT(2);
+            FILL_EFFECT(3);
+            for (i=0; i<BUFF_EFFECT; ++i) {
+                effectptr[i].value = item_effectone(m, &effectptr[i]);
+                effectptr[i].isper = false;
+            }
+        } else {
+            memset(effectptr, 0, sizeof(effectptr[0]) * BUFF_EFFECT);
+            effectptr[0].value = item->buffvalue;
         }
         on_refresh_attri(s, m, ro);
         //room_dump_player(m);
@@ -1272,10 +1276,12 @@ buff_effect_update(void *elem, void *ud) {
         return 0;
     }
     sh_trace("timeout : %llu, to char %u", (unsigned long long)e->time, m->detail.charid);
-    int i;
-    for (i=0; i<BUFF_EFFECT; ++i) {
-        e->effects[i].value *= -1;
-        item_effectone(m, &e->effects[i]);
+    if (!is_robot(m)) {
+        int i;
+        for (i=0; i<BUFF_EFFECT; ++i) {
+            e->effects[i].value *= -1;
+            item_effectone(m, &e->effects[i]);
+        }
     }
     UM_DEFFIX(UM_ITEMUNEFFECT, uneffect);
     uneffect->charid = m->detail.charid;

@@ -107,8 +107,8 @@ genmap_create(const struct map_tplt* tplt, struct roommap* m, uint32_t randseed)
 
     struct genmap* self = (struct genmap*)malloc(sizeof(*self));
     self->depth = m->depth;
-    self->ntypes = malloc(sizeof(self->ntypes[0]) * m->depth);
-    self->cells = malloc(sizeof(self->cells[0]) * w*h);
+    self->ntypes = (uint8_t*)malloc(sizeof(self->ntypes[0]) * m->depth);
+    self->cells = (struct genmap_cell*)malloc(sizeof(self->cells[0]) * w*h);
     self->width = w;
     self->height = h;
 

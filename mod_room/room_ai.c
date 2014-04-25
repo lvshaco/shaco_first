@@ -31,6 +31,21 @@ struct ai_brain {
     int tick;
 };
 
+static int 
+calc_buff_value(struct player *m) {
+    int value = 0;
+    struct sh_array *a = &m->total_effect;
+    struct buff_effect *e;
+    int i;
+    for (i=0; i<a->nelem; ++i) {
+        e = sh_array_get(a, i);
+        if (e->id > 0) {
+            value += e->effects[0].value;
+        }
+    }
+    return (value >= -100) ? value : -100;
+}
+
 static inline float
 fall_speed_base(struct player *m) {
     return m->base.charfallspeed * 0.75;
@@ -156,12 +171,13 @@ ai_speed(struct room_game *ro, struct player *m) {
     } else {
         speed = fall_speed_standard(m);
     }
-    int buff_value = 0; // todo
+    int buff_value = calc_buff_value(m);
     int down_block = down_block_count(ro, m->depth);
     int d = MAP_DEPTH(m->depth);
     int ntype = MAP_NTYPE(ro->map, d);
     down_block = down_block * 5 - pow(ntype, 4.5);
-    return speed * (1+buff_value/100.f - down_block/100.f);
+    speed *= (1+buff_value/100.f - down_block/100.f);
+    return speed > 0 ? speed : 0;
 }
 
 static void
@@ -323,7 +339,7 @@ ai_main(struct module *s, struct room_game *ro, struct player *m) {
     }
     elapsed /= 1000;
     sh_trace("AI %u level %d elapsed %f", UID(m), brain->level, elapsed);
-    int buff_value = 0; // todo
+    int buff_value = calc_buff_value(m);
 
     bool is_trans = m->depth % 100 > 94;
     if (is_trans) { 
