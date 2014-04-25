@@ -314,6 +314,8 @@ struct memberaward {
     int32_t take_state;
     int32_t exp;
     int32_t coin;
+    int32_t coin_extra;
+    int32_t score_display;
     int32_t score_normal;
     int32_t score_dashi;
     float   luck_factor;

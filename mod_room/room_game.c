@@ -226,28 +226,37 @@ static void
 build_award_normal(struct room_game *ro, uint64_t gametime, struct player *m, 
         struct memberaward *award) {
     struct char_attribute* a = &m->detail.attri; 
-    int score_depth = pow(m->depth, 0.5) * 100;
-    int score_speed = pow(m->depth/(gametime*0.001), 1.2) * 766;
-    int score_oxygen = pow(m->noxygenitem, 1.2) * 20;
-    int score_item = (m->nitem + m->ntrap) * 20;
-    int score_bao = pow(m->nbao, 1.5) * 100;
-   
-    float coin_profit = 1+a->coin_profit;
-    float score_profit = 1+a->score_profit;
+    int score_depth = min(
+            gametime*0.001*m->base.charfallspeed*0.4*pow(1.15, gametime*0.001/110), 
+            m->depth) * 250;
+    int score_oxygen;
+    int noxygenitem = min(m->noxygenitem, m->depth/6);
+    if (noxygenitem < 100) {
+        score_oxygen = (1+noxygenitem) *0.5*50*noxygenitem;
+    } else {
+        score_oxygen = 247500+(noxygenitem-100)*5000;
+    }
+    int nbao = min(m->nbao, m->depth/100);
+    int score_bao = nbao * 8888;
+    int ncell = 0;  // todo
+    int score_cell = min(score_depth * 0.339, ncell);
 
-    int coin = (score_depth + score_speed + score_oxygen) * 0.1 * coin_profit;
+    float coin_profit = a->coin_profit;
+    float score_profit = a->score_profit;
+   
+    int coin = score_depth * 0.0006 + nbao*30 + nbao*(nbao-1)*0.5*2;
+    int coin_extra = coin * coin_profit;
     int exp = (m->depth * 0.2 + m->nbao);
-
-    int score_normal = 
-        (score_depth + score_speed + score_oxygen + score_item + score_bao) * 
-        score_profit * 10;
-   
+    int score_display = score_oxygen + score_bao + score_cell;
+    int score_normal = score_display * (1+score_profit) + score_depth;
     int score_dashi = 0;
     int take_state = 20;
 
     award->take_state = take_state; 
     award->exp = exp;
-    award->coin = coin;
+    award->coin = coin + coin_extra;
+    award->coin_extra = coin_extra;
+    award->score_display = score_display;
     award->score_normal = score_normal;
     award->score_dashi = score_dashi;
     award->luck_factor = m->luck_factor;
@@ -264,24 +273,34 @@ static void
 build_award_dashi(struct room_game *ro, uint64_t gametime, const struct award_input *in, 
         struct player *m, int rank, struct memberaward *award) {
     struct char_attribute* a = &m->detail.attri; 
-    int score_depth = pow(m->depth, 0.5) * 100;
-    int score_speed = pow(m->depth/(gametime*0.001), 1.2) * 766;
-    int score_oxygen = pow(m->noxygenitem, 1.2) * 20;
-    int score_item = (m->nitem + m->ntrap) * 20;
-    int score_bao = pow(m->nbao, 1.5) * 100;
-  
-    float coin_profit = 1+a->coin_profit;
-    float score_profit = 1+a->score_profit;
+    int score_depth = min(
+            gametime*0.001*m->base.charfallspeed*0.4*pow(1.15, gametime*0.001/110), 
+            m->depth) * 250;
+    int score_oxygen;
+    int noxygenitem = min(m->noxygenitem, m->depth/6);
+    if (noxygenitem < 100) {
+        score_oxygen = (1+noxygenitem) *0.5*50*noxygenitem;
+    } else {
+        score_oxygen = 247500+(noxygenitem-100)*5000;
+    }
+    int nbao = min(m->nbao, m->depth/100);
+    int score_bao = nbao * 8888;
+    int ncell = 0;  // todo
+    int score_cell = min(score_depth * 0.339, ncell);
+
+    float coin_profit = a->coin_profit;
+    float score_profit = a->score_profit;
     if (rank == 0) {
         coin_profit += a->wincoin_profit+0.05;
         score_profit += a->winscore_profit + 0.05;
     }
-    int coin = (score_depth + score_speed + score_oxygen) * 0.1 * coin_profit;
+ 
+    int coin = score_depth * 0.0006 + nbao*30 + nbao*(nbao-1)*0.5*2;
+    coin += pow(m->depth, 0.81);
+    int coin_extra = coin * coin_profit;
     int exp = (m->depth * 0.2 + m->nbao);
-
-    int score_normal = 
-        (score_depth + score_speed + score_oxygen + score_item + score_bao) * 
-        score_profit * 10;
+    int score_display = score_oxygen + score_bao + score_cell;
+    int score_normal = score_display * (1+score_profit) + score_depth;
 
     // score_dashi
     const int score_line1 = 1500;
@@ -316,7 +335,9 @@ build_award_dashi(struct room_game *ro, uint64_t gametime, const struct award_in
 
     award->take_state = take_state; 
     award->exp = exp;
-    award->coin = coin;
+    award->coin = coin + coin_extra;
+    award->coin_extra = coin_extra;
+    award->score_display = score_display;
     award->score_normal = score_normal;
     award->score_dashi = score_dashi;
     award->luck_factor = m->luck_factor;
@@ -351,12 +372,14 @@ build_stat(struct room_game *ro, struct player *m, struct memberaward *a, struct
     st->nitem = m->nitem;
     st->nbao = m->nbao;
     st->exp = a->exp;
+    st->coin_extra = a->coin_extra;
     st->coin = a->coin;
     if (ro->type == ROOM_TYPE_NORMAL) {
         st->score = a->score_normal;
     } else {
         st->score = a->score_dashi;
     }
+    st->score_display = a->score_display;
 }
 
 static int 
@@ -486,12 +509,14 @@ game_over(struct module *s, struct room_game* ro, bool death) {
         st->nitem = m->nitem;
         st->nbao = m->nbao;
         st->exp = a->exp;
+        st->coin_extra = a->coin_extra;
         st->coin = a->coin;
         if (ro->type == ROOM_TYPE_NORMAL) {
             st->score = a->score_normal;
         } else {
             st->score = a->score_dashi;
         }
+        st->score_display = a->score_display;
     }  
     int gosz = UM_GAMEOVER_size(go);
     for (i=0; i<np; ++i) {

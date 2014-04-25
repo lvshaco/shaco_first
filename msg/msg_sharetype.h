@@ -321,7 +321,9 @@ struct tmemberstat {
     int16_t nitem;
     int16_t nbao;
     int32_t exp;
+    int32_t coin_extra;
     int32_t coin;
+    int32_t score_display;
     int32_t score;
 };
 
