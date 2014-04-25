@@ -7,10 +7,10 @@
 #include "luck_random.h"
 
 static const struct item_tplt *
-item_rand(struct room *self, struct room_game *ro, int mode, struct player *m) {
+item_rand(struct room *self, struct room_game *ro, int mode, 
+        struct room_item *items, struct player *m) {
     uint32_t id = 0; 
     assert(mode >= 0 && mode < MODE_MAX);
-    struct room_item *items = &ro->mode_items[mode];
     int lucky = m->detail.attri.lucky;
     int rand = luck_random(&self->randseed, lucky, 0.4f, items->luck_up, &m->luck_factor);
     int i;
@@ -34,24 +34,28 @@ room_item_rand(struct room *self, struct room_game *ro, struct player *m,
         const struct item_tplt *item) {
     int8_t mode = room_game_mode(ro);
     if (item->subtype == 0) {
-        return item_rand(self, ro, mode, m);
+        return item_rand(self, ro, mode, &ro->mode_items[mode], m);
     } else {
         switch (mode) {
         case MODE_FREE:
             if (item->target != ITEM_TARGET_SELF) {
-                return item_rand(self, ro, mode, m);
+                return item_rand(self, ro, mode, &ro->mode_items[mode], m);
             }
             break;
         case MODE_CO:
             if (item->target != ITEM_TARGET_SELF &&
                 item->target != ITEM_TARGET_FRIEND) {
-                return item_rand(self, ro, mode, m);
+                return item_rand(self, ro, mode, &ro->mode_items[mode], m);
             }
             break;
         case MODE_FIGHT:
             if (item->target != ITEM_TARGET_SELF &&
                 item->target != ITEM_TARGET_ENEMY) {
-                return item_rand(self, ro, mode, m);
+                struct player *front = room_member_front(ro, m);
+                if (front && ((front->depth - m->depth) >= 20))
+                    return item_rand(self, ro, mode, &ro->fight_items2, m);
+                else
+                    return item_rand(self, ro, mode, &ro->mode_items[mode], m);
             }
             break;
         }
@@ -96,6 +100,7 @@ room_item_init(struct room *self, struct room_game *ro, const struct map_tplt *m
     item_init(&ro->mode_items[MODE_FREE], self, map, map->freeitem, map->nfreeitem);
     item_init(&ro->mode_items[MODE_CO],   self, map, map->coitem, map->ncoitem);
     item_init(&ro->mode_items[MODE_FIGHT],self, map, map->fightitem, map->nfightitem);
+    item_init(&ro->fight_items2, self, map, map->fightitem2, map->nfightitem2);
 }
 
 void

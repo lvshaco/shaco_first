@@ -1004,12 +1004,6 @@ rand_baoitem(struct room *self, const struct item_tplt *item, const struct map_t
 }
 
 static inline const struct item_tplt*
-rand_fightitem(struct room *self, const struct map_tplt *mapt) {
-    uint32_t randid = mapt->fightitem[rand()%mapt->nfightitem];
-    return room_tplt_find_item(self, randid);
-}
-
-static inline const struct item_tplt*
 rand_trapitem(struct room *self, const struct map_tplt *mapt) {
     uint32_t randid = mapt->trapitem[rand()%mapt->ntrapitem];
     const struct item_tplt* item = room_tplt_find_item(self, randid);

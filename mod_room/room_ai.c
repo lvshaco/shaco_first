@@ -46,20 +46,6 @@ oxygen_percent(struct player *m) {
     return m->detail.attri.oxygen / (float)m->base.oxygen;
 }
 
-static struct player *
-player_front(struct room_game *ro, struct player *m) {
-    int i;
-    for (i=0; i<ro->np; ++i) { 
-        struct player *other = &ro->p[i];
-        if (other != m &&
-            is_online(other) &&
-            other->depth > m->depth) {
-            return other;
-        }
-    }
-    return NULL;
-}
-
 static int
 lookup_target(struct room *self, struct room_game *ro, struct player *m, 
         int type, struct ai_target *target) {
@@ -160,7 +146,7 @@ ai_speed(struct room_game *ro, struct player *m) {
     if (brain->dir < 1)
         return 1;
     float speed;
-    struct player *front = player_front(ro, m);
+    struct player *front = room_member_front(ro, m);
     if (front) {
         if (front->speed_new > front->speed_old) {
             speed = fall_speed_standard(m);

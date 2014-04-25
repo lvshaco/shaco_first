@@ -110,6 +110,7 @@ struct room_game {
     int8_t np;
     struct player p[MEMBER_MAX];
     struct room_item mode_items[MODE_MAX];
+    struct room_item fight_items2;
     struct groundattri gattri;
     struct genmap* map;
 };
@@ -135,6 +136,20 @@ static inline struct room_game *
 room_member_to_game(struct player *m) {
     assert(m->index >= 0 && m->index < MEMBER_MAX);
     return (struct room_game*)((char*)m - m->index * sizeof(*m) - offsetof(struct room_game, p));
+}
+
+static inline struct player *
+room_member_front(struct room_game *ro, struct player *m) {
+    int i;
+    for (i=0; i<ro->np; ++i) { 
+        struct player *other = &ro->p[i];
+        if (other != m &&
+            is_online(other) &&
+            other->depth > m->depth) {
+            return other;
+        }
+    }
+    return NULL;
 }
 
 #define UID(m) ((m)->detail.accid)
