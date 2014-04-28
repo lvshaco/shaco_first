@@ -44,33 +44,6 @@ store_item(struct player *m, uint32_t itemid) {
     } 
 }
 
-static void
-give_start_effect(struct module *s, struct room_game *ro, struct player *m) {
-    static const uint32_t ITEM1 = 210609;
-    static const uint32_t ITEM2 = 210117;
-
-    int state_id = role_state_id(m->detail.state);
-    if (ro->type == ROOM_TYPE_NORMAL) {
-        if (state_id == ROLE_STATE_3) {
-            store_item(m, ITEM1);
-            notify_use_item(s, m, ITEM1);
-        } else if (state_id == ROLE_STATE_4) {
-            store_item(m, ITEM1);
-            notify_use_item(s, m, ITEM1);
-            store_item(m, ITEM2);
-            notify_use_item(s, m, ITEM2);
-        }
-    } else if (ro->type == ROOM_TYPE_DASHI) {
-        if (state_id == ROLE_STATE_3) {
-            store_item(m, ITEM1);
-            notify_use_item(s, m, ITEM1);
-        } else if (state_id == ROLE_STATE_4) {
-            store_item(m, ITEM1);
-            notify_use_item(s, m, ITEM1);
-        }
-    }    
-}
-
 static inline void
 set_effect_state(struct player *m, int state) {
     m->detail.attri.effect_states |= 1<<state;
@@ -183,6 +156,7 @@ notify_item_noeffect(struct module *s, struct player *m, uint32_t initid, uint32
     ie->spellid = m->detail.charid;
     ie->oriitem = initid;
     ie->itemid = itemid;
+    ie->use_type = ITEM_USE_T_PICK;
     ie->ntarget = 0;
     sh_module_send(MODULE_ID, m->watchdog_source, MT_UM, cl, sizeof(*cl)+sizeof(*ie));
 }
@@ -1073,7 +1047,7 @@ rand_trapitem(struct room *self, const struct map_tplt *mapt) {
 }
 
 static void
-use_item(struct module *s, struct room_game *ro, struct player *m, uint32_t itemid) {
+use_item(struct module *s, struct room_game *ro, struct player *m, uint32_t itemid, int8_t use_type) {
     struct room *self = MODULE_SELF;
 
     const struct item_tplt* item = room_tplt_find_item(self, itemid);
@@ -1136,6 +1110,7 @@ use_item(struct module *s, struct room_game *ro, struct player *m, uint32_t item
     ie->spellid = m->detail.charid;
     ie->oriitem = init_itemid;
     ie->itemid = item->id;
+    ie->use_type = use_type;
     ie->ntarget = ntar;
     int i;
     for (i=0; i<ntar; ++i) {
@@ -1147,7 +1122,7 @@ use_item(struct module *s, struct room_game *ro, struct player *m, uint32_t item
 static void
 pick_item(struct module *s, struct player *m, const struct UM_PICKITEM *pick) {
     struct room_game *ro = room_member_to_game(m);
-    use_item(s, ro, m, pick->itemid);
+    use_item(s, ro, m, pick->itemid, ITEM_USE_T_PICK);
 }
 
 static void
@@ -1157,7 +1132,29 @@ use_store_item(struct module *s, struct player *m, const struct UM_USEITEM *use)
         m->store_item2 != use->itemid) {
         return;
     }
-    use_item(s, ro, m, use->itemid);
+    use_item(s, ro, m, use->itemid, ITEM_USE_T_STORE);
+}
+
+static void
+give_start_effect(struct module *s, struct room_game *ro, struct player *m) {
+    static const uint32_t ITEM1 = 210609;
+    static const uint32_t ITEM2 = 210117;
+
+    int state_id = role_state_id(m->detail.state);
+    if (ro->type == ROOM_TYPE_NORMAL) {
+        if (state_id == ROLE_STATE_3) {
+            use_item(s, ro, m, ITEM1, USE_ITEM_T_SERVER);
+        } else if (state_id == ROLE_STATE_4) {
+            use_item(s, ro, m, ITEM1, USE_ITEM_T_SERVER);
+            use_item(s, ro, m, ITEM2, USE_ITEM_T_SERVER);
+        }
+    } else if (ro->type == ROOM_TYPE_DASHI) {
+        if (state_id == ROLE_STATE_3) {
+            use_item(s, ro, m, ITEM1, USE_ITEM_T_SERVER);
+        } else if (state_id == ROLE_STATE_4) {
+            use_item(s, ro, m, ITEM1, USE_ITEM_T_SERVER);
+        }
+    }    
 }
 
 static inline int
@@ -1428,11 +1425,11 @@ game_player_main(struct module *s, struct player *m, const void *msg, int sz) {
         sync_press(s, m, press);
         break;
         }
-    case IDUM_USEITEM: {
-        UM_CASTCK(UM_USEITEM, use, base, sz);
-        use_store_item(s, m, use);
-        break;
-        }
+    //case IDUM_USEITEM: {
+        //UM_CASTCK(UM_USEITEM, use, base, sz);
+        //use_store_item(s, m, use);
+        //break;
+        //}
     case IDUM_PICKITEM: {
         UM_CASTCK(UM_PICKITEM, pick, base, sz);
         pick_item(s, m, pick);

@@ -373,11 +373,14 @@ struct UM_PICKITEM {
     uint32_t itemid;
 };
 
+#define ITEM_USE_T_PICK 1
+#define ITEM_USE_T_SERVER 2
 struct UM_ITEMEFFECT {
     _UM_HEADER;
     uint32_t spellid; // 释放者ID
     uint32_t oriitem; // 未知道具ID
     uint32_t itemid;  // 真实道具ID
+    int8_t use_type; // ITEM_USE_T_; 
     uint8_t ntarget;
     uint32_t targets[];  // 目标ID
 };
