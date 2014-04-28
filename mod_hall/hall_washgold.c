@@ -34,7 +34,9 @@ refresh_washgold(struct module *s, struct player *pr, bool sync) {
     }
     uint32_t diff = now - cdata->last_washgold_refresh_time;
     if (diff >= 3600) {
-        cdata->washgold += min(1200, diff/60 * 2);
+        cdata->washgold += min(600, diff/60 * 4);
+        if (cdata->washgold > 1800)
+            cdata->washgold = 1800;
         cdata->last_washgold_refresh_time = now;
         if (sync) {
             sync_washgold_info(s, pr);
@@ -51,10 +53,10 @@ process_washgold(struct module *s, struct player *pr) {
     }
     uint32_t gain, extra;
     float rand = hall_luck_random_float(self, pr, 0.4, 100);
-    if (rand * rand > 0.7) {
-        gain = rand * 60;
+    if (rand * rand > 0.75) {
+        gain = rand * 360;
     } else {
-        gain = max(rand * 12, 4);
+        gain = max(rand * 156, 48);
     }
     if (gain == 0) {
         return;
