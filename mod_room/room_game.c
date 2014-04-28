@@ -29,6 +29,49 @@
 #define F_OVER   8
 
 static inline void
+notify_use_item(struct module *s, struct player *m, uint32_t itemid) {
+    UM_DEFFIX(UM_USEITEM_NOTIFY, notify);                                  
+    notify->itemid = itemid; 
+    sh_module_send(MODULE_ID, m->watchdog_source, MT_UM, notify, sizeof(*notify));
+}
+
+static inline void
+store_item(struct player *m, uint32_t itemid) {
+    if (m->store_item1 != 0) {
+        m->store_item1 = itemid;
+    } else if (m->store_item2 != 0) {
+        m->store_item2 = itemid;
+    } 
+}
+
+static void
+give_start_effect(struct module *s, struct room_game *ro, struct player *m) {
+    static const uint32_t ITEM1 = 210609;
+    static const uint32_t ITEM2 = 210117;
+
+    int state_id = role_state_id(m->detail.state);
+    if (ro->type == ROOM_TYPE_NORMAL) {
+        if (state_id == ROLE_STATE_3) {
+            store_item(m, ITEM1);
+            notify_use_item(s, m, ITEM1);
+        } else if (state_id == ROLE_STATE_4) {
+            store_item(m, ITEM1);
+            notify_use_item(s, m, ITEM1);
+            store_item(m, ITEM2);
+            notify_use_item(s, m, ITEM2);
+        }
+    } else if (ro->type == ROOM_TYPE_DASHI) {
+        if (state_id == ROLE_STATE_3) {
+            store_item(m, ITEM1);
+            notify_use_item(s, m, ITEM1);
+        } else if (state_id == ROLE_STATE_4) {
+            store_item(m, ITEM1);
+            notify_use_item(s, m, ITEM1);
+        }
+    }    
+}
+
+static inline void
 set_effect_state(struct player *m, int state) {
     m->detail.attri.effect_states |= 1<<state;
     m->refresh_flag |= REFRESH_ATTRI;
@@ -55,6 +98,8 @@ room_game_time(struct room_game *ro) {
 
 static void
 member_free(struct room *self, struct player* m) {
+    m->store_item1 = 0;
+    m->store_item2 = 0;
     sh_array_fini(&m->total_delay);
     sh_array_fini(&m->total_effect);
     ai_fini(m);
@@ -662,6 +707,16 @@ room_game_start(struct module *s, struct room_game* ro) {
     ro->statustime = ro->starttime;
     UM_DEFFIX(UM_GAMESTART, start);
     multicast_msg(s, ro, start, sizeof(*start), 0);
+
+    struct player *m;
+    int i;
+    for (i=0; i<ro->np; ++i) {
+        m = &ro->p[i];
+        if (is_online(m) &&
+            is_player(m)) {
+            give_start_effect(s, ro, m);
+        }
+    }
 }
 
 static bool
@@ -1018,14 +1073,12 @@ rand_trapitem(struct room *self, const struct map_tplt *mapt) {
 }
 
 static void
-use_item(struct module *s, struct player *m, const struct UM_USEITEM *use) {
+use_item(struct module *s, struct room_game *ro, struct player *m, uint32_t itemid) {
     struct room *self = MODULE_SELF;
 
-    struct room_game *ro = room_member_to_game(m);
-
-    const struct item_tplt* item = room_tplt_find_item(self, use->itemid);
+    const struct item_tplt* item = room_tplt_find_item(self, itemid);
     if (item == NULL) {
-        sh_trace("Room %u not found use item: %u", ro->id, use->itemid);
+        sh_trace("Room %u not found use item: %u", ro->id, itemid);
         return;
     }
     const struct map_tplt* map = room_tplt_find_map(self, ro->gattri.mapid); 
@@ -1091,6 +1144,22 @@ use_item(struct module *s, struct player *m, const struct UM_USEITEM *use) {
     multicast_msg(s, ro, ie, UM_ITEMEFFECT_size(ie), 0);
 }
 
+static void
+pick_item(struct module *s, struct player *m, const struct UM_PICKITEM *pick) {
+    struct room_game *ro = room_member_to_game(m);
+    use_item(s, ro, m, pick->itemid);
+}
+
+static void
+use_store_item(struct module *s, struct player *m, const struct UM_USEITEM *use) {
+    struct room_game *ro = room_member_to_game(m);
+    if (m->store_item1 != use->itemid &&
+        m->store_item2 != use->itemid) {
+        return;
+    }
+    use_item(s, ro, m, use->itemid);
+}
+
 static inline int
 reduce_oxygen(struct player* m, int oxygen) {
     if (oxygen > 0) {
@@ -1138,6 +1207,7 @@ login(struct module *s, int source, uint32_t roomid, float luck_factor,
         notify_play_fail(s, source, accid, SERR_NOMEMBER);
         return NULL; // someting wrong
     }
+    bool has_logined = m->logined;
     // free first
     member_free(self, m);
 
@@ -1153,12 +1223,17 @@ login(struct module *s, int source, uint32_t roomid, float luck_factor,
     sh_array_init(&m->total_delay, sizeof(struct buff_delay), 1);
     sh_array_init(&m->total_effect, sizeof(struct buff_effect), 1);
 
-    m->logined = true; 
     m->watchdog_source = source;
     m->brain = NULL; 
     {
     assert(!sh_hash_insert(&self->players, accid, m));
     m->online = true;
+    m->logined = true;
+    }
+    if (ro->status == ROOMS_START) {
+        if (!has_logined) {
+            give_start_effect(s, ro, m);
+        }
     }
     return m;
 }
@@ -1355,7 +1430,12 @@ game_player_main(struct module *s, struct player *m, const void *msg, int sz) {
         }
     case IDUM_USEITEM: {
         UM_CASTCK(UM_USEITEM, use, base, sz);
-        use_item(s, m, use);
+        use_store_item(s, m, use);
+        break;
+        }
+    case IDUM_PICKITEM: {
+        UM_CASTCK(UM_PICKITEM, pick, base, sz);
+        pick_item(s, m, pick);
         break;
         }
     }

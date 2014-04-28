@@ -80,6 +80,8 @@ struct player {
     int16_t nbedamage;
     float speed_new;
     float speed_old;
+    uint32_t store_item1;
+    uint32_t store_item2;
     struct ai_brain *brain;
 };
 

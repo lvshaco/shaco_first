@@ -141,10 +141,17 @@ process_adjust_state(struct module *s, struct player *pr, const struct UM_ADJUST
         return; // 没有角色
     }
     int old_value = cdata->roles_state[typeid];
-    if (old_value >= STATE_MAX_VALUE) {
-        return; // no need
+    int old_id = role_state_id(old_value);
+    if (old_id >= ROLE_STATE_4) {
+        return;
     }
-    int pay_coin  = old_value*old_value*old_value / 1000.f; // todo
+    static const int PAY[] = {10, 20, 50, 100};
+    if (old_id < 0)
+        old_id = 0;
+    if (old_id >= sizeof(PAY)/sizeof(PAY[0]))
+        old_id = sizeof(PAY)/sizeof(PAY[0])-1;
+
+    int pay_coin  = PAY[old_id];
     if (cdata->coin < pay_coin) {
         return; // no coin
     } 
@@ -152,9 +159,9 @@ process_adjust_state(struct module *s, struct player *pr, const struct UM_ADJUST
     int new_value = old_value;
     int rand = hall_luck_random_float(self, pr, 0.4, 100);
     if (rand > 90) {
-        new_value += 36; 
+        new_value += 52; 
     } else {
-        new_value += 8;
+        new_value += 11;
     }
     if (new_value >= STATE_MAX_VALUE) {
         new_value = STATE_MAX_VALUE;
@@ -165,7 +172,6 @@ process_adjust_state(struct module *s, struct player *pr, const struct UM_ADJUST
     if (pay_coin > 0) {
         cdata->coin -= pay_coin;
     }
-    int old_id = role_state_id(old_value);
     int new_id = role_state_id(new_value);
     if (old_id != new_id) {
         hall_attribute_main(self->T, cdata); 

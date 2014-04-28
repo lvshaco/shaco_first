@@ -54,9 +54,10 @@
 // client -> server (room)
 #define IDUM_ROOMB          IDUM_CBEGIN+500  // room begin
 #define IDUM_GAMESYNC       IDUM_CBEGIN+500
-#define IDUM_USEITEM        IDUM_CBEGIN+501
+#define IDUM_PICKITEM       IDUM_CBEGIN+501
 #define IDUM_ROLEPRESS      IDUM_CBEGIN+502
 #define IDUM_GAMELOADOK     IDUM_CBEGIN+503
+#define IDUM_USEITEM        IDUM_CBEGIN+504
 #define IDUM_ROOME          IDUM_CBEGIN+599 // room end
 #define IDUM_GATEE          IDUM_CBEGIN+599
 
@@ -100,6 +101,7 @@
 #define IDUM_GAMEMEMBER     IDUM_CBEGIN+807
 #define IDUM_ITEMUNEFFECT   IDUM_CBEGIN+808
 #define IDUM_GAMEEXIT       IDUM_CBEGIN+809
+#define IDUM_USEITEM_NOTIFY IDUM_CBEGIN+810
 
 // heartbeat
 #define IDUM_HEARTBEAT      IDUM_CBEGIN+900
@@ -356,7 +358,17 @@ struct UM_GAMESYNC {
     uint32_t depth;
 };
 
+struct UM_USEITEM_NOTIFY {
+    _UM_HEADER;
+    uint32_t itemid;
+};
+
 struct UM_USEITEM {
+    _UM_HEADER;
+    uint32_t itemid;
+};
+
+struct UM_PICKITEM {
     _UM_HEADER;
     uint32_t itemid;
 };
