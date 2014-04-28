@@ -28,6 +28,9 @@
 #define F_AWARD  4
 #define F_OVER   8
 
+static void
+give_start_effect(struct module *s, struct room_game *ro, struct player *m);
+
 static inline void
 notify_use_item(struct module *s, struct player *m, uint32_t itemid) {
     UM_DEFFIX(UM_USEITEM_NOTIFY, notify);                                  
@@ -1124,7 +1127,7 @@ pick_item(struct module *s, struct player *m, const struct UM_PICKITEM *pick) {
     struct room_game *ro = room_member_to_game(m);
     use_item(s, ro, m, pick->itemid, ITEM_USE_T_PICK);
 }
-
+/*
 static void
 use_store_item(struct module *s, struct player *m, const struct UM_USEITEM *use) {
     struct room_game *ro = room_member_to_game(m);
@@ -1134,7 +1137,7 @@ use_store_item(struct module *s, struct player *m, const struct UM_USEITEM *use)
     }
     use_item(s, ro, m, use->itemid, ITEM_USE_T_STORE);
 }
-
+*/
 static void
 give_start_effect(struct module *s, struct room_game *ro, struct player *m) {
     static const uint32_t ITEM1 = 210609;
@@ -1143,16 +1146,16 @@ give_start_effect(struct module *s, struct room_game *ro, struct player *m) {
     int state_id = role_state_id(m->detail.state);
     if (ro->type == ROOM_TYPE_NORMAL) {
         if (state_id == ROLE_STATE_3) {
-            use_item(s, ro, m, ITEM1, USE_ITEM_T_SERVER);
+            use_item(s, ro, m, ITEM1, ITEM_USE_T_SERVER);
         } else if (state_id == ROLE_STATE_4) {
-            use_item(s, ro, m, ITEM1, USE_ITEM_T_SERVER);
-            use_item(s, ro, m, ITEM2, USE_ITEM_T_SERVER);
+            use_item(s, ro, m, ITEM1, ITEM_USE_T_SERVER);
+            use_item(s, ro, m, ITEM2, ITEM_USE_T_SERVER);
         }
     } else if (ro->type == ROOM_TYPE_DASHI) {
         if (state_id == ROLE_STATE_3) {
-            use_item(s, ro, m, ITEM1, USE_ITEM_T_SERVER);
+            use_item(s, ro, m, ITEM1, ITEM_USE_T_SERVER);
         } else if (state_id == ROLE_STATE_4) {
-            use_item(s, ro, m, ITEM1, USE_ITEM_T_SERVER);
+            use_item(s, ro, m, ITEM1, ITEM_USE_T_SERVER);
         }
     }    
 }
