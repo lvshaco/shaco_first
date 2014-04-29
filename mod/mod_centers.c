@@ -104,7 +104,7 @@ remove_int(struct _int_array *inta, int nodeid) {
     for (i=0; i<inta->sz; ++i) {
         if (sh_nodeid_from_handle(inta->p[i]) == nodeid) {
             for (j=i; j<inta->sz-1; ++j) {
-                inta->p[i] = inta->p[i+1];
+                inta->p[j] = inta->p[j+1];
             }
             inta->sz--;
         }
