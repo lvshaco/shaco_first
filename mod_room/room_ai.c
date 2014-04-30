@@ -73,18 +73,20 @@ lookup_target(struct room *self, struct room_game *ro, struct player *m,
     }
     struct genmap_cell *cell;
     struct item_tplt *item;
-    int i, start = (depth-1)*map->width;
-    for (i=0; i<map->width*3; ++i) {
-        cell = &map->cells[start+i];
-        if (cell->cellid == 0 && cell->itemid > 0) {
-            item = room_tplt_find_item(self, cell->itemid);
-            if (item &&
-                item->type == type) {
-                target->id = item->id;
-                target->h = depth-1;
-                target->w = i;
-                target->block = cell->block;
-                return 0;
+    int w,h;
+    for (h=depth-1; h<m->depth+2; ++h) {
+        for (w=0; w<map->width; ++w) {
+            cell = &map->cells[h*map->width + w];
+            if (cell->cellid == 0 && cell->itemid > 0) {
+                item = room_tplt_find_item(self, cell->itemid);
+                if (item &&
+                    item->type == type) {
+                    target->id = item->id;
+                    target->h = h;
+                    target->w = w;
+                    target->block = cell->block;
+                    return 0;
+                }
             }
         }
     }
@@ -227,6 +229,7 @@ static inline bool
 ai_can_pick(struct player *m) {
     struct ai_brain *brain = m->brain;
     if (brain->target.id > 0) {
+        sh_trace("AI %u pick target1", UID(m));
         return true; /*
         int rate = 110 - (m->depth - target_depth(&brain->target)) / 0.4;
         sh_trace("AI %u pick target1 rate %d", UID(m), rate);
@@ -278,7 +281,7 @@ ai_lookup_oxygen(struct room *self, struct room_game *ro, struct player *m) {
     if (!lookup_target(self, ro, m, ITEM_T_OXYGEN, &target)) {
         int height = ro->map->height;
         float limit_per = 0.3 + 0.2*(1.2 - min(1.2, brain->level/7.0)) + 
-            0.5 * ((height - m->depth)/height);
+            0.5 * ((height - m->depth)/(float)height);
         float oxygen_per = oxygen_percent(m);
         sh_trace("AI %u lookup oxygen (%u in %u,%u b %u) oxygen_per %f limit_per %f", 
                 UID(m), 
