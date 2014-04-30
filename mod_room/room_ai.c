@@ -48,12 +48,14 @@ calc_buff_value(struct player *m) {
 
 static inline float
 fall_speed_base(struct player *m) {
-    return m->base.charfallspeed * 0.75;
+    return 0.85 + m->brain->level*0.05;
+    //return m->base.charfallspeed * 0.75;
 }
 
 static inline float
 fall_speed_standard(struct player *m) {
-    return fall_speed_base(m)*pow(m->brain->level, 0.4)*0.17;
+    return fall_speed_base(m) * 0.78;
+    //return fall_speed_base(m)*pow(m->brain->level, 0.4)*0.17;
 }
 
 static inline float
@@ -65,14 +67,14 @@ static int
 lookup_target(struct room *self, struct room_game *ro, struct player *m, 
         int type, struct ai_target *target) {
     struct genmap *map = ro->map;
-    int depth = m->depth + 2; 
+    int depth = m->depth; 
     if (depth <= 0 || depth > map->height) {
         return 1;
     }
     struct genmap_cell *cell;
     struct item_tplt *item;
     int i, start = (depth-1)*map->width;
-    for (i=0; i<map->width; ++i) {
+    for (i=0; i<map->width*3; ++i) {
         cell = &map->cells[start+i];
         if (cell->cellid == 0 && cell->itemid > 0) {
             item = room_tplt_find_item(self, cell->itemid);
@@ -141,11 +143,7 @@ ai_dir(struct player *m) {
     struct ai_brain *brain = m->brain;
     struct ai_target *target = target_current(brain);
     if (target) {
-        if (target_depth(target) > m->depth) {
-            return 1;
-        } else {
-            return rand()%3 - 1;
-        }
+        return 0;
     } else {
         if (rand_rate(brain->level, 10, 1, 0, 10)) {
             return rand()%2 - 1;
@@ -155,15 +153,21 @@ ai_dir(struct player *m) {
     }
 }
 
+static inline float
+average_speed(struct room_game *ro, struct player *m) {
+    return (float)m->depth / ((sh_timer_now() - ro->starttime)/1000.0);
+}
+
 static float
 ai_speed(struct room_game *ro, struct player *m) {
     struct ai_brain *brain = m->brain;
     if (brain->dir < 1)
         return 1;
     float speed;
-    struct player *front = room_member_front(ro, m);
-    if (front) {
-        if (front->speed_new > front->speed_old) {
+    struct player *opponent = room_member_opponent(ro, m);
+    if (opponent &&
+        opponent->depth > m->depth) {
+        if (opponent->speed_new >= opponent->speed_old) {
             speed = fall_speed_standard(m);
         } else {
             speed = fall_speed_base(m);
@@ -175,8 +179,11 @@ ai_speed(struct room_game *ro, struct player *m) {
     int down_block = down_block_count(ro, m->depth);
     int d = MAP_DEPTH(m->depth);
     int ntype = MAP_NTYPE(ro->map, d);
-    down_block = down_block * 5 - pow(5-ntype, 4.5);
+    down_block = down_block * 6 - pow(5-ntype, 4.2);
     speed *= (1+buff_value/100.f - down_block/100.f);
+    if (opponent) {
+        speed *= average_speed(ro, opponent);
+    }
     return speed > 0 ? speed : 0;
 }
 
@@ -220,12 +227,13 @@ static inline bool
 ai_can_pick(struct player *m) {
     struct ai_brain *brain = m->brain;
     if (brain->target.id > 0) {
+        return true; /*
         int rate = 110 - (m->depth - target_depth(&brain->target)) / 0.4;
         sh_trace("AI %u pick target1 rate %d", UID(m), rate);
         if (rate >= 100 ||
             rand()%100 <= rate) {
             return true;
-        }
+        }*/
     } else if (brain->target2.id > 0) {
         sh_trace("AI %u pick target2 rate 100", UID(m));
         return true;

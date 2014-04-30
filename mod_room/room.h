@@ -154,6 +154,19 @@ room_member_front(struct room_game *ro, struct player *m) {
     return NULL;
 }
 
+static inline struct player *
+room_member_opponent(struct room_game *ro, struct player *m) {
+    int i;
+    for (i=0; i<ro->np; ++i) { 
+        struct player *other = &ro->p[i];
+        if (other != m &&
+            is_online(other)) {
+            return other;
+        }
+    }
+    return NULL;
+}
+
 #define UID(m) ((m)->detail.accid)
 
 #endif
