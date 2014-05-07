@@ -55,6 +55,7 @@
 #define SERR_ROOMUNJOINABLE 62
 #define SERR_ROOMUNEXIST    63
 
+#define SERR_BUGLEN         99
 // handle exit
 #define SERR_GATEEXIT       100
 #define SERR_HALLEXIT       101

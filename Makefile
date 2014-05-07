@@ -105,6 +105,7 @@ all: \
 	redis.so \
 	tplt.so \
 	elog.so \
+	coroutine.so \
 	shaco \
 	shaco-cli \
 	t \
@@ -120,6 +121,7 @@ all: \
 	mod_auth.so \
 	mod_robot.so \
 	mod_httpc.so \
+	mod_bug.so \
 	mod_benchmarkdb.so
 
 release: CFLAGS += -O2 -fno-strict-aliasing
@@ -191,6 +193,11 @@ mod_auth.so: $(mod_dir)/mod_auth.c
 	@rm -f $@
 	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Iinclude/libshaco -Inet -Ibase -Imsg -Iredis -Wl,-rpath,. redis.so
 
+mod_bug.so: $(mod_dir)/mod_bug.c
+	@rm -f $@
+	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Iinclude/libshaco -Inet -Ibase -Imsg -Iredis -Wl,-rpath,. redis.so
+
+
 mod_hall.so: $(mod_dir)/mod_hall.c \
 	mod_hall/hall_cmdctl.h \
 	mod_hall/hall_tplt.c \
@@ -249,6 +256,9 @@ elog.so: $(elog_src)
 	@rm -f $@
 	gcc $(CFLAGS) $(SHARED) -o $@ $^
 
+coroutine.so: coroutine/coroutine.c coroutine/coroutine.h
+	gcc $(CFLAGS) $(SHARED) -o $@ $^
+
 shaco.so: $(libshaco_src)
 	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Iinclude/libshaco -Ilur -Inet -Ibase
 
@@ -258,8 +268,8 @@ shaco: main/shaco.c
 shaco-cli: $(cli_src)
 	gcc $(CFLAGS) -o $@ $^ -lpthread
 
-t: main/test.c shaco.so net.so lur.so base.so redis.so elog.so
-	gcc $(CFLAGS) -o $@ $^ -Iinclude/libshaco -Imsg -Ilur -Inet -Ibase -Iredis -Ielog $(LDFLAGS) redis.so 
+t: main/test.c shaco.so net.so lur.so base.so redis.so elog.so redis.so coroutine.so
+	gcc $(CFLAGS) -o $@ $^ -Iinclude/libshaco -Imsg -Ilur -Inet -Ibase -Iredis -Ielog -Icoroutine $(LDFLAGS)
 
 robot: main/robot.c cnet/cnet.c cnet/cnet.h net.so
 	gcc $(CFLAGS) -o $@ $^ -Ilur -Icnet -Inet -Ibase -Imsg -Wl,-rpath,. net.so

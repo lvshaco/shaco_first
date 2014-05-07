@@ -8,12 +8,15 @@
 
 #define TROUTE 0
 #define TGATE 1
-#define TMAX 2
+#define TBUG 2
+#define TMAX 3
 static int SERVER[TMAX];
 static struct chardata CHAR;
 static char ACCOUNT[ACCOUNT_NAME_MAX+1];
 static uint32_t LAST_SEND_TIME;
 static int TYPE;
+static int bugsubmit;
+
 static void
 mylog(const char *fmt, ...) {
     time_t now = time(NULL);
@@ -65,6 +68,18 @@ _login_account(int id) {
 }
 
 static void
+_submit(int id) { 
+    UM_DEFVAR(UM_BUGSUBMIT, bs);
+    int sz = 128;
+    int i;
+    for (i=0; i<sz; ++i) {
+        bs->str[i] = i%9;
+    }
+    _server_send(TBUG, bs, sizeof(*bs) + sz);
+    mylog("submit bug");
+}
+
+static void
 _onconnect(struct net_message* nm) {
     mylog("onconnect");
     int ut = nm->ut;
@@ -79,6 +94,9 @@ _onconnect(struct net_message* nm) {
         break;
     case TGATE:
         _login_account(id);
+        break;
+    case TBUG:
+        _submit(id);
         break;
     }
 }
@@ -183,7 +201,7 @@ _handleum(int id, int ut, struct UM_BASE* um) {
         }
     case IDUM_LOGINACCOUNTFAIL: {
         UM_CAST(UM_LOGINACCOUNTFAIL, fail, um);
-        mylog("accout login fail: error#%d", fail->err);
+        mylog("account login fail: error#%d", fail->err);
         }
         break;
     case IDUM_LOGOUT: {
@@ -201,6 +219,22 @@ _handleum(int id, int ut, struct UM_BASE* um) {
         }
         }
         break;
+    case IDUM_NOTIFYWEB: {
+        UM_CAST(UM_NOTIFYWEB, nw, um);
+        mylog("webaddr %s", nw->webaddr);
+        mylog("bugaddr %s", nw->bugaddr);
+        if (bugsubmit) {
+            if (cnet_connect(nw->bugaddr, nw->bugport, TBUG) < 0) {
+                mylog("!!!!!!!!!!!!connect bug fail");
+            }
+        }
+        break;
+        }
+    case IDUM_BUGSUBMITRES: {
+        UM_CAST(UM_BUGSUBMITRES, sr, um);
+        mylog("++++++++++++++bug submit result : %d", sr->err);
+        break;
+        }
     case IDUM_CHARINFO: {
         UM_CAST(UM_CHARINFO, ci, um);
         mylog("charinfo: id %u, name %s", ci->data.charid, ci->data.name);
@@ -294,26 +328,50 @@ _handleum(int id, int ut, struct UM_BASE* um) {
     }
 }
 
+static void
+usage(const char* app) {
+    fprintf(stderr, "usage: %s \n"
+            "--ip\n"
+            "--port\n"
+            "--account\n"
+            "--type\n"
+            "--bug\n",
+            app);
+}
+
 int main(int argc, char* argv[]) { 
-    const char* ip;
-    uint16_t port;
-    if (argc > 1) {
-        snprintf(ACCOUNT, sizeof(ACCOUNT), "wa_account_%s", argv[1]);
-    } else {
-        strncpy(ACCOUNT, "wa_account_1", sizeof(ACCOUNT)-1);
+    const char* ip = "192.168.1.140";
+    uint16_t port = 18100;
+    const char *acc = "1";
+    int i, lastarg;
+    const char *cmd;
+    for (i=1; i<argc; ++i) {
+        lastarg = i==argc-1;
+        cmd = argv[i];
+        if (!strcmp(cmd, "--bug")) {
+            bugsubmit = 1;
+            continue;
+        }
+        if (!lastarg) {
+            if (!strcmp(cmd, "--ip")) {
+                ip = argv[i+1];
+            } else if (!strcmp(cmd, "--port")) {
+                port = strtoul(argv[i+1], NULL, 10);
+            } else if(!strcmp(cmd, "--account")) {
+                acc = argv[i+1]; 
+            } else if(!strcmp(cmd, "--type")) {
+                TYPE = strtoul(argv[i+1], NULL, 10);
+            } else {
+                usage(argv[0]);
+                return 1;
+            }
+            i++;
+        } else {
+            usage(argv[0]);
+            return 1;
+        }
     }
-    if (argc > 2) {
-        TYPE = strtoul(argv[2], NULL, 10);
-    } else {
-        TYPE = 1;
-    }
-    if (argc > 4) {
-        ip = argv[3];
-        port = strtoul(argv[4], NULL, 10);
-    } else {
-        ip = "192.168.1.140";
-        port = 18100;
-    }
+    snprintf(ACCOUNT, sizeof(ACCOUNT), "wa_account_%s", acc);
     
     srand(time(NULL));
     _server_init();

@@ -47,6 +47,8 @@ struct watchdog {
     struct sh_hash acc2user;
 
     char webaddr[IP_LEN];
+    char bugaddr[IP_LEN];
+    int bugport;
 };
 
 // watchdog
@@ -82,7 +84,10 @@ watchdog_init(struct module *s) {
         return 1;
     }
     const char *webaddr = sh_getstr("web_addr", "");
+    const char *bugaddr = sh_getstr("bug_addr", "");
+    self->bugport = sh_getint("bug_port", 0);
     sh_strncpy(self->webaddr, webaddr, sizeof(self->webaddr)); 
+    sh_strncpy(self->bugaddr, bugaddr, sizeof(self->bugaddr)); 
     sh_hash64_init(&self->conn2user, 1);
     sh_hash_init(&self->acc2user, 1);
     return 0;
@@ -258,6 +263,8 @@ uniqueol_ok(struct module *s, struct user *ur) {
     UM_DEFWRAP(UM_GATE, g, UM_NOTIFYWEB, nw);
     g->connid = ur->connid;
     memcpy(nw->webaddr, self->webaddr, sizeof(nw->webaddr));
+    memcpy(nw->bugaddr, self->bugaddr, sizeof(nw->bugaddr));
+    nw->bugport = self->bugport;
     sh_module_send(MODULE_ID, ur->gate_source, MT_UM, g, sizeof(*g) + sizeof(*nw));
 
     ur->status = S_HALL;

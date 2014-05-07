@@ -7,6 +7,8 @@ local oip = "192.168.1.140"
 --local wip = "116.228.135.50"
 local wip=oip
 web_addr = "192.168.1.145"
+bug_addr = wip
+bug_port = 18008
 log_dir = "/home/lvxiaojun/log"
 local hb = 30
 
@@ -17,6 +19,7 @@ gateload = {ip=iip, port=8001, conn=256},
 uniqueol = {ip=iip, port=8002, conn=256},
 match    = {ip=iip, port=8003, conn=256},
 robot    = {ip=iip, port=8004, conn=256},
+bug      = {ip=iip, port=bug_port-10000, conn=256},
 keepalived={ip=iip, port=8621, conn=256},
 --
 route    = {ip=iip, port=8100, conn=256},
@@ -33,6 +36,7 @@ room     = {ip=iip, port=8400, conn=256},
 
 open_node_map = {
 center = {ip=iip, port=18000, handler="cmds", clientmax=100, clientlive=6, wbuffer=0, verify=0},
+bug    = {ip=oip, port=bug_port, handler="bug", clientmax=10000, clientlive=0, wbuffer=0},
 route  = {ip=oip, port=18100, handler="route", clientmax=10000, clientlive=0, wbuffer=0},
 gate   = {ip=oip, port=18200, handler="watchdog1",clientmax=10000, clientlive=hb, wbuffer=128*1024, load="gateload", wip=wip},
 gate2   = {ip=oip, port=18201, handler="watchdog2",clientmax=10000, clientlive=hb, wbuffer=128*1024, load="gateload", wip=wip},

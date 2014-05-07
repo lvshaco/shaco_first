@@ -8,6 +8,7 @@
 #include "sh_hash.h"
 #include "sh_array.h"
 #include "msg_sharetype.h"
+#include "coroutine.h"
 #include <stdint.h>
 #include <stdarg.h>
 #include <stdio.h>
@@ -1810,6 +1811,182 @@ test_sock(int times) {
     printf("sock bitmap use time %d\n", (int)(t2-t1));
 }
 
+#define STACK 10240
+
+struct start_r {
+    int i;
+    const char *s;
+};
+
+struct yield_ii {
+    int i;
+    int i2;
+};
+
+struct yield_i {
+    int i;
+};
+
+int
+foo(int a) {
+    printf("foo %d\n", a);
+    struct yield_i i = {2*a};
+    struct yield_i *pi = coroutine_yield(&i);
+    return pi->i; // 2
+}
+
+void
+start(void *arg) {
+    struct yield_ii *pii = arg;
+    int a = pii->i; // 1
+    int b = pii->i2; // 10
+    printf("co-body %d %d\n", a, b);
+    int r = foo(a+1);
+    printf("co-body %d\n", r);
+    struct yield_ii ii = {a+b, a-b}; 
+    pii = coroutine_yield(&ii); // 123, 321
+    printf("co-body %d %d\n", pii->i, pii->i2);
+    printf("co-body end\n");
+}
+/*
+void f3() {
+    printf("f3 start\n");
+    printf("f3 end\n");
+}
+
+void f1() {
+    printf("f1 start\n");
+    coroutine_yield(NULL);
+    printf("f1 end\n");
+}
+
+void f2() {
+    printf("f2 start\n");
+    coroutine_yield(NULL);
+    printf("f2 end\n");
+    struct coroutine *co = coroutine_create(f3, STACK);
+    coroutine_resume(co, NULL);
+}
+*/
+
+void
+hi(void *arg) {
+    printf("hi\n");
+}
+
+void
+loop(void *arg) {
+    int i;
+    for (i=0; i<10; ++i) {
+        printf("co %d\n", i);
+        coroutine_yield(NULL);
+    }
+    printf("co exit\n");
+}
+
+void
+pass(void *arg) {
+    struct yield_i *pi;
+    pi = coroutine_yield(NULL);
+    printf("co %d\n", pi->i);
+}
+
+void
+producer(void *arg) {
+    char s[64];
+    for (;;) {
+        printf("produce:");
+        scanf("%s", s);
+        coroutine_yield(s);
+    }
+}
+
+void 
+filter(void *arg) {
+    struct coroutine *co_prod = arg;
+    char fmt[128];
+    const char *s;
+    int i = 0;
+    for (;;) {
+        s = coroutine_resume(co_prod, NULL);
+        printf("filter : %s\n", s);
+        snprintf(fmt, sizeof(fmt), "%d %s", i, s);
+        coroutine_yield(fmt);
+        //printf("-----\n");
+        ++i;
+    }
+}
+
+void 
+consumer(struct coroutine *co_filter, struct coroutine *co_prod) {
+    for (;;) {
+        const char *s = coroutine_resume(co_filter, co_prod);
+        printf("consumer %s\n", s);
+    }
+}
+
+void
+test_coroutine(int times) {
+    struct coroutine *co;
+    
+    struct yield_i *pi;
+    struct yield_i i;
+    struct yield_ii ii;
+    struct yield_ii *pii;
+   
+    
+    co = coroutine_create(start, STACK);
+    
+    ii.i = 1;
+    ii.i2 = 10;
+    pi = coroutine_resume(co, &ii); // 4
+    printf("main %d\n", pi->i);
+
+    i.i = 2;
+    pii = coroutine_resume(co, &i); // 11 -9
+    printf("main %d %d\n", pii->i, pii->i2);
+
+    ii.i = 123;
+    ii.i2 = 321;
+    void *result = coroutine_resume(co, &ii); // NULL
+    assert(result == NULL);
+    printf("main end\n");
+    printf("----------------------------------\n");
+
+    co = coroutine_create(hi, STACK);
+    printf("%p\n", co);
+    printf("%s\n", coroutine_status(co));
+    coroutine_resume(co, NULL);
+    printf("%s\n", coroutine_status(co));
+    printf("----------------------------------\n");
+
+    co = coroutine_create(loop, STACK);
+    coroutine_resume(co, NULL);
+    printf("%s\n", coroutine_status(co)); 
+    coroutine_resume(co, NULL);
+    coroutine_resume(co, NULL);
+    coroutine_resume(co, NULL);
+    coroutine_resume(co, NULL);
+    coroutine_resume(co, NULL);
+    coroutine_resume(co, NULL);
+    coroutine_resume(co, NULL);
+    coroutine_resume(co, NULL);
+    coroutine_resume(co, NULL);printf("%s\n", coroutine_status(co)); 
+    coroutine_resume(co, NULL);printf("%s\n", coroutine_status(co)); 
+    coroutine_resume(co, NULL);printf("%s\n", coroutine_status(co)); 
+    printf("----------------------------------\n");
+    
+    co = coroutine_create(pass, STACK);
+    assert(coroutine_resume(co, NULL) == NULL);
+    i.i = 4;
+    coroutine_resume(co, &i);
+    printf("----------------------------------\n");
+
+    struct coroutine *co_filter = coroutine_create(filter, STACK);
+    struct coroutine *co_prod = coroutine_create(producer, STACK);
+    consumer(co_filter, co_prod);
+}
+
 int 
 main(int argc, char* argv[]) {
     int times = 1;
@@ -1853,7 +2030,8 @@ main(int argc, char* argv[]) {
     //test_unique(times);
     //test_system(times);
     //test_pid(times);
-    test_sock(times);
+    //test_sock(times);
+    test_coroutine(times);
     uint64_t t2 = _elapsed();
     printf("main use time %d\n", (int)(t2-t1));
     return 0;
