@@ -12,6 +12,8 @@
 #define IDUM_TEXT           IDUM_CBEGIN+0
 // client -> server (route)
 #define IDUM_GATEADDRREQ    IDUM_CBEGIN+1
+// client -> server (bug)
+#define IDUM_BUGSUBMIT      IDUM_CBEGIN+4
 
 // client -> server (auth)
 #define IDUM_LOGINACCOUNT   IDUM_CBEGIN+5
@@ -109,6 +111,8 @@
 // route
 #define IDUM_GATEADDR       IDUM_CBEGIN+901
 #define IDUM_GATEADDRFAIL   IDUM_CBEGIN+902
+// bug
+#define IDUM_BUGSUBMITRES   IDUM_CBEGIN+904
 
 #pragma pack(1)
 ////////////////////////////////////////////////////////////
@@ -129,6 +133,16 @@ struct UM_GATEADDRFAIL {
 struct UM_TEXT {
     _UM_HEADER;
     char str[0];
+};
+
+struct UM_BUGSUBMIT {
+    _UM_HEADER;
+    char str[0];
+};
+
+struct UM_BUGSUBMITRES {
+    _UM_HEADER;
+    int8_t err;
 };
 
 // login account
@@ -154,6 +168,8 @@ struct UM_NOTIFYGATE {
 struct UM_NOTIFYWEB {
     _UM_HEADER;
     char webaddr[IP_LEN];
+    char bugaddr[IP_LEN];
+    uint16_t bugport;
 };
 
 ////////////////////////////////////////////////////////////

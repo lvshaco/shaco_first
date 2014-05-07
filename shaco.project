@@ -1,6 +1,7 @@
 shaco=~/shaco CD=. filter="Makefile README.md *.lua *.py *.h *.c" {
  Makefile
  README.md
+ config_bug.lua
  config_auth.lua
  config_base.lua
  config_benchmark.lua
@@ -92,6 +93,10 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.py *.h *.c" {
  redis=redis{
   redis.h
   redis.c
+  redis_fmt.h
+  redis_fmt.c
+  redis_parser.h
+  redis_parser.c
  }
  cnet=cnet{
   cnet.h
@@ -125,6 +130,7 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.py *.h *.c" {
   mod_keepalived.c
   mod_keepalivec.c
   mod_httpc.c
+  mod_bug.c
  }
  mod_hall=mod_hall{
   hall.h
@@ -248,5 +254,9 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.py *.h *.c" {
   parsertrace.c
   test.c
   url_parser.c
+ }
+ coroutine=coroutine {
+  coroutine.h
+  coroutine.c
  }
 }
