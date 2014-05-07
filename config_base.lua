@@ -3,11 +3,13 @@
 -- the key prefix by "_" will no be read
 
 local iip = "127.0.0.1"
-local oip = "192.168.1.140"
---local wip = "116.228.135.50"
-local wip=oip
+--local oip = "192.168.1.140"
+local oip = "192.168.1.145"
+local wip = "116.228.135.50"
+--local wip=oip
 web_addr = "192.168.1.145"
-log_dir = "/home/lvxiaojun/log"
+--log_dir = "/home/lvxiaojun/log"
+log_dir = "/home/game/log"
 local hb = 30
 
 node_map = {
