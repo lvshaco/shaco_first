@@ -920,7 +920,8 @@ item_effect_member(struct module *s, struct room_game *ro, struct player *m,
             effectptr[n-1].value = item->value##n;  \
         }
         int i;
-        if (!is_robot(m)) {
+        if (!is_robot(m) ||
+            item->type == ITEM_T_OXYGEN) { // the oxygen of robot use effect also
             FILL_EFFECT(1);
             FILL_EFFECT(2);
             FILL_EFFECT(3);

@@ -255,7 +255,7 @@ ai_pick_target(struct module *s, struct room_game *ro, struct player *m) {
             brain->target.h);
         if (ai_can_pick(m)) {
             sh_trace("AI %u pick target %u ok", UID(m), target->id);
-            UM_DEFFIX(UM_USEITEM, use);
+            UM_DEFFIX(UM_PICKITEM, use);
             use->itemid = target->id;
             game_player_main(s, m, use, sizeof(*use));
         }

@@ -113,7 +113,6 @@ rand_name(struct robot *self, int idx, char name[CHAR_NAME_MAX]) {
 
     sh_snprintf(name, CHAR_NAME_MAX, "%s%s%s", 
             t1[i1].xing, t3 ? t3[i3].teshu : "", t2[i2].ming);
-    sh_error("%d, name:%s", i3, name);
     return 0;
 
 }
@@ -137,7 +136,7 @@ init_agents(struct module *s) {
     sh_hash_init(&self->agents, 1);
     memset(self->rests, 0, sizeof(self->rests));
     // todo
-    int count = 36;
+    int count = 100;
     if (count > ROBOT_MAX) {
         count = ROBOT_MAX;
     }
@@ -153,6 +152,7 @@ init_agents(struct module *s) {
             return 1;
         }
         init_agent_data(s, ag, i, rand()%10+1, name);
+        //sh_error("%d, name:%s", ag->ai, ag->data.name);
         agent_rest(self, ag);
         sh_hash_insert(&self->agents, UID(ag), ag);
     }

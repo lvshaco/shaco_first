@@ -70,11 +70,9 @@ _login_account(int id) {
 static void
 _submit(int id) { 
     UM_DEFVAR(UM_BUGSUBMIT, bs);
-    int sz = 128;
-    int i;
-    for (i=0; i<sz; ++i) {
-        bs->str[i] = i%9;
-    }
+    const char *tmp = "bug测试";
+    int sz = strlen(tmp);
+    memcpy(bs->str, tmp, sz);
     _server_send(TBUG, bs, sizeof(*bs) + sz);
     mylog("submit bug");
 }
@@ -224,6 +222,7 @@ _handleum(int id, int ut, struct UM_BASE* um) {
         mylog("webaddr %s", nw->webaddr);
         mylog("bugaddr %s", nw->bugaddr);
         if (bugsubmit) {
+            mylog("connect to bug %s:%d", nw->bugaddr, nw->bugport);
             if (cnet_connect(nw->bugaddr, nw->bugport, TBUG) < 0) {
                 mylog("!!!!!!!!!!!!connect bug fail");
             }
