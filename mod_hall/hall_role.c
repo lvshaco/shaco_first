@@ -57,7 +57,7 @@ static inline void
 sync_userole(struct module *s, struct player* pr) {
     UM_DEFWRAP(UM_CLIENT, cl, UM_SYNCUSEROLE, sync);
     cl->uid  = UID(pr);
-    sync->roleid = roleid;
+    sync->roleid = pr->data.role;
     sync->oxygen = pr->data.attri.oxygen;
     sync->body = pr->data.attri.body;
     sync->quick = pr->data.attri.quick;
