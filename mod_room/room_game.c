@@ -29,6 +29,8 @@
 #define F_AWARD  4
 #define F_OVER   8
 
+#define is_death(m) ((m)->detail.attri.oxygen <= 0)
+
 static void
 give_start_effect(struct module *s, struct room_game *ro, struct player *m);
 
@@ -1173,6 +1175,9 @@ use_item(struct module *s, struct room_game *ro, struct player *m, uint32_t item
 static void
 pick_item(struct module *s, struct player *m, const struct UM_PICKITEM *pick) {
     struct room_game *ro = room_member_to_game(m);
+    if (is_death(m)) {
+        return;
+    }
     use_item(s, ro, m, pick->itemid, ITEM_USE_T_PICK);
 }
 /*
@@ -1314,6 +1319,9 @@ robot_login(struct module *s, int source, const struct UM_ROBOT_LOGINROOM *lr) {
 static void
 sync_position(struct module *s, struct player *m, const struct UM_GAMESYNC *sync) {
     struct room_game *ro = room_member_to_game(m);
+    if (is_death(m)) {
+        return;
+    }
     if (m->depth == sync->depth) {
         return;
     }
@@ -1332,6 +1340,9 @@ sync_position(struct module *s, struct player *m, const struct UM_GAMESYNC *sync
 static void
 sync_press(struct module *s, struct player *m, const struct UM_ROLEPRESS *press) {
     struct room_game *ro = room_member_to_game(m);
+    if (is_death(m)) {
+        return;
+    }
 
     bool be_press = false;
     if (has_effect_state(m, EFFECT_STATE_PROTECT_ONCE)) {
