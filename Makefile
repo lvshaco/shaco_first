@@ -284,6 +284,8 @@ res:
 	@mkdir -pv ./res/tplt
 	@mkdir -pv ./datadefine
 	@rm -rf ./datadefine/tplt_struct.h
+	@rm -rf ./msg/msg_char_attribute.h
+	@cd msg && lua msg_char_attribute.lua
 	@svn export $(SHACO_SVN_RES)/res/excel $(HOME)/.shaco/excel --force
 	@cd tool && \
 		python convert_excel.py \

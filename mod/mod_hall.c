@@ -187,6 +187,7 @@ hall_main(struct module *s, int session, int source, int type, const void *msg, 
 void
 hall_time(struct module *s) {
     struct hall *self = MODULE_SELF;
+    hall_role_time(s);
     hall_washgold_time(s);
     self->tick++;
 }

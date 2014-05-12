@@ -9,6 +9,7 @@
 #include "msg_client.h"
 #include "msg_server.h"
 #include "sh.h"
+#include "msg_char_attribute_up.h"
 #include <string.h>
 #include <math.h>
 
@@ -47,21 +48,27 @@ store_item(struct player *m, uint32_t itemid) {
     } 
 }
 
+static inline bool
+has_effect_state(struct player *m, int state) {
+    return (m->detail.attri.effect_states & (1<<state)) != 0;
+}
+
 static inline void
 set_effect_state(struct player *m, int state) {
-    m->detail.attri.effect_states |= 1<<state;
-    m->refresh_flag |= REFRESH_ATTRI;
+    if (!has_effect_state(m, state)) {
+        m->detail.attri.effect_states |= 1<<state;
+        m->refresh_flag |= REFRESH_ATTRI;
+        field_update(char_attribute, effect_states, m);
+    }
 }
 
 static inline void
 clr_effect_state(struct player *m, int state) {
-    m->detail.attri.effect_states &= ~(1<<state);
-    m->refresh_flag |= REFRESH_ATTRI;
-}
-
-static inline bool
-has_effect_state(struct player *m, int state) {
-    return (m->detail.attri.effect_states & (1<<state)) != 0;
+    if (has_effect_state(m, state)) {
+        m->detail.attri.effect_states &= ~(1<<state);
+        m->refresh_flag |= REFRESH_ATTRI;
+        field_update(char_attribute, effect_states, m);
+    }
 }
 
 static inline uint64_t 
@@ -819,16 +826,51 @@ notify_game_info(struct module *s, struct player *m) {
 } 
 
 static void
+sync_attribute(struct module *s, struct player *m, struct room_game *ro) {
+    int n, i, b, sz;
+    UM_DEFWRAP2(UM_CLIENT, cl, sizeof(struct UM_ROLEREFRESH) + sizeof(struct char_attribute)); 
+    cl->uid = UID(m);
+    UD_CAST(UM_ROLEREFRESH, ur, cl->wrap);
+    memset(ur->flags, 0, sizeof(ur->flags));
+    n = 0;
+    for (i=0; i<FLAG_MAX; ++i) {
+        for (b=0; b<8; ++b) {
+            if ((m->flags[i] >> b) & (char_attri_client[i] >> b)) {
+                ur->flags[i] |= 1<<b;
+                memcpy((uint32_t*)(ur->data)+n, (uint32_t*)(&m->detail.attri)+n, 4);
+                n++;
+            }
+        }
+    }
+    sz = sizeof(struct UM_ROLEREFRESH) + n*4;
+    sh_module_send(MODULE_ID, m->watchdog_source, MT_UM, cl, sizeof(*ur)+sz);
+
+    UM_DEFVAR2(UM_ROLEREFRESH, ur2, sizeof(struct UM_ROLEREFRESH) + sizeof(struct char_attribute));
+    memset(ur2->flags, 0, sizeof(ur2->flags));
+    n = 0;
+    for (i=0; i<FLAG_MAX; ++i) {
+        for (b=0; b<8; ++b) {
+            if ((m->flags[i] >> b) & (char_attri_other[i] >> b)) {
+                ur2->flags[i] |= 1<<b;
+                memcpy((uint32_t*)(ur2->data)+n, (uint32_t*)(&m->detail.attri)+n, 4);
+                n++;
+            }
+        }
+    }
+    sz = sizeof(struct UM_ROLEREFRESH) + n*4;
+    multicast_msg(s, ro, ur2, sz, UID(m));
+}
+
+static void
 on_refresh_attri(struct module *s, struct player* m, struct room_game* ro) {
     if (m->refresh_flag == 0)
         return;
     if (m->refresh_flag & REFRESH_SPEED) {
         role_attri_build(&ro->gattri, &m->detail.attri);
+        m->refresh_flag |= REFRESH_ATTRI;
     }
     if (m->refresh_flag & REFRESH_ATTRI) {
-        UM_DEFFIX(UM_ROLEINFO, ri);
-        ri->detail = m->detail;
-        multicast_msg(s, ro, ri, sizeof(*ri), 0);
+        sync_attribute(s, m, ro);
     }
     m->refresh_flag = 0;
 }
@@ -837,37 +879,40 @@ static float
 do_effect(struct player* m, struct char_attribute* cattri, const struct char_attribute* base, 
         int32_t type, float value, bool isper) {
 #define AMAX 10000000
-#define CASE(T, R, B, V, isper, min, max, flag) \
+#define CASE(T, M, R, B, V, isper, min, max, flag) \
     case T: { \
         float old = R; \
         (R) += (isper) ? (B)*(V)*0.001 : (V); \
         if (R < min) R = min; \
         else if (R > max) R = max; \
         float diff = R - old; \
-        if (diff != 0) m->refresh_flag |= flag; \
+        if (diff != 0) { \
+        field_update(char_attribute, M, m); \
+        m->refresh_flag |= flag; \
+        } \
         return diff; \
     }
     switch (type) {
-    CASE(EFFECT_OXYGEN, cattri->oxygen, base->oxygen, value, isper, 0, base->oxygen, REFRESH_ATTRI);
-    CASE(EFFECT_BODY, cattri->body, base->body, value, isper, 0, AMAX, REFRESH_ATTRI|REFRESH_SPEED);
-    CASE(EFFECT_QUICK, cattri->quick, base->quick, value, isper, 0, AMAX, REFRESH_ATTRI|REFRESH_SPEED);
-    //CASE(EFFECT_COIN_PROFIT, cattri->coin_profit, 1, value, isper, REFRESH_ATTRI);
-    CASE(EFFECT_MOVE_SPEED, cattri->movespeedadd, 1, value, isper, -1, AMAX, REFRESH_ATTRI|REFRESH_SPEED);
-    CASE(EFFECT_FALL_SPEED, cattri->charfallspeedadd, 1, value, isper, -1, AMAX, REFRESH_ATTRI|REFRESH_SPEED);
-    CASE(EFFECT_ATTACK_DISTANCE, cattri->attack_distance, base->attack_distance, value, isper, 0, AMAX, REFRESH_ATTRI);
-    CASE(EFFECT_ATTACK_RANGE, cattri->attack_range, base->attack_range, value, isper, 0, AMAX, REFRESH_ATTRI);
-    CASE(EFFECT_ATTACK_POWER, cattri->attack_power, base->attack_power, value, isper, 0, AMAX, REFRESH_ATTRI);
-    CASE(EFFECT_LUCK, cattri->lucky, base->lucky, value, isper, 0, AMAX, REFRESH_ATTRI);
-    CASE(EFFECT_ATTACK_SPEED, cattri->attack_speed, base->attack_speed, value, isper, 0, AMAX, REFRESH_ATTRI);
-    CASE(EFFECT_DODGE_DISTANCE, cattri->dodgedistanceadd, 1, value, isper, -1, AMAX, REFRESH_ATTRI|REFRESH_SPEED);  
-    CASE(EFFECT_REBIRTH_TIME, cattri->rebirthtimeadd, 1, value, isper, -1, AMAX, REFRESH_ATTRI|REFRESH_SPEED);
-    CASE(EFFECT_JUMP_RANGE, cattri->jump_range, base->jump_range, value, isper, 0, AMAX, REFRESH_ATTRI); 
-    CASE(EFFECT_SENCE_RANGE, cattri->sence_range, base->sence_range, value, isper, 0, AMAX, REFRESH_ATTRI);
-    //CASE(EFFECT_WINCOIN_PROFIT, cattri->wincoin_profit, 1, value, isper, REFRESH_ATTRI);
-    //CASE(EFFECT_EXP_PROFIT, cattri->exp_profit, 1, value, isper, REFRESH_ATTRI);
-    CASE(EFFECT_ITEM_TIME, cattri->item_timeadd, 1, value, isper, -1, AMAX, REFRESH_ATTRI);
-    CASE(EFFECT_ITEM_OXYGEN, cattri->item_oxygenadd, 1, value, isper, -1, AMAX, REFRESH_ATTRI);
-    CASE(EFFECT_VIEW_RANGE, cattri->view_range, base->view_range, value, isper, 0, AMAX, REFRESH_ATTRI);
+    CASE(EFFECT_OXYGEN, oxygen,cattri->oxygen, base->oxygen, value, isper, 0, base->oxygen, REFRESH_ATTRI);
+    CASE(EFFECT_BODY, body,cattri->body, base->body, value, isper, 0, AMAX, REFRESH_ATTRI|REFRESH_SPEED);
+    CASE(EFFECT_QUICK, quick,cattri->quick, base->quick, value, isper, 0, AMAX, REFRESH_ATTRI|REFRESH_SPEED);
+    //CASE(EFFECT_COIN_PROFIT, coin_profit,cattri->coin_profit, 1, value, isper, REFRESH_ATTRI);
+    CASE(EFFECT_MOVE_SPEED, movespeedadd,cattri->movespeedadd, 1, value, isper, -1, AMAX, REFRESH_ATTRI|REFRESH_SPEED);
+    CASE(EFFECT_FALL_SPEED, charfallspeedadd,cattri->charfallspeedadd, 1, value, isper, -1, AMAX, REFRESH_ATTRI|REFRESH_SPEED);
+    CASE(EFFECT_ATTACK_DISTANCE, attack_distance,cattri->attack_distance, base->attack_distance, value, isper, 0, AMAX, REFRESH_ATTRI);
+    CASE(EFFECT_ATTACK_RANGE, attack_range,cattri->attack_range, base->attack_range, value, isper, 0, AMAX, REFRESH_ATTRI);
+    CASE(EFFECT_ATTACK_POWER, attack_power,cattri->attack_power, base->attack_power, value, isper, 0, AMAX, REFRESH_ATTRI);
+    CASE(EFFECT_LUCK, lucky,cattri->lucky, base->lucky, value, isper, 0, AMAX, REFRESH_ATTRI);
+    CASE(EFFECT_ATTACK_SPEED, attack_speed,cattri->attack_speed, base->attack_speed, value, isper, 0, AMAX, REFRESH_ATTRI);
+    CASE(EFFECT_DODGE_DISTANCE, dodgedistanceadd,cattri->dodgedistanceadd, 1, value, isper, -1, AMAX, REFRESH_ATTRI|REFRESH_SPEED);  
+    CASE(EFFECT_REBIRTH_TIME, rebirthtimeadd,cattri->rebirthtimeadd, 1, value, isper, -1, AMAX, REFRESH_ATTRI|REFRESH_SPEED);
+    CASE(EFFECT_JUMP_RANGE, jump_range,cattri->jump_range, base->jump_range, value, isper, 0, AMAX, REFRESH_ATTRI); 
+    CASE(EFFECT_SENCE_RANGE, sence_range,cattri->sence_range, base->sence_range, value, isper, 0, AMAX, REFRESH_ATTRI);
+    //CASE(EFFECT_WINCOIN_PROFIT, wincoin_profit,cattri->wincoin_profit, 1, value, isper, REFRESH_ATTRI);
+    //CASE(EFFECT_EXP_PROFIT, exp_profit,cattri->exp_profit, 1, value, isper, REFRESH_ATTRI);
+    CASE(EFFECT_ITEM_TIME, item_timeadd,cattri->item_timeadd, 1, value, isper, -1, AMAX, REFRESH_ATTRI);
+    CASE(EFFECT_ITEM_OXYGEN, item_oxygenadd,cattri->item_oxygenadd, 1, value, isper, -1, AMAX, REFRESH_ATTRI);
+    CASE(EFFECT_VIEW_RANGE, view_range,cattri->view_range, base->view_range, value, isper, 0, AMAX, REFRESH_ATTRI);
     //CASE(EFFECT_SCORE_PROFIT, cattri->score_profit, 1, value, isper, REFRESH_ATTRI);
     //CASE(EFFECT_WINSCORE_PROFIT, cattri->winscore_profit, 1, value, isper, REFRESH_ATTRI);
     case EFFECT_STATE: {
@@ -1299,6 +1344,7 @@ sync_press(struct module *s, struct player *m, const struct UM_ROLEPRESS *press)
     //int oxygen = m->base.oxygen/10;
     //if (reduce_oxygen(m, oxygen) > 0) {
         //m->refresh_flag |= REFRESH_ATTRI;
+        //field_update(char_attribute, oxygen, m);
     //}
     //}
     on_refresh_attri(s, m, ro);
@@ -1390,6 +1436,7 @@ room_game_update(struct module *s, struct room_game *ro) {
             int oxygen = role_oxygen_time_consume(&ro->gattri, &m->detail.attri);
             if (reduce_oxygen(m, oxygen) > 0) {
                 m->refresh_flag |= REFRESH_ATTRI;
+                field_update(char_attribute, oxygen, m);
             }
             struct buff_ud ud = {s, ro, m};
             sh_array_foreach(&m->total_effect, buff_effect_update, &ud);

@@ -104,6 +104,8 @@
 #define IDUM_ITEMUNEFFECT   IDUM_CBEGIN+808
 #define IDUM_GAMEEXIT       IDUM_CBEGIN+809
 #define IDUM_USEITEM_NOTIFY IDUM_CBEGIN+810
+#define IDUM_ROLEOXYGEN     IDUM_CBEGIN+811
+#define IDUM_ROLEREFRESH    IDUM_CBEGIN+812
 
 // heartbeat
 #define IDUM_HEARTBEAT      IDUM_CBEGIN+900
@@ -416,6 +418,11 @@ struct UM_ROLEPRESS {
     uint32_t charid;
 };
 
+struct UM_ROLEOXYGEN {
+    _UM_HEADER;
+    uint32_t oxygen;
+};
+
 struct UM_ROLEINFO {
     _UM_HEADER;
     struct tmemberdetail detail;
@@ -435,6 +442,12 @@ UM_GAMEOVER_size(struct UM_GAMEOVER* um) {
 struct UM_GAMEEXIT {
     _UM_HEADER;
     int8_t err;
+};
+
+struct UM_ROLEREFRESH {
+    _UM_HEADER;
+    uint8_t flags[FLAG_MAX];
+    uint32_t data[];
 };
 
 #pragma pack()

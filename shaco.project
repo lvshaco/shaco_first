@@ -192,7 +192,10 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.py *.h *.c" {
   luck_random.h
  }
  msg=msg{
+  msg_char_attribute.lua
   msg.h
+  msg_char_attribute.h
+  msg_char_attribute_up.h
   msg_client.h
   msg_server.h
   msg_sharetype.h
@@ -258,5 +261,9 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.py *.h *.c" {
  coroutine=coroutine {
   coroutine.h
   coroutine.c
+ }
+ datadefine=datadefine{
+  tplt_struct.h
+  char_attribute.lua
  }
 }

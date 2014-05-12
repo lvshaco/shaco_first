@@ -67,6 +67,7 @@ struct player {
     bool is_robot;// 是否机器人
     int refresh_flag;
     float luck_factor;
+    uint8_t flags[FLAG_MAX];
     struct tmemberdetail detail;
     struct char_attribute base;
     struct sh_array total_delay;

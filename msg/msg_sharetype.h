@@ -2,6 +2,8 @@
 #define __msg_sharetype_h__
 
 #include <stdint.h>
+#include <stddef.h>
+#include "msg_char_attribute.h"
 
 // shaco 错误号
 #define SERR_OKUNFORCE      -1
@@ -68,6 +70,26 @@
 #define SERR_UNIQUEOLEXIT   108
 
 #pragma pack(1)
+
+// field update,  the filed is 4 bytes
+#define field_isupdated(type, member, container) ({ \
+    int start = offsetof(struct type, member)/4; \
+    if (start >= 0 && start < 32) { \
+        ((container->flag1 >> start) & 1); \
+    } else if (start >= 32 && start < 64) { \
+        ((container->flag2 >> start) & 1); \
+    } else { \
+        (0); \
+    } \
+})
+
+#define field_update(type, member, container) do { \
+    int start = offsetof(struct type, member)/4; \
+    int i = start >> 3; \
+    int b = start & 7; \
+    assert(i>=0 && i<FLAG_MAX); \
+    container->flags[i] |= 1<<b; \
+} while (0)
 
 // common
 #define IP_LEN 40
@@ -185,42 +207,6 @@ struct ringdata {
 
 #define EFFECT_STATE_PROTECT    1 // 压不坏的防护罩
 #define EFFECT_STATE_PROTECT_ONCE 2 // 一次性防护罩 
-
-struct char_attribute {
-    int32_t oxygen;     // 氧气
-    int32_t body;       // 体能
-    int32_t quick;      // 敏捷
-    
-    float movespeed;     // 移动速度
-    float movespeedadd;
-    float charfallspeed; // 坠落速度
-    float charfallspeedadd;
-    float jmpspeed;      // 跳跃速度--
-    int32_t jmpacctime;  // 跳跃准备时间--
-    int32_t rebirthtime; // 复活时间
-    float rebirthtimeadd;
-    float dodgedistance; // 闪避距离
-    float dodgedistanceadd;
-    int32_t jump_range;  // 跳跃高度
-    int32_t sence_range; // 感知范围
-    int32_t view_range;  // 视野范围
-   
-    int32_t attack_power;   // 攻击力, 攻击一下扣除的地块耐久度
-    int32_t attack_distance;// 攻击距离, 离地块的最大长度
-    int32_t attack_range;   // 攻击范围，攻击的格子范围
-    int32_t attack_speed;   // 攻击速度毫秒
-
-    float   coin_profit;    // 金币收益
-    float   wincoin_profit; // 胜利金币收益
-    float   score_profit;   // 得分收益
-    float   winscore_profit;// 胜利得分收益
-    float   exp_profit;     // 经验收益
-    float   item_timeadd;   // 物品时长加成
-    float   item_oxygenadd; // 物品氧气效果加成
-    int32_t lucky;          // 幸运
-    int32_t prices;         // 身价
-    int32_t effect_states;  // 效果状态
-};
 
 // 玩家信息
 struct chardata {
