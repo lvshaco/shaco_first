@@ -54,6 +54,17 @@ sync_addrole(struct module *s, struct player* pr, uint32_t roleid) {
 }
 
 static inline void
+sync_userole(struct module *s, struct player* pr) {
+    UM_DEFWRAP(UM_CLIENT, cl, UM_SYNCUSEROLE, sync);
+    cl->uid  = UID(pr);
+    sync->roleid = roleid;
+    sync->oxygen = pr->data.attri.oxygen;
+    sync->body = pr->data.attri.body;
+    sync->quick = pr->data.attri.quick;
+    sh_module_send(MODULE_ID, pr->watchdog_source, MT_UM, cl, sizeof(*cl) + sizeof(*sync));
+}
+
+static inline void
 notify_adjust_result(struct module *s, struct player *pr, uint32_t typeid, uint8_t state_value, 
         uint8_t big_adjust) {
     UM_DEFWRAP(UM_CLIENT, cl, UM_ADJUSTSTATE_RES, res);
@@ -92,8 +103,8 @@ process_userole(struct module *s, struct player *pr, const struct UM_USEROLE *us
     // refresh attribute
     hall_attribute_main(self->T, &pr->data);
 
-    hall_sync_role(s, pr);
-
+    sync_userole(s, pr);
+    
     hall_playerdb_save(s, pr, false);
 }
 

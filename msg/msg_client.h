@@ -77,6 +77,7 @@
 #define IDUM_SYNCSTATE      IDUM_CBEGIN+622
 #define IDUM_ADJUSTSTATE_RES IDUM_CBEGIN+623
 #define IDUM_SYNCEXP        IDUM_CBEGIN+624
+#define IDUM_SYNCUSEROLE    IDUM_CBEGIN+625
 
 // ring
 #define IDUM_RINGPAGESYNC   IDUM_CBEGIN+630
@@ -207,6 +208,14 @@ struct UM_CHARINFO {
 struct UM_USEROLE {
     _UM_HEADER;
     uint32_t roleid;
+};
+
+struct UM_SYNCUSEROLE {
+    _UM_HEADER;
+    uint32_t roleid;
+    int32_t oxygen;
+    int32_t body;
+    int32_t quick;
 };
 
 struct UM_BUYROLE {
@@ -446,6 +455,7 @@ struct UM_GAMEEXIT {
 
 struct UM_ROLEREFRESH {
     _UM_HEADER;
+    uint32_t charid;
     uint8_t flags[FLAG_MAX];
     uint32_t data[];
 };

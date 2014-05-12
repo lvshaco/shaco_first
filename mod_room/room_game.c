@@ -831,6 +831,7 @@ sync_attribute(struct module *s, struct player *m, struct room_game *ro) {
     UM_DEFWRAP2(UM_CLIENT, cl, sizeof(struct UM_ROLEREFRESH) + sizeof(struct char_attribute)); 
     cl->uid = UID(m);
     UD_CAST(UM_ROLEREFRESH, ur, cl->wrap);
+    ur->charid = m->detail.charid;
     memset(ur->flags, 0, sizeof(ur->flags));
     n = 0;
     for (i=0; i<FLAG_MAX; ++i) {
@@ -846,6 +847,7 @@ sync_attribute(struct module *s, struct player *m, struct room_game *ro) {
     sh_module_send(MODULE_ID, m->watchdog_source, MT_UM, cl, sizeof(*ur)+sz);
 
     UM_DEFVAR2(UM_ROLEREFRESH, ur2, sizeof(struct UM_ROLEREFRESH) + sizeof(struct char_attribute));
+    ur2->charid = m->detail.charid;
     memset(ur2->flags, 0, sizeof(ur2->flags));
     n = 0;
     for (i=0; i<FLAG_MAX; ++i) {

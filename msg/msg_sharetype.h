@@ -72,17 +72,6 @@
 #pragma pack(1)
 
 // field update,  the filed is 4 bytes
-#define field_isupdated(type, member, container) ({ \
-    int start = offsetof(struct type, member)/4; \
-    if (start >= 0 && start < 32) { \
-        ((container->flag1 >> start) & 1); \
-    } else if (start >= 32 && start < 64) { \
-        ((container->flag2 >> start) & 1); \
-    } else { \
-        (0); \
-    } \
-})
-
 #define field_update(type, member, container) do { \
     int start = offsetof(struct type, member)/4; \
     int i = start >> 3; \
