@@ -171,8 +171,6 @@ struct UM_NOTIFYGATE {
 struct UM_NOTIFYWEB {
     _UM_HEADER;
     char webaddr[IP_LEN];
-    char bugaddr[IP_LEN];
-    uint16_t bugport;
 };
 
 ////////////////////////////////////////////////////////////
