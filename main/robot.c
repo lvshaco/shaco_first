@@ -8,8 +8,7 @@
 
 #define TROUTE 0
 #define TGATE 1
-#define TBUG 2
-#define TMAX 3
+#define TMAX 2
 static int SERVER[TMAX];
 static struct chardata CHAR;
 static char ACCOUNT[ACCOUNT_NAME_MAX+1];
@@ -68,12 +67,12 @@ _login_account(int id) {
 }
 
 static void
-_submit(int id) { 
+_submit() { 
     UM_DEFVAR(UM_BUGSUBMIT, bs);
     const char *tmp = "bug测试";
     int sz = strlen(tmp);
     memcpy(bs->str, tmp, sz);
-    _server_send(TBUG, bs, sizeof(*bs) + sz);
+    _server_send(TGATE, bs, sizeof(*bs) + sz);
     mylog("submit bug");
 }
 
@@ -92,9 +91,6 @@ _onconnect(struct net_message* nm) {
         break;
     case TGATE:
         _login_account(id);
-        break;
-    case TBUG:
-        _submit(id);
         break;
     }
 }
@@ -197,11 +193,6 @@ _handleum(int id, int ut, struct UM_BASE* um) {
         mylog("request gate address fail");
         break;
         }
-    case IDUM_LOGINACCOUNTFAIL: {
-        UM_CAST(UM_LOGINACCOUNTFAIL, fail, um);
-        mylog("account login fail: error#%d", fail->err);
-        }
-        break;
     case IDUM_LOGOUT: {
         UM_CAST(UM_LOGOUT, lo, um);
         mylog("gate logout: error %d", lo->err);
@@ -220,13 +211,6 @@ _handleum(int id, int ut, struct UM_BASE* um) {
     case IDUM_NOTIFYWEB: {
         UM_CAST(UM_NOTIFYWEB, nw, um);
         mylog("webaddr %s", nw->webaddr);
-        mylog("bugaddr %s", nw->bugaddr);
-        if (bugsubmit) {
-            mylog("connect to bug %s:%d", nw->bugaddr, nw->bugport);
-            if (cnet_connect(nw->bugaddr, nw->bugport, TBUG) < 0) {
-                mylog("!!!!!!!!!!!!connect bug fail");
-            }
-        }
         break;
         }
     case IDUM_BUGSUBMITRES: {
@@ -238,6 +222,9 @@ _handleum(int id, int ut, struct UM_BASE* um) {
         UM_CAST(UM_CHARINFO, ci, um);
         mylog("charinfo: id %u, name %s", ci->data.charid, ci->data.name);
         CHAR = ci->data;
+        if (bugsubmit) {
+            _submit();
+        }
         _play(TYPE);
         break;
         }

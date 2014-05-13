@@ -7,7 +7,6 @@
 #define BUG_LEN 2048
 
 struct bug {
-    int source_handle;
     int rpbug_handle;
     struct redis_reply reply;
 };
@@ -33,7 +32,8 @@ bug_init(struct module *s) {
     if (sh_handle_publish(MODULE_NAME, PUB_SER)) {
         return 1;
     }
-    if (sh_handler("bug_gate", SUB_LOCAL, &self->source_handle) ||
+    int source_handle;
+    if (sh_handler(sh_getstr("bug_source", ""), SUB_REMOTE, &source_handle) ||
         sh_handler("rpbug", SUB_LOCAL, &self->rpbug_handle)) {
         return 1;
     }
@@ -42,24 +42,17 @@ bug_init(struct module *s) {
 }
 
 static void
-logout(struct module *s, int connid, int err) {
-    struct bug *self = MODULE_SELF;
-    
-    UM_DEFWRAP(UM_GATE, ga, UM_BUGSUBMITRES, sr);
-    ga->connid = connid;
+logout(struct module *s, int source, uint32_t client, int err) {
+    UM_DEFWRAP(UM_BUG, bu, UM_BUGSUBMITRES, sr);
+    bu->client = client;
     sr->err = err;
-    sh_module_send(MODULE_ID, self->source_handle, MT_UM, ga, sizeof(*ga) + sizeof(*sr));
-
-    UM_DEFWRAP(UM_GATE, ga2, UM_LOGOUT, lo);
-    ga2->connid = connid;
-    lo->err = SERR_OKUNFORCE;
-    sh_module_send(MODULE_ID, self->source_handle, MT_UM, ga2, sizeof(*ga2) + sizeof(*lo));
+    sh_module_send(MODULE_ID, source, MT_UM, bu, sizeof(*bu) + sizeof(*sr));
 }
 
 static void
-submit(struct module *s, int connid, const char *text, int sz) {
+submit(struct module *s, int source, uint32_t client, const char *text, int sz) {
     if (sz <= 0 || sz > BUG_LEN) {
-        logout(s, connid, SERR_BUGLEN);
+        logout(s, source, client, SERR_BUGLEN);
         return;
     }
     struct bug *self = MODULE_SELF;
@@ -67,7 +60,8 @@ submit(struct module *s, int connid, const char *text, int sz) {
     rq->flag = RQUERY_REPLY;
     struct memrw rw;
     memrw_init(&rw, rq->data, UM_MAXSZ - sizeof(*rq));
-    memrw_write(&rw, &connid, sizeof(connid));
+    memrw_write(&rw, &source, sizeof(source));
+    memrw_write(&rw, &client, sizeof(client));
     rq->cbsz = RW_CUR(&rw);
 
     char cmd[BUG_LEN+128], *tmp = cmd;
@@ -84,8 +78,10 @@ redis(struct module *s, struct UM_REDISREPLY *rep, int sz) {
     struct bug *self = MODULE_SELF;
     struct memrw rw;
     memrw_init(&rw, rep->data, sz - sizeof(*rep));
-    int connid = 0;
-    memrw_read(&rw, &connid, sizeof(connid));
+    int source;
+    uint32_t client;
+    memrw_read(&rw, &source, sizeof(source));
+    memrw_read(&rw, &client, sizeof(client));
        
     int serr = SERR_UNKNOW;
     redis_resetreplybuf(&self->reply, rw.ptr, RW_SPACE(&rw));
@@ -99,26 +95,22 @@ redis(struct module *s, struct UM_REDISREPLY *rep, int sz) {
             serr = SERR_DBERR;
         }
     }
-    logout(s, connid, serr);
+    logout(s, source, client, serr);
 }
 
 void
 bug_main(struct module *s, int session, int source, int type, const void *msg, int sz) {
-    struct bug *self = MODULE_SELF;
     switch (type) {
     case MT_UM: {
         UM_CAST(UM_BASE, base, msg);
         switch (base->msgid) {
-        case IDUM_GATE: {
-            if (source != self->source_handle) {
-                return;
-            }
-            UM_CASTCK(UM_GATE, ga, msg, sz);
-            UM_CAST(UM_BASE, sub, ga->wrap);
+        case IDUM_BUG: {
+            UM_CASTCK(UM_BUG, bu, msg, sz);
+            UM_CAST(UM_BASE, sub, bu->wrap);
             switch (sub->msgid) {
             case IDUM_BUGSUBMIT: {
                 UM_CAST(UM_BUGSUBMIT, bs, sub);
-                submit(s, ga->connid, bs->str, sz - sizeof(sub));
+                submit(s, source, bu->client, bs->str, sz - sizeof(sub));
                 break;
                 }
             }

@@ -376,13 +376,6 @@ handle(struct module *s, struct client *c, void *msg, int sz) {
         client_fail(c, SERR_REQGATE, "request gate address");
         break;
         }
-    case IDUM_LOGINACCOUNTFAIL: {
-        UM_CAST(UM_LOGINACCOUNTFAIL, fail, base);
-        client_fail(c, fail->err, "login account");
-        self->nlogin_fail++;
-        check_total_login_ok(self);
-        break;
-        }
     case IDUM_LOGOUT: {
         UM_CAST(UM_LOGOUT, lo, base);
         client_fail(c, lo->err, "logout gate");

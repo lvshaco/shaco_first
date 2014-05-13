@@ -1,6 +1,7 @@
 require "config_base"
-def_node("bug", 8)
-sh_module=sh_module..",bug,gate:bug_gate,redisproxy:rpbug"
+def_node("bug", 6)
+sh_module=sh_module..",bug,redisproxy:rpbug"
+bug_source="watchdog"
 
 rpbug_requester="bug"
 rpbug_redis_auth="shaco@1986#0621"

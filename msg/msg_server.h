@@ -19,7 +19,7 @@
 #define IDUM_AUTH       IDUM_NBEGIN+8
 #define IDUM_ROOM       IDUM_NBEGIN+9
 #define IDUM_MATCH      IDUM_NBEGIN+10
-
+#define IDUM_BUG        IDUM_NBEGIN+11
 #define IDUM_CMDS       IDUM_NBEGIN+12
 //#define IDUM_FORWARD    IDUM_NBEGIN+12
 #define IDUM_MINLOADFAIL IDUM_NBEGIN+13
@@ -91,6 +91,12 @@ struct UM_AUTH {
     _UM_HEADER;
     uint64_t conn;
     uint32_t wsession;
+    uint8_t wrap[0];
+};
+
+struct UM_BUG {
+    _UM_HEADER;
+    uint32_t client;
     uint8_t wrap[0];
 };
 

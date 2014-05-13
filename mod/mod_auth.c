@@ -16,7 +16,6 @@ struct user {
     uint64_t conn;
     int watchdog_source;
     uint32_t wsession;
-    //uint64_t logintime;
     uint32_t accid;
     char account[ACCOUNT_NAME_MAX+1];
     char passwd[ACCOUNT_PASSWD_MAX+1];
@@ -96,7 +95,6 @@ login(struct module *s, int source, uint64_t conn, uint32_t wsession, struct UM_
     ur->conn = conn;
     ur->watchdog_source = source;
     ur->wsession = wsession;
-    //ur->logintime = sh_timer_now();
     memcpy(ur->account, la->account, sizeof(ur->account));
     memcpy(ur->passwd, la->passwd, sizeof(ur->passwd));
   

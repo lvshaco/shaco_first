@@ -37,6 +37,7 @@ struct user {
 struct watchdog {
     int gate_handle;
     int auth_handle;
+    int bug_handle;
     int hall_handle;
     int room_handle; 
     int uniqueol_handle;
@@ -47,8 +48,6 @@ struct watchdog {
     struct sh_hash acc2user;
 
     char webaddr[IP_LEN];
-    char bugaddr[IP_LEN];
-    int bugport;
 };
 
 // watchdog
@@ -79,15 +78,13 @@ watchdog_init(struct module *s) {
     if (sh_monitor("uniqueol", &h, &self->uniqueol_handle) ||
         sh_monitor("gate", &h, &self->gate_handle) ||
         sh_monitor("auth", &h, &self->auth_handle) ||
+        sh_monitor("bug",  &h, &self->bug_handle) ||
         sh_monitor("hall", &h, &self->hall_handle) ||
         sh_monitor("room", &h, &self->room_handle)) {
         return 1;
     }
     const char *webaddr = sh_getstr("web_addr", "");
-    const char *bugaddr = sh_getstr("bug_addr", "");
-    self->bugport = sh_getint("bug_port", 0);
     sh_strncpy(self->webaddr, webaddr, sizeof(self->webaddr)); 
-    sh_strncpy(self->bugaddr, bugaddr, sizeof(self->bugaddr)); 
     sh_hash64_init(&self->conn2user, 1);
     sh_hash_init(&self->acc2user, 1);
     return 0;
@@ -198,7 +195,14 @@ process_gate(struct module *s, int source, int connid, const void *msg, int sz) 
         disconnect_client(s, source, connid, SERR_NOLOGIN);
         return;
     }
-    if (base->msgid >= IDUM_HALLB && base->msgid <= IDUM_HALLE) {
+    if (base->msgid == IDUM_BUGSUBMIT) {
+        if (ur->status == S_HALL && ur->hall_handle != -1 && self->bug_handle != -1) {
+            UM_DEFWRAP2(UM_BUG, bu, sz);
+            bu->client = ur->accid;
+            memcpy(bu->wrap, msg, sz);
+            sh_module_send(MODULE_ID, self->bug_handle, MT_UM, bu, sizeof(*bu)+sz);
+        }
+    } else if (base->msgid >= IDUM_HALLB && base->msgid <= IDUM_HALLE) {
         if (ur->status == S_HALL && ur->hall_handle != -1) {
             UM_DEFWRAP2(UM_HALL, ha, sz);
             ha->uid = ur->accid;
@@ -263,8 +267,6 @@ uniqueol_ok(struct module *s, struct user *ur) {
     UM_DEFWRAP(UM_GATE, g, UM_NOTIFYWEB, nw);
     g->connid = ur->connid;
     memcpy(nw->webaddr, self->webaddr, sizeof(nw->webaddr));
-    memcpy(nw->bugaddr, self->bugaddr, sizeof(nw->bugaddr));
-    nw->bugport = self->bugport;
     sh_module_send(MODULE_ID, ur->gate_source, MT_UM, g, sizeof(*g) + sizeof(*nw));
 
     ur->status = S_HALL;
@@ -491,6 +493,11 @@ umsg(struct module *s, int source, const void *msg, int sz) {
     case IDUM_ROOM: {
         UM_CAST(UM_ROOM, ro, msg);
         process_room(s, ro->uid, msg, sz);
+        break;
+        }
+    case IDUM_BUG: {
+        UM_CAST(UM_BUG, bu, msg);
+        process_client(s, bu->client, bu->wrap, sz-sizeof(*bu));
         break;
         }
     case IDUM_CLIENT: {
