@@ -875,6 +875,9 @@ on_refresh_attri(struct module *s, struct player* m, struct room_game* ro) {
     }
     if (m->refresh_flag & REFRESH_ATTRI) {
         sync_attribute(s, m, ro);
+        UM_DEFFIX(UM_ROLEINFO, ri);
+        ri->detail = m->detail;
+        multicast_msg(s, ro, ri, sizeof(*ri), 0);
     }
     m->refresh_flag = 0;
 }
@@ -1193,8 +1196,8 @@ use_store_item(struct module *s, struct player *m, const struct UM_USEITEM *use)
 */
 static void
 give_start_effect(struct module *s, struct room_game *ro, struct player *m) {
-    static const uint32_t ITEM1 = 210609;
-    static const uint32_t ITEM2 = 210117;
+    static const uint32_t ITEM1 = 21009;
+    static const uint32_t ITEM2 = 21017;
 
     int state_id = role_state_id(m->detail.state);
     if (ro->type == ROOM_TYPE_NORMAL) {

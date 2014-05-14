@@ -86,7 +86,7 @@ _gencell(const struct map_tplt* tplt, struct roommap* m, uint16_t h,
             } else if (_randhit(100, in->itemrate)) {
                 out->itemid = in->itemid;
             } else {
-                out->itemid = 300501; // 机关盒
+                out->itemid = 30001; // 机关盒
             }
         }
     } else {
