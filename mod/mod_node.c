@@ -638,7 +638,8 @@ node_time(struct module* s) {
     int i;
     for (i=0; i<NODE_MAX; ++i) {
         no = &self->nodes[i];
-        if (no->connid != -1) {
+        if (no->connid != -1 &&
+            no->node_handle != -1) {
             if (now - no->last_hb_send_time >= self->hb_tick) {
                 _dsend(self, no->connid, MODULE_ID, no->node_handle, MT_TEXT, "HB", 2);
             }

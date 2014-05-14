@@ -1,4 +1,3 @@
-#include "lur.h"
 #include "sh_util.h"
 #include "args.h"
 #include "freeid.h"
@@ -53,33 +52,6 @@ struct Test {
         int i;
     }v [3];
 };
-
-void
-test_lur() {
-    struct lur* L = lur_create();
-    const char* r = lur_dofile(L, "config.lua", "shaco");
-    if (!LUR_OK(r)) {
-        printf("%s", r);
-        return;
-    }
-    printf("%f\n", lur_getfloat(L, "f", 0));
-    printf("%s\n", lur_getstr(L, "s", ""));
-    printf("%d\n", lur_getint(L, "t1.i", 0));
-    printf("%s\n", lur_getstr(L, "t1.s", ""));
-    printf("%d\n", lur_getint(L, "t1.tt1.a", 0));
-    printf("%s\n", lur_getstr(L, "t1.tt1.b", ""));
-    printf("%d\n", lur_getint(L, "t1.tt1.ttt1.k", 0));
-    printf("%s\n", lur_getstr(L, "t1.tt1.ttt1.v", ""));
-    printf("----------------------\n");
-    int next = lur_getnode(L, "t2");
-    while (next) {
-        printf("%d\n", lur_getint(L, "a", 0));
-        printf("%d\n", lur_getint(L, "b", 0));
-        printf("%s\n", lur_getstr(L, "c", ""));
-        next = lur_nextnode(L);
-    }
-    lur_free(L);
-}
 
 void
 test_args() {
@@ -2003,7 +1975,6 @@ main(int argc, char* argv[]) {
     //sh_library_init();
     //sh_library_fini();
     //ph_static_assert(sizeof(int)==1, intsize_must4);
-    //test_lur();
     //test_args();
     //test_freeid();
     //test_hashid();

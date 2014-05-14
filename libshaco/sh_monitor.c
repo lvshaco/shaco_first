@@ -86,19 +86,6 @@ sh_monitor_trigger_exit(int vhandle, int handle) {
     return 1;
 }
 
-int
-sh_monitor_trigger_suspend(int vhandle, int handle) {
-    struct sh_monitor *m = find(vhandle);
-    if (m &&
-        m->handle[MONITOR_EXIT] != -1) {
-        uint8_t msg[5];
-        msg[0] = MONITOR_SUSPEND;
-        sh_to_littleendian32(vhandle, &msg[1]);
-        return sh_module_send(handle, m->handle[MONITOR_EXIT], MT_MONITOR, msg, sizeof(msg));
-    }
-    return 1;
-}
-
 int 
 sh_monitor_trigger_startb(int vhandle) {
     struct sh_monitor *m = find(vhandle);

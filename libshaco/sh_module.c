@@ -5,7 +5,6 @@
 #include "sh_init.h"
 #include "sh_env.h"
 #include "sh_log.h"
-#include "array.h"
 #include <stdlib.h>
 #include <dlfcn.h>
 #include <string.h>
@@ -14,16 +13,24 @@
 #define INIT_COUNT 8
 
 struct module_holder {
-    struct array* sers;
+    int cap;
+    int sz;
+    struct module **p;
 };
 
-static struct module_holder* S = NULL;
+static struct module_holder* M = NULL;
 
-static struct module*
+static struct module *
+_index(int idx) {
+    assert(idx >= 0 && idx < M->sz);
+    return M->p[idx];
+}
+
+static struct module *
 _find(const char* name) {
     int i;
-    for (i=0; i<array_size(S->sers); ++i) {
-        struct module* s = array_get(S->sers, i);
+    for (i=0; i<M->sz; ++i) {
+        struct module* s = M->p[i];
         if (s && strcmp(s->name, name) == 0) {
             return s;
         }
@@ -33,7 +40,12 @@ _find(const char* name) {
 
 static inline void
 _insert(struct module* s) {
-    s->moduleid = array_push(S->sers, s);
+    if (M->sz == M->cap) {
+        M->cap *= 2;
+        M->p = realloc(M->p, sizeof(M->p[0]) * M->cap);
+    }
+    s->moduleid = M->sz;
+    M->p[M->sz++] = s;
 }
 
 static int
@@ -85,8 +97,8 @@ _reload(struct module* s) {
     // foreach all same so 
     struct module *m;
     int i;
-    for (i=0; i<array_size(S->sers); ++i) {
-        m = array_get(S->sers, i); 
+    for (i=0; i<M->sz; ++i) {
+        m = M->p[i];
         if (m && !strcmp(m->dl.name, s->dl.name)) {
             if (dlmodule_unload(&m->dl)) {
                 sh_error("unload module %s fail", m->name);
@@ -95,8 +107,8 @@ _reload(struct module* s) {
             }
         }
     }
-    for (i=0; i<array_size(S->sers); ++i) {
-        m = array_get(S->sers, i); 
+    for (i=0; i<M->sz; ++i) {
+        m = M->p[i];
         if (m && m->dl.handle == NULL) {
             if (dlmodule_reopen(&m->dl)) {
                 sh_error("reopen module %s fail", m->name);
@@ -140,22 +152,14 @@ module_prepare(const char* name) {
         return 1;
     } else {
         int i;
-        for (i=0; i<array_size(S->sers); ++i) {
-            s = array_get(S->sers, i); 
-            if (s) {
-                if (_prepare(s)) {
-                    return 1;
-                }
+        for (i=0; i<M->sz; ++i) {
+            s = M->p[i];
+            if (_prepare(s)) {
+                return 1;
             }
         }
     }
     return 0;
-}
-
-bool 
-module_isprepared(const char *name) {
-    struct module *s = _find(name);
-    return s ? s->inited : false;
 }
 
 int
@@ -171,11 +175,8 @@ module_reload(const char* name) {
 
 int 
 module_reload_byid(int moduleid) {
-    struct module* s = array_get(S->sers, moduleid);
-    if (s) {
-        return _reload(s);
-    }
-    return 1;
+    struct module* s = _index(moduleid);
+    return _reload(s);
 }
 
 int
@@ -185,22 +186,11 @@ module_query_id(const char* name) {
     struct module* s = _find(name);
     return s ? s->moduleid : MODULE_INVALID;
 }
-/*
-int
-module_query_id_by_module_name(const char* name) {
-    if (name == NULL || name[0] == '\0')
-        return MODULE_INVALID;
-    struct module* s = _find_by_module_name(name);
-    return s ? s->moduleid : MODULE_INVALID;
-}
-*/
+
 const char* 
 module_query_module_name(int moduleid) {
-    struct module* s = array_get(S->sers, moduleid);
-    if (s) {
-        return s->dl.name;
-    }
-    return "";
+    struct module* s = _index(moduleid);
+    return s->dl.name;
 }
 
 static inline void
@@ -224,8 +214,8 @@ debug_msg(int source, const char *dest, int type, const void *msg, int sz) {
 
 int 
 module_main(int moduleid, int session, int source, int type, const void *msg, int sz) {
-    struct module *s = array_get(S->sers, moduleid);
-    if (s && s->dl.main) {
+    struct module *s = _index(moduleid);
+    if (s->dl.main) {
         debug_msg(source, MODULE_NAME, type, msg, sz);
         s->dl.main(s, session, source, type, msg, sz);
         return 0;
@@ -235,8 +225,8 @@ module_main(int moduleid, int session, int source, int type, const void *msg, in
 
 int 
 module_send(int moduleid, int session, int source, int dest, int type, const void *msg, int sz) {
-    struct module *s = array_get(S->sers, moduleid);
-    if (s && s->dl.send) {
+    struct module *s = _index(moduleid);
+    if (s->dl.send) {
         s->dl.send(s, session, source, dest, type, msg, sz);
         return 0;
     }
@@ -245,8 +235,8 @@ module_send(int moduleid, int session, int source, int dest, int type, const voi
 
 int 
 module_net(int moduleid, struct net_message* nm) {
-    struct module* s = array_get(S->sers, moduleid);
-    if (s && s->dl.net) {
+    struct module* s = _index(moduleid);
+    if (s->dl.net) {
         s->dl.net(s, nm);
         return 0;
     }
@@ -255,8 +245,8 @@ module_net(int moduleid, struct net_message* nm) {
 
 int 
 module_time(int moduleid) {
-    struct module* s = array_get(S->sers, moduleid);
-    if (s && s->dl.time) {
+    struct module* s = _index(moduleid);
+    if (s->dl.time) {
         s->dl.time(s);
         return 0;
     }
@@ -265,9 +255,10 @@ module_time(int moduleid) {
 
 static void
 module_init() {
-    S = malloc(sizeof(*S));
-    S->sers = array_new(INIT_COUNT);
-
+    M = malloc(sizeof(*M));
+    M->cap = INIT_COUNT;
+    M->p = malloc(sizeof(M->p[0]) * M->cap);
+    M->sz = 0;
     const char* modules = sh_getstr("sh_module", "");
     if (modules[0] &&
         module_load(modules)) {
@@ -277,20 +268,20 @@ module_init() {
 
 static void
 module_fini() {
-    if (S == NULL) 
+    if (M == NULL) 
         return;
-    if (S->sers) {
-        int i;
-        for (i=0; i<array_size(S->sers); ++i) {
-            struct module* s = array_get(S->sers, i);
-            if (s) {
-                dlmodule_close(&s->dl);
-                free(s);
-            }
-        }
-        array_free(S->sers);
+    struct module *s;
+    int i;
+    for (i=0; i<M->sz; ++i) {
+        s = M->p[i];
+        dlmodule_close(&s->dl);
+        free(s);
     }
-    free(S);
+    free(M->p);
+    M->p = NULL;
+    M->cap = 0;
+    M->sz = 0;
+    free(M);
 }
 
 static void

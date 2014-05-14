@@ -123,22 +123,6 @@ _vhandle(const char *name) {
 }
 
 static int
-find_vhandle_bynodeid(int nodeid) {
-    struct _module_vector *sers = &R->sers;
-    struct _module *s;
-    int i,j;
-    for (i=0; i<sers->sz; ++i) {
-        s = &sers->p[i];
-        for (j=0; j<s->sz; ++j) {
-            if (sh_nodeid_from_handle(s->phandle[j].id) == nodeid) {
-                return VHANDLE(i);
-            }
-        }
-    }
-    return -1;
-}
-
-static int
 _subscribe(const char *name) {
     struct _module_vector *sers = &R->sers;
     struct _module *s;
@@ -218,17 +202,6 @@ sh_module_exit(int handle) {
     int vhandle = _unregister(handle);
     if (vhandle != -1) {
         sh_monitor_trigger_exit(vhandle, handle);
-        return 0;
-    } else
-        return 1;
-}
-
-int
-sh_module_suspend(int handle) {
-    int nodeid = sh_nodeid_from_handle(handle);
-    int vhandle = find_vhandle_bynodeid(nodeid);
-    if (vhandle != -1) {
-        sh_monitor_trigger_suspend(vhandle, handle);
         return 0;
     } else
         return 1;

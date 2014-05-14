@@ -63,21 +63,13 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.py *.h *.c" {
    sh_util.h
   }
  }
- lur=lur{
-  lur.h
-  lur.c
- }
  base=base{
   args.h
-  array.h
   freeid.h
   hashid.h
   memrw.h
-  mpool.h
-  stringsplice.h
   stringtable.h
   args.c
-  mpool.c
  }
  net=net{
   net.h

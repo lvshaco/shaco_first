@@ -72,14 +72,20 @@ local(struct module *s, const char *msg, int len, struct memrw *rw) {
         }
 
     } else if (!strcmp(cmd, "time")) {
-        uint64_t now = sh_timer_now();
-        time_t sec = now / 1000;
-        int n = strftime(rw->ptr, RW_SPACE(rw), "%y%m%d-%H:%M:%S", localtime(&sec));
+        time_t start = sh_timer_start_time()/1000;
+        time_t now = sh_timer_now()/1000;
+        uint32_t elapsed = now - start;
+        int h = elapsed/3600; elapsed %= 3600;
+        int m = elapsed/60;   elapsed %= 60;
+        int s = elapsed;
+        int n;
+        char sstart[32], snow[32];
+        strftime(sstart, sizeof(sstart), "%y%m%d-%H:%M:%S", localtime(&start));
+        strftime(snow, sizeof(snow), "%y%m%d-%H:%M:%S", localtime(&now));
+        n = sh_snprintf(rw->ptr, RW_SPACE(rw), "%s ~ %s", sstart, snow);
         memrw_pos(rw, n);
-        n = sh_snprintf(rw->ptr, RW_SPACE(rw), "[%llu]", 
-                (unsigned long long int)sh_timer_elapsed());
+        n = sh_snprintf(rw->ptr, RW_SPACE(rw), " E[%dh%dm%ds]", h, m, s); 
         memrw_pos(rw, n);
-
     } else {
         return CTL_NOCMD;
     }

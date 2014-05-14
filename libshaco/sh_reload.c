@@ -1,59 +1,78 @@
-#include "sh_reload.h"
 #include "sh_init.h"
 #include "sh_module.h"
-#include "sh_util.h"
 #include <stdlib.h>
 #include <string.h>
 
-#define CACHE_MAX 10
+#define CACHE_MAX 30
 
 struct reload_cache {
-    int size;
-    int modules[CACHE_MAX];
+    int cap;
+    int sz;
+    int *p;
 };
 
 static struct reload_cache* C = NULL;
 
-int
-sh_reload_prepare(const char* names) {
-    char tmp[1024];
-    sh_strncpy(tmp, names, sizeof(tmp));
-
-    int sz = 0;
-    int id;
-    char* saveptr = NULL;
-    char* one = strtok_r(tmp, ",", &saveptr);
-    while (one) {
-        id = module_query_id(one);
-        if (id != -1) {
-            C->modules[sz++] = id;
-        }
-        one = strtok_r(NULL, ",", &saveptr);
+static inline void
+cache(int id) {
+    if (C->sz == C->cap) {
+        C->cap *= 2;
+        if (C->cap == 0)
+            C->cap = 1;
+        C->p = realloc(C->p, sizeof(C->p[0]) * C->cap);
     }
-    C->size = sz;
-    return sz;
+    C->p[C->sz++] = id;
+}
+
+int
+sh_reload_prepare(const char* mods) {
+    int l = strlen(mods);
+    if (l >= 1024)
+        return 0;
+    char tmp[l+1];
+    strcpy(tmp, mods);
+    
+    int id;
+    char *save = NULL, *one;
+    one = strtok_r(tmp, ",", &save);
+    while (one) {
+        if (C->sz < CACHE_MAX) {
+            id = module_query_id(one);
+            if (id != -1) {
+                cache(id);
+            }
+        }
+        one = strtok_r(NULL, ",", &save);
+    }
+    return C->sz;
 }
 
 void
 sh_reload_execute() {
-    if (C->size <= 0)
+    if (C->sz <= 0) {
         return;
-
-    int i;
-    for (i=0; i<C->size; ++i) {
-        module_reload_byid(C->modules[i]);
     }
-    C->size = 0;
+    int i;
+    for (i=0; i<C->sz; ++i) {
+        module_reload_byid(C->p[i]);
+    }
+    C->sz = 0;
 }
 
 static void
 sh_reload_init() {
     C = malloc(sizeof(*C));
-    C->size = 0;
+    memset(C, 0, sizeof(*C));
 }
 
 static void
 sh_reload_fini() {
+    if (C == NULL)
+        return;
+    if (C->p) {
+        free(C->p);
+        C->p = NULL;
+    }
     free(C);
     C = NULL;
 }

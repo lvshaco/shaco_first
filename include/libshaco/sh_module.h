@@ -20,11 +20,9 @@ struct module {
 
 int module_load(const char* name);
 int module_prepare(const char* name);
-bool module_isprepared(const char *name);
 int module_reload(const char* name);
 int module_reload_byid(int moduleid);
 int module_query_id(const char* name);
-//int module_query_id_by_module_name(const char* name);
 const char* module_query_module_name(int moduleid);
 
 int module_main(int moduleid, int session, int source, int type, const void *msg, int sz);

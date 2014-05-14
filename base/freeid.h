@@ -80,6 +80,7 @@ freeid_alloc(struct freeid* fi, int hash) {
     } else {
         fi->free = &fi->ids[next];
     }
+    assert(fi->slots[hash] == -1);
     fi->slots[hash] = id;
     return id;
 }

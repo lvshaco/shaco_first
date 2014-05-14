@@ -7,10 +7,6 @@ mod_dir=mod
 #mod_src=$(wildcard $(mod_dir)/*.c)
 #mod_so=$(patsubst %.c,%.so,$(notdir $(mod_src)))
 
-lur_src=\
-	lur/lur.c \
-	lur/lur.h
-
 net_src=\
 	net/net.c \
 	net/net.h \
@@ -45,12 +41,8 @@ elog_src=\
 	elog/elog_appender_rollfile.h
 
 base_src=\
-	base/mpool.c \
-	base/mpool.h \
-	base/array.h \
 	base/freeid.h \
 	base/hashid.h \
-	base/stringsplice.h \
 	base/stringtable.h \
 	base/args.c \
 	base/args.h
@@ -78,7 +70,7 @@ cli_src=\
 	tool/shaco-cli.c
 
 LDFLAGS=-Wl,-rpath,. \
-		shaco.so net.so lur.so base.so -llua -lm -ldl -lrt -rdynamic# -Wl,-E
+		shaco.so net.so base.so -llua -lm -ldl -lrt -rdynamic# -Wl,-E
 
 mod_so=\
 	mod_echo.so \
@@ -99,7 +91,6 @@ mod_so=\
 
 all: \
 	shaco.so \
-	lur.so \
 	net.so \
 	base.so \
 	redis.so \
@@ -232,10 +223,6 @@ mod_robot.so: $(mod_dir)/mod_robot.c \
 	@rm -f $@
 	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Iinclude/libshaco -Inet -Ibase -Imsg -Iredis -Itplt -Idatadefine -Imod_hall -Imod_robot -Imod -Wl,-rpath,. redis.so tplt.so
 
-lur.so: $(lur_src)
-	@rm -f $@
-	gcc $(CFLAGS) $(SHARED) -o $@ $^ -llua
-
 net.so: $(net_src)
 	@rm -f $@
 	gcc $(CFLAGS) $(SHARED) -o $@ $^
@@ -260,19 +247,19 @@ coroutine.so: coroutine/coroutine.c coroutine/coroutine.h
 	gcc $(CFLAGS) $(SHARED) -o $@ $^
 
 shaco.so: $(libshaco_src)
-	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Iinclude/libshaco -Ilur -Inet -Ibase
+	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Iinclude/libshaco -Inet -Ibase
 
 shaco: main/shaco.c
-	gcc $(CFLAGS) -o $@ $^ -Iinclude/libshaco -Ilur -Inet -Ibase  $(LDFLAGS)
+	gcc $(CFLAGS) -o $@ $^ -Iinclude/libshaco -Inet -Ibase  $(LDFLAGS)
 
 shaco-cli: $(cli_src)
 	gcc $(CFLAGS) -o $@ $^ -lpthread
 
-t: main/test.c shaco.so net.so lur.so base.so redis.so elog.so redis.so coroutine.so
-	gcc $(CFLAGS) -o $@ $^ -Iinclude/libshaco -Imsg -Ilur -Inet -Ibase -Iredis -Ielog -Icoroutine $(LDFLAGS)
+t: main/test.c shaco.so net.so base.so redis.so elog.so redis.so coroutine.so
+	gcc $(CFLAGS) -o $@ $^ -Iinclude/libshaco -Imsg -Inet -Ibase -Iredis -Ielog -Icoroutine $(LDFLAGS)
 
 robot: main/robot.c cnet/cnet.c cnet/cnet.h net.so
-	gcc $(CFLAGS) -o $@ $^ -Ilur -Icnet -Inet -Ibase -Imsg -Wl,-rpath,. net.so
+	gcc $(CFLAGS) -o $@ $^ -Icnet -Inet -Ibase -Imsg -Wl,-rpath,. net.so
 
 # res
 res:

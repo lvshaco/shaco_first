@@ -45,7 +45,8 @@ _event_holder_grow(struct _event_holder* eh) {
 
 struct sh_timer {
     uint64_t start_time;
-    uint64_t elapsed_time;
+    uint64_t machine_start_time;
+    uint64_t machine_elapsed_time;
     bool dirty;
     struct _event_holder eh;
 };
@@ -70,20 +71,19 @@ static void
 _elapsed_time() {
     if (T->dirty) {
         T->dirty = false;
-        T->elapsed_time = _elapsed();
+        T->machine_elapsed_time = _elapsed();
     }
+}
+
+uint64_t
+sh_timer_start_time() {
+    return T->start_time;
 }
 
 uint64_t 
 sh_timer_now() {
     _elapsed_time();
-    return T->start_time + T->elapsed_time;
-}
-
-uint64_t 
-sh_timer_elapsed() {
-    _elapsed_time();
-    return T->elapsed_time;
+    return T->machine_start_time + T->machine_elapsed_time;
 }
 
 uint64_t 
@@ -108,13 +108,13 @@ _closest_time() {
 
 int
 sh_timer_max_timeout() {
-    T->elapsed_time = _elapsed(); 
+    T->machine_elapsed_time = _elapsed(); 
     T->dirty = true;
-    uint64_t next_time = _closest_time(T->elapsed_time);
+    uint64_t next_time = _closest_time(T->machine_elapsed_time);
     int timeout = -1;
     if (next_time != -1) {
-        timeout = next_time > T->elapsed_time ?
-            next_time - T->elapsed_time : 0;
+        timeout = next_time > T->machine_elapsed_time ?
+            next_time - T->machine_elapsed_time : 0;
     } 
     return timeout;
 }
@@ -128,7 +128,7 @@ sh_timer_dispatch_timeout() {
     int i;
     for (i=0; i<eh->sz; ++i) {
         e = &eh->p[i];
-        if (e->next_time <= T->elapsed_time) {
+        if (e->next_time <= T->machine_elapsed_time) {
             module_time(e->moduleid);
             e->next_time += e->interval;
         }
@@ -144,7 +144,7 @@ sh_timer_register(int moduleid, int interval) {
     struct _event* e = &eh->p[eh->sz];
     e->moduleid = moduleid;
     e->interval = interval;
-    e->next_time = T->elapsed_time + interval;
+    e->next_time = T->machine_elapsed_time + interval;
     eh->sz += 1;
 }
 
@@ -153,8 +153,9 @@ sh_timer_init() {
     T = malloc(sizeof(*T));
     memset(T, 0, sizeof(*T));
     T->dirty = true;
-    T->elapsed_time = _elapsed();
-    T->start_time = _now() - T->elapsed_time;
+    T->start_time = _now();
+    T->machine_elapsed_time = _elapsed(); 
+    T->machine_start_time = T->start_time - T->machine_elapsed_time;
     _event_holder_init(&T->eh);
 }
 
