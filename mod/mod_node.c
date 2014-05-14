@@ -410,11 +410,11 @@ _broadcast_node(struct module *s, int id) {
             continue;
         if (other->connid == -1) 
             continue;
-        _vsend(self, MODULE_ID, other->node_handle, "ADDR %d %s %u %s %u %s",
+        _vsend(self, MODULE_ID, other->node_handle, "ADDR %d %s %u %s %u %s %04x",
                 id, 
                 no->addr.naddr, no->addr.nport, 
                 no->addr.gaddr, no->addr.gport,
-                no->addr.waddr);
+                no->addr.waddr, no->node_handle);
     }
 
     // get other
@@ -425,11 +425,11 @@ _broadcast_node(struct module *s, int id) {
         if (other->connid == -1 ||
             no->connid == -1)
             continue;
-        _vsend(self, MODULE_ID, no->node_handle, "ADDR %d %s %u %s %u %s",
+        _vsend(self, MODULE_ID, no->node_handle, "ADDR %d %s %u %s %u %s %04x",
                 i, 
                 other->addr.naddr, other->addr.nport, 
                 other->addr.gaddr, other->addr.gport,
-                other->addr.waddr);
+                other->addr.waddr, no->node_handle);
     }
     return 0;
 }
@@ -464,7 +464,7 @@ _connect_to_center(struct module* s) {
 
     int self_handle = sh_handleid(self->myid, MODULE_ID);
     struct node *me = _my_node(self);
-    if (_vsend(self, self_handle, center_handle, "REG %d %s %u %s %u %s %d",
+    if (_vsend(self, self_handle, center_handle, "REG %d %s %u %s %u %s %04x",
                 self->myid, 
                 me->addr.naddr, me->addr.nport, 
                 me->addr.gaddr, me->addr.gport, 
@@ -686,7 +686,7 @@ node_main(struct module *s, int session, int source, int type, const void *msg, 
         const char *gaddr = A.argv[4];
         int gport = strtol(A.argv[5], NULL, 10);
         const char *waddr = A.argv[6];
-        int node_handle = strtol(A.argv[7], NULL, 10);
+        int node_handle = strtol(A.argv[7], NULL, 16);
         if (id <= 0) {
             sh_error("Reg invalid node(%d)", id);
             return;
@@ -706,7 +706,7 @@ node_main(struct module *s, int session, int source, int type, const void *msg, 
             } 
         }
     } else if (!strcmp(cmd, "ADDR")) {
-        if (A.argc != 7)
+        if (A.argc != 8)
             return;
         int id = strtol(A.argv[1], NULL, 10);
         const char *naddr = A.argv[2];
@@ -714,10 +714,12 @@ node_main(struct module *s, int session, int source, int type, const void *msg, 
         const char *gaddr = A.argv[4];
         int gport = strtol(A.argv[5], NULL, 10);
         const char *waddr = A.argv[6];
+        int node_handle = strtol(A.argv[7], NULL, 16);
         if (id > 0) {
             struct node *no = _get_node(self, id);
             if (no) {
                 _update_node(no, naddr, nport, gaddr, gport, waddr);
+                _bound_node_entry(no, node_handle);
                 // no need connect each other
                 //_connect_node(s, no); 
             }
