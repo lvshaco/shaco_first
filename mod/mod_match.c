@@ -27,7 +27,7 @@ robot_pull(struct module *s, int type, int match_score, int target_type, int tar
     rp->match_score = match_score;
     rp->target.type = target_type;
     rp->target.id = target_id;
-    sh_module_send(MODULE_ID, self->robot_handle, MT_UM, rp, sizeof(*rp));
+    sh_handle_send(MODULE_ID, self->robot_handle, MT_UM, rp, sizeof(*rp));
 }
 
 static inline void
@@ -106,10 +106,10 @@ match_init(struct module *s) {
     if (sh_handle_publish(MODULE_NAME, PUB_SER)) {
         return 1;
     }
-    struct sh_monitor_handle h = { MODULE_ID, MODULE_ID };
-    if (sh_monitor("hall", &h, &self->hall_handle) ||
-        sh_monitor("room", &h, &self->room_handle) ||
-        sh_monitor("robot", &h, &self->robot_handle)) {
+    struct sh_monitor h = { MODULE_ID, MODULE_ID };
+    if (sh_handle_monitor("hall", &h, &self->hall_handle) ||
+        sh_handle_monitor("room", &h, &self->room_handle) ||
+        sh_handle_monitor("robot", &h, &self->robot_handle)) {
         return 1;
     }
     self->randseed = sh_timer_now()/1000;
@@ -150,7 +150,7 @@ notify_over_room(struct module *s, struct applyer *ar, int err) {
     ma->uid = ar->uid;
     or->uid = ar->uid;
     or->err = err;
-    sh_module_send(MODULE_ID, ar->hall_source, MT_UM, ma, sizeof(*ma)+sizeof(*or));
+    sh_handle_send(MODULE_ID, ar->hall_source, MT_UM, ma, sizeof(*ma)+sizeof(*or));
 }
 
 static inline void
@@ -159,7 +159,7 @@ response_play_fail(struct module *s, struct applyer *ar, int err) {
     UM_DEFWRAP(UM_MATCH, ma, UM_PLAYFAIL, pf);
     ma->uid = ar->uid;
     pf->err = err;
-    sh_module_send(MODULE_ID, ar->hall_source, MT_UM, ma, sizeof(*ma)+sizeof(*pf));
+    sh_handle_send(MODULE_ID, ar->hall_source, MT_UM, ma, sizeof(*ma)+sizeof(*pf));
 }
 
 static inline void
@@ -169,7 +169,7 @@ notify_enter_room(struct module *s, struct applyer *ar, struct room *ro) {
     ma->uid = ar->uid;
     enter->room_handle = ro->room_handle;
     enter->roomid = ro->id;
-    sh_module_send(MODULE_ID, ar->hall_source, MT_UM, ma, sizeof(*ma)+sizeof(*enter));
+    sh_handle_send(MODULE_ID, ar->hall_source, MT_UM, ma, sizeof(*ma)+sizeof(*enter));
 }
 
 static inline void
@@ -177,7 +177,7 @@ notify_destroy_room(struct module *s, struct room *ro) {
     sh_trace("Match notify destroy room %u", ro->id);
     UM_DEFFIX(UM_DESTROYROOM, des);
     des->id = ro->id;
-    sh_module_send(MODULE_ID, ro->room_handle, MT_UM, des, sizeof(*des));
+    sh_handle_send(MODULE_ID, ro->room_handle, MT_UM, des, sizeof(*des));
 }
 
 static inline void
@@ -195,7 +195,7 @@ notify_create_room(struct module *s, struct room *ro, struct applyer **as, int n
         create->members[i].is_robot = as[i]->is_robot;
         create->members[i].brief = as[i]->brief;
     }
-    sh_module_send(MODULE_ID, ro->room_handle, MT_UM, create, UM_CREATEROOM_size(create));
+    sh_handle_send(MODULE_ID, ro->room_handle, MT_UM, create, UM_CREATEROOM_size(create));
 }
 
 static inline void
@@ -205,7 +205,7 @@ notify_join_room(struct module *s, struct room *ro, struct applyer *ar) {
     join->id = ro->id;
     join->mm.is_robot = ar->is_robot;
     join->mm.brief = ar->brief;
-    sh_module_send(MODULE_ID, ro->room_handle, MT_UM, join, sizeof(*join));
+    sh_handle_send(MODULE_ID, ro->room_handle, MT_UM, join, sizeof(*join));
 }
 
 static inline void
@@ -216,7 +216,7 @@ notify_waiting(struct module *s, struct applyer *ar, int tick) {
     UM_DEFWRAP(UM_MATCH, ma, UM_PLAYWAIT, pw);
     ma->uid = ar->uid;
     pw->timeout = tick;
-    sh_module_send(MODULE_ID, ar->hall_source, MT_UM, ma, sizeof(*ma)+sizeof(*pw));
+    sh_handle_send(MODULE_ID, ar->hall_source, MT_UM, ma, sizeof(*ma)+sizeof(*pw));
 }
 
 static inline struct waiter *
@@ -456,7 +456,7 @@ leave_room(struct module *s, struct applyer *ar) {
 static int
 start_room(struct module *s, struct applyer **as, int n) {
     struct match *self = MODULE_SELF;
-    int room_handle = sh_module_minload(self->room_handle);
+    int room_handle = sh_handle_minload(self->room_handle);
     if (room_handle == -1) {
         return SERR_NOROOMS;
     }

@@ -171,11 +171,11 @@ _disconnect_node(struct module *s, int connid) {
         no->connid = -1;
         no->node_handle = -1;
         for (i=0; i<no->handles.sz; ++i) {
-            sh_module_exit(no->handles.pi[i]);
+            sh_handle_exit(no->handles.pi[i]);
         }
         no->handles.sz = 0;
         if (is_center(self)) {
-            sh_module_vsend(MODULE_ID, self->center_handle, "UNREG %d", id);
+            sh_handle_vsend(MODULE_ID, self->center_handle, "UNREG %d", id);
         }
     }
 }
@@ -387,7 +387,7 @@ _connect_module(struct module *s, const char *name, int handle) {
         handle = sh_moduleid_from_handle(handle);
     }
     if (!_bound_handle_to_node(no, handle)) {
-        sh_module_start(name, handle, &no->addr);
+        sh_handle_start(name, handle, &no->addr);
     }
     return 0;
 }
@@ -486,7 +486,7 @@ _subscribe_module(struct module *s, const char *name) {
     if (handle != -1) {
         _connect_module(s, name, handle); // if local has mod also, connect it
     }
-    return sh_module_vsend(MODULE_ID, self->center_handle, "SUB %s", name);
+    return sh_handle_vsend(MODULE_ID, self->center_handle, "SUB %s", name);
 }
 
 static inline int
@@ -495,7 +495,7 @@ _publish_module(struct module *s, const char *name, int handle) {
  
     handle &= 0xff;
     handle |= (self->myid << 8) & 0xff00;
-    return sh_module_vsend(MODULE_ID, self->center_handle, "PUB %s:%04x", name, handle);
+    return sh_handle_vsend(MODULE_ID, self->center_handle, "PUB %s:%04x", name, handle);
 }
 
 struct remote *
@@ -576,7 +576,7 @@ r_read(struct module *s, struct net_message *nm) {
             uint16_t dest = sh_from_littleendian16((uint8_t*)buf.ptr+4);
             int type = (dest>>8) & 0xff;
             dest &= 0xff;
-            sh_module_send(source, dest, type, buf.ptr+6, msgsz-6);
+            sh_handle_send(source, dest, type, buf.ptr+6, msgsz-6);
             buf.ptr += msgsz;
             buf.sz  -= msgsz;
         }
@@ -766,7 +766,7 @@ node_main(struct module *s, int session, int source, int type, const void *msg, 
         if (p) {
             p[0] = '\0';
         } 
-        sh_module_startb(name);
+        sh_handle_startb(name);
         if (p) {
             char* saveptr = NULL;
             char* one = strtok_r(p+1, ",", &saveptr);
@@ -776,6 +776,6 @@ node_main(struct module *s, int session, int source, int type, const void *msg, 
                 one = strtok_r(NULL, ",", &saveptr);
             }
         }
-        sh_module_starte(name);
+        sh_handle_starte(name);
     }
 }

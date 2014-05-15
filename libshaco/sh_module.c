@@ -166,14 +166,17 @@ _create(const char* name) {
     char tmp[len+1];
     strcpy(tmp, name);
 
+    int slen;
     struct module *s;
     const char *sname, *fname;
     char *p = strchr(tmp, ':');
     if (p) {
         p[0] = '\0';
         sname = p+1;
+        slen = len-(p-tmp)-1;
     } else {
         sname = name;
+        slen = len;
     }
     fname = tmp;
     s = _find(sname);
@@ -183,8 +186,7 @@ _create(const char* name) {
     }
     s = malloc(sizeof(*s));
     memset(s, 0, sizeof(*s));
-    len -= (p-fname) + 1;
-    s->name = malloc(len+1);
+    s->name = malloc(slen+1);
     strcpy(s->name, sname);
     if (_dlload(&s->dl, fname)) {
         free(s);

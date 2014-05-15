@@ -291,7 +291,7 @@ init_requester(struct module *s) {
     one = strtok_r(tmp, ",", &ptr);
     while (one) {
         int handle;
-        if (sh_handler(one, SUB_REMOTE, &handle)) {
+        if (sh_handle_subscribe(one, SUB_REMOTE, &handle)) {
             return 1;
         }
         one = strtok_r(NULL, ",", &ptr);
@@ -426,7 +426,7 @@ handle_reply(struct module *s, struct instance *inst) {
     }
     memrw_write(&rw, reader->buf+reader->pos_last, reader->pos-reader->pos_last);
     int msgsz = RW_CUR(&rw) + sizeof(*rep);
-    sh_module_send(MODULE_ID, q->source, MT_UM, rep, msgsz);
+    sh_handle_send(MODULE_ID, q->source, MT_UM, rep, msgsz);
 end:
     free(q);
 }

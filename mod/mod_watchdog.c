@@ -74,13 +74,13 @@ watchdog_init(struct module *s) {
     if (sh_handle_publish(MODULE_NAME, PUB_SER|PUB_MOD)) {
         return 1;
     }
-    struct sh_monitor_handle h = {MODULE_ID, MODULE_ID};
-    if (sh_monitor("uniqueol", &h, &self->uniqueol_handle) ||
-        sh_monitor("gate", &h, &self->gate_handle) ||
-        sh_monitor("auth", &h, &self->auth_handle) ||
-        sh_monitor("bug",  &h, &self->bug_handle) ||
-        sh_monitor("hall", &h, &self->hall_handle) ||
-        sh_monitor("room", &h, &self->room_handle)) {
+    struct sh_monitor h = {MODULE_ID, MODULE_ID};
+    if (sh_handle_monitor("uniqueol", &h, &self->uniqueol_handle) ||
+        sh_handle_monitor("gate", &h, &self->gate_handle) ||
+        sh_handle_monitor("auth", &h, &self->auth_handle) ||
+        sh_handle_monitor("bug",  &h, &self->bug_handle) ||
+        sh_handle_monitor("hall", &h, &self->hall_handle) ||
+        sh_handle_monitor("room", &h, &self->room_handle)) {
         return 1;
     }
     const char *webaddr = sh_getstr("web_addr", "");
@@ -119,7 +119,7 @@ disconnect_client(struct module *s, int gate_source, int connid, int err) {
     g->connid = connid;
     lo->err = err;
     int sz = sizeof(*g)+sizeof(*lo);
-    sh_module_send(MODULE_ID, gate_source, MT_UM, g, sz);
+    sh_handle_send(MODULE_ID, gate_source, MT_UM, g, sz);
 }
 
 static void
@@ -136,21 +136,21 @@ logout(struct module *s, struct user *ur, int8_t err, int disconn) {
     if (ur->status >= S_UNIQUE_VERIFY_OK) {
         UM_DEFFIX(UM_UNIQUEUNUSE, uni);
         uni->id = ur->accid;
-        sh_module_send(MODULE_ID, self->uniqueol_handle, MT_UM, uni, sizeof(*uni));
+        sh_handle_send(MODULE_ID, self->uniqueol_handle, MT_UM, uni, sizeof(*uni));
     }
     if (ur->hall_handle != -1) {
         UM_DEFWRAP(UM_HALL, ha, UM_LOGOUT, lo);
         ha->uid = ur->accid;
         lo->err = err;
         int sz = sizeof(*ha) + sizeof(*lo);
-        sh_module_send(MODULE_ID, ur->hall_handle, MT_UM, ha, sz);
+        sh_handle_send(MODULE_ID, ur->hall_handle, MT_UM, ha, sz);
     }
     if (ur->room_handle != -1) {
         UM_DEFWRAP(UM_ROOM, ro, UM_LOGOUT, lo);
         ro->uid = ur->accid;
         lo->err = err;
         int sz = sizeof(*ro) + sizeof(*lo);
-        sh_module_send(MODULE_ID, ur->room_handle, MT_UM, ro, sz);
+        sh_handle_send(MODULE_ID, ur->room_handle, MT_UM, ro, sz);
     } 
     if (disconn == DISCONNECT) {
         disconnect_client(s, ur->gate_source, ur->connid, err);
@@ -173,7 +173,7 @@ process_gate(struct module *s, int source, int connid, const void *msg, int sz) 
             disconnect_client(s, source, connid, SERR_RELOGIN);
             return;
         }
-        int auth_handle = sh_module_nextload(self->auth_handle);
+        int auth_handle = sh_handle_nextload(self->auth_handle);
         if (auth_handle == -1) {
             disconnect_client(s, source, connid, SERR_NOAUTHS);
             return;
@@ -187,7 +187,7 @@ process_gate(struct module *s, int source, int connid, const void *msg, int sz) 
         w->conn = conn;
         w->wsession = ur->wsession;
         *wla = *la;
-        sh_module_send(MODULE_ID, auth_handle, MT_UM, w, sizeof(*w) + sizeof(*wla));
+        sh_handle_send(MODULE_ID, auth_handle, MT_UM, w, sizeof(*w) + sizeof(*wla));
         return;
     } 
     struct user *ur = sh_hash64_find(&self->conn2user, conn);
@@ -200,21 +200,21 @@ process_gate(struct module *s, int source, int connid, const void *msg, int sz) 
             UM_DEFWRAP2(UM_BUG, bu, sz);
             bu->client = ur->accid;
             memcpy(bu->wrap, msg, sz);
-            sh_module_send(MODULE_ID, self->bug_handle, MT_UM, bu, sizeof(*bu)+sz);
+            sh_handle_send(MODULE_ID, self->bug_handle, MT_UM, bu, sizeof(*bu)+sz);
         }
     } else if (base->msgid >= IDUM_HALLB && base->msgid <= IDUM_HALLE) {
         if (ur->status == S_HALL && ur->hall_handle != -1) {
             UM_DEFWRAP2(UM_HALL, ha, sz);
             ha->uid = ur->accid;
             memcpy(ha->wrap, msg, sz);
-            sh_module_send(MODULE_ID, ur->hall_handle, MT_UM, ha, sizeof(*ha)+sz);
+            sh_handle_send(MODULE_ID, ur->hall_handle, MT_UM, ha, sizeof(*ha)+sz);
         }
     } else if (base->msgid >= IDUM_ROOMB && base->msgid <= IDUM_ROOME) {
         if (ur->status == S_ROOM && ur->room_handle != -1) {
             UM_DEFWRAP2(UM_ROOM, ro, sz);
             ro->uid = ur->accid;
             memcpy(ro->wrap, msg, sz);
-            sh_module_send(MODULE_ID, ur->room_handle, MT_UM, ro, sizeof(*ro)+sz);
+            sh_handle_send(MODULE_ID, ur->room_handle, MT_UM, ro, sizeof(*ro)+sz);
         }
     } else {
         switch (base->msgid) {
@@ -245,7 +245,7 @@ auth_ok(struct module *s, struct user *ur, uint32_t accid) {
 
     UM_DEFFIX(UM_UNIQUEUSE, uni);
     uni->id = ur->accid;
-    sh_module_send(MODULE_ID, self->uniqueol_handle, MT_UM, uni, sizeof(*uni));
+    sh_handle_send(MODULE_ID, self->uniqueol_handle, MT_UM, uni, sizeof(*uni));
 }
 
 static void
@@ -258,7 +258,7 @@ uniqueol_ok(struct module *s, struct user *ur) {
     struct watchdog *self = MODULE_SELF;
 
     ur->status = S_UNIQUE_VERIFY_OK;
-    int hall_handle = sh_module_minload(self->hall_handle);
+    int hall_handle = sh_handle_minload(self->hall_handle);
     if (hall_handle == -1) {
         logout(s, ur, SERR_NOHALLS, DISCONNECT);
         return;
@@ -267,14 +267,14 @@ uniqueol_ok(struct module *s, struct user *ur) {
     UM_DEFWRAP(UM_GATE, g, UM_NOTIFYWEB, nw);
     g->connid = ur->connid;
     memcpy(nw->webaddr, self->webaddr, sizeof(nw->webaddr));
-    sh_module_send(MODULE_ID, ur->gate_source, MT_UM, g, sizeof(*g) + sizeof(*nw));
+    sh_handle_send(MODULE_ID, ur->gate_source, MT_UM, g, sizeof(*g) + sizeof(*nw));
 
     ur->status = S_HALL;
     ur->hall_handle = hall_handle;
 
     UM_DEFFIX(UM_ENTERHALL, enter);
     enter->uid = ur->accid;
-    sh_module_send(MODULE_ID, hall_handle, MT_UM, enter, sizeof(*enter));
+    sh_handle_send(MODULE_ID, hall_handle, MT_UM, enter, sizeof(*enter));
 }
 
 static void
@@ -337,7 +337,7 @@ process_hall(struct module *s, uint32_t accid, const void *msg, int sz) {
     struct watchdog *self = MODULE_SELF;
     struct user *ur = sh_hash_find(&self->acc2user, accid);
     if (ur) {
-        sh_module_send(MODULE_ID, ur->hall_handle, MT_UM, msg, sz);
+        sh_handle_send(MODULE_ID, ur->hall_handle, MT_UM, msg, sz);
     }
 }
 
@@ -346,7 +346,7 @@ process_room(struct module *s, uint32_t accid, const void *msg, int sz) {
     struct watchdog *self = MODULE_SELF;
     struct user *ur = sh_hash_find(&self->acc2user, accid);
     if (ur) {
-        sh_module_send(MODULE_ID, ur->room_handle, MT_UM, msg, sz);
+        sh_handle_send(MODULE_ID, ur->room_handle, MT_UM, msg, sz);
     }
 }
 
@@ -370,7 +370,7 @@ login_room(struct module *s, struct UM_LOGINROOM *lr, int sz) {
         ur->status == S_HALL) {
         ur->status = S_ROOM;
         ur->room_handle = lr->room_handle;
-        sh_module_send(MODULE_ID, ur->room_handle, MT_UM, lr, sz);
+        sh_handle_send(MODULE_ID, ur->room_handle, MT_UM, lr, sz);
     }
 }
 
@@ -379,7 +379,7 @@ notify_exit_room(struct module *s, struct user *ur, int err) {
     UM_DEFWRAP(UM_GATE, g, UM_GAMEEXIT, ge);
     g->connid = ur->connid;
     ge->err = err;
-    sh_module_send(MODULE_ID, ur->gate_source, MT_UM, g, sizeof(*g) + sizeof(*ge));
+    sh_handle_send(MODULE_ID, ur->gate_source, MT_UM, g, sizeof(*g) + sizeof(*ge));
 }
 
 static inline void
@@ -389,7 +389,7 @@ exit_room_directly(struct module *s, struct user *ur) {
     if (ur->hall_handle != -1) {
         UM_DEFFIX(UM_EXITROOM, exit);
         exit->uid = UID(ur);
-        sh_module_send(MODULE_ID, ur->hall_handle, MT_UM, exit, sizeof(*exit));
+        sh_handle_send(MODULE_ID, ur->hall_handle, MT_UM, exit, sizeof(*exit));
     }
 }
 
@@ -438,7 +438,7 @@ process_client(struct module *s, uint32_t accid, const void *msg, int sz) {
     UM_DEFWRAP2(UM_GATE, g, sz);
     g->connid = ur->connid;
     memcpy(g->wrap, msg, sz);
-    sh_module_send(MODULE_ID, ur->gate_source, MT_UM, g, sizeof(*g) + sz);
+    sh_handle_send(MODULE_ID, ur->gate_source, MT_UM, g, sizeof(*g) + sz);
 }
 
 static void
@@ -583,7 +583,7 @@ uniqueol_startcb(void *pointer, void *ud) {
     if (ur->status >= S_UNIQUE_VERIFY_OK) {
         UM_DEFFIX(UM_UNIQUEUSE, uni);
         uni->id = ur->accid;
-        sh_module_send(MODULE_ID, self->uniqueol_handle, MT_UM, uni, sizeof(*uni));
+        sh_handle_send(MODULE_ID, self->uniqueol_handle, MT_UM, uni, sizeof(*uni));
     }
 }
 
@@ -592,7 +592,7 @@ uniqueol_start(struct module *s) {
     struct watchdog *self = MODULE_SELF;
     sh_hash_foreach2(&self->acc2user, uniqueol_startcb, s);
     UM_DEFFIX(UM_SYNCOK, ok);
-    sh_module_send(MODULE_ID, self->uniqueol_handle, MT_UM, ok, sizeof(*ok));
+    sh_handle_send(MODULE_ID, self->uniqueol_handle, MT_UM, ok, sizeof(*ok));
 }
 
 static void

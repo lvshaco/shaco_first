@@ -40,7 +40,7 @@ cmds_init(struct module* s) {
     if (sh_handle_publish(MODULE_NAME, PUB_SER)) {
         return 1;
     }
-    if (sh_handler("cmdctl", SUB_REMOTE, &self->ctl_handle)) {
+    if (sh_handle_subscribe("cmdctl", SUB_REMOTE, &self->ctl_handle)) {
         return 1;
     }
     sh_hash_init(&self->clients, 1);
@@ -54,7 +54,7 @@ notify_textinfo(struct module *s, int source, int connid, const char *info) {
     UD_CAST(UM_TEXT, text, ga->wrap);
     ga->connid = connid;
     memcpy(text->str, info, len);
-    sh_module_send(MODULE_ID, source, MT_UM, ga, sizeof(*ga)+sizeof(*text)+len);
+    sh_handle_send(MODULE_ID, source, MT_UM, ga, sizeof(*ga)+sizeof(*text)+len);
 }
 
 static inline void
@@ -67,7 +67,7 @@ check_close_client(struct module *s, struct client* cl) {
             UM_DEFWRAP(UM_GATE, ga, UM_LOGOUT, lo);
             ga->connid = cl->connid;
             lo->err = SERR_OK;
-            sh_module_send(MODULE_ID, cl->gate_source, MT_UM, ga, sizeof(*ga)+sizeof(*lo));
+            sh_handle_send(MODULE_ID, cl->gate_source, MT_UM, ga, sizeof(*ga)+sizeof(*lo));
 
             cl = sh_hash_remove(&self->clients, cl->connid);
             free(cl);
@@ -91,7 +91,7 @@ handle_result(struct module *s, int source, int connid, void *msg, int sz) {
     ga->connid = connid;
     memcpy(text->str, prefix, npre);
     memcpy(text->str+npre, msg, sz);
-    sh_module_send(MODULE_ID, cl->gate_source, MT_UM, ga, sizeof(*ga)+len);
+    sh_handle_send(MODULE_ID, cl->gate_source, MT_UM, ga, sizeof(*ga)+len);
      
     cl->nrecv++;
     check_close_client(s, cl);
@@ -133,7 +133,7 @@ handle_command(struct module *s, int source, int connid, void *msg, int sz) {
     UD_CAST(UM_TEXT, text, cm->wrap);
     cm->connid = connid;
     memcpy(text->str, rptr, sz);
-    int n = sh_module_broadcast(MODULE_ID, self->ctl_handle, MT_UM, cm, sizeof(*cm)+wrapsz);
+    int n = sh_handle_broadcast(MODULE_ID, self->ctl_handle, MT_UM, cm, sizeof(*cm)+wrapsz);
     cl->nsend = n;
     check_close_client(s, cl);
 }

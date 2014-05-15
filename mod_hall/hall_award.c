@@ -47,7 +47,7 @@ _rank(struct module *s, struct player* pr,
     dr->type_old = type_old;
     dr->charid = pr->data.charid;
     dr->score = score;
-    sh_module_send(MODULE_ID, self->rank_handle, MT_UM, dr, sizeof(*dr));
+    sh_handle_send(MODULE_ID, self->rank_handle, MT_UM, dr, sizeof(*dr));
 }
 
 static inline int

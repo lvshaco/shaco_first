@@ -52,7 +52,7 @@ centers_free(struct centers* self) {
 int
 centers_init(struct module* s) {
     struct centers *self = MODULE_SELF;
-    if (sh_handler("node", SUB_LOCAL, &self->node_handle)) {
+    if (sh_handle_subscribe("node", SUB_LOCAL, &self->node_handle)) {
         return 1;
     }
     return 0;
@@ -134,9 +134,9 @@ centers_main(struct module *s, int session, int source, int type, const void *ms
     const char *cmd = A.argv[0];
 
     if (!strcmp(cmd, "REG")) {
-        sh_module_send(MODULE_ID, self->node_handle, MT_TEXT, msg, sz);
+        sh_handle_send(MODULE_ID, self->node_handle, MT_TEXT, msg, sz);
         int nodeid = strtol(A.argv[1], NULL, 10);
-        sh_module_vsend(MODULE_ID, self->node_handle, "BROADCAST %d", nodeid);
+        sh_handle_vsend(MODULE_ID, self->node_handle, "BROADCAST %d", nodeid);
     } else if (!strcmp(cmd, "UNREG")) {
         if (A.argc != 2)
             return;
@@ -164,7 +164,7 @@ centers_main(struct module *s, int session, int source, int type, const void *ms
             }
         }
         tmp[--n] = '\0';
-        sh_module_send(MODULE_ID, source, MT_TEXT, tmp, n);
+        sh_handle_send(MODULE_ID, source, MT_TEXT, tmp, n);
     } else if (!strcmp(cmd, "PUB")) {
         if (A.argc != 2)
             return;
@@ -184,7 +184,7 @@ centers_main(struct module *s, int session, int source, int type, const void *ms
             int sub_handle = slot->subs.p[i];
             if (sh_nodeid_from_handle(sub_handle) !=
                 sh_nodeid_from_handle(source)) {
-                sh_module_vsend(MODULE_ID, slot->subs.p[i],
+                sh_handle_vsend(MODULE_ID, slot->subs.p[i],
                         "HANDLE %s:%04x", name, handle);
             }
         }

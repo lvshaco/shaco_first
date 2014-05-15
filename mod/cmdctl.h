@@ -67,7 +67,7 @@ _response(struct module *s, int source, int connid, const char *msg, int len) {
     int bodysz = min(len, UM_MAXSZ - headsz);
     memcpy(text->str, msg, bodysz);
 
-    sh_module_send(MODULE_ID, source, MT_UM, res, headsz + bodysz);
+    sh_handle_send(MODULE_ID, source, MT_UM, res, headsz + bodysz);
 }
 
 typedef int (*cmdctl_handle_t)(

@@ -35,12 +35,12 @@ hall_init(struct module *s) {
     if (sh_handle_publish(MODULE_NAME, PUB_SER)) {
         return 1;
     }
-    struct sh_monitor_handle h = { MODULE_ID, MODULE_ID };
-    if (sh_monitor("watchdog", &h, &self->watchdog_handle) ||
-        sh_monitor("match", &h, &self->match_handle) ||
-        sh_handler("rpuser", SUB_LOCAL, &self->rpuser_handle) ||
-        sh_handler("rpuseruni", SUB_LOCAL, &self->rpuseruni_handle) ||
-        sh_handler("rank", SUB_LOCAL, &self->rank_handle)) {
+    struct sh_monitor h = { MODULE_ID, MODULE_ID };
+    if (sh_handle_monitor("watchdog", &h, &self->watchdog_handle) ||
+        sh_handle_monitor("match", &h, &self->match_handle) ||
+        sh_handle_subscribe("rpuser", SUB_LOCAL, &self->rpuser_handle) ||
+        sh_handle_subscribe("rpuseruni", SUB_LOCAL, &self->rpuseruni_handle) ||
+        sh_handle_subscribe("rank", SUB_LOCAL, &self->rank_handle)) {
         return 1;
     }
     self->randseed = sh_timer_now()/1000;

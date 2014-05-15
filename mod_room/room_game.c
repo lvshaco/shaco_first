@@ -38,7 +38,7 @@ static inline void
 notify_use_item(struct module *s, struct player *m, uint32_t itemid) {
     UM_DEFFIX(UM_USEITEM_NOTIFY, notify);                                  
     notify->itemid = itemid; 
-    sh_module_send(MODULE_ID, m->watchdog_source, MT_UM, notify, sizeof(*notify));
+    sh_handle_send(MODULE_ID, m->watchdog_source, MT_UM, notify, sizeof(*notify));
 }
 
 static inline void
@@ -119,7 +119,7 @@ notify_exit_room(struct module *s, int source, uint32_t uid) {
     sh_trace("Room notify %u exit room", uid);
     UM_DEFFIX(UM_EXITROOM, exit);
     exit->uid = uid;
-    sh_module_send(MODULE_ID, source, MT_UM, exit, sizeof(*exit));
+    sh_handle_send(MODULE_ID, source, MT_UM, exit, sizeof(*exit));
 }
 
 static inline void
@@ -128,7 +128,7 @@ notify_play_fail(struct module *s, int source, uint32_t uid, int err) {
     UM_DEFWRAP(UM_CLIENT, cl, UM_PLAYFAIL, pf);
     cl->uid = uid;
     pf->err = err;
-    sh_module_send(MODULE_ID, source, MT_UM, cl, sizeof(*cl)+sizeof(*pf));
+    sh_handle_send(MODULE_ID, source, MT_UM, cl, sizeof(*cl)+sizeof(*pf));
 }
 
 static inline void
@@ -137,7 +137,7 @@ notify_create_room_game_result(struct module *s, int dest_handle, uint32_t roomi
     UM_DEFFIX(UM_CREATEROOMRES, result);
     result->id = roomid;
     result->err = err;
-    sh_module_send(MODULE_ID, dest_handle, MT_UM, result, sizeof(*result));
+    sh_handle_send(MODULE_ID, dest_handle, MT_UM, result, sizeof(*result));
 }
 
 static inline void
@@ -147,7 +147,7 @@ notify_join_room_game_result(struct module *s, int source, uint32_t id, uint32_t
     result->id = id;
     result->uid = uid;
     result->err = err;
-    sh_module_send(MODULE_ID, source, MT_UM, result, sizeof(*result));
+    sh_handle_send(MODULE_ID, source, MT_UM, result, sizeof(*result));
 }
 
 static inline void
@@ -158,7 +158,7 @@ notify_award(struct module *s, struct room_game *ro, struct player *m,
     ha->uid  = UID(m);
     ga->type = ro->type;
     ga->award = *award;
-    sh_module_send(MODULE_ID, m->watchdog_source, MT_UM, ha, sizeof(*ha)+sizeof(*ga));
+    sh_handle_send(MODULE_ID, m->watchdog_source, MT_UM, ha, sizeof(*ha)+sizeof(*ga));
 }
 
 static inline void
@@ -170,7 +170,7 @@ notify_item_noeffect(struct module *s, struct player *m, uint32_t initid, uint32
     ie->itemid = itemid;
     ie->use_type = ITEM_USE_T_PICK;
     ie->ntarget = 0;
-    sh_module_send(MODULE_ID, m->watchdog_source, MT_UM, cl, sizeof(*cl)+sizeof(*ie));
+    sh_handle_send(MODULE_ID, m->watchdog_source, MT_UM, cl, sizeof(*cl)+sizeof(*ie));
 }
 
 static void
@@ -184,7 +184,7 @@ multicast_msg(struct module *s, struct room_game* ro, const void *msg, int sz, u
             is_online(m) &&
             is_player(m)) {
             cl->uid = UID(m);
-            sh_module_send(MODULE_ID, m->watchdog_source, MT_UM, cl, sizeof(*cl)+sz);
+            sh_handle_send(MODULE_ID, m->watchdog_source, MT_UM, cl, sizeof(*cl)+sz);
         }
     }
 }
@@ -467,7 +467,7 @@ member_over(struct module *s, struct room_game *ro, struct player *m, int flag) 
         go->nmember = 1;
         go->stats[0] = stat;
         int gosz = UM_GAMEOVER_size(go);
-        sh_module_send(MODULE_ID, m->watchdog_source, MT_UM, cg, sizeof(*cg)+gosz);
+        sh_handle_send(MODULE_ID, m->watchdog_source, MT_UM, cg, sizeof(*cg)+gosz);
     }
    
     if (m->online) {
@@ -554,7 +554,7 @@ game_over(struct module *s, struct room_game* ro, bool death) {
         m = &ro->p[i];
         cg->uid = UID(m);
         if (is_online(m) && is_player(m)) {
-            sh_module_send(MODULE_ID, m->watchdog_source, MT_UM, cg, sizeof(*cg)+gosz);
+            sh_handle_send(MODULE_ID, m->watchdog_source, MT_UM, cg, sizeof(*cg)+gosz);
         }
     }
 
@@ -820,7 +820,7 @@ notify_game_info(struct module *s, struct player *m) {
         }
         gi->nmember = n;
         int sz = UM_GAMEINFO_size(gi);
-        sh_module_send(MODULE_ID, m->watchdog_source, MT_UM, cl, sizeof(*cl) + sz);
+        sh_handle_send(MODULE_ID, m->watchdog_source, MT_UM, cl, sizeof(*cl) + sz);
     }
     UM_DEFFIX(UM_GAMEMEMBER, gm);
     gm->member = m->detail;
@@ -846,7 +846,7 @@ sync_attribute(struct module *s, struct player *m, struct room_game *ro) {
         }
     }
     sz = sizeof(struct UM_ROLEREFRESH) + n*4;
-    sh_module_send(MODULE_ID, m->watchdog_source, MT_UM, cl, sizeof(*ur)+sz);
+    sh_handle_send(MODULE_ID, m->watchdog_source, MT_UM, cl, sizeof(*ur)+sz);
 
     UM_DEFVAR2(UM_ROLEREFRESH, ur2, sizeof(struct UM_ROLEREFRESH) + sizeof(struct char_attribute));
     ur2->charid = m->detail.charid;

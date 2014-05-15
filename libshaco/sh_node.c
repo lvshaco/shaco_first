@@ -4,7 +4,6 @@
 #include "sh_module.h"
 #include "sh_init.h"
 #include "sh_log.h"
-#include "sh_monitor.h"
 #include <stdio.h>
 #include <stdarg.h>
 #include <string.h>
@@ -17,35 +16,30 @@
 #define VHANDLE_MASK (0x10000)
 #define VHANDLE(i) (VHANDLE_MASK | (i))
 
-struct _handle {
+struct rid {
     int id;
     int load;
 };
 
-struct _module {
-    char name[32]; 
+struct rhandle {
+    char *name; 
     int load_iter;
     int cap;
     int sz;
-    struct _handle *phandle;
+    struct rid *p;
+    struct sh_monitor mor;
 };
 
-struct _module_vector {
+static struct {
+    int handle;
     int cap;
     int sz;
-    struct _module *p;
-};
-
-struct remote {
-    int handle;
-    struct _module_vector sers;
-};
-
-static struct remote* R = NULL;
+    struct rhandle *p;
+} *R = NULL;
 
 // handle
 static int
-_add_handle(struct _module *s, int handle) {
+_add_handle(struct rhandle *s, int handle) {
     if (handle == -1) {
         return 1;
     }
@@ -54,24 +48,24 @@ _add_handle(struct _module *s, int handle) {
         s->cap *= 2;
         if (s->cap == 0)
             s->cap = 1;
-        s->phandle = realloc(s->phandle, sizeof(s->phandle[0]) * s->cap);
+        s->p = realloc(s->p, sizeof(s->p[0]) * s->cap);
     }
-    s->phandle[n].id = handle;
-    s->phandle[n].load = 0;
+    s->p[n].id = handle;
+    s->p[n].load = 0;
     s->sz++;
     return 0;
 }
 
 static int
-_rm_handle(struct _module *s, int handle) {
+_rm_handle(struct rhandle *s, int handle) {
     if (handle == -1) {
         return 1;
     }
     int i;
     for (i=0; i<s->sz; ++i) {
-        if (s->phandle[i].id == handle) {
+        if (s->p[i].id == handle) {
             for (; i<s->sz-1; ++i) {
-                s->phandle[i] = s->phandle[i+1];
+                s->p[i] = s->p[i+1];
             }
             s->sz--;
             return 0;
@@ -81,40 +75,39 @@ _rm_handle(struct _module *s, int handle) {
 }
 
 static inline int
-_first_handle(struct _module *s) {
+_first_handle(struct rhandle *s) {
     if (s->sz > 0) {
-        return s->phandle[0].id;
+        return s->p[0].id;
     }
     return -1;
 }
 
 static bool
-_has_handle(struct _module *s, int handle) {
+_has_handle(struct rhandle *s, int handle) {
     int i;
     for (i=0; i<s->sz; ++i) {
-        if (s->phandle[i].id == handle)
+        if (s->p[i].id == handle)
             return true;
     }
     return false;
 }
 
-static inline struct _module *
+static inline struct rhandle *
 _get_module(int vhandle) {
     int id = vhandle & SID_MASK;
-    if (id >= 0 && id < R->sers.sz) {
-        return &R->sers.p[id];
+    if (id >= 0 && id < R->sz) {
+        return &R->p[id];
     }
     return NULL;
 }
 
 static int
 _vhandle(const char *name) {
-    struct _module_vector *sers = &R->sers;
-    struct _module *s;
+    struct rhandle *s;
     int i;
-    int n = sers->sz;
+    int n = R->sz;
     for (i=0; i<n; ++i) {
-        s = &sers->p[i];
+        s = &R->p[i];
         if (!strcmp(s->name, name)) {
             return VHANDLE(i);
         }
@@ -124,41 +117,40 @@ _vhandle(const char *name) {
 
 static int
 _subscribe(const char *name) {
-    struct _module_vector *sers = &R->sers;
-    struct _module *s;
+    struct rhandle *s;
     int vhandle = _vhandle(name);
     if (vhandle != -1) {
         return vhandle;
     }
-    int n = sers->sz;
-    if (n >= sers->cap) {
-        sers->cap *= 2;
-        if (sers->cap == 0)
-            sers->cap = 1;
-        sers->p = realloc(sers->p, sizeof(sers->p[0]) * sers->cap);
+    int n = R->sz;
+    if (n >= R->cap) {
+        R->cap *= 2;
+        if (R->cap == 0)
+            R->cap = 1;
+        R->p = realloc(R->p, sizeof(R->p[0]) * R->cap);
     } 
-    s = &sers->p[n];
+    s = &R->p[n];
     memset(s, 0, sizeof(*s));
-    sh_strncpy(s->name, name, sizeof(s->name));
-    sers->sz++;
+    s->name = malloc(strlen(name)+1);
+    strcpy(s->name, name);
+    R->sz++;
     return VHANDLE(n);
 }
 
 static int
 _register(const char *name, int handle) {
-    struct _module_vector *sers = &R->sers;
-    struct _module *s;
+    struct rhandle *s;
     int i,j;
-    for (i=0; i<sers->sz; ++i) {
-        s = &sers->p[i];
+    for (i=0; i<R->sz; ++i) {
+        s = &R->p[i];
         for (j=0; j<s->sz; ++j) {
-            if (s->phandle[j].id == handle) {
+            if (s->p[j].id == handle) {
                 return -1;
             }
         }
     }
-    for (i=0; i<sers->sz; ++i) {
-        s = &sers->p[i];
+    for (i=0; i<R->sz; ++i) {
+        s = &R->p[i];
         if (!strcmp(s->name, name)) {
             if (!_add_handle(s, handle)) {
                 return VHANDLE(i);
@@ -171,11 +163,10 @@ _register(const char *name, int handle) {
 
 static int
 _unregister(int handle) {
-    struct _module_vector *sers = &R->sers;
-    struct _module *s;
+    struct rhandle *s;
     int i,j;
-    for (i=0; i<sers->sz; ++i) {
-        s = &sers->p[i];
+    for (i=0; i<R->sz; ++i) {
+        s = &R->p[i];
         for (j=0; j<s->sz; ++j) {
             if (!_rm_handle(s, handle)) {
                 sh_info("Handle(%s:%0x) exit", s->name, handle);
@@ -186,75 +177,143 @@ _unregister(int handle) {
     return -1;
 }
 
-int
-sh_module_start(const char *name, int handle, const struct sh_node_addr *addr) {
-    int vhandle = _register(name, handle);
-    if (vhandle != -1) {
-        sh_info("Handle(%s:%0x) start", name, handle);
-        sh_monitor_trigger_start(vhandle, handle, addr);
-        return 0;
-    } else
-        return 1;
+static inline int
+send(int source, int dest, int type, const void *msg, int sz) {
+    if (dest & NODE_MASK) {
+        return module_send(R->handle, 0, source, dest, type, msg, sz);
+    } else {
+        return module_main(dest, 0, source, type, msg, sz);
+    }
 }
 
 int 
-sh_module_exit(int handle) {
-    int vhandle = _unregister(handle);
-    if (vhandle != -1) {
-        sh_monitor_trigger_exit(vhandle, handle);
-        return 0;
-    } else
-        return 1;
+sh_handle_send(int source, int dest, int type, const void *msg, int sz) {
+    if (dest & VHANDLE_MASK) {
+        struct rhandle *s = _get_module(dest);
+        if (s == NULL) {
+            sh_error("No subscribe remote handle %04x", dest);
+            return 1;
+        }
+        int h = _first_handle(s);
+        if (h == -1) {
+            sh_error("No connect remote handle %s:%04x", s->name, dest);
+            return 1;
+        }
+        dest = h;
+    }
+    return send(source, dest, type, msg, sz);
 }
 
 int 
-sh_module_startb(const char *name) {
-    int vhandle = _vhandle(name);
-    if (vhandle != -1) {
-        sh_monitor_trigger_startb(vhandle);
-        return 0;
-    } else
-        return 1;
+sh_handle_broadcast(int source, int dest, int type, const void *msg, int sz) {
+    struct rhandle *s;
+    int i, n=0;
+    if (dest & VHANDLE_MASK) {
+        s = _get_module(dest);
+        if (s) {
+            for (i=0; i<s->sz; ++i) {
+                if (!send(source, s->p[i].id, type, msg, sz)) {
+                    n++;
+                }
+            }
+        }
+    }
+    return n;
 }
 
 int 
-sh_module_starte(const char *name) {
-    int vhandle = _vhandle(name);
-    if (vhandle != -1) {
-        sh_monitor_trigger_starte(vhandle);
-        return 0;
-    } else
+sh_handle_vsend(int source, int dest, const char *fmt, ...) {
+    char msg[2048];
+    va_list ap;
+    va_start(ap, fmt);
+    int n = vsnprintf(msg, sizeof(msg), fmt, ap);
+    va_end(ap);
+    if (n >= sizeof(msg)) {
+        sh_error("Too large msg %s from %0x to %0x", fmt, source, dest);
         return 1;
+    }
+    sh_handle_send(source, dest, MT_TEXT, msg, n);
+    return 0;
 }
 
 int 
-sh_module_subscribe(const char *name, int flag) {
-    if (name[0] == '\0') {
+sh_handle_minload(int vhandle) {
+    struct rhandle *s = _get_module(vhandle);
+    if (s == NULL) {
         return -1;
     }
-    int handle;
+    if (s->sz <= 0) {
+        return -1;
+    }
+    if (s->load_iter >= s->sz) {
+        s->load_iter = 0;
+    }
+    return s->p[s->load_iter++].id;
+}
+
+int 
+sh_handle_nextload(int vhandle) {
+    struct rhandle *s = _get_module(vhandle);
+    if (s == NULL) {
+        return -1;
+    }
+    int minload = INT_MAX;
+    int idx=-1;
+    int n = s->sz;
+    int i;
+    for (i=0; i<n; ++i) {
+        idx = (s->load_iter+i) % n;
+        if (minload > s->p[idx].load) {
+            minload = s->p[idx].load;
+            break;
+        }
+    }
+    if (idx != -1) {
+        s->load_iter = idx+1;
+        return s->p[idx].id;
+    } else {
+        return -1;
+    }
+}
+
+bool 
+sh_handle_exist(int vhandle, int handle) {
+    struct rhandle *s = _get_module(vhandle);
+    if (s) {
+        return _has_handle(s, handle);
+    }
+    return false;
+}
+
+int 
+sh_handle_subscribe(const char *name, int flag, int *handle) {
+    if (name[0] == '\0') {
+        sh_error("Handle subscribe none");
+        return -1;
+    }
     if (flag & SUB_LOCAL) {
-        handle = module_query_id(name);
-        if (handle != -1) {
-            return handle;
+        *handle = module_query_id(name);
+        if (*handle != -1) {
+            return 0;
         }
     }
     if (flag & SUB_REMOTE) {
-        handle = _subscribe(name);
-        if (handle != -1) {
+        *handle = _subscribe(name);
+        if (*handle != -1) {
             char msg[128];
             int n = snprintf(msg, sizeof(msg), "SUB %s", name); 
             if (module_main(R->handle, 0, 0, MT_TEXT, msg, n)) {
-                return -1;
+                return 1;
             }
-            return handle;
+            return 0;
         }
     }
-    return -1;
+    sh_error("Handle subscribe `%s` fail", name);
+    return 1;
 }
 
 int 
-sh_module_publish(const char *name, int flag) {
+sh_handle_publish(const char *name, int flag) {
     int handle = module_query_id(name);
     if (handle == -1) {
         return 1;
@@ -275,144 +334,97 @@ sh_module_publish(const char *name, int flag) {
     return 0;
 }
 
-static inline int
-send(int source, int dest, int type, const void *msg, int sz) {
-    if (dest & NODE_MASK) {
-        return module_send(R->handle, 0, source, dest, type, msg, sz);
-    } else {
-        return module_main(dest, 0, source, type, msg, sz);
-    }
-}
-
+// monitor
 int 
-sh_module_send(int source, int dest, int type, const void *msg, int sz) {
-    if (dest & VHANDLE_MASK) {
-        struct _module *s = _get_module(dest);
-        if (s == NULL) {
-            sh_error("No subscribe remote module %04x", dest);
-            return 1;
-        }
-        int h = _first_handle(s);
-        if (h == -1) {
-            sh_error("No connect remote module %s:%04x", s->name, dest);
-            return 1;
-        }
-        dest = h;
-    }
-    return send(source, dest, type, msg, sz);
-}
-
-int 
-sh_module_broadcast(int source, int dest, int type, const void *msg, int sz) {
-    struct _module *s;
-    int i, n=0;
-    if (dest & VHANDLE_MASK) {
-        s = _get_module(dest);
-        if (s) {
-            for (i=0; i<s->sz; ++i) {
-                if (!send(source, s->phandle[i].id, type, msg, sz)) {
-                    n++;
-                }
-            }
-        }
-    }
-    return n;
-}
-
-int 
-sh_module_vsend(int source, int dest, const char *fmt, ...) {
-    char msg[2048];
-    va_list ap;
-    va_start(ap, fmt);
-    int n = vsnprintf(msg, sizeof(msg), fmt, ap);
-    va_end(ap);
-    if (n >= sizeof(msg)) {
-        sh_error("Too large msg %s from %0x to %0x", fmt, source, dest);
+sh_handle_monitor(const char *name, const struct sh_monitor *h, int *vhandle) {
+    if (sh_handle_subscribe(name, SUB_REMOTE, vhandle)) {
         return 1;
     }
-    sh_module_send(source, dest, MT_TEXT, msg, n);
+    struct rhandle *s = _get_module(*vhandle);
+    assert(s);
+    s->mor.start_handle = h->start_handle;
+    s->mor.exit_handle = h->exit_handle;
     return 0;
 }
 
-int 
-sh_module_minload(int vhandle) {
-    struct _module *s = _get_module(vhandle);
-    if (s == NULL) {
-        return -1;
-    }
-    if (s->sz <= 0) {
-        return -1;
-    }
-    if (s->load_iter >= s->sz) {
-        s->load_iter = 0;
-    }
-    return s->phandle[s->load_iter++].id;
-}
-
-int 
-sh_module_nextload(int vhandle) {
-    struct _module *s = _get_module(vhandle);
-    if (s == NULL) {
-        return -1;
-    }
-    int minload = INT_MAX;
-    int idx=-1;
-    int n = s->sz;
-    int i;
-    for (i=0; i<n; ++i) {
-        idx = (s->load_iter+i) % n;
-        if (minload > s->phandle[idx].load) {
-            minload = s->phandle[idx].load;
-            break;
-        }
-    }
-    if (idx != -1) {
-        s->load_iter = idx+1;
-        return s->phandle[idx].id;
-    } else {
-        return -1;
-    }
-}
-
-bool 
-sh_module_has(int vhandle, int handle) {
-    struct _module *s = _get_module(vhandle);
-    if (s) {
-        return _has_handle(s, handle);
-    }
-    return false;
-}
-
-int 
-sh_handler(const char *name, int flag, int *handle) {
-    *handle = sh_module_subscribe(name, flag);
-    if (*handle == -1) {
-        sh_error("Subscribe handle %s fail", name);
+int
+sh_handle_start(const char *name, int handle, const struct sh_node_addr *addr) {
+    int vhandle = _register(name, handle);
+    if (vhandle == -1)
         return 1;
+    struct rhandle *s = _get_module(vhandle);
+    assert(s);
+    sh_info("Handle(%s:%0x) start", name, handle);
+    
+    int start_handle = s->mor.start_handle;
+    if (start_handle != -1) {
+        uint8_t msg[5 + sizeof(addr->waddr) + 2];
+        uint8_t *p = msg;
+        *p++ = MONITOR_START;
+        sh_to_littleendian32(vhandle, p); p+=4;
+        memcpy(p, addr->waddr, sizeof(addr->waddr)); p+=sizeof(addr->waddr);
+        sh_to_littleendian16(addr->gport, p); p+=2;
+        sh_handle_send(handle, s->mor.start_handle, MT_MONITOR, msg, sizeof(msg));
     }
     return 0;
 }
 
 int 
-sh_monitor(const char *name, const struct sh_monitor_handle *h, int *handle) {
-    *handle = sh_monitor_register(name, h);
-    if (*handle == -1) {
-        sh_error("Monitor handle %s fail", name);
+sh_handle_exit(int handle) {
+    int vhandle = _unregister(handle);
+    if (vhandle == -1)
         return 1;
-    }
-    return 0;
-}
-int 
-sh_handle_publish(const char *name, int flag) {
-    if (sh_module_publish(name, flag)) {
-        sh_error("Publish handle %s fail", name);
-        return 1;
+    struct rhandle *s = _get_module(vhandle);
+    assert(s);
+
+    int exit_handle = s->mor.exit_handle;
+    if (exit_handle != -1) {
+        uint8_t msg[5];
+        msg[0] = MONITOR_EXIT;
+        sh_to_littleendian32(vhandle, &msg[1]);
+        sh_handle_send(handle, exit_handle, MT_MONITOR, msg, sizeof(msg));
     }
     return 0;
 }
 
+int 
+sh_handle_startb(const char *name) {
+    int vhandle = _vhandle(name);
+    if (vhandle == -1)
+        return 1;
+    struct rhandle *s = _get_module(vhandle);
+    assert(s);
+
+    int start_handle = s->mor.start_handle;
+    if (start_handle != -1) {
+        uint8_t msg[5];
+        msg[0] = MONITOR_STARTB;
+        sh_to_littleendian32(vhandle, &msg[1]);
+        sh_handle_send(-1, start_handle, MT_MONITOR, msg, sizeof(msg));
+    }
+    return 0;
+}
+
+int 
+sh_handle_starte(const char *name) {
+    int vhandle = _vhandle(name);
+    if (vhandle == -1)
+        return 1;
+    struct rhandle *s = _get_module(vhandle);
+    assert(s);
+    int start_handle = s->mor.start_handle;
+    if (start_handle != -1) {
+        uint8_t msg[5];
+        msg[0] = MONITOR_STARTE;
+        sh_to_littleendian32(vhandle, &msg[1]);
+        sh_handle_send(-1, start_handle, MT_MONITOR, msg, sizeof(msg));
+    }
+    return 0;
+}
+
+// init
 static void
-sh_node_init() { 
+sh_handle_init() { 
     int handle = module_query_id("node");
     if (handle != -1) {
         if (module_init("node")) {
@@ -430,22 +442,23 @@ sh_node_init() {
 }
 
 static void
-sh_node_fini() {
+sh_handle_fini() {
     if (R == NULL) {
         return;
     }
-    if (R->sers.p) {
+    if (R->p) {
         int i;
-        for (i=0; i<R->sers.sz; ++i) {
-            free(R->sers.p[i].phandle);
+        for (i=0; i<R->sz; ++i) {
+            free(R->p[i].name);
+            free(R->p[i].p);
         }
-        free(R->sers.p);
-        R->sers.p = NULL;
-        R->sers.sz = 0;
-        R->sers.cap = 0;
+        free(R->p);
+        R->p = NULL;
+        R->sz = 0;
+        R->cap = 0;
     }
     free(R);
     R = NULL;
 }
 
-SH_LIBRARY_INIT_PRIO(sh_node_init, sh_node_fini, 25)
+SH_LIBRARY_INIT_PRIO(sh_handle_init, sh_handle_fini, 25)

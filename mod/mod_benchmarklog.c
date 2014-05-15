@@ -21,7 +21,7 @@ benchmarklog_free(struct benchmarklog *self) {
 int
 benchmarklog_init(struct module *s) {
     struct benchmarklog *self = MODULE_SELF;
-    if (sh_handler("gamelog", SUB_REMOTE, &self->log_handle)) {
+    if (sh_handle_subscribe("gamelog", SUB_REMOTE, &self->log_handle)) {
         return 1;
     }
     self->times_persec = sh_getint("benchmarklog_times_persec", 0);
@@ -38,7 +38,7 @@ send_log(struct module *s) {
     for (i=0; i<sizeof(msg); ++i) {
         msg[i] = i%26 + 'A';
     }
-    sh_module_send(MODULE_ID, self->log_handle, MT_TEXT, msg, sizeof(msg)); 
+    sh_handle_send(MODULE_ID, self->log_handle, MT_TEXT, msg, sizeof(msg)); 
 }
 
 void

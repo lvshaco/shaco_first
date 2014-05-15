@@ -50,7 +50,7 @@ sync_addrole(struct module *s, struct player* pr, uint32_t roleid) {
     UM_DEFWRAP(UM_CLIENT, cl, UM_ADDROLE, ar);
     cl->uid  = UID(pr);
     ar->roleid = roleid;
-    sh_module_send(MODULE_ID, pr->watchdog_source, MT_UM, cl, sizeof(*cl) + sizeof(*ar));
+    sh_handle_send(MODULE_ID, pr->watchdog_source, MT_UM, cl, sizeof(*cl) + sizeof(*ar));
 }
 
 static inline void
@@ -61,7 +61,7 @@ sync_userole(struct module *s, struct player* pr) {
     sync->oxygen = pr->data.attri.oxygen;
     sync->body = pr->data.attri.body;
     sync->quick = pr->data.attri.quick;
-    sh_module_send(MODULE_ID, pr->watchdog_source, MT_UM, cl, sizeof(*cl) + sizeof(*sync));
+    sh_handle_send(MODULE_ID, pr->watchdog_source, MT_UM, cl, sizeof(*cl) + sizeof(*sync));
 }
 
 static inline void
@@ -72,7 +72,7 @@ notify_adjust_result(struct module *s, struct player *pr, uint32_t typeid, uint8
     res->role_typeid = typeid;
     res->state_value = state_value;
     res->big_adjust = big_adjust;
-    sh_module_send(MODULE_ID, pr->watchdog_source, MT_UM, cl, sizeof(*cl) + sizeof(*res));
+    sh_handle_send(MODULE_ID, pr->watchdog_source, MT_UM, cl, sizeof(*cl) + sizeof(*res));
 }
 
 static inline void

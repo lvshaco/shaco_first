@@ -18,7 +18,7 @@ echo_main(struct module *s, int session, int source, int type, const void *msg, 
                 break;
                 }
             default:
-                sh_module_send(MODULE_ID, source, type, msg, sz);
+                sh_handle_send(MODULE_ID, source, type, msg, sz);
                 break;
             break;
             }

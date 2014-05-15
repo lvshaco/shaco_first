@@ -30,7 +30,7 @@ char_create(struct chardata *cdata) {
 }
 
 #define SEND_RP(handle) \
-    sh_module_send(MODULE_ID, handle, MT_UM, rq, sizeof(*rq) + RW_CUR(&rw))
+    sh_handle_send(MODULE_ID, handle, MT_UM, rq, sizeof(*rq) + RW_CUR(&rw))
 
 static int
 _db(struct module *s, struct player* p, int8_t type) {

@@ -52,8 +52,8 @@ auth_init(struct module *s) {
     if (sh_handle_publish(MODULE_NAME, PUB_SER)) {
         return 1;
     }
-    if (sh_handler("watchdog", SUB_REMOTE, &self->watchdog_handle) ||
-        sh_handler("rpacc", SUB_LOCAL, &self->rpacc_handle)) {
+    if (sh_handle_subscribe("watchdog", SUB_REMOTE, &self->watchdog_handle) ||
+        sh_handle_subscribe("rpacc", SUB_LOCAL, &self->rpacc_handle)) {
         return 1;
     }
     redis_initreply(&self->reply, 512, 0);
@@ -79,7 +79,7 @@ db(struct module *s, struct user *ur, int8_t type, const char *cmd, int len) {
     memrw_pos(&rw, len);
 
     int msgsz = sizeof(*rq) + RW_CUR(&rw);
-    sh_module_send(MODULE_ID, self->rpacc_handle, MT_UM, rq, msgsz);
+    sh_handle_send(MODULE_ID, self->rpacc_handle, MT_UM, rq, msgsz);
 }
 
 static void
@@ -109,7 +109,7 @@ notify_login_fail(struct module *s, struct user *ur, int err) {
     au->conn = ur->conn;
     au->wsession = ur->wsession;
     fail->err = err;
-    sh_module_send(MODULE_ID, ur->watchdog_source, MT_UM, au, sizeof(*au)+sizeof(*fail));
+    sh_handle_send(MODULE_ID, ur->watchdog_source, MT_UM, au, sizeof(*au)+sizeof(*fail));
 }
 
 static inline void
@@ -118,7 +118,7 @@ notify_login_ok(struct module *s, struct user *ur, uint32_t accid) {
     au->conn = ur->conn;
     au->wsession = ur->wsession;
     ok->accid = accid;
-    sh_module_send(MODULE_ID, ur->watchdog_source, MT_UM, au, sizeof(*au)+sizeof(*ok));
+    sh_handle_send(MODULE_ID, ur->watchdog_source, MT_UM, au, sizeof(*au)+sizeof(*ok));
 }
 
 static void

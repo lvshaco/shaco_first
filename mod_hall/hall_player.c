@@ -55,7 +55,7 @@ logout(struct module *s, struct player *pr) {
         UM_DEFWRAP(UM_MATCH, ma, UM_LOGOUT, lo);
         ma->uid = UID(pr);
         lo->err = SERR_OK;
-        sh_module_send(MODULE_ID, self->match_handle, MT_UM, ma, sizeof(*ma)+sizeof(*lo)); 
+        sh_handle_send(MODULE_ID, self->match_handle, MT_UM, ma, sizeof(*ma)+sizeof(*lo)); 
     } 
     hall_playerdb_save(s, pr, true);
     free_player(self, pr); 

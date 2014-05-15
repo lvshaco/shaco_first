@@ -30,7 +30,7 @@ sendcmd(struct module *s, const char* cmd) {
     memrw_init(&rw, rq->data, UM_MAXSZ - sizeof(*rq));
     memrw_write(&rw, cmd, len);
     int msgsz = sizeof(*rq) + RW_CUR(&rw);
-    sh_module_send(MODULE_ID, self->rpuser_handle, MT_UM, rq, msgsz);
+    sh_handle_send(MODULE_ID, self->rpuser_handle, MT_UM, rq, msgsz);
     self->query_send++;
 }
 
@@ -80,7 +80,7 @@ benchmarkdb_init(struct module* s) {
     if (sh_handle_publish(MODULE_NAME, PUB_SER)) {
         return 1;
     }
-    if (sh_handler("rpuser", SUB_REMOTE, &self->rpuser_handle)) {
+    if (sh_handle_subscribe("rpuser", SUB_REMOTE, &self->rpuser_handle)) {
         return 1;
     }
     redis_initreply(&self->reply, 512, 0);

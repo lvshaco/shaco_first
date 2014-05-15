@@ -198,7 +198,7 @@ pull(struct module *s, int source, struct UM_ROBOT_PULL *rp) {
         ra->info.target.type = rp->target.type;
         ra->info.target.id = rp->target.id;
         build_brief(ag, &ra->info.brief);
-        sh_module_send(MODULE_ID, source, MT_UM, ra, sizeof(*ra)); 
+        sh_handle_send(MODULE_ID, source, MT_UM, ra, sizeof(*ra)); 
         sh_trace("Robot %u pull", UID(ag));
     } else {
         sh_trace("Robot none to pull");
@@ -223,13 +223,13 @@ enter_room(struct module *s, struct agent *ag, struct UM_ENTERROOM *er) {
         sh_trace("Robot %u receive enter room, but status %d", UID(ag), ag->status);
         return;
     }
-    if (sh_module_has(self->room_handle, er->room_handle)) {
+    if (sh_handle_exist(self->room_handle, er->room_handle)) {
         agent_fight(self, ag);
         UM_DEFFIX(UM_ROBOT_LOGINROOM, lr);
         lr->roomid = er->roomid;
         lr->ai = ag->ai;
         build_detail(ag, &lr->detail);
-        sh_module_send(MODULE_ID, er->room_handle, MT_UM, lr, sizeof(*lr));
+        sh_handle_send(MODULE_ID, er->room_handle, MT_UM, lr, sizeof(*lr));
         sh_trace("Robot %u send enter room to handle %x", UID(ag), er->room_handle);
     } else {
         agent_rest(self, ag);
@@ -249,7 +249,7 @@ exit_room(struct module *s, uint32_t uid) {
         UM_DEFWRAP(UM_MATCH, ma, UM_LOGOUT, lo);
         ma->uid = UID(ag);
         lo->err = SERR_OK;
-        sh_module_send(MODULE_ID, self->match_handle, MT_UM, ma, sizeof(*ma)+sizeof(*lo));
+        sh_handle_send(MODULE_ID, self->match_handle, MT_UM, ma, sizeof(*ma)+sizeof(*lo));
         sh_trace("Robot %u notify match exit room", UID(ag));
     } else {
         sh_trace("Robot %u receive exit room, but status %d", UID(ag), ag->status);
@@ -281,9 +281,9 @@ robot_init(struct module* s) {
     if (sh_handle_publish(MODULE_NAME, PUB_SER)) {
         return 1;
     }
-    struct sh_monitor_handle h = {MODULE_ID, MODULE_ID};
-    if (sh_monitor("match", &h, &self->match_handle) ||
-        sh_monitor("room", &h, &self->room_handle)) {
+    struct sh_monitor h = {MODULE_ID, MODULE_ID};
+    if (sh_handle_monitor("match", &h, &self->match_handle) ||
+        sh_handle_monitor("room", &h, &self->room_handle)) {
         return 1;
     }
     if (robot_tplt_init(self)) {

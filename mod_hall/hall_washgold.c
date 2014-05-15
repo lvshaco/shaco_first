@@ -11,7 +11,7 @@ sync_washgold_info(struct module *s, struct player *pr) {
     UM_DEFWRAP(UM_CLIENT, cl, UM_WASHGOLD_INFO, wi);
     cl->uid  = UID(pr);
     wi->washgold = pr->data.washgold; 
-    sh_module_send(MODULE_ID, pr->watchdog_source, MT_UM, cl, sizeof(*cl) + sizeof(*wi));
+    sh_handle_send(MODULE_ID, pr->watchdog_source, MT_UM, cl, sizeof(*cl) + sizeof(*wi));
 
 }
 
@@ -22,7 +22,7 @@ sync_washgold_result(struct module *s, struct player *pr, uint8_t gain, uint8_t 
     wr->gain = gain;
     wr->extra_gain = extra;
     wr->washgold = pr->data.washgold; 
-    sh_module_send(MODULE_ID, pr->watchdog_source, MT_UM, cl, sizeof(*cl) + sizeof(*wr));
+    sh_handle_send(MODULE_ID, pr->watchdog_source, MT_UM, cl, sizeof(*cl) + sizeof(*wr));
 }
 
 static inline void

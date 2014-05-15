@@ -37,7 +37,7 @@ notify_match_down(struct module *s, struct player *pr) {
     UM_DEFWRAP(UM_CLIENT, cl, UM_PLAYFAIL, pf);
     cl->uid = UID(pr);
     pf->err = SERR_MATCHEXIT;
-    sh_module_send(MODULE_ID, pr->watchdog_source, MT_UM, cl, sizeof(*cl)+sizeof(*pf));
+    sh_handle_send(MODULE_ID, pr->watchdog_source, MT_UM, cl, sizeof(*cl)+sizeof(*pf));
 }
 
 static void
@@ -64,7 +64,7 @@ play(struct module *s, struct player *pr, int type) {
         ap->info.target.type = APPLY_TARGET_TYPE_NONE;
         ap->info.target.id = 0;
         build_brief(pr, &ap->info.brief);
-        sh_module_send(MODULE_ID, self->match_handle, MT_UM, ap, sizeof(*ap));
+        sh_handle_send(MODULE_ID, self->match_handle, MT_UM, ap, sizeof(*ap));
         sh_trace("Play %u send play to match", UID(pr));
     } else {
         sh_trace("Play %u request play, but status %d", UID(pr), pr->status);
@@ -78,7 +78,7 @@ play_cancel(struct module *s, struct player *pr) {
         pr->status = PS_HALL;
         UM_DEFWRAP(UM_MATCH, ma, UM_APPLYCANCEL, ac);
         ma->uid = UID(pr);
-        sh_module_send(MODULE_ID, self->match_handle, MT_UM, ma, sizeof(*ma)+sizeof(*ac));
+        sh_handle_send(MODULE_ID, self->match_handle, MT_UM, ma, sizeof(*ma)+sizeof(*ac));
         sh_trace("Play %u notify match play cancel", UID(pr));
     } else {
         sh_trace("Play %u receive play cancel, but status %d", UID(pr), pr->status);
@@ -93,7 +93,7 @@ play_fail(struct module *s, struct player *pr, struct UM_PLAYFAIL *fail) {
     UM_DEFWRAP(UM_CLIENT, cl, UM_PLAYFAIL, pl);
     cl->uid = UID(pr);
     *pl = *fail;
-    sh_module_send(MODULE_ID, pr->watchdog_source, MT_UM, cl, sizeof(*cl)+sizeof(*pl));
+    sh_handle_send(MODULE_ID, pr->watchdog_source, MT_UM, cl, sizeof(*cl)+sizeof(*pl));
     sh_trace("Play %u notify client play fail", UID(pr));
 }
 
@@ -103,7 +103,7 @@ waiting(struct module *s, struct player *pr, struct UM_PLAYWAIT *wait) {
         UM_DEFWRAP(UM_CLIENT, cl, UM_PLAYWAIT, wt);
         cl->uid = UID(pr);
         *wt = *wait;
-        sh_module_send(MODULE_ID, pr->watchdog_source, MT_UM, cl, sizeof(*cl)+sizeof(*wt));
+        sh_handle_send(MODULE_ID, pr->watchdog_source, MT_UM, cl, sizeof(*cl)+sizeof(*wt));
         sh_trace("Play %u notify client waiting", UID(pr));
     } else {
         sh_trace("Play %u receive waiting, but status %d", UID(pr), pr->status);
@@ -120,7 +120,7 @@ enter_room(struct module *s, struct player *pr, struct UM_ENTERROOM *er) {
         lr->roomid = er->roomid;
         lr->luck_factor = pr->data.luck_factor;
         build_detail(pr, &lr->detail);
-        sh_module_send(MODULE_ID, pr->watchdog_source, MT_UM, lr, sizeof(*lr));
+        sh_handle_send(MODULE_ID, pr->watchdog_source, MT_UM, lr, sizeof(*lr));
         sh_trace("Play %u notify client enter room", UID(pr));
     } else {
         sh_trace("Play %u receive enter room, but status %d", UID(pr), pr->status);
@@ -135,7 +135,7 @@ exit_room(struct module *s, struct player *pr) {
         UM_DEFWRAP(UM_MATCH, ma, UM_LOGOUT, lo);
         ma->uid = UID(pr);
         lo->err = SERR_OK;
-        sh_module_send(MODULE_ID, self->match_handle, MT_UM, ma, sizeof(*ma)+sizeof(*lo));
+        sh_handle_send(MODULE_ID, self->match_handle, MT_UM, ma, sizeof(*ma)+sizeof(*lo));
         sh_trace("Play %u notify match exit room", UID(pr));
     } else {
         sh_trace("Play %u receive exit room, but status %d", UID(pr), pr->status);
@@ -146,7 +146,7 @@ static void
 over_room(struct module *s, struct player *pr, struct UM_OVERROOM *or) {
     if (pr->status == PS_ROOM) {
         pr->status = PS_HALL;
-        sh_module_send(MODULE_ID, pr->watchdog_source, MT_UM, or, sizeof(*or));
+        sh_handle_send(MODULE_ID, pr->watchdog_source, MT_UM, or, sizeof(*or));
         sh_trace("Play %u notify client over room, err %d", UID(pr), or->err);
     } else {
         sh_trace("Play %u receive over room, but status %d", UID(pr), pr->status);

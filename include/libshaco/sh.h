@@ -9,7 +9,6 @@
 #include "sh_reload.h"
 #include "sh_module.h"
 #include "sh_timer.h"
-#include "sh_monitor.h"
 #include "sh_util.h"
 #include "sh_hash.h"
 #include "sh_array.h"

@@ -54,7 +54,7 @@ update_load(struct module *s, bool force) {
 
         UM_DEFFIX(UM_UPDATELOAD, load);
         load->value = cur_load;
-        sh_module_send(MODULE_ID, self->load_handle, MT_UM, load, sizeof(*load));
+        sh_handle_send(MODULE_ID, self->load_handle, MT_UM, load, sizeof(*load));
 
         self->last_load = cur_load;
         self->last_load_time = now;
@@ -205,16 +205,16 @@ gate_init(struct module* s) {
     const char* hname = sh_getstr("gate_handler", "");
     self->handler = module_query_id(hname);
     if (self->handler == -1) {
-        struct sh_monitor_handle h = { MODULE_ID, MODULE_ID };
-        if (sh_monitor(hname, &h, &self->handler)) {
+        struct sh_monitor h = { MODULE_ID, MODULE_ID };
+        if (sh_handle_monitor(hname, &h, &self->handler)) {
             return 1;
         }
     }
     self->load_handle = -1;
     const char *lname = sh_getstr("gate_load", "");
     if (lname[0] != '\0') {
-        struct sh_monitor_handle h = { MODULE_ID, -1 };
-        if (sh_monitor(lname, &h, &self->load_handle)) {
+        struct sh_monitor h = { MODULE_ID, -1 };
+        if (sh_handle_monitor(lname, &h, &self->load_handle)) {
             return 1;
         }
     }
@@ -257,7 +257,7 @@ handle(struct module *s, struct client* c, const void *msg, int sz) {
         memcpy(ga->wrap, msg, sz);
 
         sh_trace("Client %d receive msg: %u", c->connid, um->msgid);
-        sh_module_send(MODULE_ID, self->handler, MT_UM, ga, sizeof(*ga)+sz);
+        sh_handle_send(MODULE_ID, self->handler, MT_UM, ga, sizeof(*ga)+sz);
     }
     return 0;
 }
@@ -332,7 +332,7 @@ gate_net(struct module* s, struct net_message* nm) {
                 ga->connid = id;
                 nd->type = NETE_SOCKERR;
                 nd->err  = nm->error;
-                sh_module_send(MODULE_ID, self->handler, MT_UM, ga, sizeof(*ga) + sizeof(*nd));
+                sh_handle_send(MODULE_ID, self->handler, MT_UM, ga, sizeof(*ga) + sizeof(*nd));
             }
             disconnect_client(s, c, true);
         }
@@ -372,7 +372,7 @@ gate_time(struct module* s) {
                 ga->connid = c->connid;
                 nd->type = NETE_TIMEOUT;
                 nd->err  = 0;
-                sh_module_send(MODULE_ID, self->handler, MT_UM, ga, sizeof(*ga) + sizeof(*nd));
+                sh_handle_send(MODULE_ID, self->handler, MT_UM, ga, sizeof(*ga) + sizeof(*nd));
 
                 disconnect_client(s, c, true);
             }

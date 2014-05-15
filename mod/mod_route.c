@@ -38,9 +38,9 @@ route_init(struct module *s) {
     if (sh_handle_publish(MODULE_NAME, PUB_SER)) {
         return 1;
     }
-    struct sh_monitor_handle h = { -1, MODULE_ID };
+    struct sh_monitor h = { -1, MODULE_ID };
     const char *loadbalance = sh_getstr("route_loadbalance", "");
-    if (sh_monitor(loadbalance, &h, &self->loadbalance_handle)) {
+    if (sh_handle_monitor(loadbalance, &h, &self->loadbalance_handle)) {
         return 1;
     }
     return 0;
@@ -138,20 +138,20 @@ gate(struct module *s, int source, int connid, const void *msg, int sz) {
         ga->connid = connid;
         memcpy(ok->ip, one->ip, sizeof(one->ip));
         ok->port = one->port;
-        sh_module_send(MODULE_ID, source, MT_UM, ga, sizeof(*ga) + sizeof(*ok));
+        sh_handle_send(MODULE_ID, source, MT_UM, ga, sizeof(*ga) + sizeof(*ok));
         sh_trace("Route client %d get %s:%u handle %x load %d", 
                 connid, one->ip, one->port, one->handle, one->load);
     } else {
         UM_DEFWRAP(UM_GATE, ga, UM_GATEADDRFAIL, fail);
         ga->connid = connid;
-        sh_module_send(MODULE_ID, source, MT_UM, ga, sizeof(*ga) + sizeof(*fail));
+        sh_handle_send(MODULE_ID, source, MT_UM, ga, sizeof(*ga) + sizeof(*fail));
         sh_trace("Route client %d get fail", connid);
     }
     {
         UM_DEFWRAP(UM_GATE, ga, UM_LOGOUT, lo);
         ga->connid = connid;
         lo->err = SERR_OKUNFORCE;
-        sh_module_send(MODULE_ID, source, MT_UM, ga, sizeof(*ga) + sizeof(*lo));
+        sh_handle_send(MODULE_ID, source, MT_UM, ga, sizeof(*ga) + sizeof(*lo));
     }
 }
 

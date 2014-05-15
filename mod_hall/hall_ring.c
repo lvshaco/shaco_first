@@ -15,7 +15,7 @@ sync_ringpage(struct module *s, struct player* pr) {
     UM_DEFWRAP(UM_CLIENT, cl, UM_RINGPAGESYNC, sy);
     cl->uid = UID(pr);
     sy->curpage = pr->data.ringdata.npage;
-    sh_module_send(MODULE_ID, pr->watchdog_source, MT_UM, cl, sizeof(*cl) + sizeof(*sy));
+    sh_handle_send(MODULE_ID, pr->watchdog_source, MT_UM, cl, sizeof(*cl) + sizeof(*sy));
 }
 
 static struct ringpage*

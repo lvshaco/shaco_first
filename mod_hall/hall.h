@@ -33,7 +33,7 @@ hall_notify_logout(struct module *s, struct player *pr, int err) {
     UM_DEFFIX(UM_EXITHALL, exit);
     exit->uid = UID(pr);
     exit->err = err;
-    sh_module_send(MODULE_ID, pr->watchdog_source, MT_UM, exit, sizeof(*exit));
+    sh_handle_send(MODULE_ID, pr->watchdog_source, MT_UM, exit, sizeof(*exit));
 }
 
 static inline void
@@ -41,7 +41,7 @@ hall_notify_login_fail(struct module *s, struct player *pr, int err) {
     UM_DEFWRAP(UM_CLIENT, cl, UM_LOGINFAIL, lf);
     cl->uid = pr->data.accid;
     lf->err = err;
-    sh_module_send(MODULE_ID, pr->watchdog_source, MT_UM, cl, sizeof(*cl)+sizeof(*lf));
+    sh_handle_send(MODULE_ID, pr->watchdog_source, MT_UM, cl, sizeof(*cl)+sizeof(*lf));
 }
 
 static inline void
@@ -49,7 +49,7 @@ hall_sync_role(struct module *s, struct player* pr) {
     UM_DEFWRAP(UM_CLIENT, cl, UM_CHARINFO, ci);
     cl->uid  = UID(pr);
     ci->data = pr->data;
-    sh_module_send(MODULE_ID, pr->watchdog_source, MT_UM, cl, sizeof(*cl) + sizeof(*ci));
+    sh_handle_send(MODULE_ID, pr->watchdog_source, MT_UM, cl, sizeof(*cl) + sizeof(*ci));
 }
 
 static inline void
@@ -58,7 +58,7 @@ hall_sync_money(struct module *s, struct player* pr) {
     cl->uid  = UID(pr);
     sync->coin = pr->data.coin;
     sync->diamond = pr->data.diamond;
-    sh_module_send(MODULE_ID, pr->watchdog_source, MT_UM, cl, sizeof(*cl) + sizeof(*sync));
+    sh_handle_send(MODULE_ID, pr->watchdog_source, MT_UM, cl, sizeof(*cl) + sizeof(*sync));
 }
 
 static inline void
@@ -67,7 +67,7 @@ hall_sync_exp(struct module *s, struct player* pr) {
     cl->uid  = UID(pr);
     sync->level = pr->data.level;
     sync->exp = pr->data.exp;
-    sh_module_send(MODULE_ID, pr->watchdog_source, MT_UM, cl, sizeof(*cl) + sizeof(*sync));
+    sh_handle_send(MODULE_ID, pr->watchdog_source, MT_UM, cl, sizeof(*cl) + sizeof(*sync));
 }
 
 static inline void
@@ -76,7 +76,7 @@ hall_sync_state(struct module *s, struct player *pr, uint32_t typeid, uint8_t st
     cl->uid  = UID(pr);
     sync->role_typeid = typeid;
     sync->state_value = state_value;
-    sh_module_send(MODULE_ID, pr->watchdog_source, MT_UM, cl, sizeof(*cl) + sizeof(*sync));
+    sh_handle_send(MODULE_ID, pr->watchdog_source, MT_UM, cl, sizeof(*cl) + sizeof(*sync));
 }
 
 #endif

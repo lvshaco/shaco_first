@@ -37,16 +37,16 @@ loadbalance_free(struct loadbalance *self) {
 int
 loadbalance_init(struct module *s) {
     struct loadbalance *self = MODULE_SELF;
-    struct sh_monitor_handle h = { MODULE_ID, MODULE_ID };
+    struct sh_monitor h = { MODULE_ID, MODULE_ID };
     if (sh_handle_publish(MODULE_NAME, PUB_SER)) {
         return 1;
     }
     const char *publisher = sh_getstr("loadbalance_publisher", ""); 
-    if (sh_monitor(publisher, &h, &self->publisher_vhandle)) {
+    if (sh_handle_monitor(publisher, &h, &self->publisher_vhandle)) {
         return 1;
     }
     const char *subscriber = sh_getstr("loadbalance_subscriber", "");
-    if (sh_monitor(subscriber, &h, &self->subscriber_vhandle)) {
+    if (sh_handle_monitor(subscriber, &h, &self->subscriber_vhandle)) {
         return 1;
     }
     if (self->publisher_vhandle == self->subscriber_vhandle) {
@@ -109,7 +109,7 @@ publisher_start(struct module *s, int handle, const void *msg, int sz) {
 
     UM_DEFVAR(UM_SERVICEADD, sa);
     sa->info = *one;
-    sh_module_broadcast(MODULE_ID, self->subscriber_vhandle, MT_UM, sa, sizeof(*sa));
+    sh_handle_broadcast(MODULE_ID, self->subscriber_vhandle, MT_UM, sa, sizeof(*sa));
 }
 
 static inline void
@@ -120,7 +120,7 @@ publisher_exit(struct module *s, int handle) {
     }
     UM_DEFFIX(UM_SERVICEDEL, sd);
     sd->handle = handle;
-    sh_module_broadcast(MODULE_ID, self->subscriber_vhandle, MT_UM, sd, sizeof(*sd));
+    sh_handle_broadcast(MODULE_ID, self->subscriber_vhandle, MT_UM, sd, sizeof(*sd));
 }
 
 static inline void
@@ -129,7 +129,7 @@ subscriber_start(struct module *s, int handle) {
     UM_DEFVAR(UM_SERVICEINIT, si);
     si->ninfo = self->publishers.sz;
     memcpy(si->info, self->publishers.p, sizeof(si->info[0])* si->ninfo);
-    sh_module_send(MODULE_ID, handle, MT_UM, si, UM_SERVICEINIT_size(si));
+    sh_handle_send(MODULE_ID, handle, MT_UM, si, UM_SERVICEINIT_size(si));
 }
 
 static void
@@ -150,7 +150,7 @@ update_load(struct module *s, int handle, int load) {
     UM_DEFFIX(UM_SERVICELOAD, sl);
     sl->handle = one->handle;
     sl->load = one->load;
-    sh_module_broadcast(MODULE_ID, self->subscriber_vhandle, MT_UM, sl, sizeof(*sl));
+    sh_handle_broadcast(MODULE_ID, self->subscriber_vhandle, MT_UM, sl, sizeof(*sl));
 }
 
 static void

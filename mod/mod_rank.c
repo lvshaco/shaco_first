@@ -30,7 +30,7 @@ rank_init(struct module* s) {
     if (sh_handle_publish(MODULE_NAME, PUB_SER)) {
         return 1;
     }
-    if (sh_handler("rprank", SUB_REMOTE, &self->rprank_handle))
+    if (sh_handle_subscribe("rprank", SUB_REMOTE, &self->rprank_handle))
         return 1;
     redis_initreply(&self->reply, 512, 0);
     return 0;
@@ -45,7 +45,7 @@ db(struct module *s, const char *cmd, int len) {
     assert(len < UM_MAXSZ - sizeof(*rq));
     memcpy(rq->data, cmd, len);
     int msgsz = sizeof(*rq) + len;
-    return sh_module_send(MODULE_ID, self->rprank_handle, MT_UM, rq, msgsz);
+    return sh_handle_send(MODULE_ID, self->rprank_handle, MT_UM, rq, msgsz);
 }
 
 static void
@@ -111,7 +111,7 @@ _query_refresh_time(struct module *s, const char* type) {
             "GET rank:%s_refresh_time\r\n", type);
     memrw_pos(&rw, len);
     int msgsz = sizeof(*rq) + RW_CUR(&rw);
-    return sh_module_send(MODULE_SELF, self->rprank_handle, MT_UM, rq, msgsz);
+    return sh_handle_send(MODULE_SELF, self->rprank_handle, MT_UM, rq, msgsz);
 }
 */
 static void

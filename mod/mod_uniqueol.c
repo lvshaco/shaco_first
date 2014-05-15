@@ -91,7 +91,7 @@ shandle_check_ready(struct module *s) {
     shandle_fini(self);
 
     UM_DEFFIX(UM_UNIQUEREADY, ready);
-    sh_module_broadcast(MODULE_ID, self->requester_handle, MT_UM, ready, sizeof(*ready));
+    sh_handle_broadcast(MODULE_ID, self->requester_handle, MT_UM, ready, sizeof(*ready));
 }
 
 struct uniqueol *
@@ -118,9 +118,9 @@ uniqueol_init(struct module *s) {
     if (sh_handle_publish(MODULE_NAME, PUB_SER)) {
         return 1;
     }
-    struct sh_monitor_handle h = { MODULE_ID, MODULE_ID };
+    struct sh_monitor h = { MODULE_ID, MODULE_ID };
     const char *requester = sh_getstr("uniqueol_requester", "");
-    if (sh_monitor(requester, &h, &self->requester_handle)) {
+    if (sh_handle_monitor(requester, &h, &self->requester_handle)) {
         return 1;
     }
     sh_hash_init(&self->uni, UNIQUE_INIT);
@@ -143,7 +143,7 @@ umsg(struct module *s, int source, const void *msg, int sz) {
         UM_DEFFIX(UM_UNIQUESTATUS, st);
         st->id = use->id;
         st->status = status;
-        sh_module_send(MODULE_ID, source, MT_UM, st, sizeof(*st));
+        sh_handle_send(MODULE_ID, source, MT_UM, st, sizeof(*st));
         }
         break;
     case IDUM_UNIQUEUNUSE: {
@@ -198,7 +198,7 @@ monitor(struct module *s, int source, const void *msg, int sz) {
             if (self->ready) {
                 sh_trace("Uniqueol notify ready to handle %04x", source);
                 UM_DEFFIX(UM_UNIQUEREADY, ready);
-                sh_module_send(MODULE_ID, source, MT_UM, ready, sizeof(*ready));
+                sh_handle_send(MODULE_ID, source, MT_UM, ready, sizeof(*ready));
             }
         }
         break;

@@ -33,8 +33,8 @@ bug_init(struct module *s) {
         return 1;
     }
     int source_handle;
-    if (sh_handler(sh_getstr("bug_source", ""), SUB_REMOTE, &source_handle) ||
-        sh_handler("rpbug", SUB_LOCAL, &self->rpbug_handle)) {
+    if (sh_handle_subscribe(sh_getstr("bug_source", ""), SUB_REMOTE, &source_handle) ||
+        sh_handle_subscribe("rpbug", SUB_LOCAL, &self->rpbug_handle)) {
         return 1;
     }
     redis_initreply(&self->reply, 512, 0);
@@ -46,7 +46,7 @@ logout(struct module *s, int source, uint32_t client, int err) {
     UM_DEFWRAP(UM_BUG, bu, UM_BUGSUBMITRES, sr);
     bu->client = client;
     sr->err = err;
-    sh_module_send(MODULE_ID, source, MT_UM, bu, sizeof(*bu) + sizeof(*sr));
+    sh_handle_send(MODULE_ID, source, MT_UM, bu, sizeof(*bu) + sizeof(*sr));
 }
 
 static void
@@ -70,7 +70,7 @@ submit(struct module *s, int source, uint32_t client, const char *text, int sz) 
     memrw_pos(&rw, len);
 
     int msgsz = sizeof(*rq) + RW_CUR(&rw);
-    sh_module_send(MODULE_ID, self->rpbug_handle, MT_UM, rq, msgsz);
+    sh_handle_send(MODULE_ID, self->rpbug_handle, MT_UM, rq, msgsz);
 }
 
 static void

@@ -29,7 +29,7 @@ cmdctl_init(struct module* s) {
         return 1;
     }
     int handle;
-    if (sh_handler("cmds", SUB_REMOTE, &handle)) {
+    if (sh_handle_subscribe("cmds", SUB_REMOTE, &handle)) {
         return 1;
     }
     if (module_query_id("centers") == -1)
@@ -116,7 +116,7 @@ command(struct module *s, int source, int connid, const char *msg, int len, stru
             int headsz = sizeof(*cmds) + sizeof(*text);
             int bodysz = min(UM_MAXSZ - headsz, subsz);
             memcpy(text->str, p+1, bodysz);
-            sh_module_send(source, handle, MT_CMD, cmds, headsz + bodysz);
+            sh_handle_send(source, handle, MT_CMD, cmds, headsz + bodysz);
             return CTL_FORWARD;
         } else {
             return CTL_NOMODULE;
