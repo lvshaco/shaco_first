@@ -195,7 +195,7 @@ sh_log_init() {
     const char* level; 
     _LOG_SERVICE = module_query_id("log");
     if (_LOG_SERVICE != MODULE_INVALID) {
-        if (module_prepare("log")) {
+        if (module_init("log")) {
             _LOG_SERVICE = MODULE_INVALID;
             sh_exit("log init fail");
         }

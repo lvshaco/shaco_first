@@ -275,34 +275,9 @@ sh_module_publish(const char *name, int flag) {
     return 0;
 }
 
-static inline void
-debug_msg(int source, int dest, int type, const void *msg, int sz) {
-    const char *name = "";
-    if (!(source >> 8)) {
-        name = module_query_module_name(source&0xff);
-    }
-    switch (type) {
-    case MT_TEXT: {
-        char tmp[sz+1];
-        memcpy(tmp, msg, sz);
-        tmp[sz] = '\0';
-        sh_debug("[%s - %04x] [T] %s", name, dest, tmp);
-        break;
-        }
-    case MT_UM:
-        if (sz >= 2) {
-        uint16_t msgid = sh_from_littleendian16((uint8_t *)msg);
-        sh_debug("[%s - %04x] [U] %u", name, dest, msgid);
-        }
-        break;
-    } 
-}
-
-
 static inline int
 send(int source, int dest, int type, const void *msg, int sz) {
     if (dest & NODE_MASK) {
-        debug_msg(source, dest, type, msg, sz);
         return module_send(R->handle, 0, source, dest, type, msg, sz);
     } else {
         return module_main(dest, 0, source, type, msg, sz);
@@ -335,7 +310,6 @@ sh_module_broadcast(int source, int dest, int type, const void *msg, int sz) {
         s = _get_module(dest);
         if (s) {
             for (i=0; i<s->sz; ++i) {
-                debug_msg(source, dest, type, msg, sz);
                 if (!send(source, s->phandle[i].id, type, msg, sz)) {
                     n++;
                 }
@@ -441,7 +415,7 @@ static void
 sh_node_init() { 
     int handle = module_query_id("node");
     if (handle != -1) {
-        if (module_prepare("node")) {
+        if (module_init("node")) {
             handle = -1;
             sh_exit("node init fail");
         }

@@ -60,7 +60,6 @@ libshaco_src=\
 	libshaco/sh_reload.c \
 	libshaco/sh_node.c \
 	libshaco/sh_monitor.c \
- 	libshaco/dlmodule.c \
 	libshaco/sh_util.c \
 	libshaco/sh_hash.c \
 	libshaco/sh_array.c

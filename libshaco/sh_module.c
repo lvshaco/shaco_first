@@ -10,15 +10,123 @@
 #include <string.h>
 #include <assert.h>
 
+#define MOD_LEN 32
+
+// dl
+static void
+_dlclose(struct dlmodule* dl) {
+    assert(dl->handle);
+    dlclose(dl->handle);
+    dl->handle = NULL;
+    dl->create = NULL;
+    dl->free = NULL;
+    dl->init = NULL;
+    dl->time = NULL;
+    dl->net  = NULL;
+    dl->send = NULL;
+    dl->main = NULL;
+}
+
+static int
+_dlopen(struct dlmodule* dl) {
+    assert(dl->handle == NULL);
+
+    int len = strlen(dl->name);
+    char name[len+7+1];
+    int n = snprintf(name, sizeof(name), "mod_%s.so", dl->name);
+
+    char fname[n+2+1];
+    snprintf(fname, sizeof(fname), "./%s", name);
+    void* handle = dlopen(fname, RTLD_NOW | RTLD_LOCAL);
+    if (handle == NULL) {
+        sh_error("Module %s open error: %s", fname, dlerror());
+        return 1;
+    }
+    
+    dl->handle = handle;
+
+    char sym[len+10+1];
+    strcpy(sym, dl->name);
+    strcpy(sym+len, "_create");
+    dl->create = dlsym(handle, sym);
+    strcpy(sym+len, "_free");
+    dl->free = dlsym(handle, sym);
+    strcpy(sym+len, "_init");
+    dl->init = dlsym(handle, sym);
+    strcpy(sym+len, "_time");
+    dl->time = dlsym(handle, sym);
+    strcpy(sym+len, "_net");
+    dl->net = dlsym(handle, sym);
+    strcpy(sym+len, "_send");
+    dl->send = dlsym(handle, sym);
+    strcpy(sym+len, "_main");
+    dl->main = dlsym(handle, sym);
+ 
+    if (dl->main == NULL &&
+        dl->send == NULL &&
+        dl->net  == NULL &&
+        dl->time == NULL) {
+        sh_error("Module %s no symbol", fname);
+        _dlclose(dl);
+        return 1;
+    }
+    if (dl->create && 
+        dl->free == NULL) {
+        sh_error("Module %s probably memory leak", fname);
+        _dlclose(dl);
+        return 1;
+    }
+    return 0;
+}
+
+void
+_dlunload(struct dlmodule* dl) {
+    if (dl == NULL)
+        return;
+   
+    if (dl->free) {
+        // sometimes need free, even if no dl->content
+        dl->free(dl->content);
+        dl->content = NULL;
+    }
+    if (dl->handle) {
+        _dlclose(dl);
+    }
+    if (dl->name) {
+        free(dl->name);
+        dl->name = NULL;
+    }
+}
+
+int
+_dlload(struct dlmodule* dl, const char* name) {
+    memset(dl, 0, sizeof(*dl));
+    int len = strlen(name);
+    if (len > MOD_LEN) {
+        sh_error("Module `%s` name too long", name);
+        return 1;
+    }
+    dl->name = malloc(len+1);
+    strcpy(dl->name, name);
+    if (_dlopen(dl)) {
+        free(dl->name);
+        dl->name = NULL;
+        return 1;
+    }
+    if (dl->create) {
+        dl->content = dl->create();
+    }
+    return 0;
+}
+
 #define INIT_COUNT 8
 
-struct module_holder {
+// module
+static struct {
     int cap;
     int sz;
     struct module **p;
-};
-
-static struct module_holder* M = NULL;
+} *M = NULL;
 
 static struct module *
 _index(int idx) {
@@ -50,11 +158,16 @@ _insert(struct module* s) {
 
 static int
 _create(const char* name) {
-    char tmp[128];
-    sh_strncpy(tmp, name, sizeof(tmp));
+    int len = strlen(name);
+    if (len > (2*MOD_LEN + 1)) {
+        sh_error("Module `%s` name too long", name);
+        return 1;
+    }
+    char tmp[len+1];
+    strcpy(tmp, name);
 
     struct module *s;
-    const char *sname, *dname;
+    const char *sname, *fname;
     char *p = strchr(tmp, ':');
     if (p) {
         p[0] = '\0';
@@ -62,31 +175,34 @@ _create(const char* name) {
     } else {
         sname = name;
     }
-    dname = tmp;
+    fname = tmp;
     s = _find(sname);
     if (s) {
-        return 0;
+        sh_error("Module `%s` already exist", sname);
+        return 1;
     }
     s = malloc(sizeof(*s));
     memset(s, 0, sizeof(*s));
-    sh_strncpy(s->name, sname, sizeof(s->name));
-    if (dlmodule_load(&s->dl, dname)) {
+    len -= (p-fname) + 1;
+    s->name = malloc(len+1);
+    strcpy(s->name, sname);
+    if (_dlload(&s->dl, fname)) {
         free(s);
         return 1;
     }
     _insert(s); 
-    sh_info("load module %s ok", name);
+    sh_info("Moulde `%s` load ok", name);
     return 0;
 }
 
 static int
-_prepare(struct module* s) {
+_init(struct module* s) {
     if (s->dl.init && !s->inited) {
         if (s->dl.init(s)) { 
             return 1;
         }
         s->inited = true;
-        sh_info("prepare module %s ok", s->name);
+        sh_info("Module `%s` init ok", s->name);
     }
     return 0;
 }
@@ -99,21 +215,20 @@ _reload(struct module* s) {
     int i;
     for (i=0; i<M->sz; ++i) {
         m = M->p[i];
-        if (m && !strcmp(m->dl.name, s->dl.name)) {
-            if (dlmodule_unload(&m->dl)) {
-                sh_error("unload module %s fail", m->name);
-            } else {
-                sh_info("unload module %s ok", m->name);
+        if (m->dl.handle) {
+            if (!strcmp(m->dl.name, s->dl.name)) {
+                _dlclose(&m->dl);
+                sh_info("Moudle `%s` unload ok", m->name);
             }
         }
     }
     for (i=0; i<M->sz; ++i) {
         m = M->p[i];
-        if (m && m->dl.handle == NULL) {
-            if (dlmodule_reopen(&m->dl)) {
-                sh_error("reopen module %s fail", m->name);
+        if (m->dl.handle == NULL) {
+            if (_dlopen(&m->dl)) {
+                sh_error("Module `%s` reload fail", m->name);
             } else {
-                sh_info("reopen module %s ok", m->name);
+                sh_info ("Module `%s` reload ok", m->name);
             }
         }
     }
@@ -122,39 +237,36 @@ _reload(struct module* s) {
 
 int 
 module_load(const char* name) {
-    if (name[0] == '\0') {
-        return 1;
-    }
-
+    assert(name);
     size_t len = strlen(name);
     char tmp[len+1];
     strcpy(tmp, name);
     
-    char* saveptr = NULL;
-    char* one = strtok_r(tmp, ",", &saveptr);
+    char *save = NULL, *one;
+    one = strtok_r(tmp, ",", &save);
     while (one) {
         if (_create(one)) {
             return 1;
         } 
-        one = strtok_r(NULL, ",", &saveptr);
+        one = strtok_r(NULL, ",", &save);
     }
     return 0;
 }
 
 int 
-module_prepare(const char* name) {
+module_init(const char* name) {
     struct module* s;
     if (name) {
         s = _find(name);
         if (s) {
-            return _prepare(s);
+            return _init(s);
         }
         return 1;
     } else {
         int i;
         for (i=0; i<M->sz; ++i) {
             s = M->p[i];
-            if (_prepare(s)) {
+            if (_init(s)) {
                 return 1;
             }
         }
@@ -169,7 +281,6 @@ module_reload(const char* name) {
         return _reload(s);
     } else {
         return 1;
-        //return _create(name);
     }
 }
 
@@ -181,8 +292,6 @@ module_reload_byid(int moduleid) {
 
 int
 module_query_id(const char* name) {
-    if (name == NULL || name[0] == '\0')
-        return MODULE_INVALID;
     struct module* s = _find(name);
     return s ? s->moduleid : MODULE_INVALID;
 }
@@ -193,30 +302,10 @@ module_query_module_name(int moduleid) {
     return s->dl.name;
 }
 
-static inline void
-debug_msg(int source, const char *dest, int type, const void *msg, int sz) {
-    switch (type) {
-    case MT_TEXT: {
-        char tmp[sz+1];
-        memcpy(tmp, msg, sz);
-        tmp[sz] = '\0';
-        sh_debug("[%0x - %s] [T] %s", source, dest, tmp);
-        break;
-        }
-    case MT_UM:
-        if (sz >= 2) {
-        uint16_t msgid = sh_from_littleendian16((uint8_t *)msg);
-        sh_debug("[%0x - %s] [U] %u", source, dest, msgid);
-        }
-        break;
-    }
-}
-
 int 
 module_main(int moduleid, int session, int source, int type, const void *msg, int sz) {
     struct module *s = _index(moduleid);
     if (s->dl.main) {
-        debug_msg(source, MODULE_NAME, type, msg, sz);
         s->dl.main(s, session, source, type, msg, sz);
         return 0;
     }
@@ -254,7 +343,7 @@ module_time(int moduleid) {
 }
 
 static void
-module_init() {
+module_mgr_init() {
     M = malloc(sizeof(*M));
     M->cap = INIT_COUNT;
     M->p = malloc(sizeof(M->p[0]) * M->cap);
@@ -262,19 +351,20 @@ module_init() {
     const char* modules = sh_getstr("sh_module", "");
     if (modules[0] &&
         module_load(modules)) {
-        sh_exit("module_load fail, modules=%s", modules);
+        sh_exit("module_mgr_init `%s` fail", modules);
     }
 }
 
 static void
-module_fini() {
+module_mgr_fini() {
     if (M == NULL) 
         return;
     struct module *s;
     int i;
     for (i=0; i<M->sz; ++i) {
         s = M->p[i];
-        dlmodule_close(&s->dl);
+        _dlunload(&s->dl);
+        free(s->name);
         free(s);
     }
     free(M->p);
@@ -285,11 +375,11 @@ module_fini() {
 }
 
 static void
-module_prepareall() {
-    if (module_prepare(NULL)) {
-        sh_exit("module_prepareall fail");
+module_mgr_prepare() {
+    if (module_init(NULL)) {
+        sh_exit("module_mgr_prepare fail");
     }
 }
 
-SH_LIBRARY_INIT_PRIO(module_init, module_fini, 11)
-SH_LIBRARY_INIT_PRIO(module_prepareall, NULL, 50)
+SH_LIBRARY_INIT_PRIO(module_mgr_init, module_mgr_fini, 11)
+SH_LIBRARY_INIT_PRIO(module_mgr_prepare, NULL, 50)
