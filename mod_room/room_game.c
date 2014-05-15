@@ -838,7 +838,8 @@ sync_attribute(struct module *s, struct player *m, struct room_game *ro) {
     n = 0;
     for (i=0; i<FLAG_MAX; ++i) {
         for (b=0; b<8; ++b) {
-            if ((m->flags[i] >> b) & (char_attri_client[i] >> b)) {
+            if (((m->flags[i] >> b)&1) && 
+                ((char_attri_client[i] >> b)&1)) {
                 ur->flags[i] |= 1<<b;
                 memcpy((uint32_t*)(ur->data)+n, (uint32_t*)(&m->detail.attri)+n, 4);
                 n++;
@@ -854,7 +855,8 @@ sync_attribute(struct module *s, struct player *m, struct room_game *ro) {
     n = 0;
     for (i=0; i<FLAG_MAX; ++i) {
         for (b=0; b<8; ++b) {
-            if ((m->flags[i] >> b) & (char_attri_other[i] >> b)) {
+            if (((m->flags[i] >> b)&1) &&
+                ((char_attri_other[i] >> b)&1)) {
                 ur2->flags[i] |= 1<<b;
                 memcpy((uint32_t*)(ur2->data)+n, (uint32_t*)(&m->detail.attri)+n, 4);
                 n++;
