@@ -881,9 +881,6 @@ on_refresh_attri(struct module *s, struct player* m, struct room_game* ro) {
     if (m->refresh_flag & REFRESH_ATTRI) {
         sync_attribute(s, m, ro);
         memset(m->flags, 0, sizeof(m->flags));
-        UM_DEFFIX(UM_ROLEINFO, ri);
-        ri->detail = m->detail;
-        multicast_msg(s, ro, ri, sizeof(*ri), 0);
     }
     m->refresh_flag = 0;
 }
