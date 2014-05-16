@@ -876,6 +876,11 @@ on_refresh_attri(struct module *s, struct player* m, struct room_game* ro) {
         return;
     if (m->refresh_flag & REFRESH_SPEED) {
         role_attri_build(&ro->gattri, &m->detail.attri);
+        field_update(char_attribute, movespeed, m);
+        field_update(char_attribute, charfallspeed, m);
+        field_update(char_attribute, jmpacctime, m);
+        field_update(char_attribute, rebirthtime, m);
+        field_update(char_attribute, dodgedistance, m);
         m->refresh_flag |= REFRESH_ATTRI;
     }
     if (m->refresh_flag & REFRESH_ATTRI) {
