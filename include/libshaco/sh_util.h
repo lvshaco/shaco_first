@@ -9,25 +9,6 @@
 
 #define SH_LITERAL(str) str, sizeof(str)
 
-// const cstring to int32, eg: "GMAP"
-#define sh_cstr_to_int32(cstr) ({ \
-    int32_t i32 = 0;                   \
-    int i;                             \
-    for (i=0; i<sizeof(cstr)-1; ++i) { \
-        i32 |= ((cstr)[i]) << (i*8);   \
-    }                                  \
-    i32;                               \
-})
-
-#define sh_cstr_compare_int32(cstr, i32) \
-    (sh_cstr_to_int32(cstr) == (i32))
-
-#define sh_cstr_compare_mem(cstr, mem, sz) \
-    (sizeof(cstr) != (sz) || memcmp(cstr, mem, sz))
-
-// countof
-#define sh_countof(x) (sizeof(x)/sizeof((x)[0]))
-
 // rand
 #define sh_rand(x) rand_r(x)
 static inline int 

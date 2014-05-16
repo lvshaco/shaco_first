@@ -841,14 +841,15 @@ sync_attribute(struct module *s, struct player *m, struct room_game *ro) {
             if (((m->flags[i] >> b)&1) && 
                 ((char_attri_client[i] >> b)&1)) {
                 ur->flags[i] |= 1<<b;
-                memcpy((uint32_t*)(ur->data)+n, (uint32_t*)(&m->detail.attri)+n, 4);
+                memcpy((uint32_t*)(ur->data)+n, (uint32_t*)(&m->detail.attri)+i*8+b, 4);
                 n++;
             }
         }
     }
-    sz = sizeof(struct UM_ROLEREFRESH) + n*4;
-    sh_handle_send(MODULE_ID, m->watchdog_source, MT_UM, cl, sizeof(*ur)+sz);
-
+    if (n > 0) {
+        sz = sizeof(struct UM_ROLEREFRESH) + n*4;
+        sh_handle_send(MODULE_ID, m->watchdog_source, MT_UM, cl, sizeof(*ur)+sz);
+    }
     UM_DEFVAR2(UM_ROLEREFRESH, ur2, sizeof(struct UM_ROLEREFRESH) + sizeof(struct char_attribute));
     ur2->charid = m->detail.charid;
     memset(ur2->flags, 0, sizeof(ur2->flags));
@@ -858,13 +859,15 @@ sync_attribute(struct module *s, struct player *m, struct room_game *ro) {
             if (((m->flags[i] >> b)&1) &&
                 ((char_attri_other[i] >> b)&1)) {
                 ur2->flags[i] |= 1<<b;
-                memcpy((uint32_t*)(ur2->data)+n, (uint32_t*)(&m->detail.attri)+n, 4);
+                memcpy((uint32_t*)(ur2->data)+n, (uint32_t*)(&m->detail.attri)+i*8+b, 4);
                 n++;
             }
         }
     }
-    sz = sizeof(struct UM_ROLEREFRESH) + n*4;
-    multicast_msg(s, ro, ur2, sz, UID(m));
+    if (n > 0) {
+        sz = sizeof(struct UM_ROLEREFRESH) + n*4;
+        multicast_msg(s, ro, ur2, sz, UID(m));
+    }
 }
 
 static void
@@ -877,6 +880,7 @@ on_refresh_attri(struct module *s, struct player* m, struct room_game* ro) {
     }
     if (m->refresh_flag & REFRESH_ATTRI) {
         sync_attribute(s, m, ro);
+        memset(m->flags, 0, sizeof(m->flags));
         UM_DEFFIX(UM_ROLEINFO, ri);
         ri->detail = m->detail;
         multicast_msg(s, ro, ri, sizeof(*ri), 0);
