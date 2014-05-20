@@ -310,7 +310,17 @@ ai_lookup_item(struct room *self, struct room_game *ro, struct player *m) {
                 target.w,
                 target.h,
                 target.block);
-        if (rand_rate(brain->level, 100, 6, 50, 1)) {
+        bool hit = false;
+        if (ro->type == ROOM_TYPE_DASHI) {
+            if (rand_rate(brain->level, 80, 6, 30, 1)) {
+                hit = true;
+            }
+        } else {
+            if (rand()%100 < 20) {
+                hit = true;
+            }
+        }
+        if (hit) {
             brain->target = target; 
             return 0;
         }
