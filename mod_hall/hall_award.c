@@ -7,14 +7,14 @@
 #include "msg_server.h"
 
 static void
-_levelup(struct hall *self, uint32_t* exp, uint16_t* level) {
+_levelup(struct tplt *T, uint32_t* exp, uint16_t* level) {
     const struct exp_tplt* tplt;
     uint32_t curexp = *exp;
     uint16_t curlv = *level;
     while (curexp > 0) {
         if (curlv >= LEVEL_MAX)
             break;
-        tplt = tplt_find(self->T, TPLT_EXP, curlv+1);
+        tplt = tplt_find(T, TPLT_EXP, curlv+1);
         if (tplt == NULL)
             break;
         if (curexp < tplt->curexp)
@@ -98,7 +98,7 @@ process_award(struct module *s, struct player* pr, int8_t type, const struct mem
     if (award->exp > 0) {
         sh_limitadd(award->exp, &cdata->exp, UINT_MAX);
         uint16_t old_level = cdata->level;
-        _levelup(self, &cdata->exp, &cdata->level);
+        _levelup(self->T, &cdata->exp, &cdata->level);
         if (old_level != cdata->level){
             old_grade = _player_gradeid(old_level);
             new_grade = _player_gradeid(cdata->level);

@@ -225,10 +225,10 @@ struct chardata {
     uint32_t last_state_refresh_time; // 上次状态回复时间
 };
 
-static inline uint8_t 
+static inline uint8_t *
 role_state(struct chardata *cdata) {
     uint8_t type_id = ROLE_TYPEID(cdata->role);
-    return cdata->roles_state[type_id < ROLE_MAX ? type_id : 0];
+    return &cdata->roles_state[type_id < ROLE_MAX ? type_id : 0];
 }
 
 // room type

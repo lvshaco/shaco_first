@@ -13,7 +13,7 @@ build_brief(struct player *pr, struct tmemberbrief *brief) {
     memcpy(brief->name, cdata->name, sizeof(cdata->name));
     brief->level = cdata->level;
     brief->role = cdata->role;
-    brief->state = role_state(cdata);
+    brief->state = *role_state(cdata);
     brief->oxygen = cdata->attri.oxygen;
     brief->body = cdata->attri.body;
     brief->quick = cdata->attri.quick;
@@ -27,7 +27,7 @@ build_detail(struct player *pr, struct tmemberdetail *detail) {
     memcpy(detail->name, cdata->name, sizeof(cdata->name));
     detail->level = cdata->level;
     detail->role = cdata->role;
-    detail->state = role_state(cdata);
+    detail->state = *role_state(cdata);
     detail->score_dashi = cdata->score_dashi;
     detail->attri = cdata->attri;
 }

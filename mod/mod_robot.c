@@ -5,6 +5,26 @@
 #include "msg_server.h"
 #include "msg_client.h"
 
+static void
+levelup(struct tplt *T, uint32_t* exp, uint16_t* level) {
+    const struct exp_tplt* tplt;
+    uint32_t curexp = *exp;
+    uint16_t curlv = *level;
+    while (curexp > 0) {
+        if (curlv >= LEVEL_MAX)
+            break;
+        tplt = tplt_find(T, TPLT_EXP, curlv+1);
+        if (tplt == NULL)
+            break;
+        if (curexp < tplt->curexp)
+            break;
+        curexp -= tplt->curexp;
+        curlv++;
+    }
+    *exp = curexp;
+    *level = curlv;
+}
+
 static inline struct agent_list *
 index_rest_list(struct robot *self, int ai) {
     int idx = ai-1;
@@ -167,7 +187,7 @@ build_brief(struct agent *ag, struct tmemberbrief *brief) {
     memcpy(brief->name, cdata->name, sizeof(cdata->name));
     brief->level = cdata->level;
     brief->role = cdata->role;
-    brief->state = role_state(cdata);
+    brief->state = *role_state(cdata);
     brief->oxygen = cdata->attri.oxygen;
     brief->body = cdata->attri.body;
     brief->quick = cdata->attri.quick;
@@ -181,7 +201,7 @@ build_detail(struct agent *ag, struct tmemberdetail *detail) {
     memcpy(detail->name, cdata->name, sizeof(cdata->name));
     detail->level = cdata->level;
     detail->role = cdata->role;
-    detail->state = role_state(cdata);
+    detail->state = *role_state(cdata);
     detail->score_dashi = cdata->score_dashi;
     detail->attri = cdata->attri;
 }
@@ -217,6 +237,29 @@ play_fail(struct module *s, struct agent *ag) {
 }
 
 static void
+agent_fix(struct robot *self, struct agent *ag) {
+    const static int ROLES[] = {10, 30};
+   
+    struct chardata *cdata = &ag->data;
+
+    ag->fight_times ++;
+    if (ag->fight_times%15 == 0) {
+        ag->role_index ++;
+        cdata->role = ROLES[ag->role_index % (sizeof(ROLES)/sizeof(ROLES[0]))];
+    }
+
+    sh_limitadd(30, &cdata->exp, UINT_MAX);
+    levelup(self->T, &cdata->exp, &cdata->level);
+
+    uint8_t *state = role_state(cdata);
+    *state += rand() % 61 - 25;
+    if (*state < 29)
+        *state = 29;
+    else if (*state > 90)
+        *state = 90;
+}
+
+static void
 enter_room(struct module *s, struct agent *ag, struct UM_ENTERROOM *er) {
     struct robot *self = MODULE_SELF;
     if (ag->status != S_WAIT) {
@@ -245,6 +288,7 @@ exit_room(struct module *s, uint32_t uid) {
         return;
     }
     if (ag->status == S_FIGHT) {
+        agent_fix(self, ag);
         agent_rest(self, ag);
         UM_DEFWRAP(UM_MATCH, ma, UM_LOGOUT, lo);
         ma->uid = UID(ag);

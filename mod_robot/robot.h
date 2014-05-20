@@ -37,7 +37,8 @@ struct agent {
     int status;
     int ai;
     struct chardata data;
-    uint32_t last_change_role_time;
+    int fight_times;
+    int role_index;
     struct agent *next;
 };
 
