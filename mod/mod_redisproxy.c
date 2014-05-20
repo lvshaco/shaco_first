@@ -361,6 +361,21 @@ redisproxy_init(struct module* s) {
 }
 
 static void
+response(struct module *s, int source, void *cb, int cbsz, void *data, int sz) {
+    UM_DEFVAR2(UM_REDISREPLY, rep, UM_MAXSZ);
+    rep->cbsz = cbsz;
+   
+    struct memrw rw;
+    memrw_init(&rw, rep->data, UM_MAXSZ - sizeof(*rep));
+    if (cbsz) {
+        memrw_write(&rw, cb, cbsz);
+    }
+    memrw_write(&rw, data, sz);
+    int msgsz = RW_CUR(&rw) + sizeof(*rep);
+    sh_handle_send(MODULE_ID, source, MT_UM, rep, msgsz);
+}
+
+static void
 handle_query(struct module *s, int source, struct UM_REDISQUERY *rq, int sz) {
     struct redisproxy *self = MODULE_SELF;
 
@@ -390,13 +405,9 @@ handle_query(struct module *s, int source, struct UM_REDISQUERY *rq, int sz) {
         if (cbsz > 0) {
             memcpy(q->cb, cb, cbsz);
         }
-        
         qlist_push(&inst->ql, q);
-
-        // todo delete
-        //cmd[cmdlen-1] = '\0';
-        //sh_rec(cmd);
     } else {
+        response(s, source, cb, cbsz, SH_LITERAL("-RD")); // disconnected
         if (rq->flag & RQUERY_BACKUP) {
             cmd[cmdlen-1] = '\0';
             sh_rec(cmd);
@@ -409,25 +420,14 @@ handle_reply(struct module *s, struct instance *inst) {
     //struct redisproxy *self = MODULE_SELF;
     //redis_walkreply(&self->reply); // todo: delete
 
+    struct redis_reader *reader = &inst->reply.reader;
     struct query *q = qlist_pop(&inst->ql);
     assert(q);
-    if (q->reply == 0) {
-        goto end;
+    if (q->reply != 0) {
+        response(s, q->source, q->cb, q->cbsz, 
+                reader->buf+reader->pos_last, 
+                reader->pos-reader->pos_last);
     }
-
-    UM_DEFVAR2(UM_REDISREPLY, rep, UM_MAXSZ);
-    rep->cbsz = q->cbsz;
-   
-    struct redis_reader* reader = &inst->reply.reader;
-    struct memrw rw;
-    memrw_init(&rw, rep->data, UM_MAXSZ - sizeof(*rep));
-    if (q->cbsz) {
-        memrw_write(&rw, q->cb, q->cbsz);
-    }
-    memrw_write(&rw, reader->buf+reader->pos_last, reader->pos-reader->pos_last);
-    int msgsz = RW_CUR(&rw) + sizeof(*rep);
-    sh_handle_send(MODULE_ID, q->source, MT_UM, rep, msgsz);
-end:
     free(q);
 }
 
