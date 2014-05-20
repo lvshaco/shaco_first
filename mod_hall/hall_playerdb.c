@@ -105,6 +105,7 @@ _db(struct module *s, struct player* p, int8_t type) {
         char_create(cdata);
         int len = redis_format(&rw.ptr, RW_SPACE(&rw), "hmset user:%u"
                 " name %s"
+                " accid %u"
                 " level %u"
                 " exp %u"
                 " coin %u"
@@ -112,6 +113,7 @@ _db(struct module *s, struct player* p, int8_t type) {
                 " package %u"
                 " role %u", charid,
                 cdata->name,
+                accid,
                 cdata->level, 
                 cdata->exp, 
                 cdata->coin, 
