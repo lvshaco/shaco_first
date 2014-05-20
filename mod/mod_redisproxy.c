@@ -384,6 +384,7 @@ handle_query(struct module *s, int source, struct UM_REDISQUERY *rq, int sz) {
     char* cmd   = rq->data + cbsz;
     int cmdlen  = sz - (int)sizeof(*rq) - (int)rq->cbsz;
     if (cmdlen < 5) {
+        response(s, source, cb, cbsz, SH_LITERAL("-XX"));
         return; // need 5 bytes at least *0\r\n
     }
     uint32_t slot, key;
