@@ -113,8 +113,12 @@ def parse_blocksheet(excel, map_config, outfile):
             cw = w+1
             cell = item[w+4]
             if isinstance(cell, basestring):
-                cell_config = map(lambda x: int(x), cell.split(","))
-               
+                try:
+                    cell_config = map(lambda x: int(x), cell.split(","))
+                except Exception, e:
+                    log.write(str(e))
+                    log.write("\ninvalid cell(%d,%d)\n"%(cw,ch))
+                    exit(1)
                 lcell = len(cell_config)
                 if lcell <= 0:
                     log.write("empty cell(%d,%d)\n"%(cw,ch))
