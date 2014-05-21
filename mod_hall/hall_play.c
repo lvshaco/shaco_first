@@ -66,6 +66,11 @@ play(struct module *s, struct player *pr, int type) {
         build_brief(pr, &ap->info.brief);
         sh_handle_send(MODULE_ID, self->match_handle, MT_UM, ap, sizeof(*ap));
         sh_trace("Play %u send play to match", UID(pr));
+
+        if (type == ROOM_TYPE_DASHI) {
+            hall_gamelog(s, self->charactionlog_handle, "MATCH,%u", 
+                    pr->data.accid, sh_timer_now()/1000);
+        }
     } else {
         sh_trace("Play %u request play, but status %d", UID(pr), pr->status);
     }

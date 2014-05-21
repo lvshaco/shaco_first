@@ -37,6 +37,9 @@ login(struct module *s, int source, uint32_t accid) {
     pr->data.accid = accid;
     assert(!sh_hash_insert(&self->acc2player, accid, pr));
 
+    hall_gamelog(s, self->charactionlog_handle, "LOGIN,%u,%u", 
+            accid, sh_timer_now()/1000);
+
     if (hall_playerdb_send(s, pr, PDB_QUERY)) {
         sh_trace("Player %u login fail, no db", accid);
         hall_notify_logout(s, pr, SERR_NODB);
@@ -58,6 +61,9 @@ logout(struct module *s, struct player *pr) {
         sh_handle_send(MODULE_ID, self->match_handle, MT_UM, ma, sizeof(*ma)+sizeof(*lo)); 
     } 
     hall_playerdb_save(s, pr, true);
+    hall_gamelog(s, self->charactionlog_handle, "LOGOUT,%u,%u", 
+            pr->data.accid, sh_timer_now()/1000);
+
     free_player(self, pr); 
 }
 

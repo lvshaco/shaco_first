@@ -106,6 +106,8 @@ process_userole(struct module *s, struct player *pr, const struct UM_USEROLE *us
     sync_userole(s, pr);
     
     hall_playerdb_save(s, pr, false);
+    hall_gamelog(s, self->charactionlog_handle, "USEROLE,%u,%u,%u", 
+            cdata->accid, sh_timer_now()/1000, roleid);
 }
 
 static void
@@ -134,12 +136,15 @@ process_buyrole(struct module *s, struct player *pr, const struct UM_BUYROLE *bu
     if (add_role(cdata, roleid)) {
         return;
     }
+    uint32_t coin_old = cdata->coin;
     cdata->coin -= tplt->needcoin;
     cdata->diamond -= tplt->needdiamond;
     sync_addrole(s, pr, roleid);
     hall_sync_money(s, pr);
 
     hall_playerdb_save(s, pr, true);
+    hall_gamelog(s, self->charactionlog_handle, "BUYROLE,%u,%u,%u,%u,%u", 
+            cdata->accid, sh_timer_now()/1000, roleid, coin_old, cdata->coin);
 }
 
 static void
@@ -180,6 +185,7 @@ process_adjust_state(struct module *s, struct player *pr, const struct UM_ADJUST
     cdata->roles_state[typeid] = new_value;
 
     // pay
+    uint32_t coin_old = cdata->coin;
     if (pay_coin > 0) {
         cdata->coin -= pay_coin;
     }
@@ -191,6 +197,9 @@ process_adjust_state(struct module *s, struct player *pr, const struct UM_ADJUST
     hall_sync_money(s, pr);
     
     hall_playerdb_save(s, pr, true);
+    hall_gamelog(s, self->charactionlog_handle, 
+            "STATE,%u,%u,%u,%u,%u", cdata->accid, sh_timer_now()/1000, 
+            coin_old, old_value, new_value-old_value);
 }
 
 static void

@@ -253,10 +253,17 @@ member_place(struct room_game *ro, struct player *m, struct match_member *mm, ui
     fill_brief_into_detail(&mm->brief, &m->detail);
 }
 
+struct memberaward_temp {
+    int score_depth;
+    int score_oxygen;
+    int score_bao;
+    int score_cell;
+};
+
 static void
 build_award_normal(struct room_game *ro, uint64_t gametime, struct player *m, 
-        struct memberaward *award) {
-    struct char_attribute* a = &m->detail.attri; 
+        struct memberaward *a, struct memberaward_temp *at) {
+    struct char_attribute* attri = &m->detail.attri; 
     int score_depth = min(
             gametime*0.001*m->base.charfallspeed*0.4*pow(1.15, gametime*0.001/110), 
             m->depth) * 250;
@@ -272,8 +279,8 @@ build_award_normal(struct room_game *ro, uint64_t gametime, struct player *m,
     int ncell = 0;  // todo
     int score_cell = min(score_depth * 0.339, ncell);
 
-    float coin_profit = a->coin_profit;
-    float score_profit = a->score_profit;
+    float coin_profit = attri->coin_profit;
+    float score_profit = attri->score_profit;
    
     int coin = score_depth * 0.0006 + nbao*30 + nbao*(nbao-1)*0.5*2;
     int coin_extra = coin * coin_profit;
@@ -283,14 +290,19 @@ build_award_normal(struct room_game *ro, uint64_t gametime, struct player *m,
     int score_dashi = 0;
     int take_state = 20;
 
-    award->take_state = take_state; 
-    award->exp = exp;
-    award->coin = coin + coin_extra;
-    award->coin_extra = coin_extra;
-    award->score_display = score_display;
-    award->score_normal = score_normal;
-    award->score_dashi = score_dashi;
-    award->luck_factor = m->luck_factor;
+    a->take_state = take_state; 
+    a->exp = exp;
+    a->coin = coin + coin_extra;
+    a->coin_extra = coin_extra;
+    a->score_display = score_display;
+    a->score_normal = score_normal;
+    a->score_dashi = score_dashi;
+    a->luck_factor = m->luck_factor;
+
+    at->score_depth = score_depth;
+    at->score_oxygen = score_oxygen;
+    at->score_bao = score_bao;
+    at->score_cell = score_cell;
 }
 
 struct award_input {
@@ -302,8 +314,8 @@ struct award_input {
 
 static void
 build_award_dashi(struct room_game *ro, uint64_t gametime, const struct award_input *in, 
-        struct player *m, int rank, struct memberaward *award) {
-    struct char_attribute* a = &m->detail.attri; 
+        struct player *m, int rank, struct memberaward *a, struct memberaward_temp *at) {
+    struct char_attribute* attri = &m->detail.attri; 
     int score_depth = min(
             gametime*0.001*m->base.charfallspeed*0.4*pow(1.15, gametime*0.001/110), 
             m->depth) * 250;
@@ -319,11 +331,11 @@ build_award_dashi(struct room_game *ro, uint64_t gametime, const struct award_in
     int ncell = 0;  // todo
     int score_cell = min(score_depth * 0.339, ncell);
 
-    float coin_profit = a->coin_profit;
-    float score_profit = a->score_profit;
+    float coin_profit = attri->coin_profit;
+    float score_profit = attri->score_profit;
     if (rank == 0) {
-        coin_profit += a->wincoin_profit+0.05;
-        score_profit += a->winscore_profit + 0.05;
+        coin_profit += attri->wincoin_profit+0.05;
+        score_profit += attri->winscore_profit + 0.05;
     }
  
     int coin = score_depth * 0.0006 + nbao*30 + nbao*(nbao-1)*0.5*2;
@@ -364,14 +376,19 @@ build_award_dashi(struct room_game *ro, uint64_t gametime, const struct award_in
     
     int take_state = (rank == 0) ? 10 : 20;
 
-    award->take_state = take_state; 
-    award->exp = exp;
-    award->coin = coin + coin_extra;
-    award->coin_extra = coin_extra;
-    award->score_display = score_display;
-    award->score_normal = score_normal;
-    award->score_dashi = score_dashi;
-    award->luck_factor = m->luck_factor;
+    a->take_state = take_state; 
+    a->exp = exp;
+    a->coin = coin + coin_extra;
+    a->coin_extra = coin_extra;
+    a->score_display = score_display;
+    a->score_normal = score_normal;
+    a->score_dashi = score_dashi;
+    a->luck_factor = m->luck_factor;
+
+    at->score_depth = score_depth;
+    at->score_oxygen = score_oxygen;
+    at->score_bao = score_bao;
+    at->score_cell = score_cell;
 }
 
 static void
@@ -437,11 +454,13 @@ member_over(struct module *s, struct room_game *ro, struct player *m, int flag) 
     uint64_t gametime = room_game_time(ro);
     // award to hall
     struct memberaward a;
+    struct memberaward_temp at;
     if ((flag & F_AWARD) && is_player(m)) {
-        build_award_normal(ro, gametime, m, &a);
+        build_award_normal(ro, gametime, m, &a, &at);
         notify_award(s, ro, m, &a);
     } else {
         memset(&a, 0, sizeof(a));
+        memset(&at, 0, sizeof(at));
     }
     // switch to hall
     { 
@@ -471,6 +490,15 @@ member_over(struct module *s, struct room_game *ro, struct player *m, int flag) 
     }
    
     if (m->online) {
+        room_gamelog(s, self->charactionlog_handle, "ROOMOVER,%u,%u,%u,%u,%u,%u,%u,"
+                "%u,%u,%u,%u,%d,%d,%d,%d,%d,%d,%d,%d",
+            sh_timer_now()/1000, ro->id, ro->type,
+            m->detail.accid, m->depth, gametime, m->depth/(gametime/1000), 
+            m->noxygenitem, m->nbao, m->nitem, 0,
+            at.score_depth, at.score_oxygen, at.score_bao,
+            at.score_cell, a.score_display, a.score_normal,
+            a.coin, a.exp);
+
         sh_hash_remove(&self->players, UID(m));
         m->online = false;
     }
@@ -493,7 +521,8 @@ game_over(struct module *s, struct room_game* ro, bool death) {
     struct player* sortm[MEMBER_MAX];
     struct memberaward *a;
     struct memberaward awards[MEMBER_MAX];
-
+    struct memberaward_temp *at;
+    struct memberaward_temp ats[MEMBER_MAX];
     // rank sort
     for (i=0; i<np; ++i) {
         sortm[i] = &ro->p[i];
@@ -510,7 +539,8 @@ game_over(struct module *s, struct room_game* ro, bool death) {
     for (i=0; i<np; ++i) {
         m = sortm[i];
         a = &awards[i];
-        build_award_dashi(ro, gametime, &in, m, i, a);
+        at = &ats[i];
+        build_award_dashi(ro, gametime, &in, m, i, a, at);
         if (is_online(m) && is_player(m)) {
             notify_award(s, ro, m, a);
         }
@@ -562,6 +592,22 @@ game_over(struct module *s, struct room_game* ro, bool death) {
     for (i=0; i<np; ++i) {
         m = &ro->p[i];
         if (m->online) {
+            a = &awards[i];
+            at = &ats[i];
+            int nitem_mode;
+            if (room_game_mode(ro) == MODE_FIGHT)
+                nitem_mode = m->nitem_friend;
+            else
+                nitem_mode = m->nitem_enemy;
+            room_gamelog(s, self->charactionlog_handle, "ROOMOVER,%u,%u,%u,%u,%u,%u,%u,"
+                "%u,%u,%u,%u,%d,%d,%d,%d,%d,%d,%d,%d",
+                sh_timer_now()/1000, ro->id, ro->type,
+                m->detail.accid, m->depth, gametime, m->depth/(gametime/1000), 
+                m->noxygenitem, m->nbao, m->nitem, nitem_mode,
+                at->score_depth, at->score_oxygen, at->score_bao,
+                at->score_cell, a->score_display, a->score_normal,
+                a->coin, a->exp);
+
             sh_hash_remove(&self->players, UID(m));
             m->online = false;
         }
@@ -610,15 +656,24 @@ room_game_create(struct module *s, int source, struct UM_CREATEROOM *create) {
     ground_attri_build(mapt->difficulty, &ro->gattri); 
     int i;
     ro->maxp = min(create->max_member, MEMBER_MAX);
-    ro->np = create->nmember; 
+    ro->np = create->nmember;
+   
+    struct player *m;
+    char tmp[1024];
+    int sz = 0;
     for (i=0; i<create->nmember; ++i) {
-        member_place(ro, &ro->p[i], &create->members[i], i);
+        m = &ro->p[i];
+        member_place(ro, m, &create->members[i], i);
+        sz += sh_snprintf(tmp+sz, sizeof(tmp)-sz, ",%u", m->detail.accid); 
     }
     room_item_init(self, ro, mapt);
     assert(!sh_hash_insert(&self->room_games, ro->id, ro));
     notify_create_room_game_result(s, source, create->id, SERR_OK);
     self->map_randseed++; 
     sh_trace("Room %u mapid %u create ok", create->id, create->mapid);
+
+    room_gamelog(s, self->charactionlog_handle, "ROOMCREATE,%u,%u,%u,%u,%s",
+            sh_timer_now()/1000, ro->id, ro->type, create->mapid, tmp);
 }
 
 static void
@@ -1126,14 +1181,18 @@ use_item(struct module *s, struct room_game *ro, struct player *m, uint32_t item
     uint32_t init_itemid = item->id;
     switch (item->type) {
     case ITEM_T_OXYGEN:
-        m->noxygenitem += 1;
+        m->noxygenitem ++;
         break;
     case ITEM_T_FIGHT:
         item = room_item_rand(self, ro, m, item);
         if (item == NULL) {
             return;
         }
-        m->nitem += 1;
+        if (item->target == ITEM_TARGET_FRIEND)
+            m->nitem_friend ++;
+        else if (item->target == ITEM_TARGET_ENEMY)
+            m->nitem_enemy ++;
+        m->nitem ++;
         break;
     case ITEM_T_TRAP:
         if (item->subtype == 0) {
@@ -1146,7 +1205,7 @@ use_item(struct module *s, struct room_game *ro, struct player *m, uint32_t item
     case ITEM_T_BAO: {
         uint32_t baoid = rand_baoitem(self, item, map);
         if (baoid > 0) {
-            m->nbao += 1;
+            m->nbao ++;
         }
         }
         break;
@@ -1249,7 +1308,7 @@ loadok(struct module *s, struct player *m) {
 
 static struct player *
 login(struct module *s, int source, uint32_t roomid, float luck_factor, 
-        const struct tmemberdetail *detail) { 
+        const struct tmemberdetail *detail, int ai) { 
     struct room *self = MODULE_SELF;
     struct player *m;
     uint32_t accid  = detail->accid;
@@ -1299,12 +1358,16 @@ login(struct module *s, int source, uint32_t roomid, float luck_factor,
             give_start_effect(s, ro, m);
         }
     }
+    room_gamelog(s, self->charactionlog_handle, "ROOMENTER,%u,%u,%u,%u,%u,%u,%u,%u,%u",
+            sh_timer_now()/1000, ro->id, ro->type, 
+            m->detail.accid, ai, 
+            m->detail.level, m->detail.role, m->detail.state, m->detail.score_dashi);
     return m;
 }
 
 static void
 player_login(struct module *s, int source, const struct UM_LOGINROOM *lr) { 
-    struct player *m = login(s, source, lr->roomid, lr->luck_factor, &lr->detail);
+    struct player *m = login(s, source, lr->roomid, lr->luck_factor, &lr->detail, 0);
     if (m) {
         sh_trace("Room %u player %u login ok", lr->roomid, lr->detail.accid);
         m->brain = NULL;
@@ -1316,7 +1379,7 @@ player_login(struct module *s, int source, const struct UM_LOGINROOM *lr) {
 
 static void
 robot_login(struct module *s, int source, const struct UM_ROBOT_LOGINROOM *lr) {
-    struct player *m = login(s, source, lr->roomid, 0.5f, &lr->detail);
+    struct player *m = login(s, source, lr->roomid, 0.5f, &lr->detail, lr->ai);
     if (m) {
         sh_trace("Room %u robot %u login ok", lr->roomid, lr->detail.accid);
         ai_init(m, lr->ai);

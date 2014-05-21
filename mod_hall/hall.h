@@ -19,6 +19,7 @@ struct hall {
     bool match_down;
     int match_handle;
     int watchdog_handle;
+    int charactionlog_handle;
     int rpuser_handle;
     int rpuseruni_handle;
     int rank_handle;
@@ -77,6 +78,16 @@ hall_sync_state(struct module *s, struct player *pr, uint32_t typeid, uint8_t st
     sync->role_typeid = typeid;
     sync->state_value = state_value;
     sh_handle_send(MODULE_ID, pr->watchdog_source, MT_UM, cl, sizeof(*cl) + sizeof(*sync));
+}
+
+static inline void
+hall_gamelog(struct module *s, int log_handle, const char *fmt, ...) {
+    char log[1024];
+    va_list ap;
+    va_start(ap, fmt);
+    int sz = sh_vsnprintf(log, sizeof(log), fmt, ap);
+    va_end(ap);
+    sh_handle_send(MODULE_ID, log_handle, MT_TEXT, log, sz);
 }
 
 #endif

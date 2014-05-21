@@ -1,8 +1,7 @@
 #ifndef __room_h__
 #define __room_h__
 
-#include "sh_hash.h"
-#include "sh_array.h"
+#include "sh.h"
 #include "msg_sharetype.h"
 #include <stdint.h>
 #include <stdbool.h>
@@ -27,6 +26,7 @@ struct room {
     int watchdog_handle;
     int match_handle;
     int robot_handle;
+    int charactionlog_handle;
     struct tplt *T;
     struct sh_hash *MH; 
     int tick;
@@ -76,6 +76,8 @@ struct player {
     uint64_t deathtime;
     int16_t noxygenitem;
     int16_t nitem;
+    int16_t nitem_friend;
+    int16_t nitem_enemy;
     int16_t ntrap;
     int16_t nbao;
     int16_t nbedamage;
@@ -169,5 +171,15 @@ room_member_opponent(struct room_game *ro, struct player *m) {
 }
 
 #define UID(m) ((m)->detail.accid)
+
+static inline void
+room_gamelog(struct module *s, int log_handle, const char *fmt, ...) {
+    char log[1024];
+    va_list ap;
+    va_start(ap, fmt);
+    int sz = sh_vsnprintf(log, sizeof(log), fmt, ap);
+    va_end(ap);
+    sh_handle_send(MODULE_ID, log_handle, MT_TEXT, log, sz);
+}
 
 #endif

@@ -98,6 +98,7 @@ process_award(struct module *s, struct player* pr, int8_t type, const struct mem
     if (award->exp > 0) {
         sh_limitadd(award->exp, &cdata->exp, UINT_MAX);
         uint16_t old_level = cdata->level;
+        uint32_t old_exp = cdata->exp;
         _levelup(self->T, &cdata->exp, &cdata->level);
         if (old_level != cdata->level){
             old_grade = _player_gradeid(old_level);
@@ -105,6 +106,9 @@ process_award(struct module *s, struct player* pr, int8_t type, const struct mem
         }
         hall_sync_exp(s, pr);
         updated = true;
+
+        hall_gamelog(s, self->charactionlog_handle, "LEVELUP,%u,%u,%u,%u,%u,%u", 
+            cdata->accid, sh_timer_now()/1000, old_level, old_exp, cdata->exp, cdata->level);
     }
     // score_normal
     if (award->score_normal > 0) {

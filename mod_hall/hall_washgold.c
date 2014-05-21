@@ -27,6 +27,7 @@ sync_washgold_result(struct module *s, struct player *pr, uint8_t gain, uint8_t 
 
 static inline void
 refresh_washgold(struct module *s, struct player *pr, bool sync) {
+    struct hall *self = MODULE_SELF;
     struct chardata* cdata = &pr->data;
     uint32_t now = sh_timer_now() / 1000;
     if (cdata->last_washgold_refresh_time == 0) {
@@ -34,13 +35,19 @@ refresh_washgold(struct module *s, struct player *pr, bool sync) {
     }
     uint32_t diff = now - cdata->last_washgold_refresh_time;
     if (diff >= 3600) {
-        cdata->washgold += min(600, diff/60 * 4);
-        if (cdata->washgold > 1800)
-            cdata->washgold = 1800;
-        cdata->last_washgold_refresh_time = now;
-        if (sync) {
-            sync_washgold_info(s, pr);
+        if (cdata->washgold < 1800) {
+            uint32_t wash_old = cdata->washgold;
+            cdata->washgold += min(600, diff/60 * 4);
+            if (cdata->washgold > 1800)
+                cdata->washgold = 1800;
+            if (sync) {
+                sync_washgold_info(s, pr);
+            }
+            hall_gamelog(s, self->charactionlog_handle, 
+                "WASHGOLD_R,%u,%u,%u,%u", cdata->accid, sh_timer_now()/1000, 
+                wash_old, cdata->washgold);
         }
+        cdata->last_washgold_refresh_time = now;
     }
 }
 
@@ -61,17 +68,23 @@ process_washgold(struct module *s, struct player *pr) {
     if (gain == 0) {
         return;
     }
+    uint32_t wash_old = cdata->washgold;
     if (gain > cdata->washgold) {
         gain = cdata->washgold;
         cdata->washgold = 0;
     } else {
         cdata->washgold -= gain;
     }
+    uint32_t coin_old = cdata->coin;
     extra = gain * cdata->attri.coin_profit;
     cdata->coin += gain + extra;
     // no db hear
     sync_washgold_result(s, pr, gain, extra);
     hall_sync_money(s, pr);
+
+    hall_gamelog(s, self->charactionlog_handle, 
+            "WASHGOLD,%u,%u,%u,%u,%u", 
+            cdata->accid, sh_timer_now()/1000, coin_old, wash_old, gain+extra);
 }
 
 static void

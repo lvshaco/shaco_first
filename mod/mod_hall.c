@@ -38,6 +38,7 @@ hall_init(struct module *s) {
     struct sh_monitor h = { MODULE_ID, MODULE_ID };
     if (sh_handle_monitor("watchdog", &h, &self->watchdog_handle) ||
         sh_handle_monitor("match", &h, &self->match_handle) ||
+        sh_handle_subscribe("charactionlog", SUB_REMOTE, &self->charactionlog_handle) ||
         sh_handle_subscribe("rpuser", SUB_LOCAL, &self->rpuser_handle) ||
         sh_handle_subscribe("rpuseruni", SUB_LOCAL, &self->rpuseruni_handle) ||
         sh_handle_subscribe("rank", SUB_LOCAL, &self->rank_handle)) {
