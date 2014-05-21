@@ -121,11 +121,11 @@ _refresh_db(struct module *s) {
     uint32_t base; 
     if (self->next_normal_refresh_time <= now) {
         _refresh_rank(s, "normal", now, &base);
-        self->next_normal_refresh_time = base + 7 * SC_DAY_SECS;
+        self->next_normal_refresh_time = base + 7 * SH_DAY_SECS;
     }
     if (self->next_dashi_refresh_time <= now) {
         _refresh_rank(s, "dashi",  now, &base);
-        self->next_dashi_refresh_time = base + 7 * SC_DAY_SECS;
+        self->next_dashi_refresh_time = base + 7 * SH_DAY_SECS;
     }
 }
 
@@ -183,12 +183,12 @@ _handle_redis(struct module *s, struct UM_REDISREPLY *rep, int sz) {
         time_t last = _get_timevalue(si); 
         struct tm tmlast = *localtime(&last);
         time_t base = sh_day_base(last, tmlast);
-        self->next_normal_refresh_time = base + SC_DAY_SECS * 7;
+        self->next_normal_refresh_time = base + SH_DAY_SECS * 7;
     } else if (!strcmp(type, "dashi")) {
         time_t last = _get_timevalue(si);
         struct tm tmlast = *localtime(&last);
         time_t base = sh_day_base(last, tmlast);
-        self->next_dashi_refresh_time = base + SC_DAY_SECS * 7;
+        self->next_dashi_refresh_time = base + SH_DAY_SECS * 7;
     }
 }
 

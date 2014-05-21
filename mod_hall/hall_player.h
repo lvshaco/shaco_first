@@ -50,6 +50,10 @@ _player_gradeid(uint16_t level) {
     return grade;
 }
 
+struct playerlog {
+
+};
+
 struct player {
     int watchdog_source;
     int status;

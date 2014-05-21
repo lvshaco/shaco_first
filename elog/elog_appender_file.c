@@ -10,10 +10,10 @@ struct appender_data {
 };
 
 static int
-elog_file_open(struct elog* self) {
+elog_file_open(struct elog* self, const char *mode) {
     FILE* fp;
     if (self->filename[0]) {
-        fp = fopen(self->filename, "w+");
+        fp = fopen(self->filename, mode);
         if (fp == NULL) {
             fprintf(stderr, "open log file fail %d: %s\n", errno, self->filename);
             return 1;

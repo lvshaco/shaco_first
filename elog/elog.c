@@ -35,12 +35,12 @@ elog_append(struct elog* self, const char* msg, int sz) {
 }
 
 int
-elog_set_appender(struct elog* self, const struct elog_appender* appender) {
+elog_set_appender(struct elog* self, const struct elog_appender* appender, const char *mode) {
     if (self->appender) {
         self->appender->close(self);
     }
     self->appender = appender;
-    if (self->appender->open(self)) {
+    if (self->appender->open(self, mode)) {
         self->appender = NULL;
         return 1;
     }

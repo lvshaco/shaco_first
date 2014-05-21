@@ -1,12 +1,13 @@
 shaco=~/shaco CD=. filter="Makefile README.md *.lua *.py *.h *.c" {
  Makefile
+ README.md
+ config_bug.lua
  config_auth.lua
  config_base.lua
  config_benchmark.lua
  config_benchmarkdb.lua
  config_benchmarklog.lua
  config_bmdb.lua
- config_bug.lua
  config_center.lua
  config_echo.lua
  config_gamelog.lua
@@ -14,7 +15,6 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.py *.h *.c" {
  config_gate2.lua
  config_gateload.lua
  config_hall.lua
- config_keepalived.lua
  config_match.lua
  config_robot.lua
  config_robotcli.lua
@@ -23,7 +23,13 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.py *.h *.c" {
  config_uniqueol.lua
  config_watchdog.lua
  config_watchdog2.lua
+ config_keepalived.lua
+ config_gamelog.lua
+ config_testc.lua
+ config_testd.lua
+ config_httpc.lua
  libshaco=libshaco{
+  dlmodule.c
   sh_array.c
   sh_check.c
   sh_env.c
@@ -31,6 +37,7 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.py *.h *.c" {
   sh_init.c
   sh_log.c
   sh_module.c
+  sh_monitor.c
   sh_net.c
   sh_node.c
   sh_reload.c
@@ -41,6 +48,7 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.py *.h *.c" {
  }
  include=include{
   libshaco=libshaco{
+   dlmodule.h
    sh.h
    sh_array.h
    sh_env.h
@@ -48,6 +56,7 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.py *.h *.c" {
    sh_init.h
    sh_log.h
    sh_module.h
+   sh_monitor.h
    sh_net.h
    sh_node.h
    sh_reload.h
@@ -76,10 +85,10 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.py *.h *.c" {
  }
  redis=redis{
   redis.h
-  redis_fmt.h
-  redis_parser.h
   redis.c
+  redis_fmt.h
   redis_fmt.c
+  redis_parser.h
   redis_parser.c
  }
  cnet=cnet{
@@ -92,7 +101,6 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.py *.h *.c" {
   mod_benchmark.c
   mod_benchmarkdb.c
   mod_benchmarklog.c
-  mod_bug.c
   mod_centers.c
   mod_cmdctl.c
   mod_cmds.c
@@ -100,9 +108,6 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.py *.h *.c" {
   mod_gamelog.c
   mod_gate.c
   mod_hall.c
-  mod_httpc.c
-  mod_keepalivec.c
-  mod_keepalived.c
   mod_loadbalance.c
   mod_log.c
   mod_match.c
@@ -115,6 +120,10 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.py *.h *.c" {
   mod_route.c
   mod_uniqueol.c
   mod_watchdog.c
+  mod_keepalived.c
+  mod_keepalivec.c
+  mod_httpc.c
+  mod_bug.c
  }
  mod_hall=mod_hall{
   hall.h
@@ -248,5 +257,6 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.py *.h *.c" {
  }
  datadefine=datadefine{
   tplt_struct.h
+  char_attribute.lua
  }
 }

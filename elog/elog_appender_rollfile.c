@@ -76,8 +76,8 @@ _rollover(struct appender_data* od) {
 }
 
 static int
-elog_rollfile_open(struct elog* self) {
-    FILE* fp = fopen(self->filename, "a+");
+elog_rollfile_open(struct elog* self, const char *mode) {
+    FILE* fp = fopen(self->filename, mode);
     if (fp == NULL) {
         return 1;
     }

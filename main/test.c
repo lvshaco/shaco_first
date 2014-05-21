@@ -555,7 +555,7 @@ void test_redisnew(int times) {
 void
 test_elog1() {
     struct elog* el = elog_create("/home/lvxiaojun/log/testlog.log");
-    elog_set_appender(el, &g_elog_appender_file);
+    elog_set_appender(el, &g_elog_appender_file, "w+");
     elog_append(el, "1234567890\n", 11);
     sleep(1);
     elog_append(el, "abc\n", 4);
@@ -570,7 +570,7 @@ test_elog1() {
 void
 test_elog2() {
     struct elog* el = elog_create("/home/lvxiaojun/log/testlog.log");
-    elog_set_appender(el, &g_elog_appender_rollfile);
+    elog_set_appender(el, &g_elog_appender_rollfile, "a+");
     struct elog_rollfile_conf conf;
     conf.file_max_num = 2;
     conf.file_max_size = 10;
@@ -598,7 +598,7 @@ test_elog3(int times) {
     data[sizeof(data)-1] = '\0';
 
     struct elog* el = elog_create("/tmp/testfilelog.log");
-    elog_set_appender(el, &g_elog_appender_file);
+    elog_set_appender(el, &g_elog_appender_file, "w+");
     t1 = _elapsed();
     for (i=0; i<times; ++i) {
         elog_append(el, data, sizeof(data));
@@ -621,7 +621,7 @@ test_elog4(int times) {
     data[sizeof(data)-1] = '\0';
 
     struct elog* el = elog_create("/home/lvxiaojun/log/testlog.log");
-    elog_set_appender(el, &g_elog_appender_rollfile);
+    elog_set_appender(el, &g_elog_appender_rollfile, "a+");
     struct elog_rollfile_conf conf;
     conf.file_max_num = 2;
     conf.file_max_size = 1024*1024*100;
@@ -1441,7 +1441,7 @@ test_syslog(int times) {
     int i;
     scanf("%d\n", &i);
     struct elog* el = elog_create("/tmp/testfprintf.log");
-    elog_set_appender(el, &g_elog_appender_file);
+    elog_set_appender(el, &g_elog_appender_file, "w+");
     elog_append(el, "1234", 4); 
     elog_free(el);
 

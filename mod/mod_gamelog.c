@@ -2,6 +2,9 @@
 #include "elog_include.h"
 #include <pthread.h>
 #include <unistd.h>
+#include <limits.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 
 // todo: add drop msg if log_queue accumulate too much msg, 
 // note: msg accumulate size must be volatile
@@ -75,7 +78,7 @@ struct gamelog {
     volatile bool worker_run;
     struct log_queue log_q;
     struct elog *logger;
-    
+    time_t next_logger_time; 
     uint64_t log_total_in;
     uint64_t log_last_time;
     uint64_t log_last;
@@ -87,12 +90,32 @@ struct gamelog {
 };
 
 static int 
-create_log(struct gamelog *self) {
-    struct elog *logger = elog_create("/tmp/gamelog.log");
+create_log(struct module *s, time_t now) {
+    struct gamelog *self = MODULE_SELF;
+    
+    if (self->logger != NULL) {
+        elog_free(self->logger);
+        self->logger = NULL;
+    }
+    char field_d[64];
+    char field_t[64];
+    sh_snprintf(field_d, sizeof(field_d), "%s_dir",  MODULE_NAME); 
+    sh_snprintf(field_t, sizeof(field_t), "%s_type", MODULE_NAME);
+
+    struct tm tmnow = *localtime(&now);
+    time_t base = sh_day_base(now, tmnow);
+    self->next_logger_time = base + SH_DAY_SECS;
+
+    char fname[PATH_MAX];
+    sh_snprintf(fname, sizeof(fname), "%s/%s_%04u%02u%02u.gamelog", 
+            sh_getstr(field_d, ""), 
+            sh_getstr(field_t, ""),
+            tmnow.tm_year+1900, tmnow.tm_mon+1, tmnow.tm_mday);
+    struct elog *logger = elog_create(fname);
     if (logger == NULL) {
         return 1;
     }
-    if (elog_set_appender(logger, &g_elog_appender_file)) {
+    if (elog_set_appender(logger, &g_elog_appender_file, "a+")) {
         sh_error("gamelog set appender fail");
         return 1;
     }
@@ -135,35 +158,48 @@ log_stat(struct gamelog *self) {
 
 static void *
 log_run(void *arg) {
-    struct gamelog *self = arg;
-    for (;;) {
+    struct module *s = arg;
+    struct gamelog *self = MODULE_SELF;
+    while (self->worker_run) {
         struct log_data log;
         int result = log_queue_pop(&self->log_q, &log);
         if (result == 0) { 
+            time_t now = time(NULL);
+            if (now >= self->next_logger_time) {
+                create_log(s, now);
+            }
             elog_append(self->logger, log.msg, log.sz);
             free(log.msg);
             log_stat(self);
         } else {
-            if (self->worker_run) {
-                usleep(10);
-            } else {
-                break;
-            }
+            usleep(10);
         }
     }
     return NULL;
 }
 
 static int
-create_logger(struct gamelog *self) {
-    if (create_log(self)) {
+create_logger(struct module *s) {
+    struct gamelog *self = MODULE_SELF;
+   
+    char field_d[64];
+    sh_snprintf(field_d, sizeof(field_d), "%s_dir", MODULE_NAME); 
+    const char *dir = sh_getstr(field_d, "");
+    if (dir[0] == '\0') {
+        sh_exit("`%s` no specify gamelog dir", MODULE_NAME);
+        return 1;
+    }
+    mkdir(dir, 0744);
+
+    time_t now = time(NULL);
+    if (create_log(s, now)) {
         return 1;
     }
     log_queue_init(&self->log_q);
     
     self->worker_run = true;
     pthread_t tid;
-    int result = pthread_create(&tid, NULL, log_run, self);
+    int result = pthread_create(&tid, NULL, log_run, s);
     if (result) {
         sh_error("Create log thread(err#%d)", result);
         return 1;
@@ -225,11 +261,10 @@ gamelog_free(struct gamelog *self) {
 
 int
 gamelog_init(struct module *s) {
-    struct gamelog *self = MODULE_SELF;
     if (sh_handle_publish(MODULE_NAME, PUB_SER)) {
         return 1;
-    } 
-    if (create_logger(self)) {
+    }  
+    if (create_logger(s)) {
         return 1;
     }
     return 0;

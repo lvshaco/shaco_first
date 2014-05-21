@@ -20,6 +20,7 @@ uniqueol = {ip=iip, port=8002, conn=256},
 match    = {ip=iip, port=8003, conn=256},
 robot    = {ip=iip, port=8004, conn=256},
 bug      = {ip=iip, port=8005, conn=256},
+gamelog  = {ip=iip, port=8006, conn=256},
 keepalived={ip=iip, port=8621, conn=256},
 --
 route    = {ip=iip, port=8100, conn=256},

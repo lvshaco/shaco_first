@@ -45,7 +45,7 @@ log_init(struct module* s) {
         if (el == NULL) {
             return 1;
         }
-        if (elog_set_appender(el, &g_elog_appender_rollfile)) {
+        if (elog_set_appender(el, &g_elog_appender_rollfile, "a+")) {
             fprintf(stderr, "elog set appender fail\n");
             return 1;
         }
@@ -58,7 +58,7 @@ log_init(struct module* s) {
         if (el == NULL) {
             return 1;
         }
-        if (elog_set_appender(el, &g_elog_appender_file)) {
+        if (elog_set_appender(el, &g_elog_appender_file, "a+")) {
             fprintf(stderr, "elog set appender fail\n");
             return 1;
         }

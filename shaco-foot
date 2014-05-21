@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #SERVERS="keepalived gateload uniqueol match robot watchdog watchdog2 auth hall room gate gate2 route"
-SERVERS="keepalived bug gateload match robot watchdog uniqueol auth hall room gate route"
+SERVERS="keepalived bug gamelog gateload match robot watchdog uniqueol auth hall room gate route"
 
 error() {
     echo -ne "\033[40;31;1m"
