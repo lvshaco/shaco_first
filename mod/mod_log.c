@@ -35,7 +35,12 @@ log_init(struct module* s) {
             fprintf(stderr, "no specify log dir\n");
             return 1;
         }
-        mkdir(logdir, 0744);
+        if (mkdir(logdir, 0744)) {
+            if (errno != EEXIST) {
+                sh_exit("madir for log fail: %s", strerror(errno));
+                return 1;
+            }
+        }
         char logfile[PATH_MAX];
         snprintf(logfile, sizeof(logfile), "%s/%d.log",
                 logdir,

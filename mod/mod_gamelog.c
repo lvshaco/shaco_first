@@ -5,6 +5,7 @@
 #include <limits.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <errno.h>
 
 // todo: add drop msg if log_queue accumulate too much msg, 
 // note: msg accumulate size must be volatile
@@ -189,7 +190,12 @@ create_logger(struct module *s) {
         sh_exit("`%s` no specify gamelog dir", MODULE_NAME);
         return 1;
     }
-    mkdir(dir, 0744);
+    if (mkdir(dir, 0744)) {
+        if (errno != EEXIST) {
+            sh_exit("madir for gamelog fail: %s", strerror(errno));
+            return 1;
+        }
+    }
 
     time_t now = time(NULL);
     if (create_log(s, now)) {
@@ -206,7 +212,7 @@ create_logger(struct module *s) {
     }
     self->worker_ok = true;
     self->worker_id = tid;
-    sh_info("Create log thread(%lu)", self->worker_id);
+    sh_info("Create log thread (%lu)", self->worker_id);
     return 0;
 }
 
