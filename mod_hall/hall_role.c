@@ -107,7 +107,7 @@ process_userole(struct module *s, struct player *pr, const struct UM_USEROLE *us
     
     hall_playerdb_save(s, pr, false);
     hall_gamelog(s, self->charactionlog_handle, "USEROLE,%u,%u,%u", 
-            cdata->accid, sh_timer_now()/1000, roleid);
+            sh_timer_now()/1000, cdata->accid, roleid);
 }
 
 static void
@@ -144,7 +144,7 @@ process_buyrole(struct module *s, struct player *pr, const struct UM_BUYROLE *bu
 
     hall_playerdb_save(s, pr, true);
     hall_gamelog(s, self->charactionlog_handle, "BUYROLE,%u,%u,%u,%u,%u", 
-            cdata->accid, sh_timer_now()/1000, roleid, coin_old, cdata->coin);
+            sh_timer_now()/1000, cdata->accid, roleid, coin_old, cdata->coin);
 }
 
 static void
@@ -198,7 +198,7 @@ process_adjust_state(struct module *s, struct player *pr, const struct UM_ADJUST
     
     hall_playerdb_save(s, pr, true);
     hall_gamelog(s, self->charactionlog_handle, 
-            "STATE,%u,%u,%u,%u,%u", cdata->accid, sh_timer_now()/1000, 
+            "STATE,%u,%u,%u,%u,%u", sh_timer_now()/1000, cdata->accid,
             coin_old, old_value, new_value-old_value);
 }
 

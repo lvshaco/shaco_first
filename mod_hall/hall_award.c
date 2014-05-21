@@ -108,7 +108,7 @@ process_award(struct module *s, struct player* pr, int8_t type, const struct mem
         updated = true;
 
         hall_gamelog(s, self->charactionlog_handle, "LEVELUP,%u,%u,%u,%u,%u,%u", 
-            cdata->accid, sh_timer_now()/1000, old_level, old_exp, cdata->exp, cdata->level);
+            sh_timer_now()/1000, cdata->accid, old_level, old_exp, cdata->exp, cdata->level);
     }
     // score_normal
     if (award->score_normal > 0) {

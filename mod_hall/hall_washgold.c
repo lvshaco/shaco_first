@@ -44,7 +44,7 @@ refresh_washgold(struct module *s, struct player *pr, bool sync) {
                 sync_washgold_info(s, pr);
             }
             hall_gamelog(s, self->charactionlog_handle, 
-                "WASHGOLD_R,%u,%u,%u,%u", cdata->accid, sh_timer_now()/1000, 
+                "WASHGOLD_R,%u,%u,%u,%u", sh_timer_now()/1000, cdata->accid, 
                 wash_old, cdata->washgold);
         }
         cdata->last_washgold_refresh_time = now;
@@ -84,7 +84,7 @@ process_washgold(struct module *s, struct player *pr) {
 
     hall_gamelog(s, self->charactionlog_handle, 
             "WASHGOLD,%u,%u,%u,%u,%u", 
-            cdata->accid, sh_timer_now()/1000, coin_old, wash_old, gain+extra);
+            sh_timer_now()/1000, cdata->accid, coin_old, wash_old, gain+extra);
 }
 
 static void

@@ -69,7 +69,7 @@ play(struct module *s, struct player *pr, int type) {
 
         if (type == ROOM_TYPE_DASHI) {
             hall_gamelog(s, self->charactionlog_handle, "MATCH,%u", 
-                    pr->data.accid, sh_timer_now()/1000);
+                    sh_timer_now()/1000, pr->data.accid);
         }
     } else {
         sh_trace("Play %u request play, but status %d", UID(pr), pr->status);

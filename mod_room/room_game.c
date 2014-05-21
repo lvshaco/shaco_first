@@ -664,8 +664,10 @@ room_game_create(struct module *s, int source, struct UM_CREATEROOM *create) {
     for (i=0; i<create->nmember; ++i) {
         m = &ro->p[i];
         member_place(ro, m, &create->members[i], i);
-        sz += sh_snprintf(tmp+sz, sizeof(tmp)-sz, ",%u", m->detail.accid); 
+        sz += sh_snprintf(tmp+sz, sizeof(tmp)-sz, "%u,", m->detail.accid); 
     }
+    if (sz > 0)
+        tmp[sz-1] = '\0';
     room_item_init(self, ro, mapt);
     assert(!sh_hash_insert(&self->room_games, ro->id, ro));
     notify_create_room_game_result(s, source, create->id, SERR_OK);

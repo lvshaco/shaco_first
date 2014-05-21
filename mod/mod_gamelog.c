@@ -276,9 +276,10 @@ gamelog_main(struct module *s, int session, int source, int type, const void *ms
     assert(type == MT_TEXT);
   
     struct log_data log;
-    log.msg = malloc(sz);
-    log.sz  = sz;
+    log.msg = malloc(sz+1);
+    log.sz  = sz+1;
     memcpy(log.msg, msg, sz);
+    ((char*)log.msg)[sz] = '\n';
     log_queue_push(&self->log_q, &log);
     self->log_total_in++;
 }
