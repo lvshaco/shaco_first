@@ -393,7 +393,7 @@ keepalived_time(struct module *s) {
             c_start(self, c);
             break;
         case ST_STARTING:
-            if (now - c->last_tick >= 5000) { 
+            if (now - c->last_tick >= 8000) { 
                 c_start(self, c);
             }
             break;
