@@ -136,8 +136,12 @@ c_start(struct keepalived *self, struct client *c) {
         c->status == ST_RUN) {
         return;
     }
-    sh_info("Keepalived client(%s) start", c->args);
-
+    if (c->status == ST_STARTING) {
+        sh_error("Keepalived client(%s) start in starting status (maybe last start timeout)", 
+                c->args);
+    } else {
+        sh_info("Keepalived client(%s) start", c->args);
+    }
     struct args A;
     args_parsestr(&A, 0, c->args);
     if (A.argc >= ARGS_MAX) {
@@ -145,6 +149,7 @@ c_start(struct keepalived *self, struct client *c) {
         return;
     }
     c->status = ST_STARTING;
+    c->last_tick = sh_timer_now();
     A.argv[A.argc] = NULL;
     if (sh_fork(A.argv, A.argc+1)) {
         sh_error("Keepalived client(%s) start fail", c->args);
@@ -386,6 +391,11 @@ keepalived_time(struct module *s) {
         switch (c->status) {
         case ST_INVALID:
             c_start(self, c);
+            break;
+        case ST_STARTING:
+            if (now - c->last_tick >= 5000) { 
+                c_start(self, c);
+            }
             break;
         case ST_RUN:
             if (now - c->last_tick >= self->suspend_time_max) {
