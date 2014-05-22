@@ -37,7 +37,7 @@ log_init(struct module* s) {
         }
         if (mkdir(logdir, 0744)) {
             if (errno != EEXIST) {
-                sh_exit("madir for log fail: %s", strerror(errno));
+                fprintf(stderr, "madir for log fail: %s", strerror(errno));
                 return 1;
             }
         }
