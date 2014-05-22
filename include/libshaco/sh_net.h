@@ -18,7 +18,7 @@ bool sh_net_close_socket(int id, bool force);
 int sh_net_max_socket();
 const char* sh_net_error(int err);
 int sh_net_subscribe(int id, bool read);
-int sh_net_socket_address(int id, uint32_t* addr, int* port);
+int sh_net_socket_address(int id, char ip[40], uint16_t *port);
 int sh_net_socket_isclosed(int id);
 
 #endif

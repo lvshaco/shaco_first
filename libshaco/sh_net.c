@@ -129,8 +129,8 @@ int sh_net_max_socket() {
 int sh_net_subscribe(int id, bool read) { 
     return net_subscribe(N, id, read); 
 }
-int sh_net_socket_address(int id, uint32_t* addr, int* port) { 
-    return net_socket_address(N, id, addr, port); 
+int sh_net_socket_address(int id, char ip[40], uint16_t* port) { 
+    return net_socket_address(N, id, ip, port); 
 }
 int sh_net_socket_isclosed(int id) {
     return net_socket_isclosed(N, id);

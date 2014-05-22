@@ -23,7 +23,7 @@ hall_player_fini(struct hall *self) {
 }
 
 static void 
-login(struct module *s, int source, uint32_t accid) {
+login(struct module *s, int source, uint32_t accid, char ip[40]) {
     struct hall *self = MODULE_SELF;
     struct player *pr = sh_hash_find(&self->acc2player, accid);
     if (pr) {
@@ -35,10 +35,11 @@ login(struct module *s, int source, uint32_t accid) {
     pr->watchdog_source = source;
     pr->status = PS_QUERYCHAR;
     pr->data.accid = accid;
+    memcpy(pr->ip, ip, sizeof(pr->ip));
     assert(!sh_hash_insert(&self->acc2player, accid, pr));
 
-    hall_gamelog(s, self->charactionlog_handle, "LOGIN,%u,%u", 
-            sh_timer_now()/1000, accid);
+    hall_gamelog(s, self->charactionlog_handle, "LOGIN,%u,%u,%s", 
+            sh_timer_now()/1000, accid, ip);
 
     if (hall_playerdb_send(s, pr, PDB_QUERY)) {
         sh_trace("Player %u login fail, no db", accid);
@@ -61,8 +62,8 @@ logout(struct module *s, struct player *pr) {
         sh_handle_send(MODULE_ID, self->match_handle, MT_UM, ma, sizeof(*ma)+sizeof(*lo)); 
     } 
     hall_playerdb_save(s, pr, true);
-    hall_gamelog(s, self->charactionlog_handle, "LOGOUT,%u,%u", 
-            sh_timer_now()/1000, pr->data.accid);
+    hall_gamelog(s, self->charactionlog_handle, "LOGOUT,%u,%u,%s", 
+            sh_timer_now()/1000, pr->data.accid, pr->ip);
 
     free_player(self, pr); 
 }
@@ -86,7 +87,7 @@ hall_player_main(struct module *s, int source, struct player *pr, const void *ms
     switch (base->msgid) {
     case IDUM_ENTERHALL: {
         UM_CAST(UM_ENTERHALL, enter, msg);
-        login(s, source, enter->uid);
+        login(s, source, enter->uid, enter->ip);
         break;
         }
     case IDUM_LOGOUT: {

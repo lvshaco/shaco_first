@@ -412,6 +412,8 @@ hall_playerdb_process_redis(struct module *s, struct UM_REDISREPLY *rep, int sz)
             p->status = PS_HALL;
             
             UM_DEFFIX(UM_ENTERHALL, enter);
+            enter->uid = UID(p);
+            enter->ip[0] = '\0';
             hall_role_main(s, p, enter, sizeof(*enter));
             hall_ring_main(s, p, enter, sizeof(*enter));
             // before attribute refresh

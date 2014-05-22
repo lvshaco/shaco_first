@@ -5,12 +5,13 @@
 
 // status
 #define S_ALLOC 0
-#define S_AUTH_VERIFY 1
-#define S_UNIQUE_VERIFY 2
-#define S_UNIQUE_VERIFY_OK 3
-#define S_HALL 4
-#define S_MATCH 5
-#define S_ROOM 6
+#define S_CONNECTED 1
+#define S_AUTH_VERIFY 2
+#define S_UNIQUE_VERIFY 3
+#define S_UNIQUE_VERIFY_OK 4
+#define S_HALL 5
+#define S_MATCH 6
+#define S_ROOM 7
 
 // disconnect
 #define DISCONNECT 1
@@ -31,6 +32,7 @@ struct user {
     int hall_handle;
     int room_handle;
 
+    char ip[40];
     char account[ACCOUNT_NAME_MAX+1];
 };
  
@@ -109,6 +111,7 @@ alloc_user(struct watchdog *self, int gate_source, int connid) {
     ur->auth_handle = -1;
     ur->hall_handle = -1;
     ur->room_handle = -1;
+    ur->ip[0] = '\0';
     ur->account[0] = '\0';
     return ur;
 }
@@ -165,22 +168,38 @@ process_gate(struct module *s, int source, int connid, const void *msg, int sz) 
     uint64_t conn = CONN_HASH(source, connid);
 
     UM_CAST(UM_BASE, base, msg); 
-    
-    if (base->msgid == IDUM_LOGINACCOUNT) {
+   
+    if (base->msgid == IDUM_NETCONNECT) {
+        UM_CAST(UM_NETCONNECT, nc, base);
+        struct user *ur = sh_hash64_find(&self->conn2user, conn);
+        if (ur == NULL) {
+            ur = alloc_user(self, source, connid);
+            assert(!sh_hash64_insert(&self->conn2user, conn, ur));
+            memcpy(ur->ip, nc->ip, sizeof(ur->ip));
+            sh_error("----------ip %s, %s", nc->ip, ur->ip);
+            ur->status = S_CONNECTED;
+        } else {
+            disconnect_client(s, source, connid, SERR_OK);
+        }
+        return;
+    } else if (base->msgid == IDUM_LOGINACCOUNT) {
         UM_CASTCK(UM_LOGINACCOUNT, la, base, sz);
         struct user *ur = sh_hash64_find(&self->conn2user, conn);
-        if (ur) {
-            disconnect_client(s, source, connid, SERR_RELOGIN);
-            return;
+        if (ur == NULL) {
+            ur = alloc_user(self, source, connid);
+            memcpy(ur->account, la->account, sizeof(ur->account));
+            assert(!sh_hash64_insert(&self->conn2user, conn, ur)); 
+        } else {
+            if (ur->status != S_CONNECTED) {
+                disconnect_client(s, source, connid, SERR_OK);
+                return;
+            }
         }
         int auth_handle = sh_handle_nextload(self->auth_handle);
         if (auth_handle == -1) {
             disconnect_client(s, source, connid, SERR_NOAUTHS);
             return;
         }
-        ur = alloc_user(self, source, connid);
-        memcpy(ur->account, la->account, sizeof(ur->account));
-        assert(!sh_hash64_insert(&self->conn2user, conn, ur));
         ur->status = S_AUTH_VERIFY;
         ur->auth_handle = auth_handle;
         UM_DEFWRAP(UM_AUTH, w, UM_LOGINACCOUNT, wla);
@@ -188,14 +207,16 @@ process_gate(struct module *s, int source, int connid, const void *msg, int sz) 
         w->wsession = ur->wsession;
         *wla = *la;
         sh_handle_send(MODULE_ID, auth_handle, MT_UM, w, sizeof(*w) + sizeof(*wla));
-        return;
     } 
     struct user *ur = sh_hash64_find(&self->conn2user, conn);
     if (ur == NULL) {
         disconnect_client(s, source, connid, SERR_NOLOGIN);
         return;
     }
-    if (base->msgid == IDUM_BUGSUBMIT) {
+    if (base->msgid == IDUM_NETDISCONN) {
+        UM_CAST(UM_NETDISCONN, disc, base);
+        logout(s, ur, disc->err, NODISCONNECT);
+    } else if (base->msgid == IDUM_BUGSUBMIT) {
         if (ur->status == S_HALL && ur->hall_handle != -1 && self->bug_handle != -1) {
             UM_DEFWRAP2(UM_BUG, bu, sz);
             bu->client = ur->accid;
@@ -216,15 +237,7 @@ process_gate(struct module *s, int source, int connid, const void *msg, int sz) 
             memcpy(ro->wrap, msg, sz);
             sh_handle_send(MODULE_ID, ur->room_handle, MT_UM, ro, sizeof(*ro)+sz);
         }
-    } else {
-        switch (base->msgid) {
-        case IDUM_NETDISCONN: {
-            UM_CAST(UM_NETDISCONN, disc, base);
-            logout(s, ur, disc->err, NODISCONNECT);
-            break;
-            }
-        }
-    }
+    } 
 }
 
 static void
@@ -274,6 +287,9 @@ uniqueol_ok(struct module *s, struct user *ur) {
 
     UM_DEFFIX(UM_ENTERHALL, enter);
     enter->uid = ur->accid;
+    memcpy(enter->ip, ur->ip, sizeof(enter->ip));
+    sh_error("----------2ip %s, %s", enter->ip, ur->ip);
+
     sh_handle_send(MODULE_ID, hall_handle, MT_UM, enter, sizeof(*enter));
 }
 

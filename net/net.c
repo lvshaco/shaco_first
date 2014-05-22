@@ -907,12 +907,17 @@ net_getevents(struct net *self, struct net_message **e) {
 }
 
 int 
-net_socket_address(struct net *self, int id, uint32_t *addr, int *port) {
-    // todo
+net_socket_address(struct net *self, int id, char ip[40], uint16_t *port) {
     struct socket *s = _get_socket(self, id);
-    if (s) {
-        *addr = 0;
-        *port = 0;
+    if (s == NULL) {
+        return 1;
+    }
+    struct sockaddr_in peeraddr;
+    socklen_t len = sizeof(peeraddr);
+    int ret = getpeername(s->fd, (struct sockaddr *)&peeraddr, &len);
+    if (ret == 0) {
+        inet_ntop(AF_INET, &peeraddr.sin_addr, ip, 40);
+        *port = ntohs(peeraddr.sin_port);
         return 0;
     }
     return 1;

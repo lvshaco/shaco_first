@@ -13,20 +13,19 @@
 #define IDUM_SERVICEADD     IDUM_NBEGIN+2
 #define IDUM_SERVICEDEL     IDUM_NBEGIN+3
 #define IDUM_SERVICELOAD    IDUM_NBEGIN+4
-#define IDUM_HALL       IDUM_NBEGIN+5
+#define IDUM_UPDATELOAD IDUM_NBEGIN+5
 #define IDUM_NETDISCONN IDUM_NBEGIN+6
-#define IDUM_GATE       IDUM_NBEGIN+7
-#define IDUM_AUTH       IDUM_NBEGIN+8
-#define IDUM_ROOM       IDUM_NBEGIN+9
-#define IDUM_MATCH      IDUM_NBEGIN+10
-#define IDUM_BUG        IDUM_NBEGIN+11
-#define IDUM_CMDS       IDUM_NBEGIN+12
-//#define IDUM_FORWARD    IDUM_NBEGIN+12
-#define IDUM_MINLOADFAIL IDUM_NBEGIN+13
-#define IDUM_UPDATELOAD IDUM_NBEGIN+14
+#define IDUM_NETCONNECT IDUM_NBEGIN+7
 
-#define IDUM_CLIENT     IDUM_NBEGIN+15
-#define IDUM_DBRANK     IDUM_NBEGIN+19
+#define IDUM_GATE       IDUM_NBEGIN+10
+#define IDUM_HALL       IDUM_NBEGIN+11
+#define IDUM_AUTH       IDUM_NBEGIN+12
+#define IDUM_ROOM       IDUM_NBEGIN+13
+#define IDUM_MATCH      IDUM_NBEGIN+14
+#define IDUM_BUG        IDUM_NBEGIN+15
+#define IDUM_CMDS       IDUM_NBEGIN+16
+#define IDUM_CLIENT     IDUM_NBEGIN+17
+#define IDUM_DBRANK     IDUM_NBEGIN+18
 
 #define IDUM_REDISQUERY IDUM_NBEGIN+20
 #define IDUM_REDISREPLY IDUM_NBEGIN+21
@@ -127,6 +126,12 @@ struct UM_MATCH {
     uint8_t wrap[0];
 };
 
+struct UM_NETCONNECT {
+    _UM_HEADER;
+    int32_t connid;
+    char ip[40];
+};
+
 struct UM_NETDISCONN {
     _UM_HEADER;
     int8_t type;
@@ -207,9 +212,6 @@ struct UM_UPDATELOAD {
     _UM_HEADER;
     int value; // load value
 };
-struct UM_MINLOADFAIL {
-    _UM_HEADER;
-};
 
 #define RQUERY_REPLY 1
 #define RQUERY_BACKUP 2
@@ -239,6 +241,7 @@ struct UM_LOGINACCOUNTOK {
 struct UM_ENTERHALL {
     _UM_HEADER;
     uint32_t uid;
+    char ip[40];
 };
 
 struct UM_EXITHALL {

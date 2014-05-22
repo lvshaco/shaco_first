@@ -50,7 +50,7 @@ int net_subscribe(struct net *self, int id, bool read);
 bool net_close_socket(struct net *self, int id, bool force);
 const char *net_error(struct net *self, int err);
 int net_max_socket(struct net *self);
-int net_socket_address(struct net *self, int id, uint32_t *addr, int *port);
+int net_socket_address(struct net *self, int id, char ip[40], uint16_t *port);
 int net_socket_isclosed(struct net *self, int id);
 int net_socket_ud(struct net* self, int id, int *ud, int *ut);
 int net_socket_nonblocking(struct net *self, int id);

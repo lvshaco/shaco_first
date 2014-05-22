@@ -299,6 +299,27 @@ errout:
     module_net(nm->ud, nm);
 }
 
+static inline void
+forward_connect(struct module *s, struct client *c) {
+    struct gate *self = MODULE_SELF; 
+    UM_DEFWRAP(UM_GATE, ga, UM_NETCONNECT, nc);
+    ga->connid = c->connid; 
+    nc->ip[0] = '\0';
+    uint16_t port = 0;
+    sh_net_socket_address(c->connid, nc->ip, &port);
+    sh_handle_send(MODULE_ID, self->handler, MT_UM, ga, sizeof(*ga)+sizeof(*nc));
+}
+
+static inline void
+forward_disconnect(struct module *s, struct client *c, int type, int err) {
+    struct gate *self = MODULE_SELF;
+    UM_DEFWRAP(UM_GATE, ga, UM_NETDISCONN, nd);
+    ga->connid = c->connid;
+    nd->type = type;
+    nd->err  = err;
+    sh_handle_send(MODULE_ID, self->handler, MT_UM, ga, sizeof(*ga) + sizeof(*nd));
+}
+
 void
 gate_net(struct module* s, struct net_message* nm) {
     struct gate* self = MODULE_SELF;
@@ -319,8 +340,11 @@ gate_net(struct module* s, struct net_message* nm) {
         sh_trace("Client %d accepted", id);
         // do not forward to handler
         c = accept_client(s, id); 
-        if (c && !self->need_verify) {
-            login_client(c);
+        if (c) {
+            if (!self->need_verify) {
+                login_client(c);
+            }
+            forward_connect(s, c);
         }
         break;
     case NETE_SOCKERR:
@@ -328,11 +352,7 @@ gate_net(struct module* s, struct net_message* nm) {
         c = get_client(self, id);
         if (c) {
             if (c->status == S_LOGINED) { 
-                UM_DEFWRAP(UM_GATE, ga, UM_NETDISCONN, nd);
-                ga->connid = id;
-                nd->type = NETE_SOCKERR;
-                nd->err  = nm->error;
-                sh_handle_send(MODULE_ID, self->handler, MT_UM, ga, sizeof(*ga) + sizeof(*nd));
+                forward_disconnect(s, c, NETE_SOCKERR, nm->error);
             }
             disconnect_client(s, c, true);
         }
@@ -367,13 +387,8 @@ gate_time(struct module* s) {
             if (self->livetime > 0 &&
                 self->livetime < now - c->active_time) {
                 sh_trace("Client %d heartbeat timeout", c->connid);
-                
-                UM_DEFWRAP(UM_GATE, ga, UM_NETDISCONN, nd);
-                ga->connid = c->connid;
-                nd->type = NETE_TIMEOUT;
-                nd->err  = 0;
-                sh_handle_send(MODULE_ID, self->handler, MT_UM, ga, sizeof(*ga) + sizeof(*nd));
-
+               
+                forward_disconnect(s, c, NETE_TIMEOUT, 0);
                 disconnect_client(s, c, true);
             }
             break;
