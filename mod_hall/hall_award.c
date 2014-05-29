@@ -41,12 +41,13 @@ _rank(struct module *s, struct player* pr,
       const char* type, const char* type_old, uint64_t score) {
     struct hall *self = MODULE_SELF;
 
-    // todo do not pointer
-    UM_DEFFIX(UM_DBRANK, dr);
-    dr->type = type;
-    dr->type_old = type_old;
+    UM_DEFVAR(UM_DBRANK, dr);
     dr->charid = pr->data.charid;
     dr->score = score;
+    dr->ltype = strlen(type);
+    dr->ltype_old = strlen(type_old);
+    memcpy(dr->data, type, dr->ltype);
+    memcpy(dr->data + dr->ltype, type_old, dr->ltype_old);
     sh_handle_send(MODULE_ID, self->rank_handle, MT_UM, dr, sizeof(*dr));
 }
 

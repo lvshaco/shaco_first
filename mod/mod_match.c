@@ -185,16 +185,28 @@ notify_create_room(struct module *s, struct room *ro, struct applyer **as, int n
     struct match *self = MODULE_SELF;
     sh_trace("Match notify create room %u", ro->id);
     UM_DEFVAR(UM_CREATEROOM, create);
-    create->type = ro->type;
-    create->mapid = sh_rand(&self->randseed) % 10  + 1; // 1,2 todo
+    create->type = ro->type; 
     create->id = ro->id;
     create->max_member = max(2, n); // todo, now 2
     create->nmember = n;
+    uint32_t score = 0;
     int i;
     for (i=0; i<n; ++i) {
         create->members[i].is_robot = as[i]->is_robot;
         create->members[i].brief = as[i]->brief;
+        score += as[i]->match_score;
     }
+    score = score / n;
+    if (ro->type == ROOM_TYPE_DASHI) {
+        if (score <= 500) {
+            create->mapid = sh_rand(&self->randseed) % 17 + 1;
+        } else {
+            create->mapid = sh_rand(&self->randseed) % 12 + 50;
+        }
+    } else {
+        create->mapid = sh_rand(&self->randseed) % 22 + 100;
+    }
+    
     sh_handle_send(MODULE_ID, ro->room_handle, MT_UM, create, UM_CREATEROOM_size(create));
 }
 

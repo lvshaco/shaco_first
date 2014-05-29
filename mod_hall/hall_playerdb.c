@@ -236,24 +236,20 @@ _loadpdb(struct player* p, struct redis_replyitem* item) {
     CHECK(cdata->score_dashi = redis_bulkitem_toul(si++));
     CHECK(
     memcpy(cdata->ownrole, si->value.p, min(sizeof(cdata->ownrole), si->value.len));
-    //sh_bytestr_decode(si->value.p, si->value.len, (uint8_t*)cdata->ownrole, sizeof(cdata->ownrole));
     si++;)
     CHECK(rdata->usepage = redis_bulkitem_toul(si++));
     CHECK(rdata->npage = redis_bulkitem_toul(si++));
     CHECK(
     memcpy(rdata->pages, si->value.p, min(sizeof(rdata->pages), si->value.len));
-    //sh_bytestr_decode(si->value.p, si->value.len, (uint8_t*)rdata->pages, sizeof(rdata->pages));
     si++;
     );
     CHECK(rdata->nring = redis_bulkitem_toul(si++));
     CHECK(
     memcpy(rdata->rings, si->value.p, min(sizeof(rdata->rings), si->value.len));
-    //sh_bytestr_decode(si->value.p, si->value.len, (uint8_t*)rdata->rings, sizeof(rdata->rings));
     si++;
     );
     CHECK(
     memcpy(cdata->roles_state, si->value.p, min(sizeof(cdata->roles_state), si->value.len));
-    //sh_bytestr_decode(si->value.p, si->value.len, (uint8_t*)cdata->roles_state, sizeof(cdata->roles_state));
     si++;)
     return SERR_OK;
 }

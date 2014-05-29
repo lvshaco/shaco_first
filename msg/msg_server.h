@@ -70,15 +70,20 @@
 #define IDUM_ROBOT_LOGINROOM IDUM_NBEGIN+403
 //#define IDUM_ROBOTE         IDUM_NBEGIN+450
 
+#pragma pack(1)
+
 struct UM_DBRANK {
     _UM_HEADER;
-    const char *type;
-    const char *type_old;
     uint32_t charid;
     uint64_t score;
+    uint8_t ltype;
+    uint8_t ltype_old;
+    char data[];
 };
-
-#pragma pack(1)
+static inline uint16_t
+UM_DBRANK_size(struct UM_DBRANK *um) {
+    return sizeof(*um) + um->ltype + um->ltype_old;
+}
 
 struct UM_GATE {
     _UM_HEADER;

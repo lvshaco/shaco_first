@@ -200,7 +200,15 @@ rank_main(struct module *s, int session, int source, int type, const void *msg, 
         switch (base->msgid) {
         case IDUM_DBRANK: {
             UM_CAST(UM_DBRANK, dr, msg);
-            _insert_rank(s, dr->type, dr->type_old, dr->charid, dr->score);
+            char type[dr->ltype+1];
+            char type_old[dr->ltype_old+1];
+            char *p = dr->data;
+            memcpy(type, p, dr->ltype);
+            type[dr->ltype] = '\0';
+            p += dr->ltype;
+            memcpy(type_old, p, dr->ltype_old);
+            type_old[dr->ltype_old] = '\0';
+            _insert_rank(s, type, type_old, dr->charid, dr->score);
             break;
             }
         case IDUM_REDISREPLY: {
