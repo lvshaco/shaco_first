@@ -58,7 +58,6 @@ struct player {
     int watchdog_source;
     int status;
     int createchar_times;
-    int cu_flag; // see CU_GRADE
     uint64_t last_save_time;
     struct chardata data;
     char ip[40];
