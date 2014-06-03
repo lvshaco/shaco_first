@@ -2,6 +2,7 @@
 #include "hall.h"
 #include "hall_player.h"
 #include "hall_luck.h"
+#include "hall_playerdb.h"
 #include "msg_server.h"
 #include "msg_client.h"
 
@@ -43,6 +44,18 @@ notify_match_down(struct module *s, struct player *pr) {
 static void
 play(struct module *s, struct player *pr, int type) {
     struct hall *self = MODULE_SELF;
+   
+    switch (type) {
+    case ROOM_TYPE_NORMAL:
+        hall_player_first(s, pr, FT_FREEDOM_PLAY);
+        break;
+    case ROOM_TYPE_DASHI:
+        hall_player_first(s, pr, FT_DASHI_PLAY);
+        break;
+    default:
+        hall_player_first(s, pr, FT_PLAY_GAME);
+        break;
+    }
     if (!ROOM_TYPE_VALID(type)) {
         return;
     }
@@ -71,6 +84,7 @@ play(struct module *s, struct player *pr, int type) {
             hall_gamelog(s, self->charactionlog_handle, "MATCH,%u", 
                     sh_timer_now()/1000, pr->data.accid);
         }
+        pr->room_type = type;
     } else {
         sh_trace("Play %u request play, but status %d", UID(pr), pr->status);
     }
@@ -127,6 +141,10 @@ enter_room(struct module *s, struct player *pr, struct UM_ENTERROOM *er) {
         build_detail(pr, &lr->detail);
         sh_handle_send(MODULE_ID, pr->watchdog_source, MT_UM, lr, sizeof(*lr));
         sh_trace("Play %u notify client enter room", UID(pr));
+
+        if (pr->room_type == ROOM_TYPE_DASHI) {
+            hall_player_first(s, pr, FT_DASHI_MATCH);
+        }
     } else {
         sh_trace("Play %u receive enter room, but status %d", UID(pr), pr->status);
     }
@@ -142,6 +160,12 @@ exit_room(struct module *s, struct player *pr) {
         lo->err = SERR_OK;
         sh_handle_send(MODULE_ID, self->match_handle, MT_UM, ma, sizeof(*ma)+sizeof(*lo));
         sh_trace("Play %u notify match exit room", UID(pr));
+
+        if (pr->room_type == ROOM_TYPE_DASHI) {
+            hall_player_first(s, pr, FT_DASHI_OVER);
+        } else if (pr->room_type == ROOM_TYPE_NORMAL) {
+            hall_player_first(s, pr, FT_FREEDOM_OVER);
+        }
     } else {
         sh_trace("Play %u receive exit room, but status %d", UID(pr), pr->status);
     }
@@ -153,6 +177,12 @@ over_room(struct module *s, struct player *pr, struct UM_OVERROOM *or) {
         pr->status = PS_HALL;
         sh_handle_send(MODULE_ID, pr->watchdog_source, MT_UM, or, sizeof(*or));
         sh_trace("Play %u notify client over room, err %d", UID(pr), or->err);
+
+        if (pr->room_type == ROOM_TYPE_DASHI) {
+            hall_player_first(s, pr, FT_DASHI_OVER);
+        } else if (pr->room_type == ROOM_TYPE_NORMAL) {
+            hall_player_first(s, pr, FT_FREEDOM_OVER);
+        }
     } else {
         sh_trace("Play %u receive over room, but status %d", UID(pr), pr->status);
     }

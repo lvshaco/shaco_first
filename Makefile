@@ -105,6 +105,7 @@ all: \
 	mod_match.so \
 	mod_room.so \
 	mod_rank.so \
+	mod_stat.so \
 	mod_redisproxy.so \
 	mod_hall.so \
 	mod_auth.so \
@@ -169,6 +170,9 @@ mod_rank.so: $(mod_dir)/mod_rank.c
 	@rm -f $@
 	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Iinclude/libshaco -Inet -Ibase -Imsg -Iworld -Iredis -Wl,-rpath,. redis.so
 
+mod_stat.so: $(mod_dir)/mod_stat.c
+	@rm -f $@
+	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Iinclude/libshaco -Inet -Ibase -Imsg -Iworld -Iredis -Wl,-rpath,. redis.so
 
 mod_benchmarkdb.so: $(mod_dir)/mod_benchmarkdb.c
 	@rm -f $@

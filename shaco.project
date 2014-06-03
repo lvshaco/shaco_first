@@ -28,6 +28,7 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.py *.h *.c" {
  config_testc.lua
  config_testd.lua
  config_httpc.lua
+ config_stat.lua
  libshaco=libshaco{
   dlmodule.c
   sh_array.c
@@ -101,6 +102,7 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.py *.h *.c" {
   mod_benchmark.c
   mod_benchmarkdb.c
   mod_benchmarklog.c
+  mod_bug.c
   mod_centers.c
   mod_cmdctl.c
   mod_cmds.c
@@ -108,6 +110,9 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.py *.h *.c" {
   mod_gamelog.c
   mod_gate.c
   mod_hall.c
+  mod_httpc.c
+  mod_keepalivec.c
+  mod_keepalived.c
   mod_loadbalance.c
   mod_log.c
   mod_match.c
@@ -118,12 +123,9 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.py *.h *.c" {
   mod_robotcli.c
   mod_room.c
   mod_route.c
+  mod_stat.c
   mod_uniqueol.c
   mod_watchdog.c
-  mod_keepalived.c
-  mod_keepalivec.c
-  mod_httpc.c
-  mod_bug.c
  }
  mod_hall=mod_hall{
   hall.h

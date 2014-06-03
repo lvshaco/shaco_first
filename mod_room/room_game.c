@@ -445,6 +445,57 @@ rankcmp_depth(const void* p1, const void* p2) {
 }
 
 static void
+game_stat(struct module *s, 
+        struct room_game *ro, 
+        struct player *m, 
+        struct memberaward *a, 
+        uint64_t gametime,
+        int rank) {
+    uint32_t gt = gametime/1000;
+    uint32_t stat[ST_max];
+    memset(stat, 0, sizeof(stat));
+    stat[ST_depth] = m->depth;
+    stat[ST_time] = gt;
+    stat[ST_score] = a->score_normal;
+    if (gt > 0) {
+        stat[ST_speed] = m->depth/gt;
+    }
+    stat[ST_coin] = a->coin;
+    stat[ST_oxygen_item] = m->noxygenitem;
+    stat[ST_fight_item] = m->nitem;
+    stat[ST_bao_item] = m->nbao;
+    if (ro->type == ROOM_TYPE_DASHI) {
+        stat[ST_dashi_times] = 1;
+        if (rank==0) {
+            stat[ST_dashi_wins] = 1;
+        } else {
+            stat[ST_dashi_fails] = 1;
+        }
+    } else {
+        stat[ST_co_times] = 1;
+    }
+    stat[ST_game_times] = 1;
+
+    UM_DEFWRAP2(UM_HALL, ha, UM_MAXSZ);
+    UD_CAST(UM_STAT, st, ha->wrap);
+    ha->uid  = UID(m);
+    st->id = m->detail.charid;
+    st->flag = 0;
+    uint32_t *p = st->data;
+    int i;
+    for (i=0; i<ST_max; ++i) {
+        if (stat[i] != 0) {
+            st->flag |= 1<<i;
+            *p++ = stat[i];
+        }
+    }
+    if (st->flag) {
+        sh_handle_send(MODULE_ID, m->watchdog_source, MT_UM, ha, 
+            sizeof(*ha) + sizeof(*st) + (p- st->data)*4);
+    }
+}
+
+static void
 member_over(struct module *s, struct room_game *ro, struct player *m, int flag) {
     struct room *self = MODULE_SELF;
     sh_trace("Room %u member %u over", ro->id, UID(m)); 
@@ -462,6 +513,7 @@ member_over(struct module *s, struct room_game *ro, struct player *m, int flag) 
         memset(&a, 0, sizeof(a));
         memset(&at, 0, sizeof(at));
     }
+    game_stat(s, ro, m, &a, gametime, 0);
     // switch to hall
     { 
         notify_exit_room(s, m->watchdog_source, UID(m));
@@ -543,9 +595,10 @@ game_over(struct module *s, struct room_game* ro, bool death) {
         build_award_dashi(ro, gametime, &in, m, i, a, at);
         if (is_online(m) && is_player(m)) {
             notify_award(s, ro, m, a);
+            game_stat(s, ro, m, a, gametime, i);
         }
     }
-
+ 
     // switch to hall
     for (i=0; i<np; ++i) {
         m = sortm[i];

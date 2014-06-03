@@ -18,6 +18,7 @@
 #define PDB_CHARID 6
 #define PDB_CREATE 7
 #define PDB_BINDCHARID 8
+#define PDB_FIRST 9
 
 struct module;
 struct hall;
@@ -27,6 +28,7 @@ struct UM_REDISREPLY;
 int hall_playerdb_init(struct hall *self);
 void hall_playerdb_fini(struct hall *self);
 
+int hall_player_first(struct module *s, struct player *p, int field_t);
 int hall_playerdb_send(struct module *s, struct player *pr, int type);
 int hall_playerdb_save(struct module *s, struct player *pr, bool force);
 

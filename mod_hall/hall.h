@@ -19,6 +19,7 @@ struct hall {
     bool match_down;
     int match_handle;
     int watchdog_handle;
+    int stat_handle;
     int charactionlog_handle;
     int rpuser_handle;
     int rpuseruni_handle;

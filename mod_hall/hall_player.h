@@ -2,6 +2,7 @@
 #define __hall_player_h__
 
 #include "msg_sharetype.h"
+#include "msg_server.h"
 #include <stdint.h>
 
 #define PS_FREE  0
@@ -50,17 +51,17 @@ _player_gradeid(uint16_t level) {
     return grade;
 }
 
-struct playerlog {
-
-};
-
 struct player {
     int watchdog_source;
     int status;
+    int room_type;
     int createchar_times;
+    uint64_t last_online_time;
     uint64_t last_save_time;
     struct chardata data;
     char ip[40];
+    uint32_t stat_max[ST_max];
+    uint32_t stat_acc[ST_max];
 };
 
 struct module;

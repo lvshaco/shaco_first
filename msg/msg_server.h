@@ -59,6 +59,8 @@
 
 #define IDUM_AWARDB         IDUM_NBEGIN+220
 #define IDUM_GAMEAWARD      IDUM_NBEGIN+220
+#define IDUM_STAT           IDUM_NBEGIN+221
+#define IDUM_STATEND        IDUM_NBEGIN+222
 #define IDUM_AWARDE         IDUM_NBEGIN+229
 
 #define IDUM_APPLY          IDUM_NBEGIN+300
@@ -339,6 +341,107 @@ struct UM_GAMEAWARD {
     _UM_HEADER;
     int8_t type;
     struct memberaward award;
+};
+/*
+#define ST_depth_max 0  // 最大深度
+#define ST_time_max 1   // 最大时长
+#define ST_score_max 2  // 最高分数
+#define ST_speed_max 3  // 最高速率
+#define ST_coin_max 4   // 最多货币
+#define ST_bao_max 5    // 最多宝物
+#define ST_depth_acc 16  // 总深度
+#define ST_coin_acc 17   // 总获取金币
+#define ST_oxygen_item_acc 18 // 总氧气类道具
+#define ST_fight_item_acc 19  // 总战斗类道具
+#define ST_bao_item_acc 20    // 总宝箱类道具
+#define ST_co_acc 21          // 总合作局数
+#define ST_dashi_acc 22      // 总对战局数
+#define ST_dashi_win_acc 23  // 总对战胜利局数
+#define ST_dashi_fail_acc 24 // 总对战失败局数
+#define ST_games_acc 25 // 总游戏局数
+#define ST_game_acc 26  // 总游戏时长
+#define ST_online_acc 27// 总在线时长
+#define ST_max 32
+*/
+#define ST_depth 0
+#define ST_time 1
+#define ST_score 2
+#define ST_speed 3
+#define ST_coin 4
+#define ST_oxygen_item 5
+#define ST_fight_item 6
+#define ST_bao_item 7
+#define ST_co_times 8
+#define ST_dashi_times 9
+#define ST_dashi_wins 10
+#define ST_dashi_fails 11
+#define ST_game_times 12
+#define ST_online_time 13
+#define ST_max 14
+
+#define ST_B(x) (1<<(ST_##x))
+
+#define ST_ALL_MAX \
+    ST_B(depth) | \
+    ST_B(time) | \
+    ST_B(score) | \
+    ST_B(speed) | \
+    ST_B(coin) | \
+    ST_B(bao_item)
+
+#define ST_ALL_ACC \
+    ST_B(game_times) | \
+    ST_B(depth) | \
+    ST_B(time)
+
+#define ST_DAILY_MAX \
+    ST_B(depth) | \
+    ST_B(time) | \
+    ST_B(score)
+    
+#define ST_DAILY_ACC \
+    ST_B(depth) | \
+    ST_B(time) | \
+    ST_B(coin) | \
+    ST_B(oxygen_item) | \
+    ST_B(fight_item) | \
+    ST_B(bao_item) | \
+    ST_B(co_times) | \
+    ST_B(dashi_times) | \
+    ST_B(dashi_wins) | \
+    ST_B(dashi_fails) | \
+    ST_B(game_times) | \
+    ST_B(online_time)
+
+#define ST_WEEK_MAX \
+    ST_B(depth) | \
+    ST_B(time) | \
+    ST_B(score)
+    
+#define ST_WEEK_ACC \
+    ST_B(depth) | \
+    ST_B(time) | \
+    ST_B(coin) | \
+    ST_B(oxygen_item) | \
+    ST_B(fight_item) | \
+    ST_B(bao_item) | \
+    ST_B(co_times) | \
+    ST_B(dashi_times) | \
+    ST_B(dashi_wins) | \
+    ST_B(dashi_fails) | \
+    ST_B(game_times) | \
+    ST_B(online_time)
+
+struct UM_STAT {
+    _UM_HEADER;
+    uint32_t id;
+    uint32_t flag;
+    uint32_t data[];
+};
+
+struct UM_STATEND {
+    _UM_HEADER;
+    uint32_t id;
 };
 
 #define APPLY_TARGET_TYPE_NONE   0

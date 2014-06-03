@@ -147,6 +147,33 @@ process_award(struct module *s, struct player* pr, int8_t type, const struct mem
     }
 }
 
+static void
+process_stat(struct module *s, struct player *pr, const struct UM_STAT *st, int sz) {
+    struct hall *self = MODULE_SELF;
+    bool dirty = false;
+    const uint32_t *p = st->data;
+    int i;
+    for (i=0; i<ST_max; ++i) {
+        if ((st->flag>>i) & 1) {
+            if ((ST_ALL_MAX>>i) & 1) {
+                if (pr->stat_max[i] < *p) {
+                    pr->stat_max[i] = *p;
+                    dirty = true;
+                }
+            }
+            if ((ST_ALL_ACC>>i) & 1) {
+                pr->stat_acc[i] += *p;
+                dirty = true;
+            }
+            p++;
+        }
+    }
+    if (dirty) {
+        hall_playerdb_save(s, pr, true);
+    }
+    sh_handle_send(MODULE_ID, self->stat_handle, MT_UM, st, sz); 
+}
+
 void
 hall_award_main(struct module *s, struct player *pr, const void *msg, int sz) {
     UM_CAST(UM_BASE, base, msg);
@@ -154,6 +181,11 @@ hall_award_main(struct module *s, struct player *pr, const void *msg, int sz) {
     case IDUM_GAMEAWARD: {
         UM_CASTCK(UM_GAMEAWARD, ga, base, sz);
         process_award(s, pr, ga->type, &ga->award);
+        break;
+        }
+    case IDUM_STAT: {
+        UM_CASTCK(UM_STAT, st, base, sz);
+        process_stat(s, pr, st, sz);
         break;
         }
     }

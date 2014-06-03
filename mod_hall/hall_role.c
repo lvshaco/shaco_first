@@ -108,6 +108,8 @@ process_userole(struct module *s, struct player *pr, const struct UM_USEROLE *us
     hall_playerdb_save(s, pr, false);
     hall_gamelog(s, self->charactionlog_handle, "USEROLE,%u,%u,%u", 
             sh_timer_now()/1000, cdata->accid, roleid);
+
+    hall_player_first(s, pr, FT_ROLE_USE);
 }
 
 static void
@@ -115,7 +117,9 @@ process_buyrole(struct module *s, struct player *pr, const struct UM_BUYROLE *bu
     struct hall *self = MODULE_SELF;
     struct chardata* cdata = &pr->data;
     uint32_t roleid  = buy->roleid;
-   
+  
+    hall_player_first(s, pr, FT_ROLE_BUY_CLICK);
+
     if (has_role(cdata, roleid)) {
         return; // 已经拥有
     }
@@ -145,6 +149,7 @@ process_buyrole(struct module *s, struct player *pr, const struct UM_BUYROLE *bu
     hall_playerdb_save(s, pr, true);
     hall_gamelog(s, self->charactionlog_handle, "BUYROLE,%u,%u,%u,%u,%u", 
             sh_timer_now()/1000, cdata->accid, roleid, coin_old, cdata->coin);
+    hall_player_first(s, pr, FT_ROLE_BUY_OK);
 }
 
 static void
@@ -200,6 +205,7 @@ process_adjust_state(struct module *s, struct player *pr, const struct UM_ADJUST
     hall_gamelog(s, self->charactionlog_handle, 
             "STATE,%u,%u,%u,%u,%u", sh_timer_now()/1000, cdata->accid,
             coin_old, old_value, new_value-old_value);
+    hall_player_first(s, pr, FT_ADJUSTSTATE);
 }
 
 static void

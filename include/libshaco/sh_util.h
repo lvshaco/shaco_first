@@ -32,7 +32,7 @@ sh_limitadd(uint32_t add, uint32_t* cur, uint32_t max) {
 
 // time
 #define sh_day_offsecs(tmt) ((tmt).tm_hour * 3600 + (tmt).tm_min * 60 + (tmt).tm_sec)
-#define sh_day_base(now, tmnow) ((now) - sh_day_offsecs(tmnow))
+#define sh_day_base(now, tmnow)  ((now) - sh_day_offsecs(tmnow))
 #define SH_DAY_SECS (24*3600)
 
 // encode

@@ -223,6 +223,8 @@ struct chardata {
 
     uint8_t  roles_state[ROLE_MAX]; // 角色状态
     uint32_t last_state_refresh_time; // 上次状态回复时间
+
+    uint32_t first_time_flag;
 };
 
 static inline uint8_t *
@@ -302,6 +304,32 @@ struct tmemberstat {
     int32_t score_display;
     int32_t score;
 };
+
+// !!!first time, do not change the no., see FIRST_FIELDS
+#define FT_ACCOUNT 0
+#define FT_CREATE_CHAR 1
+#define FT_ENTER_HALL 2
+#define FT_PLAY_GAME 3
+#define FT_FREEDOM_PLAY 4
+#define FT_FREEDOM_OVER 5
+#define FT_DASHI_PLAY 6
+#define FT_DASHI_MATCH 7
+#define FT_DASHI_OVER 8
+#define FT_ROLE_USE 9
+#define FT_ROLE_BUY_CLICK 10
+#define FT_ROLE_BUY_OK 11
+#define FT_SETTING_CLICK 12
+#define FT_HELP_CLICK 13
+#define FT_NEWBIE_CLICK 14
+#define FT_C_CLICK 15
+#define FT_RANK_CLICK 16
+#define FT_SCORE_CLICK 17
+#define FT_DASHI_CLICK 18
+#define FT_WASHGOLD 19
+#define FT_ADJUSTSTATE 20
+#define FT_EXCHANGE 21
+#define FT_RETURN_GROUND 22
+#define FT_MAX 23
 
 #pragma pack()
 

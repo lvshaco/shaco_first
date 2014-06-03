@@ -21,6 +21,7 @@ struct qlist {
 struct instance {
     char ip[40];
     int port;
+    int db; // >=0; 0: no need select 0
     int connid;
     struct redis_reply reply;
     struct qlist ql;
@@ -130,6 +131,13 @@ instance_addr(struct instance *inst, const char *addr) {
         return 1;
     }
     *p = '\0';
+    char *p2 = strchr(p+1, ':');
+    if (p2) {
+        *p2 = '\0';
+        inst->db = strtol(p2+1, NULL, 10);
+    } else {
+        inst->db = 0;
+    }
     sh_strncpy(inst->ip, tmp, sizeof(inst->ip));
     inst->port = strtol(p+1, NULL, 10);
     return 0;
@@ -222,11 +230,39 @@ instance_auth(struct instance *inst, struct module *s) {
 }
 
 static int
+instance_sdb(struct instance *inst, struct module *s) {
+    struct redisproxy *self = MODULE_SELF;
+    int id = inst->connid;
+    int err, len;
+    char tmp[128];
+    char cmd[128], *pcmd = cmd;
+
+    len = redis_format(&pcmd, sizeof(cmd), "SELECT %d", inst->db);
+    if (sh_net_block_send(id, pcmd, len, &err) != len) {
+        sh_error("Redis %s select %d fail: %s", strinst, inst->db, sh_net_error(err)); 
+        return 1;
+    }
+    struct redis_reply reply;
+    redis_initreply(&reply, 512, 16*1024);
+    block_read(id, &reply);
+
+    if (!redis_to_status(REDIS_ITEM(&reply))) {
+        char strerr[1024];
+        redis_to_string(REDIS_ITEM(&reply), strerr, sizeof(strerr));
+        sh_error("Redis %s select %d error: %s", strinst, inst->db, strerr);
+        return 1;
+    }
+    redis_finireply(&reply);
+    return 0;
+}
+
+static int
 instance_login(struct instance *inst, struct module *s) {
     char tmp[128];
     struct redisproxy *self = MODULE_SELF;
     if (!instance_connect(inst, s) &&
-        !instance_auth(inst, s)) {
+        !instance_auth(inst, s) &&
+        !instance_sdb(inst, s)) {
         sh_info("Redis %s login", strinst);
         return 0;
     } else {
@@ -305,9 +341,8 @@ init_instances(struct module *s) {
 
     char field[64];
     int sharding_mod = sh_getint(FIELD("sharding_mod"), 1);
-    if (sharding_mod <= 0 ||
-        sharding_mod & (sharding_mod-1)) {
-        sh_error("Redis sharding_mod must pow of 2");
+    if (sharding_mod <= 0) {
+        sh_error("Redis sharding_mod must > 0");
         return 1;
     }
     char buf[64*64];
@@ -391,7 +426,8 @@ handle_query(struct module *s, int source, struct UM_REDISQUERY *rq, int sz) {
     if (rq->flag & RQUERY_SHARDING) {
         assert(cbsz >= 4);
         key = *((uint32_t*)cb); //sh_from_littleendian32(cb);
-        slot = key & (self->ninst - 1);
+        //slot = key & (self->ninst - 1);
+        slot = key % (self->ninst);
     } else {
         slot = 0;
     }

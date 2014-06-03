@@ -60,7 +60,12 @@ logout(struct module *s, struct player *pr) {
         ma->uid = UID(pr);
         lo->err = SERR_OK;
         sh_handle_send(MODULE_ID, self->match_handle, MT_UM, ma, sizeof(*ma)+sizeof(*lo)); 
-    } 
+    }
+
+    UM_DEFFIX(UM_STATEND, se);
+    se->id = UID(pr);
+    sh_handle_send(MODULE_ID, self->stat_handle, MT_UM, se, sizeof(*se));
+
     hall_playerdb_save(s, pr, true);
     hall_gamelog(s, self->charactionlog_handle, "LOGOUT,%u,%u,%s", 
             sh_timer_now()/1000, pr->data.accid, pr->ip);

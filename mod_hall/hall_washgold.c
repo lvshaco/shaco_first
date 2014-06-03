@@ -85,6 +85,7 @@ process_washgold(struct module *s, struct player *pr) {
     hall_gamelog(s, self->charactionlog_handle, 
             "WASHGOLD,%u,%u,%u,%u,%u", 
             sh_timer_now()/1000, cdata->accid, coin_old, wash_old, gain+extra);
+    hall_player_first(s, pr, FT_WASHGOLD);
 }
 
 static void
