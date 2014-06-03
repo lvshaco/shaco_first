@@ -35,6 +35,7 @@ stat_create() {
 
 void
 stat_free(struct stat* self) {
+    sh_hash_fini(&self->users);
     redis_finireply(&self->reply);
     free(self);
 }
@@ -76,6 +77,7 @@ stat_init(struct module* s) {
     if (sh_handle_subscribe("rpstat", SUB_REMOTE, &self->rpstat_handle)) {
         return 1;
     }
+    sh_hash_init(&self->users, 1);
     redis_initreply(&self->reply, 512, 0);
 
     struct tm t;
