@@ -307,12 +307,12 @@ stat_time(struct module *s) {
     struct stat *self = MODULE_SELF;
 
     time_t now = sh_timer_now()/1000;
-    if (self->next_daily_backup >= now) {
+    if (self->next_daily_backup <= now) {
         sh_hash_foreach(&self->users, daily_reset);
         next_daily_backup(self); 
         rd_time(s, self->daily_db);
     }
-    if (self->next_week_backup >= now) {
+    if (self->next_week_backup <= now) {
         sh_hash_foreach(&self->users, week_reset);
         next_week_backup(self);
         rd_time(s, self->week_db);
