@@ -1,6 +1,6 @@
 .PHONY: all t robot clean cleanall res thirdlib
  #-Wpointer-arith -Winline
-CFLAGS=-g -Wall #-Werror 
+CFLAGS=-g -Wall -Werror 
 SHARED=-fPIC -shared
 
 mod_dir=mod
