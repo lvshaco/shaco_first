@@ -26,9 +26,6 @@ struct UM_BASE {
 //#define UM_CLI_SZ(um) ((um)->msgsz - UM_CLI_OFF)
 
 //#define UM_MAXDATA UM_MAXSZ - UM_BASE_SZ
-#define UM_DEF(um, n) \
-    char um##data[n]; \
-    struct UM_BASE* um = (void*)(um##data);
 
 #define UM_DEFFIX(type, name) \
     struct type name##data; \
@@ -37,12 +34,12 @@ struct UM_BASE {
 
 #define UM_DEFVAR(type, name) \
     char name##data[UM_MAXSZ]; \
-    struct type* name = (void*)(name##data); \
+    struct type *name = (struct type *)(name##data); \
     name->msgid = ID##type; \
 
 #define UM_DEFVAR2(type, name, sz) \
     char name##data[sz]; \
-    struct type* name = (void*)(name##data); \
+    struct type *name = (struct type *)(name##data); \
     name->msgid = ID##type; \
 
 #define UM_DEFWRAP(type, name, wraptype, wrapname) \

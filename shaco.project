@@ -1,4 +1,4 @@
-shaco=~/shaco CD=. filter="Makefile README.md *.lua *.py *.h *.c" {
+shaco=~/shaco CD=. filter="Makefile README.md *.lua *.py *.h *.c *.cpp" {
  Makefile
  README.md
  config_bug.lua
@@ -98,6 +98,7 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.py *.h *.c" {
  }
  mod=mod{
   cmdctl.h
+  test.h
   mod_auth.c
   mod_benchmark.c
   mod_benchmarkdb.c
@@ -126,6 +127,7 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.py *.h *.c" {
   mod_stat.c
   mod_uniqueol.c
   mod_watchdog.c
+  mod_test.cpp
  }
  mod_hall=mod_hall{
   hall.h
@@ -260,5 +262,24 @@ shaco=~/shaco CD=. filter="Makefile README.md *.lua *.py *.h *.c" {
  datadefine=datadefine{
   tplt_struct.h
   char_attribute.lua
+ }
+ BillingServer=BillingServer{
+  BillingLogic.h
+  CHttp.h
+  CentralServer.h
+  CentralServerMgr.h
+  CentralServerNetface.h
+  DBNetface.h
+  GlobalUtilityFunction.h
+  ReceiptMgr.h
+  mod_billing.c
+  BillingLogic.cpp
+  CHttp.cpp
+  CentralServer.cpp
+  CentralServerMgr.cpp
+  CentralServerNetface.cpp
+  DBNetface.cpp
+  GlobalUtilityFunction.cpp
+  ReceiptMgr.cpp
  }
 }

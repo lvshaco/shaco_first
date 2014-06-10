@@ -36,7 +36,7 @@ static const char* STRERROR[] = {
 
 static inline const char*
 _strerror(int error) {
-    if (error >= 0 && error < sizeof(STRERROR)/sizeof(STRERROR[0]))
+    if (error >= 0 && error < (int)(sizeof(STRERROR)/sizeof(STRERROR[0])))
         return STRERROR[error];
     return "execute unknown error";
 }

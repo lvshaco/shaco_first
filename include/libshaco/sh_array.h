@@ -43,7 +43,7 @@ sh_array_n(struct sh_array *self) {
 
 static inline int
 sh_array_idx(struct sh_array *self, void *value) {
-    int idx = ((char*)value - (char*)self->elem) / self->size;
+    size_t idx = ((char*)value - (char*)self->elem) / self->size;
     if (idx >= 0 && idx < self->nelem)
         return idx;
     else

@@ -1,6 +1,6 @@
 .PHONY: all t robot clean cleanall res thirdlib
  #-Wpointer-arith -Winline
-CFLAGS=-g -Wall -Werror 
+CFLAGS=-g -Wall #-Werror 
 SHARED=-fPIC -shared
 
 mod_dir=mod
@@ -112,6 +112,7 @@ all: \
 	mod_robot.so \
 	mod_httpc.so \
 	mod_bug.so \
+	mod_test.so \
 	mod_benchmarkdb.so
 
 release: CFLAGS += -O2 -fno-strict-aliasing
@@ -173,6 +174,11 @@ mod_rank.so: $(mod_dir)/mod_rank.c
 mod_stat.so: $(mod_dir)/mod_stat.c
 	@rm -f $@
 	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Iinclude/libshaco -Inet -Ibase -Imsg -Iworld -Iredis -Wl,-rpath,. redis.so
+
+mod_test.so: $(mod_dir)/mod_test.cpp
+	@rm -f $@
+	gcc $(CFLAGS) $(SHARED) -o $@ $^ -Iinclude/libshaco -Inet -Ibase -Imsg -Iworld -Iredis -Wl,-rpath,. redis.so
+
 
 mod_benchmarkdb.so: $(mod_dir)/mod_benchmarkdb.c
 	@rm -f $@
