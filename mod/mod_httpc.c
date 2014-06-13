@@ -48,10 +48,16 @@ int on_body(http_parser* _, const char* at, size_t length) {
 }
 
 // ------------------
+
+struct client {
+    char *buf;
+};
+
 struct httpc {
     int connid;
     struct http_parser *parser;
     char body[64*1024];
+    struct sh_hash clients;
 };
 
 struct httpc *
@@ -91,14 +97,23 @@ connect(struct module *s) {
 static int
 h_send(struct module *s) {
     struct httpc *self = MODULE_SELF; 
-    const char *str=
-        "GET /rank?t=dashi HTTP/1.1\r\n"
-        "Host: 192.168.1.145\r\n"
-        "Keep-Alive: 3000\r\n"
-        "Connection: keep-alive\r\n"
-        "Accept: */*\r\n"
-        "\r\n";
-    size_t len = strlen(str);
+    char str[1024];
+    size_t len;
+    /*len = sh_snprintf(str, sizeof(str), */
+        //"GET /rank?t=dashi HTTP/1.1\r\n"
+        //"Host: %s\r\n"
+        //"Keep-Alive: 3000\r\n"
+        //"Connection: keep-alive\r\n"
+        //"Accept: */*\r\n"
+        /*"\r\n", sh_getstr("httpd_ip", ""));*/
+    len = sh_snprintf(str, sizeof(str), 
+        "GET /verifyReceipt\r\n"
+        "Host: %s\r\n"
+        //"Keep-Alive: 3000\r\n"
+        //"Connection: keep-alive\r\n"
+        //"Accept: */*\r\n"
+        "\r\n", sh_getstr("httpd_ip", ""));
+    
     void *data = malloc(len);
     memcpy(data, str, len);
     return sh_net_send(self->connid, data, len);
